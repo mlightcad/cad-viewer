@@ -717,14 +717,16 @@ defineExpose({
   color: var(--el-text-color-disabled);
 }
 
+/* Match AutoCAD Layer Properties Manager: blue snowflake / yellow sun,
+   yellow locked padlock / blue unlocked padlock. */
 .ml-layer-table-state-icon.is-frozen,
-.ml-layer-table-state-icon.is-locked {
-  color: var(--el-text-color-primary);
+.ml-layer-table-state-icon.is-unlocked {
+  color: #5b9bd5;
 }
 
 .ml-layer-table-state-icon.is-unfrozen,
-.ml-layer-table-state-icon.is-unlocked {
-  color: var(--el-text-color-regular);
+.ml-layer-table-state-icon.is-locked {
+  color: #f0c000;
 }
 
 .ml-layer-table-state-icon :deep(svg) {

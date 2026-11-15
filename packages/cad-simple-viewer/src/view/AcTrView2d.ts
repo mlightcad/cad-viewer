@@ -90,6 +90,7 @@ import {
   acedPickViewportForModelExtents
 } from '../editor/grip/AcEdGripViewport'
 import {
+  acedBlockReferenceIntersectsSelectionBox,
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
@@ -2749,7 +2750,17 @@ export class AcTrView2d extends AcEdBaseView {
     const ids: AcDbObjectId[] = []
     for (const item of results) {
       if (!acedNeedsCrossingGeometryRefine(item)) {
-        ids.push(item.id)
+        // INSERT: the child index only filtered sub-entities by AABB. Like
+        // AutoCAD, require the box to touch a sub-entity's real geometry so
+        // a crossing box in the empty interior of a frame block misses it.
+        const blockRef = database.tables.blockTable.getEntityById(item.id)
+        if (
+          !(blockRef instanceof AcDbBlockReference) ||
+          !item.children ||
+          acedBlockReferenceIntersectsSelectionBox(blockRef, item.children, box)
+        ) {
+          ids.push(item.id)
+        }
         continue
       }
 

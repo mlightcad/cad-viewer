@@ -435,14 +435,16 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   color: var(--el-text-color-disabled);
 }
 
+/* Match AutoCAD Layer Properties Manager: blue snowflake / yellow sun,
+   yellow locked padlock / blue unlocked padlock. */
 .ml-layer-select-state-icon.is-frozen,
-.ml-layer-select-state-icon.is-locked {
-  color: var(--el-text-color-primary);
+.ml-layer-select-state-icon.is-unlocked {
+  color: #5b9bd5;
 }
 
 .ml-layer-select-state-icon.is-unfrozen,
-.ml-layer-select-state-icon.is-unlocked {
-  color: var(--el-text-color-regular);
+.ml-layer-select-state-icon.is-locked {
+  color: #f0c000;
 }
 
 .ml-layer-select-state-icon :deep(svg) {

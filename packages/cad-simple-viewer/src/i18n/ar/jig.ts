@@ -1196,6 +1196,7 @@ export default {
     arrowheadOrRemove: 'حدد موقع رأس سهم خط الإشارة أو [إزالة خطوط الإشارة]',
     selectLeaderToRemove: 'حدد خط إشارة لإزالته أو اضغط Enter للإنهاء',
     cannotRemoveLast: 'لا يمكن إزالة آخر خط إشارة من خط الإشارة المتعدد هذا.',
+    noLeaderAtPoint: 'لم يتم العثور على خط إشارة عند هذه النقطة.',
     keywords: {
       remove: {
         display: 'إزالة خطوط الإشارة(R)',
@@ -1434,6 +1435,35 @@ export default {
     invalid: {
       referencePoints:
         'النقاط المرجعية غير صالحة: يجب أن تكون النقطتان مختلفتين.'
+    }
+  },
+  scale: {
+    basePoint: 'حدد نقطة الأساس',
+    scaleFactorOrOptions: 'حدد معامل المقياس أو',
+    referenceLength: 'حدد الطول المرجعي',
+    newLengthOrPoints: 'حدد الطول الجديد أو',
+    newLengthFirstPoint: 'حدد النقطة الأولى',
+    copyMessage: 'جارٍ تغيير مقياس نسخة من الكائنات المحددة.',
+    keywords: {
+      copy: {
+        display: 'نسخ(C)',
+        local: 'نسخ',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'مرجع(R)',
+        local: 'مرجع',
+        global: 'Reference'
+      },
+      points: {
+        display: 'نقاط(P)',
+        local: 'نقاط',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: 'يجب أن تكون القيمة موجبة وغير صفرية.',
+      length: 'يجب أن تكون القيمة موجبة وغير صفرية.'
     }
   },
   revcloud: {
@@ -2120,13 +2150,38 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'تم إلغاء استعادة الأبعاد؛ لم يتم تغيير أي شيء.',
     noDimensions:
       'لم يتم العثور على أبعاد في التحديد (يلزم وجود رؤوس أسهم أو علامات وخطوط أبعاد ونصوص قيم).',
-    convertAll:
-      'تم العثور على {count} بُعد (مقياس الرسم 1:{scale}). هل تريد تحويلها؟',
-    convertOne: 'البُعد {index}/{count} "{text}": تحويل؟',
     summary:
-      'تم تحويل {count} بُعد؛ يستخدم النمط PDF_DIM معامل مقياس خطي قدره {scale}.'
+      'تم تحويل {count} بُعد؛ يستخدم النمط {style} معامل مقياس خطي قدره {scale}.',
+    panel: {
+      title: 'استعادة الأبعاد',
+      style: 'نمط البعد',
+      dimStyle: 'النمط',
+      newStyle: 'نمط بعد جديد…',
+      newStyleName: 'اسم نمط البعد الجديد',
+      createStyle: 'إنشاء',
+      nameEmpty: 'أدخل اسمًا.',
+      nameInvalid: 'يحتوي الاسم على أحرف غير مسموح بها.',
+      nameExists: 'يوجد بالفعل نمط بعد بهذا الاسم.',
+      scale: 'مقياس الرسم',
+      stylePreview: 'معاينة نمط البُعد المحدد مع الأحجام المُستعادة',
+      dimensions: 'الأبعاد',
+      selectHint: 'حدد بُعدًا للتكبير إليه؛ يمكنك تعديل القيمة قبل التطبيق.',
+      empty: 'لم يتم العثور على أبعاد في التحديد.',
+      include: 'تحويل هذا البُعد',
+      kindLinear: 'خطي',
+      kindRadius: 'نصف القطر',
+      kindDiameter: 'القطر',
+      kindAngular: 'زاوي',
+      textTip: 'نص البُعد (تجاوز)',
+      measured: 'المقاس {value}',
+      hideStrokes: 'إخفاء الخطوط الأصلية',
+      ready: '{ready} من {count} أبعاد جاهزة',
+      cancel: 'إلغاء',
+      apply: 'تطبيق'
+    }
   },
   pdfhatch: {
     cancelled: 'تم إلغاء استعادة التهشير؛ لم يتم تغيير أي شيء.',
@@ -2135,7 +2190,8 @@ export default {
       title: 'استعادة التهشير',
       hatches: 'التهشيرات',
       addArea: 'إضافة منطقة',
-      addAreaTip: 'حدد نقطة داخل منطقة لم يتم التعرّف عليها؛ ستتم مطابقة خطوطها مع أنسب نمط.',
+      addAreaTip:
+        'حدد نقطة داخل منطقة لم يتم التعرّف عليها؛ ستتم مطابقة خطوطها مع أنسب نمط.',
       picking: 'حدد نقطة داخل المنطقة في الرسم…',
       noBoundary: 'لم يتم العثور على منطقة مغلقة حول تلك النقطة.',
       noStrokes: 'لم يتم العثور على نمط منتظم في تلك المنطقة.',
@@ -2153,7 +2209,8 @@ export default {
       autoFit: 'ملاءمة تلقائية',
       autoFitTip: 'إعادة قياس مقياس هذا النمط وزاويته ونقطة أصله من الخطوط.',
       match: 'النمط على الخطوط: {precision} · الخطوط المعاد رسمها: {recall}',
-      noEntities: 'لا يعيد هذا النمط رسم أي كائن بالكامل؛ لن يتم استبدال أي شيء.',
+      noEntities:
+        'لا يعيد هذا النمط رسم أي كائن بالكامل؛ لن يتم استبدال أي شيء.',
       guessed: 'لا يوجد أثر لهذا النمط في الخطوط؛ المقياس والزاوية تقديريان.',
       poorMatch: 'تطابق ضعيف: تبقى الخطوط التي لا يعيد التهشير رسمها.',
       userSingle: 'معرّف من المستخدم',

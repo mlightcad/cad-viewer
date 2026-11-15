@@ -255,7 +255,8 @@ export default {
       prompt: '축척할 객체 선택'
     },
     pdfimport: {
-      description: '[PDF 가져오기] 대화상자로 PDF 파일에서 벡터 형상을 가져옵니다'
+      description:
+        '[PDF 가져오기] 대화상자로 PDF 파일에서 벡터 형상을 가져옵니다'
     },
     '-pdfimport': {
       description: '명령행 옵션을 사용하여 PDF 파일에서 벡터 형상을 가져옵니다'
@@ -555,6 +556,11 @@ export default {
     },
     rotate: {
       description: '선택한 객체를 기준점을 중심으로 회전합니다',
+      prompt: '객체 선택'
+    },
+    scale: {
+      description:
+        '선택한 객체를 축척 후에도 비율이 유지되도록 확대 또는 축소합니다',
       prompt: '객체 선택'
     },
     select: {

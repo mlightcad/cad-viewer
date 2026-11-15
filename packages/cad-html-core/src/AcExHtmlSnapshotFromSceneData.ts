@@ -47,6 +47,12 @@ export interface AcExHtmlExportLayoutInput {
   name?: string
   isModelSpace: boolean
   layers: AcExHtmlExportLayoutLayerGeometry[]
+  /**
+   * INSERT object id → INSERT's own layer name. When the INSERT layer is
+   * frozen, cross-layer fragments are reparented onto that layer during
+   * batch collection so HTML layer toggles can show the whole reference.
+   */
+  insertLayerByObjectId?: ReadonlyMap<string, string>
 }
 
 /**
@@ -57,6 +63,12 @@ export interface AcExHtmlExportLayoutInput {
  */
 export interface AcExHtmlExportSceneInput {
   layers: AcExHtmlExportLayerMeta[]
+  /**
+   * Globally frozen layer names. Used with per-layout
+   * {@link AcExHtmlExportLayoutInput.insertLayerByObjectId} to reparent
+   * frozen-INSERT fragments during batch collection.
+   */
+  frozenLayers?: readonly string[]
   layouts: AcExHtmlExportLayoutInput[]
   activeLayoutBtrId: string
   modelSpaceBtrId: string
@@ -425,21 +437,34 @@ function collectLayoutSnapshot(
 ): AcExHtmlLayoutSnapshot {
   const lineBatches: AcExHtmlLineBatch[] = []
   const meshBatches: AcExHtmlMeshBatch[] = []
+  const frozenLayers =
+    scene.frozenLayers && scene.frozenLayers.length > 0
+      ? new Set(scene.frozenLayers)
+      : undefined
   for (const layer of layoutInput.layers) {
     if (includeLayer && !includeLayer(layer.name)) {
       continue
     }
-    const collected = acexHtmlCollectBatchesFromObject3D(layer.root)
+    const collected = acexHtmlCollectBatchesFromObject3D(layer.root, {
+      geometryLayerName: layer.name,
+      insertLayerByObjectId: layoutInput.insertLayerByObjectId,
+      frozenLayers
+    })
     // Scene geometry is already bucketed by layer root. Material metadata is
     // not authoritative for every drawable (IMAGE / OLE use a plain
     // MeshBasicMaterial with no `userData.layer`), so stamp the owning layer
-    // name onto every batch. Otherwise the offline viewer parents those
-    // meshes under layer "0" and they stay visible when this layer is off.
+    // name onto every batch — except fragments the collector reparented onto
+    // a frozen INSERT layer (those keep their INSERT layer so HTML toggles
+    // can show the whole reference).
     for (const batch of collected.lineBatches) {
-      batch.layer = layer.name
+      if (!batch.layer) {
+        batch.layer = layer.name
+      }
     }
     for (const batch of collected.meshBatches) {
-      batch.layer = layer.name
+      if (!batch.layer) {
+        batch.layer = layer.name
+      }
     }
     lineBatches.push(...collected.lineBatches)
     meshBatches.push(...collected.meshBatches)

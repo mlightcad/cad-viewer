@@ -90,6 +90,45 @@ export function acPdfApplyDatabaseLayerVisibility(
   acPdfApplyLayerVisibility(roots, acPdfCollectDatabaseLayerVisibility(database))
 }
 
+/**
+ * Re-shows frozen-layer entities so they can be painted into OCGs that start
+ * OFF. Call after page extents are computed from the visibility-hidden tree.
+ *
+ * Off layers stay omitted: Off INSERT nesting must not wrap On-layer children
+ * in an initially-OFF OCG. Freeze is a whole-reference hide, which maps cleanly
+ * to an initially-OFF INSERT-layer OCG.
+ */
+export function acPdfRevealFrozenLayersForOcg(
+  roots: readonly AcPdfEntity[],
+  frozenLayers: ReadonlySet<string>
+): void {
+  if (frozenLayers.size === 0) {
+    return
+  }
+  for (const root of roots) {
+    revealFrozen(root, frozenLayers)
+  }
+}
+
+function revealFrozen(
+  entity: AcPdfEntity,
+  frozenLayers: ReadonlySet<string>,
+  insertLayer?: string
+): void {
+  const layer = effectivePdfLayer(entity.layerName, insertLayer)
+  const isInsert = isInsertEntity(entity)
+  if (frozenLayers.has(layer)) {
+    entity.visible = true
+  }
+  const childInsertLayer = isInsert ? layer : insertLayer
+  for (let i = 0; i < entity.childCount; i++) {
+    const child = entity.childAt(i)
+    if (child) {
+      revealFrozen(child, frozenLayers, childInsertLayer)
+    }
+  }
+}
+
 function applyLayerVisibility(
   entity: AcPdfEntity,
   offLayers: ReadonlySet<string>,

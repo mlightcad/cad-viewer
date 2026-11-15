@@ -73,6 +73,11 @@ export class AcUiPdfTextPanel<Id> {
   private readonly mergeInfo: HTMLSpanElement
   /** Kind whose "new style" name field is open. */
   private naming?: { kind: PdfTextFontKind; error?: PdfTextStyleNameError }
+  /**
+   * Collapsed style groups. Default collapsed so the line list gets the space;
+   * opening "New text style…" expands that group.
+   */
+  private readonly collapsed = new Set<PdfTextFontKind>(['shx', 'mesh'])
   private readonly unsubscribeTheme: () => void
 
   constructor(options: AcUiPdfTextPanelOptions<Id>) {
@@ -179,14 +184,43 @@ export class AcUiPdfTextPanel<Id> {
   private renderKind(kind: PdfTextFontKind): HTMLElement {
     const session = this.session
     const choice = session.choice(kind)
+    // Naming a new style forces the group open so the name field is visible.
+    if (this.naming?.kind === kind) this.collapsed.delete(kind)
+    const isCollapsed = this.collapsed.has(kind)
     const section = h('div', 'ml-pdftext-section')
-    section.append(
-      h(
-        'div',
-        'ml-pdftext-section-title',
-        t(kind === 'shx' ? 'shxGroup' : 'meshGroup')
-      )
+    if (isCollapsed) section.classList.add('is-collapsed')
+
+    const header = h('button', 'ml-pdftext-section-header')
+    header.type = 'button'
+    header.setAttribute('aria-expanded', String(!isCollapsed))
+    const chevron = h('span', 'ml-pdftext-chevron', isCollapsed ? '▶' : '▼')
+    chevron.setAttribute('aria-hidden', 'true')
+    const title = h(
+      'span',
+      'ml-pdftext-section-title',
+      t(kind === 'shx' ? 'shxGroup' : 'meshGroup')
     )
+    const summary = h(
+      'span',
+      'ml-pdftext-section-summary',
+      choice.styleName
+        ? `${choice.styleName}${choice.font ? ` · ${choice.font}` : ''}`
+        : ''
+    )
+    header.append(chevron, title, summary)
+    header.addEventListener('click', () => {
+      if (this.collapsed.has(kind)) this.collapsed.delete(kind)
+      else this.collapsed.add(kind)
+      this.renderSettings()
+    })
+    section.append(header)
+
+    const body = h('div', 'ml-pdftext-section-body')
+    if (isCollapsed) {
+      body.hidden = true
+      section.append(body)
+      return section
+    }
 
     // Text style: existing styles, the pending new one, "New text style…".
     const styleSelect = h('select', 'ml-pdftext-input')
@@ -202,6 +236,7 @@ export class AcUiPdfTextPanel<Id> {
     styleSelect.addEventListener('change', () => {
       if (styleSelect.value === NEW_STYLE_VALUE) {
         this.naming = { kind }
+        this.collapsed.delete(kind)
         this.renderSettings()
         this.settingsEl
           .querySelector<HTMLInputElement>('.ml-pdftext-new-name')
@@ -212,9 +247,9 @@ export class AcUiPdfTextPanel<Id> {
       this.naming = undefined
       this.changed(true)
     })
-    section.append(field(t('style'), styleSelect))
+    body.append(field(t('style'), styleSelect))
 
-    if (this.naming?.kind === kind) section.append(this.renderNaming(kind))
+    if (this.naming?.kind === kind) body.append(this.renderNaming(kind))
 
     // Font and big font.
     const fontSelect = h('select', 'ml-pdftext-input')
@@ -240,7 +275,7 @@ export class AcUiPdfTextPanel<Id> {
       session.setFont(kind, fontSelect.value)
       this.changed(true)
     })
-    section.append(field(t('font'), fontSelect))
+    body.append(field(t('font'), fontSelect))
 
     const fontType = this.fontType(choice.font)
     const bigSelect = h('select', 'ml-pdftext-input')
@@ -260,15 +295,15 @@ export class AcUiPdfTextPanel<Id> {
       session.setBigFont(kind, bigSelect.value)
       this.changed(true)
     })
-    section.append(field(t('bigFont'), bigSelect))
+    body.append(field(t('bigFont'), bigSelect))
 
     // Which fonts will draw the text, and warnings.
     const fonts = [choice.font, choice.bigFont].filter(Boolean).join(' + ')
-    section.append(h('div', 'ml-pdftext-hint', t('fontsUsed', { fonts })))
+    body.append(h('div', 'ml-pdftext-hint', t('fontsUsed', { fonts })))
     for (const font of [choice.font, choice.bigFont]) {
       if (!font || this.fontType(font)) continue
       const fallback = this.options.replacementFont(font)
-      section.append(
+      body.append(
         h(
           'div',
           'ml-pdftext-warning',
@@ -277,7 +312,7 @@ export class AcUiPdfTextPanel<Id> {
       )
     }
     if (fontType && fontType !== kind) {
-      section.append(
+      body.append(
         h(
           'div',
           'ml-pdftext-warning',
@@ -286,7 +321,7 @@ export class AcUiPdfTextPanel<Id> {
       )
     }
     if (session.changesExistingStyle(kind)) {
-      section.append(
+      body.append(
         h(
           'div',
           'ml-pdftext-warning',
@@ -314,7 +349,8 @@ export class AcUiPdfTextPanel<Id> {
     const widthField = field(t('widthFactor'), width)
     widthField.append(auto)
     sizeRow.append(widthField)
-    section.append(sizeRow)
+    body.append(sizeRow)
+    section.append(body)
     return section
   }
 
@@ -718,10 +754,7 @@ function buildFontOptions(fonts: readonly AcApFontInfo[]): FontOption[] {
 }
 
 function ensureStyles() {
-  if (document.getElementById(STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = `
+  const css = `
 .ml-pdftext-panel {
   flex: 1;
   min-height: 0;
@@ -736,7 +769,7 @@ function ensureStyles() {
 .ml-pdftext-settings {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow: auto;
   max-height: 55%;
   flex-shrink: 0;
@@ -745,13 +778,63 @@ function ensureStyles() {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 6px 8px;
+  padding: 4px 8px 6px;
   border: 1px solid var(--ml-ui-border, #dcdfe6);
   border-radius: 6px;
 }
+.ml-pdftext-section.is-collapsed {
+  padding-bottom: 4px;
+}
+.ml-pdftext-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 -2px;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ml-pdftext-section-header:hover {
+  background: var(--ml-ui-hover, rgba(144, 147, 153, 0.12));
+}
+.ml-pdftext-chevron {
+  flex: 0 0 auto;
+  width: 1em;
+  color: var(--ml-ui-text-muted, #606266);
+  font-size: 10px;
+  text-align: center;
+}
 .ml-pdftext-section-title {
+  flex: 0 1 auto;
   font-weight: 600;
-  margin-bottom: 2px;
+  min-width: 0;
+}
+.ml-pdftext-section-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ml-ui-text-muted, #606266);
+  font-weight: 400;
+  text-align: right;
+}
+.ml-pdftext-section:not(.is-collapsed) .ml-pdftext-section-summary {
+  display: none;
+}
+.ml-pdftext-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Author display:flex would otherwise override the UA [hidden] rule. */
+.ml-pdftext-section-body[hidden] {
+  display: none;
 }
 .ml-pdftext-field {
   display: grid;
@@ -921,5 +1004,11 @@ textarea.ml-pdftext-text {
   cursor: default;
 }
 `.trim()
-  document.head.appendChild(style)
+  let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
+  if (!style) {
+    style = document.createElement('style')
+    style.id = STYLE_ID
+    document.head.appendChild(style)
+  }
+  style.textContent = css
 }

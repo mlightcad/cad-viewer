@@ -20,6 +20,14 @@ function encodeOcgDisplayName(text: string): PDFString | PDFHexString {
   return PDFHexString.fromText(text)
 }
 
+export interface AcPdfOcgManagerOptions {
+  /**
+   * CAD layer names that should start hidden in Acrobat's Layers panel
+   * (typically globally frozen layers). Omitting a name leaves it in `D.ON`.
+   */
+  initiallyOffLayers?: ReadonlySet<string>
+}
+
 /**
  * Builds Optional Content Groups so Acrobat's Layers panel can toggle CAD layers.
  */
@@ -27,10 +35,12 @@ export class AcPdfOcgManager {
   private readonly _doc: PDFDocument
   private readonly _ocgs = new Map<string, { name: string; ref: PDFRef }>()
   private readonly _resourceNames = new Map<string, string>()
+  private readonly _initiallyOffLayers: ReadonlySet<string>
   private _nextResourceId = 0
 
-  constructor(doc: PDFDocument) {
+  constructor(doc: PDFDocument, options: AcPdfOcgManagerOptions = {}) {
     this._doc = doc
+    this._initiallyOffLayers = options.initiallyOffLayers ?? new Set()
   }
 
   resourceName(layerName: string): string {
@@ -81,11 +91,21 @@ export class AcPdfOcgManager {
     }
     resources.set(PDFName.of('Properties'), props)
     const order = this._doc.context.obj(ocgRefs)
+    const onRefs: PDFRef[] = []
+    const offRefs: PDFRef[] = []
+    for (const [layerName, entry] of this._ocgs) {
+      if (this._initiallyOffLayers.has(layerName)) {
+        offRefs.push(entry.ref)
+      } else {
+        onRefs.push(entry.ref)
+      }
+    }
     const ocProperties = this._doc.context.obj({
       OCGs: ocgRefs,
       D: {
         Order: order,
-        ON: ocgRefs
+        ON: onRefs,
+        ...(offRefs.length > 0 ? { OFF: offRefs } : {})
       }
     })
     // Indirect ref is more reliable across viewers after page merges.

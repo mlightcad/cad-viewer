@@ -334,7 +334,8 @@ export default {
       mleaderRemove: 'Mevcut çoklu önderden bir önder çizgisini kaldırın.',
       move: 'Seçili nesneleri yeni bir konuma taşıyın.',
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
-      copy: 'Seçili nesneleri yeni bir konuma kopyalayın.',
+      scale:
+        'Seçili nesneleri, ölçeklemeden sonra oranlarını koruyarak büyütün veya küçültün.',
       erase: 'Seçili nesneleri çizimden silin.',
       pasteClip: 'Panodaki nesneleri geçerli çizime yapıştırır (PASTECLIP).',
       pasteOrig:
@@ -514,7 +515,7 @@ export default {
       mleaderRemove: 'Önder Kaldır',
       move: 'Taşı',
       rotate: 'Döndür',
-      copy: 'Kopyala',
+      scale: 'Ölçekle',
       erase: 'Sil',
       pasteClip: 'Yapıştır',
       pasteOrig: 'Orijinal Koordinatlara Yapıştır',

@@ -261,14 +261,25 @@ test('pdfimport rebuilds repeated forms as blocks and pdfblock finds copies', as
   expect(Object.keys(counts)).toEqual(['BLOCKREFERENCE'])
 })
 
-test('pdfdim turns exploded dimensions into dimension objects', async ({
-  page
-}) => {
+/** Opens the dimensions fixture and runs PDFDIM over everything. */
+async function startPdfDim(page: Page) {
   await importPdf(page, 'pdf-dimensions.pdf')
   await preselect(page)
   await ribbonButton(page, 'cmd-pdfdim').click()
-  await waitForPrompt(page, /Found 5 dimensions \(drawing scale 1:100\)/)
-  await answer(page, '')
+  await expect(page.locator('.ml-pdfdim-row')).toHaveCount(5, {
+    timeout: 20_000
+  })
+}
+
+test('pdfdim turns exploded dimensions into dimension objects', async ({
+  page
+}) => {
+  await startPdfDim(page)
+  // Scope to the footer: the style-name "Create" button shares ml-pdfdim-btn.
+  await page
+    .locator('.ml-pdfdim-buttons .ml-pdfdim-btn:not(.is-secondary)')
+    .click()
+  await expect(page.locator('.ml-pdfdim-panel')).toHaveCount(0)
 
   await expect
     .poll(async () => (await entityTypes(page)).ROTATEDDIMENSION ?? 0, {
@@ -279,6 +290,24 @@ test('pdfdim turns exploded dimensions into dimension objects', async ({
   expect(counts.DIAMETRICDIMENSION).toBe(1)
   // The part outline and the circle stay; every dimension part is gone.
   expect(counts.TEXT ?? 0).toBe(0)
+})
+
+test('pdfdim changes nothing when the palette is cancelled', async ({
+  page
+}) => {
+  await startPdfDim(page)
+  const before = await entityTypes(page)
+
+  await page
+    .locator('.ml-pdfdim-buttons .ml-pdfdim-btn.is-secondary')
+    .click()
+  await expect(page.locator('.ml-pdfdim-panel')).toHaveCount(0)
+
+  const after = await entityTypes(page)
+  expect(after.ROTATEDDIMENSION ?? 0).toBe(0)
+  expect(after.DIAMETRICDIMENSION ?? 0).toBe(0)
+  expect(after.TEXT).toBe(before.TEXT)
+  expect(after.LINE).toBe(before.LINE)
 })
 
 test('pdfimport rebuilds pattern hatches from their strokes', async ({

@@ -60,6 +60,22 @@ export interface AcExHtmlCollectedBatches {
   meshBatches: AcExHtmlMeshBatch[]
 }
 
+/**
+ * Options for {@link acexHtmlCollectBatchesFromObject3D}.
+ *
+ * When a frozen INSERT's nested geometry was bucketed onto another layer, those
+ * slots are exported under the INSERT layer so the HTML layer panel can show
+ * the whole reference by toggling that layer (freeze → initially invisible).
+ */
+export interface AcExHtmlCollectBatchesOptions {
+  /** Name of the layer root being collected. */
+  geometryLayerName: string
+  /** INSERT object id → INSERT's own layer name. */
+  insertLayerByObjectId?: ReadonlyMap<string, string>
+  /** Globally frozen layer names. */
+  frozenLayers?: ReadonlySet<string>
+}
+
 /** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
 type AcTrPackedGeometryInfo = {
   flags: number
@@ -67,6 +83,7 @@ type AcTrPackedGeometryInfo = {
   vertexCount: number
   indexStart?: number
   indexCount?: number
+  objectId?: string
 }
 
 /**
@@ -161,6 +178,52 @@ function shouldExportBatchedSlot(info: AcTrPackedGeometryInfo): boolean {
   return isBatchGeometryActive(info.flags) && isBatchGeometryVisible(info.flags)
 }
 
+function resolveExportLayerForObjectId(
+  objectId: string | undefined,
+  options: AcExHtmlCollectBatchesOptions | undefined
+): string {
+  const geometryLayer = options?.geometryLayerName ?? ''
+  if (!objectId || !options?.insertLayerByObjectId || !options.frozenLayers) {
+    return geometryLayer
+  }
+  const insertLayer = options.insertLayerByObjectId.get(objectId)
+  if (
+    insertLayer &&
+    insertLayer !== geometryLayer &&
+    options.frozenLayers.has(insertLayer)
+  ) {
+    return insertLayer
+  }
+  return geometryLayer
+}
+
+function groupSlotIdsByExportLayer(
+  batch: AcTrBatchedExportSource,
+  options?: AcExHtmlCollectBatchesOptions
+): Map<string, number[]> {
+  const groups = new Map<string, number[]>()
+  const { count } = batch.mappingStats
+  for (let geometryId = 0; geometryId < count; geometryId++) {
+    let info: AcTrPackedGeometryInfo
+    try {
+      info = batch.getGeometryRangeAt(geometryId)
+    } catch {
+      continue
+    }
+    if (!shouldExportBatchedSlot(info)) {
+      continue
+    }
+    const exportLayer = resolveExportLayerForObjectId(info.objectId, options)
+    const ids = groups.get(exportLayer)
+    if (ids) {
+      ids.push(geometryId)
+    } else {
+      groups.set(exportLayer, [geometryId])
+    }
+  }
+  return groups
+}
+
 /**
  * Text/point glyph batches are bucketed with `bboxIntersectionCheck` so their
  * stroke vertices are not used for CAD-style object snap.
@@ -193,10 +256,13 @@ function drawableExcludesFromOsnap(object: THREE.Object3D): boolean {
 /**
  * Exports only active geometry data from a batched line/mesh/point buffer,
  * skipping reserved padding and inactive (deleted) slots.
+ *
+ * @param slotIds - When set, only these geometry slot ids are exported.
  */
 export function acexHtmlExportActiveBatchedSlice(
   batch: AcTrBatchedExportSource,
-  geometry: THREE.BufferGeometry
+  geometry: THREE.BufferGeometry,
+  slotIds?: readonly number[]
 ): AcExHtmlBufferGeometrySlice {
   const positionAttr = geometry.getAttribute('position') as
     | THREE.BufferAttribute
@@ -208,7 +274,9 @@ export function acexHtmlExportActiveBatchedSlice(
   const itemSize = positionAttr.itemSize
   const positionArray = positionAttr.array as ArrayLike<number>
   const indexAttr = geometry.getIndex()
-  const { count } = batch.mappingStats
+  const slotList =
+    slotIds ??
+    Array.from({ length: batch.mappingStats.count }, (_, geometryId) => geometryId)
 
   if (indexAttr) {
     const positions = acexHtmlCopyFloat32Range(
@@ -220,7 +288,7 @@ export function acexHtmlExportActiveBatchedSlice(
 
     let totalIndices = 0
     const ranges: Array<{ start: number; count: number }> = []
-    for (let geometryId = 0; geometryId < count; geometryId++) {
+    for (const geometryId of slotList) {
       let info: AcTrPackedGeometryInfo
       try {
         info = batch.getGeometryRangeAt(geometryId)
@@ -253,7 +321,7 @@ export function acexHtmlExportActiveBatchedSlice(
 
   let totalFloats = 0
   const ranges: Array<{ start: number; floatCount: number }> = []
-  for (let geometryId = 0; geometryId < count; geometryId++) {
+  for (const geometryId of slotList) {
     let info: AcTrPackedGeometryInfo
     try {
       info = batch.getGeometryRangeAt(geometryId)
@@ -314,7 +382,8 @@ function appendSegmentFromAttribute(
  */
 export function acexHtmlExportActiveBatchedLine2Slice(
   batch: AcTrBatchedExportSource,
-  geometry: THREE.BufferGeometry
+  geometry: THREE.BufferGeometry,
+  slotIds?: readonly number[]
 ): AcExHtmlBufferGeometrySlice {
   const startAttr = geometry.getAttribute('instanceStart') as
     | THREE.BufferAttribute
@@ -328,10 +397,12 @@ export function acexHtmlExportActiveBatchedLine2Slice(
     return { positions: new Float32Array(0) }
   }
 
-  const { count } = batch.mappingStats
+  const slotList =
+    slotIds ??
+    Array.from({ length: batch.mappingStats.count }, (_, geometryId) => geometryId)
   const activeFloats: number[] = []
 
-  for (let geometryId = 0; geometryId < count; geometryId++) {
+  for (const geometryId of slotList) {
     let info: AcTrPackedGeometryInfo
     try {
       info = batch.getGeometryRangeAt(geometryId)
@@ -637,90 +708,146 @@ function buildMeshBatch(
 }
 
 function exportBatchedLine2(
-  batch: AcTrBatchedLine2
-): AcExHtmlLineBatch | undefined {
-  const slice = acexHtmlExportActiveBatchedLine2Slice(batch, batch.geometry)
-  if (slice.positions.length === 0) {
-    return undefined
+  batch: AcTrBatchedLine2,
+  options?: AcExHtmlCollectBatchesOptions
+): AcExHtmlLineBatch[] {
+  const groups = groupSlotIdsByExportLayer(batch, options)
+  if (groups.size === 0) {
+    return []
   }
-  const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
+  const { color } = readMaterialStyle(batch.material as THREE.Material)
   const lineWidth = readLineWidth(batch.material as THREE.Material)
-  const exported: AcExHtmlLineBatch = {
-    layer,
-    color,
-    offset: readWorldOffset(batch),
-    lineWidth,
-    ...slice
+  const offset = readWorldOffset(batch)
+  const excludeFromOsnap = batchedLineExcludesFromOsnap(batch)
+  const material = batch.material as THREE.Material
+  const exported: AcExHtmlLineBatch[] = []
+  for (const [layer, slotIds] of groups) {
+    const slice = acexHtmlExportActiveBatchedLine2Slice(
+      batch,
+      batch.geometry,
+      slotIds
+    )
+    if (slice.positions.length === 0) {
+      continue
+    }
+    const lineBatch: AcExHtmlLineBatch = {
+      layer,
+      color,
+      offset,
+      lineWidth,
+      ...slice
+    }
+    if (excludeFromOsnap) {
+      lineBatch.excludeFromOsnap = true
+    }
+    assignRenderOrder(lineBatch, batch, material)
+    exported.push(lineBatch)
   }
-  if (batchedLineExcludesFromOsnap(batch)) {
-    exported.excludeFromOsnap = true
-  }
-  assignRenderOrder(exported, batch, batch.material as THREE.Material)
   return exported
 }
 
-function exportBatchedLine(batch: AcTrBatchedLine): AcExHtmlLineBatch | undefined {
-  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
-  if (slice.positions.length === 0) {
-    return undefined
+function exportBatchedLine(
+  batch: AcTrBatchedLine,
+  options?: AcExHtmlCollectBatchesOptions
+): AcExHtmlLineBatch[] {
+  const groups = groupSlotIdsByExportLayer(batch, options)
+  if (groups.size === 0) {
+    return []
   }
-  const { color, layer, linePattern } = readMaterialStyle(
+  const { color, linePattern } = readMaterialStyle(
     batch.material as THREE.Material
   )
-  const lineDistances = linePattern
-    ? acexHtmlComputeLineDistancesForSegments(slice.positions)
-    : undefined
-  const exported: AcExHtmlLineBatch = {
-    layer,
-    color,
-    offset: readWorldOffset(batch),
-    linePattern,
-    lineDistances,
-    ...slice
+  const offset = readWorldOffset(batch)
+  const excludeFromOsnap = batchedLineExcludesFromOsnap(batch)
+  const material = batch.material as THREE.Material
+  const exported: AcExHtmlLineBatch[] = []
+  for (const [layer, slotIds] of groups) {
+    const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry, slotIds)
+    if (slice.positions.length === 0) {
+      continue
+    }
+    const lineDistances = linePattern
+      ? acexHtmlComputeLineDistancesForSegments(slice.positions)
+      : undefined
+    const lineBatch: AcExHtmlLineBatch = {
+      layer,
+      color,
+      offset,
+      linePattern,
+      lineDistances,
+      ...slice
+    }
+    if (excludeFromOsnap) {
+      lineBatch.excludeFromOsnap = true
+    }
+    assignRenderOrder(lineBatch, batch, material)
+    exported.push(lineBatch)
   }
-  if (batchedLineExcludesFromOsnap(batch)) {
-    exported.excludeFromOsnap = true
-  }
-  assignRenderOrder(exported, batch, batch.material as THREE.Material)
   return exported
 }
 
-function exportBatchedMesh(batch: AcTrBatchedMesh): AcExHtmlMeshBatch | undefined {
-  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
-  if (slice.positions.length === 0) {
-    return undefined
+function exportBatchedMesh(
+  batch: AcTrBatchedMesh,
+  options?: AcExHtmlCollectBatchesOptions
+): AcExHtmlMeshBatch[] {
+  const groups = groupSlotIdsByExportLayer(batch, options)
+  if (groups.size === 0) {
+    return []
   }
-  return buildMeshBatch(
-    batch.geometry,
-    batch.material as THREE.Material,
-    batch,
-    slice,
-    readWorldOffset(batch),
-    true
-  )
+  const exported: AcExHtmlMeshBatch[] = []
+  for (const [layer, slotIds] of groups) {
+    const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry, slotIds)
+    if (slice.positions.length === 0) {
+      continue
+    }
+    const mesh = buildMeshBatch(
+      batch.geometry,
+      batch.material as THREE.Material,
+      batch,
+      slice,
+      readWorldOffset(batch),
+      true
+    )
+    if (!mesh) {
+      continue
+    }
+    mesh.layer = layer
+    exported.push(mesh)
+  }
+  return exported
 }
 
 function exportBatchedPoint(
-  batch: AcTrBatchedPoint
-): AcExHtmlMeshBatch | undefined {
-  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
-  if (slice.positions.length === 0) {
-    return undefined
+  batch: AcTrBatchedPoint,
+  options?: AcExHtmlCollectBatchesOptions
+): AcExHtmlMeshBatch[] {
+  const groups = groupSlotIdsByExportLayer(batch, options)
+  if (groups.size === 0) {
+    return []
   }
-  const mesh = buildMeshBatch(
-    batch.geometry,
-    batch.material as THREE.Material,
-    batch,
-    slice,
-    readWorldOffset(batch)
-  )
-  if (!mesh) {
-    return undefined
+  const exported: AcExHtmlMeshBatch[] = []
+  for (const [layer, slotIds] of groups) {
+    const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry, slotIds)
+    if (slice.positions.length === 0) {
+      continue
+    }
+    const mesh = buildMeshBatch(
+      batch.geometry,
+      batch.material as THREE.Material,
+      batch,
+      slice,
+      readWorldOffset(batch)
+    )
+    if (!mesh) {
+      continue
+    }
+    mesh.layer = layer
+    exported.push({
+      points: true,
+      ...mesh
+    })
   }
-  return {
-    points: true,
-    ...mesh
-  }
+  return exported
 }
 
 /**
@@ -780,12 +907,64 @@ function isUsableInstanceMatrix(matrix: THREE.Matrix4): boolean {
 }
 
 /**
- * Bakes every visible INSERT of one shared template into a single world-space
- * slice, then rebases around the centroid.
+ * Resolves the INSERT object id for one GPU instance via the owning
+ * {@link AcTrSharedGeometryBatch} parent (`getObjectIdAt`).
+ */
+function resolveSharedInstanceObjectId(
+  object: THREE.Object3D,
+  instanceIndex: number
+): string | undefined {
+  let current: THREE.Object3D | null = object
+  while (current) {
+    const getObjectIdAt = (
+      current as { getObjectIdAt?: (index: number) => string | undefined }
+    ).getObjectIdAt
+    if (typeof getObjectIdAt === 'function') {
+      return getObjectIdAt.call(current, instanceIndex)
+    }
+    current = current.parent
+  }
+  return undefined
+}
+
+/**
+ * Groups visible shared-geometry instance indices by export layer, reparenting
+ * frozen-INSERT instances onto the INSERT layer when needed.
+ */
+function groupVisibleInstancesByExportLayer(
+  object: InstancedExportDrawable,
+  options?: AcExHtmlCollectBatchesOptions
+): Map<string, number[]> {
+  object.updateMatrixWorld(true)
+  const array = object.instanceMatrix.array as Float32Array
+  const groups = new Map<string, number[]>()
+  const fallbackLayer = options?.geometryLayerName ?? ''
+  for (let i = 0; i < object.count; i++) {
+    _instanceMatrix.fromArray(array, i * 16)
+    if (!isUsableInstanceMatrix(_instanceMatrix)) continue
+    const objectId = resolveSharedInstanceObjectId(object, i)
+    const exportLayer =
+      resolveExportLayerForObjectId(objectId, options) || fallbackLayer
+    const ids = groups.get(exportLayer)
+    if (ids) {
+      ids.push(i)
+    } else {
+      groups.set(exportLayer, [i])
+    }
+  }
+  return groups
+}
+
+/**
+ * Bakes selected visible INSERTs of one shared template into a single
+ * world-space slice, then rebases around the centroid.
+ *
+ * @param instanceIndices - When set, only these instance slots are baked.
  */
 function expandInstancedGeometry(
   object: InstancedExportDrawable,
-  primitiveVertexCount: 1 | 2 | 3
+  primitiveVertexCount: 1 | 2 | 3,
+  instanceIndices?: readonly number[]
 ):
   | {
       slice: AcExHtmlBufferGeometrySlice
@@ -802,8 +981,11 @@ function expandInstancedGeometry(
   object.updateMatrixWorld(true)
   const array = object.instanceMatrix.array as Float32Array
   const indexCount = template.indices?.length ?? 0
+  const slotList =
+    instanceIndices ??
+    Array.from({ length: object.count }, (_, index) => index)
   let visible = 0
-  for (let i = 0; i < object.count; i++) {
+  for (const i of slotList) {
     _instanceMatrix.fromArray(array, i * 16)
     if (isUsableInstanceMatrix(_instanceMatrix)) visible++
   }
@@ -814,7 +996,7 @@ function expandInstancedGeometry(
     template.indices != null ? new Uint32Array(visible * indexCount) : undefined
   const vertexCount = floatsPerInstance / 3
   let slot = 0
-  for (let i = 0; i < object.count; i++) {
+  for (const i of slotList) {
     _instanceMatrix.fromArray(array, i * 16)
     if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
@@ -847,51 +1029,68 @@ function meshNeedsPerInstanceExport(material: THREE.Material): boolean {
 
 function forEachVisibleInstanceMatrix(
   object: InstancedExportDrawable,
-  visit: (matrixWorld: THREE.Matrix4) => void
+  visit: (matrixWorld: THREE.Matrix4, instanceIndex: number) => void,
+  instanceIndices?: readonly number[]
 ): void {
   object.updateMatrixWorld(true)
   const array = object.instanceMatrix.array as Float32Array
-  for (let i = 0; i < object.count; i++) {
+  const slotList =
+    instanceIndices ??
+    Array.from({ length: object.count }, (_, index) => index)
+  for (const i of slotList) {
     _instanceMatrix.fromArray(array, i * 16)
     if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
-    visit(_instanceWorld)
+    visit(_instanceWorld, i)
   }
 }
 
 function pushInstancedLine(
   object: InstancedExportDrawable,
-  lineBatches: AcExHtmlLineBatch[]
+  lineBatches: AcExHtmlLineBatch[],
+  options?: AcExHtmlCollectBatchesOptions
 ): void {
-  const expanded = expandInstancedGeometry(object, 2)
-  if (!expanded) return
+  const groups = groupVisibleInstancesByExportLayer(object, options)
+  if (groups.size === 0) return
   const material = readExportMaterial(object)
-  const { color, layer, linePattern } = readMaterialStyle(material)
-  const lineDistances = linePattern
-    ? acexHtmlComputeLineDistancesForSegments(expanded.slice.positions)
-    : undefined
-  const exported: AcExHtmlLineBatch = {
-    layer,
-    color,
-    offset: expanded.offset,
-    linePattern,
-    lineDistances,
-    ...expanded.slice
+  const { color, layer: materialLayer, linePattern } = readMaterialStyle(material)
+  const fallbackLayer = options?.geometryLayerName || materialLayer
+  const excludeFromOsnap = drawableExcludesFromOsnap(object)
+  for (const [exportLayer, indices] of groups) {
+    const expanded = expandInstancedGeometry(object, 2, indices)
+    if (!expanded) continue
+    const lineDistances = linePattern
+      ? acexHtmlComputeLineDistancesForSegments(expanded.slice.positions)
+      : undefined
+    const exported: AcExHtmlLineBatch = {
+      layer: exportLayer || fallbackLayer,
+      color,
+      offset: expanded.offset,
+      linePattern,
+      lineDistances,
+      ...expanded.slice
+    }
+    if (excludeFromOsnap) {
+      exported.excludeFromOsnap = true
+    }
+    assignRenderOrder(exported, object, material)
+    lineBatches.push(exported)
   }
-  if (drawableExcludesFromOsnap(object)) {
-    exported.excludeFromOsnap = true
-  }
-  assignRenderOrder(exported, object, material)
-  lineBatches.push(exported)
 }
 
 function pushInstancedMesh(
   object: InstancedExportDrawable,
   meshBatches: AcExHtmlMeshBatch[],
-  asPoints: boolean
+  asPoints: boolean,
+  options?: AcExHtmlCollectBatchesOptions
 ): void {
   const material = readExportMaterial(object)
   if (!asPoints && acexHtmlIsTransparentImagePlaceholder(material)) return
+
+  const groups = groupVisibleInstancesByExportLayer(object, options)
+  if (groups.size === 0) return
+  const fallbackLayer =
+    options?.geometryLayerName || readMaterialStyle(material).layer
 
   if (!asPoints && meshNeedsPerInstanceExport(material)) {
     const template = acexHtmlOmitNonFinitePrimitives(
@@ -899,41 +1098,57 @@ function pushInstancedMesh(
       3
     )
     if (template.positions.length === 0) return
-    forEachVisibleInstanceMatrix(object, matrixWorld => {
-      const baked = acexHtmlOmitNonFinitePrimitives(
-        acexHtmlBakePlainDrawableSlice(template, matrixWorld),
-        3
+    for (const [exportLayer, indices] of groups) {
+      forEachVisibleInstanceMatrix(
+        object,
+        matrixWorld => {
+          const baked = acexHtmlOmitNonFinitePrimitives(
+            acexHtmlBakePlainDrawableSlice(template, matrixWorld),
+            3
+          )
+          if (baked.positions.length === 0) return
+          const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(baked)
+          _instancePose.matrix.copy(matrixWorld)
+          _instancePose.matrixWorld.copy(matrixWorld)
+          _instancePose.matrixWorldNeedsUpdate = false
+          const mesh = buildMeshBatch(
+            object.geometry,
+            material,
+            _instancePose,
+            rebased.slice,
+            rebased.offset,
+            true
+          )
+          if (mesh) {
+            mesh.layer = exportLayer || fallbackLayer
+            meshBatches.push(mesh)
+          }
+        },
+        indices
       )
-      if (baked.positions.length === 0) return
-      const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(baked)
-      _instancePose.matrix.copy(matrixWorld)
-      _instancePose.matrixWorld.copy(matrixWorld)
-      _instancePose.matrixWorldNeedsUpdate = false
-      const mesh = buildMeshBatch(
-        object.geometry,
-        material,
-        _instancePose,
-        rebased.slice,
-        rebased.offset,
-        true
-      )
-      if (mesh) meshBatches.push(mesh)
-    })
+    }
     return
   }
 
-  const expanded = expandInstancedGeometry(object, asPoints ? 1 : 3)
-  if (!expanded) return
-  const mesh = buildMeshBatch(
-    object.geometry,
-    material,
-    object,
-    expanded.slice,
-    expanded.offset,
-    !asPoints
-  )
-  if (!mesh) return
-  meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+  for (const [exportLayer, indices] of groups) {
+    const expanded = expandInstancedGeometry(
+      object,
+      asPoints ? 1 : 3,
+      indices
+    )
+    if (!expanded) continue
+    const mesh = buildMeshBatch(
+      object.geometry,
+      material,
+      object,
+      expanded.slice,
+      expanded.offset,
+      !asPoints
+    )
+    if (!mesh) continue
+    mesh.layer = exportLayer || fallbackLayer
+    meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+  }
 }
 
 function isExportLineSegments2(object: THREE.Object3D): object is LineSegments2 {
@@ -977,13 +1192,28 @@ function isExportMesh(object: THREE.Object3D): object is THREE.Mesh {
  * and points).
  *
  * @param root - Layout or scene root to traverse.
+ * @param options - Optional frozen-INSERT reparenting controls.
  * @returns Batches grouped by geometry kind, ready to attach to {@link AcExHtmlLayoutSnapshot}.
  */
 export function acexHtmlCollectBatchesFromObject3D(
-  root: THREE.Object3D
+  root: THREE.Object3D,
+  options?: AcExHtmlCollectBatchesOptions
 ): AcExHtmlCollectedBatches {
   const lineBatches: AcExHtmlLineBatch[] = []
   const meshBatches: AcExHtmlMeshBatch[] = []
+  const geometryLayerName = options?.geometryLayerName ?? ''
+
+  const resolvePlainExportLayer = (object: THREE.Object3D): string => {
+    // Leaf drawables may carry objectId on userData after INSERT decompose;
+    // shared fat-line instances use `sharedInstanceObjectId` (not `objectId`,
+    // which {@link isHighlightCloneDrawable} would treat as a highlight clone).
+    const userData = object.userData as {
+      objectId?: string
+      sharedInstanceObjectId?: string
+    }
+    const objectId = userData.objectId ?? userData.sharedInstanceObjectId
+    return resolveExportLayerForObjectId(objectId, options)
+  }
 
   root.traverse(child => {
     if (
@@ -996,32 +1226,28 @@ export function acexHtmlCollectBatchesFromObject3D(
     if (isInstancedExportDrawable(child)) {
       if (!shouldExportPlainDrawable(child, root)) return
       if ((child as unknown as THREE.Points).isPoints === true) {
-        pushInstancedMesh(child, meshBatches, true)
+        pushInstancedMesh(child, meshBatches, true, options)
       } else if (isExportLineSegments(child) && !isExportLineSegments2(child)) {
-        pushInstancedLine(child, lineBatches)
+        pushInstancedLine(child, lineBatches, options)
       } else if (isExportMesh(child) && !isExportLineSegments2(child)) {
-        pushInstancedMesh(child, meshBatches, false)
+        pushInstancedMesh(child, meshBatches, false, options)
       }
       return
     }
     if (child instanceof AcTrBatchedLine) {
-      const batch = exportBatchedLine(child)
-      if (batch) lineBatches.push(batch)
+      lineBatches.push(...exportBatchedLine(child, options))
       return
     }
     if (child instanceof AcTrBatchedLine2) {
-      const batch = exportBatchedLine2(child)
-      if (batch) lineBatches.push(batch)
+      lineBatches.push(...exportBatchedLine2(child, options))
       return
     }
     if (child instanceof AcTrBatchedMesh) {
-      const batch = exportBatchedMesh(child)
-      if (batch) meshBatches.push(batch)
+      meshBatches.push(...exportBatchedMesh(child, options))
       return
     }
     if (child instanceof AcTrBatchedPoint) {
-      const batch = exportBatchedPoint(child)
-      if (batch) meshBatches.push(batch)
+      meshBatches.push(...exportBatchedPoint(child, options))
       return
     }
     if (isExportLineSegments2(child)) {
@@ -1029,10 +1255,10 @@ export function acexHtmlCollectBatchesFromObject3D(
       const rawSlice = exportLineSegments2Slice(child.geometry)
       if (rawSlice.positions.length === 0) return
       const material = readExportMaterial(child)
-      const { color, layer } = readMaterialStyle(material)
+      const { color } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const exported: AcExHtmlLineBatch = {
-        layer,
+        layer: resolvePlainExportLayer(child) || geometryLayerName,
         color,
         offset,
         lineWidth: readLineWidth(material),
@@ -1051,13 +1277,13 @@ export function acexHtmlCollectBatchesFromObject3D(
       )
       if (rawSlice.positions.length === 0) return
       const material = readExportMaterial(child)
-      const { color, layer, linePattern } = readMaterialStyle(material)
+      const { color, linePattern } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const lineDistances = linePattern
         ? acexHtmlComputeLineDistancesForSegments(slice.positions)
         : undefined
       const exported: AcExHtmlLineBatch = {
-        layer,
+        layer: resolvePlainExportLayer(child) || geometryLayerName,
         color,
         offset,
         linePattern,
@@ -1094,7 +1320,10 @@ export function acexHtmlCollectBatchesFromObject3D(
         offset,
         true
       )
-      if (mesh) meshBatches.push(mesh)
+      if (mesh) {
+        mesh.layer = resolvePlainExportLayer(child) || geometryLayerName
+        meshBatches.push(mesh)
+      }
     }
   })
 

@@ -186,12 +186,12 @@ export default {
       description: 'Creates and manages saved sets of objects called groups'
     },
     '-bsearch': {
-      description: 'Finds identical geometry and converts it into blocks (command line)',
+      description:
+        'Finds identical geometry and converts it into blocks (command line)',
       prompt: 'Select objects to search for'
     },
     '-group': {
-      description:
-        'Creates and manages groups through command-line options'
+      description: 'Creates and manages groups through command-line options'
     },
     groupedit: {
       description: 'Adds and removes objects from a group, or renames a group'
@@ -439,7 +439,8 @@ export default {
       description: 'Creates a multileader object'
     },
     mleaderedit: {
-      description: 'Adds leader lines to, or removes leader lines from, a multileader'
+      description:
+        'Adds leader lines to, or removes leader lines from, a multileader'
     },
     mleadereditremove: {
       description: 'Removes leader lines from a multileader'
@@ -588,6 +589,11 @@ export default {
       description: 'Rotates selected entities around a base point',
       prompt: 'Select entities'
     },
+    scale: {
+      description:
+        'Enlarges or reduces selected entities, keeping the proportions the same after scaling',
+      prompt: 'Select entities'
+    },
     select: {
       description: 'Selects entities'
     },
@@ -634,7 +640,8 @@ export default {
       description: 'Zooms to display the maximum extents of all entities'
     },
     view: {
-      description: 'Opens the View Manager to create, restore, and delete named views'
+      description:
+        'Opens the View Manager to create, restore, and delete named views'
     },
     newview: {
       description:

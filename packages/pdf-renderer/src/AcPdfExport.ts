@@ -54,8 +54,23 @@ export async function exportDatabaseToPdf(
       )
     }
     const roots = await collectLayoutRoots(db, renderer, block, {})
-    const bytes = await renderer.exportAsync(roots)
-    return bytes
+    const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+    const doc = await PDFDocument.create()
+    doc.setProducer('MLightCAD pdf-renderer')
+    doc.setCreator('MLightCAD')
+    if (options.title) {
+      doc.setTitle(options.title)
+    }
+    const ocg = new AcPdfOcgManager(doc, {
+      initiallyOffLayers: layerVisibility.frozenLayers
+    })
+    await renderer.renderToDocument(doc, roots, {
+      ocg,
+      revealFrozenLayersForOcg: layerVisibility.frozenLayers,
+      fitBox: options.fitBox
+    })
+    await renderer.textFontManager?.finalize()
+    return doc.save({ useObjectStreams: true })
   } finally {
     AcDbRenderingCache.instance.clear()
   }
@@ -324,7 +339,10 @@ async function exportLayoutsToPdf(
   if (options.title) {
     doc.setTitle(options.title)
   }
-  const ocg = new AcPdfOcgManager(doc)
+  const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+  const ocg = new AcPdfOcgManager(doc, {
+    initiallyOffLayers: layerVisibility.frozenLayers
+  })
   const imageCache = new Map<Uint8Array, PDFImage>()
   // One document-scoped Form XObject registry: identical glyph/geometry
   // forms are embedded once per document instead of once per page.
@@ -348,6 +366,7 @@ async function exportLayoutsToPdf(
       ocg,
       imageCache,
       formRegistry,
+      revealFrozenLayersForOcg: layerVisibility.frozenLayers,
       // Model-space “Display” framing must not clip paper-space pages.
       fitBox: isModel ? options.fitBox : undefined
     })

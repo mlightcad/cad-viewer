@@ -198,8 +198,14 @@ function collectFromOsnapCenter(
   return points.map(point => markFromPoint(point))
 }
 
-/** Full INSERT transform (OCS blockTransform + extrusion), matching intersect curves. */
-function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
+/**
+ * Full INSERT transform (OCS blockTransform + extrusion), matching the WCS
+ * frame of `subGetIntersectCurves`. Maps block-definition coordinates of the
+ * reference's direct children into its owner space.
+ */
+export function acedBlockReferenceInsertionMatrix(
+  blockRef: AcDbBlockReference
+): AcGeMatrix3d {
   return new AcGeMatrix3d()
     .setFromExtrusionDirection(blockRef.normal)
     .multiply(blockRef.blockTransform)
@@ -282,7 +288,10 @@ function resolveBlockSubEntityOccurrence(
   hintPoint: AcGePoint3dLike | undefined,
   allowHintPrune: boolean
 ):
-  | { found: { entity: AcDbEntity; transform: AcGeMatrix3d }; remaining: number }
+  | {
+      found: { entity: AcDbEntity; transform: AcGeMatrix3d }
+      remaining: number
+    }
   | { found: undefined; remaining: number } {
   const blockTableRecord = blockRef.blockTableRecord
   if (!blockTableRecord) {
@@ -291,12 +300,14 @@ function resolveBlockSubEntityOccurrence(
 
   const thisMat = new AcGeMatrix3d().multiplyMatrices(
     parentMat,
-    fullInsertionTransform(blockRef)
+    acedBlockReferenceInsertionMatrix(blockRef)
   )
 
   let localHint: AcGePoint3d | undefined
   if (allowHintPrune && hintPoint != null && remaining === 0) {
-    localHint = new AcGePoint3d(hintPoint).applyMatrix4(thisMat.clone().invert())
+    localHint = new AcGePoint3d(hintPoint).applyMatrix4(
+      thisMat.clone().invert()
+    )
   }
 
   for (const entity of blockTableRecord.newIterator()) {

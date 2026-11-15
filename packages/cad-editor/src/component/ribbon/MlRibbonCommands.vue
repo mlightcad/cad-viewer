@@ -5,14 +5,12 @@ import {
   ChatLineSquare,
   CopyDocument,
   Delete,
-  DocumentCopy,
   Hide,
   RefreshRight,
   Right,
   ScaleToOriginal,
   Scissor,
   Stamp,
-  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -181,6 +179,7 @@ import {
   pdfBlock,
   pdfDimRecognize,
   pdfHatchRecognize,
+  pdfImport,
   pdfTextRecognize,
   polygon,
   polyline,
@@ -189,6 +188,7 @@ import {
   ray,
   rect,
   revFreeDraw,
+  scale,
   setting,
   splineFitPoints,
   ucs,
@@ -1393,7 +1393,7 @@ const buildAiTab = (
                 'cmd-pdfimport',
                 t('main.ribbon.command.importPdf'),
                 ribbonTooltips.importPdf,
-                Upload
+                pdfImport
               ),
               largeButton(
                 'cmd-pdfscale',
@@ -1473,7 +1473,7 @@ const buildBaseTabs = (
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
     move: t('main.ribbon.tooltip.move'),
     rotate: t('main.ribbon.tooltip.rotate'),
-    copy: t('main.ribbon.tooltip.copy'),
+    scale: t('main.ribbon.tooltip.scale'),
     erase: t('main.ribbon.tooltip.erase'),
     pasteClip: t('main.ribbon.tooltip.pasteClip'),
     pasteOrig: t('main.ribbon.tooltip.pasteOrig'),
@@ -2470,12 +2470,12 @@ const buildBaseTabs = (
                   props: { icon: RefreshRight }
                 },
                 {
-                  id: 'cmd-copy',
+                  id: 'cmd-scale',
                   type: 'button',
-                  label: t('main.ribbon.command.copy'),
-                  tooltip: ribbonTooltips.copy,
+                  label: t('main.ribbon.command.scale'),
+                  tooltip: ribbonTooltips.scale,
                   size: 'small',
-                  props: { icon: DocumentCopy }
+                  props: { icon: scale }
                 }
               ]
             },
@@ -3475,7 +3475,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-dimstyle', 'dimstyle')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
-  commandByItemId.set('cmd-copy', 'copy')
+  commandByItemId.set('cmd-scale', 'scale')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-pasteclip', 'pasteclip')
   commandByItemId.set('paste-clip', 'pasteclip')

@@ -1092,6 +1092,7 @@ export default {
     selectLeaderToRemove:
       'Zadejte odkaz k odebrání nebo stiskněte Enter pro dokončení',
     cannotRemoveLast: 'Z tohoto multiodkazu nelze odebrat poslední odkaz.',
+    noLeaderAtPoint: 'V tomto bodě nebyl nalezen žádný odkaz.',
     keywords: {
       remove: {
         display: 'Odebrat odkazy(R)',
@@ -1329,6 +1330,35 @@ export default {
     },
     invalid: {
       referencePoints: 'Neplatné referenční body: body musí být různé.'
+    }
+  },
+  scale: {
+    basePoint: 'Zadejte základní bod',
+    scaleFactorOrOptions: 'Zadejte měřítko nebo',
+    referenceLength: 'Zadejte referenční délku',
+    newLengthOrPoints: 'Zadejte novou délku nebo',
+    newLengthFirstPoint: 'Zadejte první bod',
+    copyMessage: 'Mění se měřítko kopie vybraných objektů.',
+    keywords: {
+      copy: {
+        display: 'Kopírovat(C)',
+        local: 'Kopírovat',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Reference(R)',
+        local: 'Reference',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Body(P)',
+        local: 'Body',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: 'Hodnota musí být kladná a nenulová.',
+      length: 'Hodnota musí být kladná a nenulová.'
     }
   },
   revcloud: {
@@ -2017,12 +2047,39 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'Obnovení kót bylo zrušeno; nic se nezměnilo.',
     noDimensions:
       'Ve výběru nebyly nalezeny žádné kóty (jsou potřeba šipky nebo značky, kótovací čáry a texty hodnot).',
-    convertAll: 'Nalezeno {count} kót (měřítko výkresu 1:{scale}). Převést je?',
-    convertOne: 'Kóta {index}/{count} "{text}": převést?',
     summary:
-      'Převedeno {count} kót; styl PDF_DIM používá lineární měřítko {scale}.'
+      'Převedeno {count} kót; styl {style} používá lineární měřítko {scale}.',
+    panel: {
+      title: 'Obnovit kóty',
+      style: 'Styl kót',
+      dimStyle: 'Styl',
+      newStyle: 'Nový styl kót…',
+      newStyleName: 'Název nového stylu kót',
+      createStyle: 'Vytvořit',
+      nameEmpty: 'Zadejte název.',
+      nameInvalid: 'Název obsahuje nepovolené znaky.',
+      nameExists: 'Styl kót s tímto názvem už existuje.',
+      scale: 'Měřítko výkresu',
+      stylePreview: 'Náhled vybraného stylu kót s rozpoznanými velikostmi',
+      dimensions: 'Kóty',
+      selectHint:
+        'Vyberte kótu pro přiblížení; před použitím můžete upravit hodnotu.',
+      empty: 'Ve výběru nebyly nalezeny žádné kóty.',
+      include: 'Převést tuto kótu',
+      kindLinear: 'Lineární',
+      kindRadius: 'Poloměr',
+      kindDiameter: 'Průměr',
+      kindAngular: 'Úhlová',
+      textTip: 'Text kóty (přepsání)',
+      measured: 'Naměřeno {value}',
+      hideStrokes: 'Skrýt původní čáry',
+      ready: '{ready} z {count} kót připraveno',
+      cancel: 'Zrušit',
+      apply: 'Použít'
+    }
   },
   pdfhatch: {
     cancelled: 'Obnovení šraf bylo zrušeno; nic se nezměnilo.',
@@ -2031,11 +2088,13 @@ export default {
       title: 'Obnovit šrafy',
       hatches: 'Šrafy',
       addArea: 'Přidat oblast',
-      addAreaTip: 'Určete bod uvnitř oblasti, kterou rozpoznání vynechalo; na její čáry se použije nejlépe odpovídající vzor.',
+      addAreaTip:
+        'Určete bod uvnitř oblasti, kterou rozpoznání vynechalo; na její čáry se použije nejlépe odpovídající vzor.',
       picking: 'Určete ve výkresu bod uvnitř oblasti…',
       noBoundary: 'Kolem tohoto bodu nebyla nalezena žádná uzavřená oblast.',
       noStrokes: 'V této oblasti nebyl nalezen žádný pravidelný vzor.',
-      empty: 'Nebyla nalezena žádná šrafa. Oblast vyberte pomocí „Přidat oblast“.',
+      empty:
+        'Nebyla nalezena žádná šrafa. Oblast vyberte pomocí „Přidat oblast“.',
       include: 'Převést tuto šrafu',
       addedTag: 'přidáno',
       entities: '{count} objektů',
@@ -2049,8 +2108,10 @@ export default {
       autoFit: 'Automaticky přizpůsobit',
       autoFitTip: 'Znovu změřit měřítko, úhel a počátek tohoto vzoru z čar.',
       match: 'Vzor na čarách: {precision} · překreslené čáry: {recall}',
-      noEntities: 'Tento vzor úplně nepřekreslí žádný objekt; nic se nenahradí.',
-      guessed: 'V čarách není žádná stopa tohoto vzoru; měřítko a úhel jsou odhadnuté.',
+      noEntities:
+        'Tento vzor úplně nepřekreslí žádný objekt; nic se nenahradí.',
+      guessed:
+        'V čarách není žádná stopa tohoto vzoru; měřítko a úhel jsou odhadnuté.',
       poorMatch: 'Slabá shoda: čáry, které šrafa nepřekreslí, zůstanou.',
       userSingle: 'Uživatelský',
       userDouble: 'Uživatelský, dvojitý',

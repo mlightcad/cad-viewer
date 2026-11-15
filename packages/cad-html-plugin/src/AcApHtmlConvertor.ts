@@ -38,6 +38,28 @@ function logExportTiming(label: string, ms: number) {
   console.log(`[chtml] ${label}: ${ms.toFixed(0)} ms`)
 }
 
+/**
+ * Shows or hides cross-layer fragments of INSERTs on currently frozen layers.
+ *
+ * Snapshot collection must see those fragments (freeze → false) so reparenting
+ * can move them onto the INSERT layer. After export, freeze → true restores
+ * AutoCAD freeze appearance in the live editor.
+ */
+function setFrozenInsertLayerHides(view: AcTrView2d, frozen: boolean) {
+  const scene = view.cadScene
+  for (const layer of scene.layers.values()) {
+    if (!layer.isFrozen) {
+      continue
+    }
+    for (const layout of scene.layouts.values()) {
+      layout.applyInsertLayerFreeze(layer.name, frozen)
+    }
+  }
+  // Freeze-hide updates GPU slot flags; without dirtying, the last painted
+  // frame stays on screen until pan/zoom.
+  view.isDirty = true
+}
+
 /** Bytes produced by {@link AcApHtmlConvertor.exportToResult} (no download). */
 export interface AcApHtmlExportResult {
   /** Suggested download name including extension. */
@@ -205,30 +227,38 @@ export class AcApHtmlConvertor {
     const sourceName = fileName || document.fileName || document.docTitle
     const baseName = getDrawingExportBaseName(sourceName)
     t0 = performance.now()
-    const snapshot = await this._snapshotBuilder.buildAsync(
-      exportView.cadScene,
-      document.database,
-      {
-        title: baseName,
-        background: exportView.backgroundColor,
-        exportInvisibleLayers: resolved.exportInvisibleLayers,
-        exportLayouts: resolved.exportLayouts,
-        exportEmptyLayouts: resolved.exportEmptyLayouts,
-        initialView: resolved.initialView,
-        viewerMode: resolved.viewerMode,
-        // Skip camera capture when the active empty paper tab will be
-        // remapped to model space — otherwise `initialView: 'current'`
-        // would open model with paper-space pan/zoom.
-        viewState: shouldCaptureAcApHtmlViewState(
-          resolved,
-          exportView,
-          document.database
-        )
-          ? captureAcApHtmlViewState(exportView)
-          : undefined,
-        canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
-      }
-    )
+    // Live freeze hides cross-layer INSERT slots before collection. Reveal
+    // them for the snapshot, then restore freeze appearance afterward.
+    setFrozenInsertLayerHides(exportView, false)
+    let snapshot: AcExHtmlSnapshot
+    try {
+      snapshot = await this._snapshotBuilder.buildAsync(
+        exportView.cadScene,
+        document.database,
+        {
+          title: baseName,
+          background: exportView.backgroundColor,
+          exportInvisibleLayers: resolved.exportInvisibleLayers,
+          exportLayouts: resolved.exportLayouts,
+          exportEmptyLayouts: resolved.exportEmptyLayouts,
+          initialView: resolved.initialView,
+          viewerMode: resolved.viewerMode,
+          // Skip camera capture when the active empty paper tab will be
+          // remapped to model space — otherwise `initialView: 'current'`
+          // would open model with paper-space pan/zoom.
+          viewState: shouldCaptureAcApHtmlViewState(
+            resolved,
+            exportView,
+            document.database
+          )
+            ? captureAcApHtmlViewState(exportView)
+            : undefined,
+          canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
+        }
+      )
+    } finally {
+      setFrozenInsertLayerHides(exportView, true)
+    }
     // Live geometry is baked for the active layout canvas (white in paper
     // space). Remap near-black / near-white ink onto the chosen canvas.
     // `'space'` remaps each layout on its own: model black, paper white.

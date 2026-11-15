@@ -1202,6 +1202,7 @@ export default {
     selectLeaderToRemove:
       'Kaldırılacak bir kılavuz belirtin veya bitirmek için Enter\'a basın',
     cannotRemoveLast: 'Bu çoklu kılavuzdan son kılavuz kaldırılamaz.',
+    noLeaderAtPoint: 'Bu noktada kılavuz bulunamadı.',
     keywords: {
       remove: {
         display: 'Kılavuzları kaldır(R)',
@@ -1440,6 +1441,35 @@ export default {
     },
     invalid: {
       referencePoints: 'Geçersiz referans noktaları: noktalar farklı olmalıdır.'
+    }
+  },
+  scale: {
+    basePoint: 'Temel noktayı belirtin',
+    scaleFactorOrOptions: 'Ölçek faktörünü belirtin veya',
+    referenceLength: 'Referans uzunluğunu belirtin',
+    newLengthOrPoints: 'Yeni uzunluğu belirtin veya',
+    newLengthFirstPoint: 'İlk noktayı belirtin',
+    copyMessage: 'Seçili nesnelerin bir kopyası ölçekleniyor.',
+    keywords: {
+      copy: {
+        display: 'Kopyala(K)',
+        local: 'Kopyala',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Referans(R)',
+        local: 'Referans',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Noktalar(N)',
+        local: 'Noktalar',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: 'Değer pozitif ve sıfırdan farklı olmalıdır.',
+      length: 'Değer pozitif ve sıfırdan farklı olmalıdır.'
     }
   },
   revcloud: {
@@ -2129,13 +2159,39 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'Ölçü tanıma iptal edildi; hiçbir şey değiştirilmedi.',
     noDimensions:
       'Seçimde ölçü bulunamadı (oklar veya işaretler, ölçü çizgileri ve değer metinleri gerekir).',
-    convertAll:
-      '{count} ölçü bulundu (çizim ölçeği 1:{scale}). Dönüştürülsün mü?',
-    convertOne: 'Ölçü {index}/{count} "{text}": dönüştürülsün mü?',
     summary:
-      '{count} ölçü dönüştürüldü; PDF_DIM stili {scale} doğrusal ölçek faktörünü kullanır.'
+      '{count} ölçü dönüştürüldü; {style} stili {scale} doğrusal ölçek faktörünü kullanır.',
+    panel: {
+      title: 'Ölçüleri Tanı',
+      style: 'Ölçü stili',
+      dimStyle: 'Stil',
+      newStyle: 'Yeni ölçü stili…',
+      newStyleName: 'Yeni ölçü stilinin adı',
+      createStyle: 'Oluştur',
+      nameEmpty: 'Bir ad girin.',
+      nameInvalid: 'Ad izin verilmeyen karakterler içeriyor.',
+      nameExists: 'Bu adda bir ölçü stili zaten var.',
+      scale: 'Çizim ölçeği',
+      stylePreview: 'Seçili ölçü stilinin önizlemesi (tanınan boyutlarla)',
+      dimensions: 'Ölçüler',
+      selectHint:
+        'Bir ölçü seçerek ona yakınlaştırın; Uygula öncesinde değeri düzenleyebilirsiniz.',
+      empty: 'Seçimde ölçü bulunamadı.',
+      include: 'Bu ölçüyü dönüştür',
+      kindLinear: 'Doğrusal',
+      kindRadius: 'Yarıçap',
+      kindDiameter: 'Çap',
+      kindAngular: 'Açısal',
+      textTip: 'Ölçü metni (geçersiz kılma)',
+      measured: 'Ölçülen {value}',
+      hideStrokes: 'Orijinal çizgileri gizle',
+      ready: '{ready}/{count} ölçü hazır',
+      cancel: 'İptal',
+      apply: 'Uygula'
+    }
   },
   pdfhatch: {
     cancelled: 'Tarama kurtarma iptal edildi; hiçbir şey değiştirilmedi.',
@@ -2144,15 +2200,18 @@ export default {
       title: 'Taramaları Kurtar',
       hatches: 'Taramalar',
       addArea: 'Alan ekle',
-      addAreaTip: 'Tanımanın kaçırdığı bir alanın içinde bir nokta seçin; içindeki çizgilere en uygun desen uydurulur.',
+      addAreaTip:
+        'Tanımanın kaçırdığı bir alanın içinde bir nokta seçin; içindeki çizgilere en uygun desen uydurulur.',
       picking: 'Çizimde alanın içinde bir nokta seçin…',
       noBoundary: 'Bu noktanın çevresinde kapalı alan bulunamadı.',
       noStrokes: 'Bu alanda düzenli bir desen bulunamadı.',
-      empty: 'Tarama bulunamadı. Bir alan seçmek için "Alan ekle" düğmesini kullanın.',
+      empty:
+        'Tarama bulunamadı. Bir alan seçmek için "Alan ekle" düğmesini kullanın.',
       include: 'Bu taramayı dönüştür',
       addedTag: 'eklendi',
       entities: '{count} nesne',
-      selectHint: 'Desenini, ölçeğini veya açısını değiştirmek için bir tarama seçin.',
+      selectHint:
+        'Desenini, ölçeğini veya açısını değiştirmek için bir tarama seçin.',
       ownGroup: 'Ölçülen / kullanıcı tanımlı',
       libraryGroup: 'Önceden tanımlı',
       pattern: 'Desen',
@@ -2160,9 +2219,12 @@ export default {
       spacing: 'Aralık',
       angle: 'Açı',
       autoFit: 'Otomatik uydur',
-      autoFitTip: 'Bu desenin ölçeğini, açısını ve başlangıç noktasını çizgilerden yeniden ölç.',
-      match: 'Çizgiler üzerindeki desen: {precision} · yeniden çizilen çizgiler: {recall}',
-      noEntities: 'Bu desen hiçbir nesneyi tamamen yeniden çizmiyor; hiçbir şey değiştirilmez.',
+      autoFitTip:
+        'Bu desenin ölçeğini, açısını ve başlangıç noktasını çizgilerden yeniden ölç.',
+      match:
+        'Çizgiler üzerindeki desen: {precision} · yeniden çizilen çizgiler: {recall}',
+      noEntities:
+        'Bu desen hiçbir nesneyi tamamen yeniden çizmiyor; hiçbir şey değiştirilmez.',
       guessed: 'Çizgilerde bu desenin izi yok; ölçek ve açı tahminidir.',
       poorMatch: 'Zayıf eşleşme: taramanın yeniden çizmediği çizgiler korunur.',
       userSingle: 'Kullanıcı tanımlı',

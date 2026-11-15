@@ -538,6 +538,10 @@ export default {
       description: '绕基点旋转所选图元',
       prompt: '选择对象'
     },
+    scale: {
+      description: '按比例放大或缩小选定对象，缩放后对象的比例保持不变',
+      prompt: '选择对象'
+    },
     select: {
       description: '选择图元'
     },

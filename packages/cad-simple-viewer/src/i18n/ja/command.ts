@@ -93,7 +93,8 @@ export default {
       prompt: 'オブジェクトを選択'
     },
     copybase: {
-      description: '指定した基点とともに選択したオブジェクトをクリップボードにコピー',
+      description:
+        '指定した基点とともに選択したオブジェクトをクリップボードにコピー',
       prompt: 'オブジェクトを選択'
     },
     copyclip: {
@@ -101,7 +102,8 @@ export default {
       prompt: 'オブジェクトを選択'
     },
     cutclip: {
-      description: '選択したオブジェクトをクリップボードにコピーし、図面から削除',
+      description:
+        '選択したオブジェクトをクリップボードにコピーし、図面から削除',
       prompt: 'オブジェクトを選択'
     },
     pasteblock: {
@@ -111,7 +113,8 @@ export default {
       description: 'クリップボードのオブジェクトを現在の図面に貼り付け'
     },
     pasteorig: {
-      description: '元の図面の座標を使用してクリップボードのオブジェクトを貼り付け'
+      description:
+        '元の図面の座標を使用してクリップボードのオブジェクトを貼り付け'
     },
     csvg: {
       description: '現在の図面を SVG に変換します'
@@ -253,7 +256,8 @@ export default {
       prompt: '寸法を含む範囲を選択'
     },
     pdfhatch: {
-      description: 'PDF で線分に分解されたハッチングをハッチング オブジェクトに戻します',
+      description:
+        'PDF で線分に分解されたハッチングをハッチング オブジェクトに戻します',
       prompt: 'ハッチング領域とその周囲の境界線を選択'
     },
     pdfblock: {
@@ -270,10 +274,12 @@ export default {
       prompt: '尺度変更するオブジェクトを選択'
     },
     pdfimport: {
-      description: '［PDF 読み込み］ダイアログで PDF ファイルからベクトル ジオメトリを読み込みます'
+      description:
+        '［PDF 読み込み］ダイアログで PDF ファイルからベクトル ジオメトリを読み込みます'
     },
     '-pdfimport': {
-      description: 'コマンド ライン オプションで PDF ファイルからベクトル ジオメトリを読み込みます'
+      description:
+        'コマンド ライン オプションで PDF ファイルからベクトル ジオメトリを読み込みます'
     },
     hpang: {
       description:
@@ -580,6 +586,11 @@ export default {
     },
     rotate: {
       description: '選択したオブジェクトを基点を中心に回転します',
+      prompt: 'オブジェクトを選択'
+    },
+    scale: {
+      description:
+        '選択したオブジェクトを縦横比を保ったまま拡大または縮小します',
       prompt: 'オブジェクトを選択'
     },
     select: {

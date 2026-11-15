@@ -1,10 +1,12 @@
 import {
+  acdbAddAnnotationScaleToObject,
   AcDbDatabase,
   AcDbMLeader,
   AcDbMLeaderContentType,
   AcDbMLeaderLineType,
   AcGePoint3d,
-  AcGePoint3dLike
+  AcGePoint3dLike,
+  AcGiMTextAttachmentPoint
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -25,12 +27,15 @@ import {
 import { AcApI18n } from '../../i18n'
 import { AcTrView2d } from '../../view'
 import {
-  acapApplyMLeaderGeometry,
-  acapBuildMLeaderGeometry,
+  acapCreateMLeader,
+  acapLayoutMLeader,
   acapMatchKeyword,
+  type AcApMLeaderJigDragMode,
+  type AcApMLeaderPlacement,
   type AcApMLeaderPlacementMode,
   type AcApMLeaderSessionOptions,
   acapResolveMLeaderContentType,
+  acapResolveMLeaderPlacement,
   acapResolveMLeaderStyle
 } from './AcApMLeaderCmdUtil'
 import { isInsertableBlockName } from './isInsertableBlockName'
@@ -53,8 +58,6 @@ function addKeyword(
   )
 }
 
-export type AcApMLeaderJigDragMode = 'landingFromArrow' | 'arrowFromLanding'
-
 /**
  * Preview jig that updates an AcDbMLeader while dragging arrow or landing.
  */
@@ -62,9 +65,9 @@ export class AcApMLeaderJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _mleader: AcDbMLeader
   private readonly _fixed: AcGePoint3d
   private readonly _session: AcApMLeaderSessionOptions
-  private readonly _dbStyle
   private readonly _dragMode: AcApMLeaderJigDragMode
   private readonly _intermediate: AcGePoint3d[]
+  private readonly _contentFirst: boolean
   private _previewContents = ' '
 
   constructor(
@@ -73,32 +76,17 @@ export class AcApMLeaderJig extends AcEdPreviewJig<AcGePoint3dLike> {
     session: AcApMLeaderSessionOptions,
     db: AcDbDatabase,
     dragMode: AcApMLeaderJigDragMode = 'landingFromArrow',
-    intermediatePoints: AcGePoint3dLike[] = []
+    intermediatePoints: AcGePoint3dLike[] = [],
+    contentFirst = false
   ) {
     super(view)
     this._fixed = new AcGePoint3d().copy(fixedPoint)
     this._session = session
-    this._dbStyle = acapResolveMLeaderStyle(db)
     this._dragMode = dragMode
+    this._contentFirst = contentFirst
     this._intermediate = intermediatePoints.map(p => new AcGePoint3d().copy(p))
-    this._mleader = new AcDbMLeader()
-    const geometry = acapBuildMLeaderGeometry(
-      this._fixed,
-      this._fixed,
-      this._dbStyle,
-      this._session,
-      this._intermediate
-    )
-    acapApplyMLeaderGeometry(this._mleader, geometry, this._session)
-    const contentType = acapResolveMLeaderContentType(
-      this._dbStyle,
-      this._session
-    )
-    this._mleader.contentType = contentType
-    if (contentType === AcDbMLeaderContentType.MTextContent) {
-      this._mleader.contents = this._previewContents
-      this._mleader.textLocation = geometry.textLocation
-    }
+    this._mleader = acapCreateMLeader(db, session)
+    this.update(this._fixed)
   }
 
   get entity(): AcDbMLeader {
@@ -107,27 +95,34 @@ export class AcApMLeaderJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   setPreviewContents(contents: string) {
     this._previewContents = contents || ' '
-    this._mleader.contents = this._previewContents
+    if (this._mleader.contentType === AcDbMLeaderContentType.MTextContent) {
+      this._mleader.contents = this._previewContents
+    }
+  }
+
+  /**
+   * Arrowhead / landing pair for a cursor position.
+   */
+  placementAt(point: AcGePoint3dLike): AcApMLeaderPlacement {
+    return acapResolveMLeaderPlacement(
+      this._fixed,
+      point,
+      this._dragMode,
+      this._contentFirst ? (this._mleader.landingGap ?? 0) : undefined
+    )
   }
 
   update(point: AcGePoint3dLike) {
-    const arrow = this._dragMode === 'landingFromArrow' ? this._fixed : point
-    const content = this._dragMode === 'landingFromArrow' ? point : this._fixed
-    const geometry = acapBuildMLeaderGeometry(
+    const { arrow, landing } = this.placementAt(point)
+    acapLayoutMLeader(
+      this._mleader,
       arrow,
-      content,
-      this._dbStyle,
+      landing,
       this._session,
       this._intermediate
     )
-    acapApplyMLeaderGeometry(this._mleader, geometry, this._session)
-    if (
-      acapResolveMLeaderContentType(this._dbStyle, this._session) ===
-      AcDbMLeaderContentType.MTextContent
-    ) {
-      this._mleader.contentType = AcDbMLeaderContentType.MTextContent
+    if (this._mleader.contentType === AcDbMLeaderContentType.MTextContent) {
       this._mleader.contents = this._previewContents
-      this._mleader.textLocation = geometry.textLocation
     }
   }
 }
@@ -237,11 +232,10 @@ export class AcApMLeaderCmd extends AcEdCommand {
       jig.end()
       return
     }
-    jig.update(landing.value)
-    const preview = jig.entity
+    const placement = jig.placementAt(landing.value)
     jig.end()
 
-    await this.commitMLeader(context, preview, session, landing.value)
+    await this.commitMLeader(context, session, placement, intermediate)
   }
 
   private async createLandingFirst(
@@ -272,10 +266,9 @@ export class AcApMLeaderCmd extends AcEdCommand {
       jig.end()
       return
     }
-    jig.update(arrow.value)
-    const preview = jig.entity
+    const placement = jig.placementAt(arrow.value)
     jig.end()
-    await this.commitMLeader(context, preview, session, fixedLanding)
+    await this.commitMLeader(context, session, placement)
   }
 
   private async createContentFirst(
@@ -294,7 +287,11 @@ export class AcApMLeaderCmd extends AcEdCommand {
     const contentType = acapResolveMLeaderContentType(style, session)
     let contents = ''
     if (contentType === AcDbMLeaderContentType.MTextContent) {
-      const mtext = await this.openMTextEditor(context, content.value)
+      const mtext = await this.openMTextEditor(
+        context,
+        acapCreateMLeader(context.doc.database, session),
+        content.value
+      )
       if (mtext == null) return
       contents = mtext
     } else if (contentType === AcDbMLeaderContentType.BlockContent) {
@@ -309,7 +306,9 @@ export class AcApMLeaderCmd extends AcEdCommand {
       fixedContent,
       session,
       context.doc.database,
-      'arrowFromLanding'
+      'arrowFromLanding',
+      [],
+      true
     )
     if (contents) jig.setPreviewContents(contents)
     const arrowPrompt = new AcEdPromptPointOptions(
@@ -321,11 +320,9 @@ export class AcApMLeaderCmd extends AcEdCommand {
       jig.end()
       return
     }
-    jig.update(arrow.value)
-    const preview = jig.entity
-    if (contents) preview.contents = contents
+    const placement = jig.placementAt(arrow.value)
     jig.end()
-    await this.commitMLeader(context, preview, session, fixedContent, {
+    await this.commitMLeader(context, session, placement, [], {
       skipMtextPrompt: true,
       contents
     })
@@ -333,83 +330,62 @@ export class AcApMLeaderCmd extends AcEdCommand {
 
   private async commitMLeader(
     context: AcApContext,
-    preview: AcDbMLeader,
     session: AcApMLeaderSessionOptions,
-    contentPoint: AcGePoint3dLike,
+    placement: AcApMLeaderPlacement,
+    intermediate: AcGePoint3dLike[] = [],
     opts?: { skipMtextPrompt?: boolean; contents?: string }
   ) {
     const db = context.doc.database
     const style = acapResolveMLeaderStyle(db)
-    const contentType = acapResolveMLeaderContentType(style, session)
-    const mleader = new AcDbMLeader()
-    // Copy geometry from preview
-    const geometry = acapBuildMLeaderGeometry(
-      preview.leaders[0]?.leaderLines[0]?.vertices[0] ?? contentPoint,
-      contentPoint,
-      style,
-      session
+    const mleader = acapCreateMLeader(db, session)
+    acapLayoutMLeader(
+      mleader,
+      placement.arrow,
+      placement.landing,
+      session,
+      intermediate
     )
-    // Prefer preview geometry when available
-    if (preview.numberOfLeaders > 0) {
-      const leaders = preview.leaders
-      for (const leader of leaders) {
-        mleader.addLeader({
-          landingPoint: leader.landingPoint,
-          doglegVector: leader.doglegVector,
-          doglegVectorSet: leader.doglegVectorSet,
-          doglegLength: leader.doglegLength,
-          directionType: leader.directionType,
-          lastLeaderLinePoint: leader.lastLeaderLinePoint,
-          lastLeaderLinePointSet: leader.lastLeaderLinePointSet,
-          leaderLines: leader.leaderLines.map(line => ({
-            vertices: line.vertices.map(p => p.clone())
-          }))
-        })
-      }
-      mleader.doglegEnabled = preview.doglegEnabled
-      mleader.doglegLength = preview.doglegLength
-      mleader.leaderLineType = session.leaderLineType ?? preview.leaderLineType
-    } else {
-      acapApplyMLeaderGeometry(mleader, geometry, session)
-    }
 
-    mleader.contentType = contentType
-
-    if (contentType === AcDbMLeaderContentType.MTextContent) {
+    if (mleader.contentType === AcDbMLeaderContentType.MTextContent) {
       let contents = opts?.contents ?? ''
       if (!opts?.skipMtextPrompt) {
-        const edited = await this.openMTextEditor(context, contentPoint)
+        const edited = await this.openMTextEditor(
+          context,
+          mleader,
+          mleader.textLocation ?? placement.landing,
+          mleader.textAttachmentPoint
+        )
         // Esc / cancel still creates the multileader (AutoCAD parity).
         if (edited != null) contents = edited
       }
       mleader.contents = contents
-      mleader.textLocation = preview.textLocation
-        ? new AcGePoint3d().copy(preview.textLocation)
-        : geometry.textLocation
-    } else if (contentType === AcDbMLeaderContentType.BlockContent) {
+    } else if (mleader.contentType === AcDbMLeaderContentType.BlockContent) {
       const blockName =
         session.blockName ?? (await this.promptBlockName(session))
       if (!blockName) return
       const btr = db.tables.blockTable.getAt(blockName)
       if (!btr) return
-      const anchor = preview.textLocation
-        ? new AcGePoint3d().copy(preview.textLocation)
-        : geometry.textLocation.clone()
-      // Identity + translation to the content anchor (column-major 4x4).
+      const anchor = new AcGePoint3d().copy(
+        mleader.contentBasePosition ?? placement.landing
+      )
+      const scale = style?.blockScale
+      // Style block scale + translation to the landing end (column-major).
       mleader.blockContent = {
         blockContentId: btr.objectId,
+        position: anchor,
+        scale,
         transformationMatrix: [
-          1,
+          scale?.x ?? 1,
           0,
           0,
           0,
           0,
-          1,
+          scale?.y ?? 1,
           0,
           0,
           0,
           0,
-          1,
+          scale?.z ?? 1,
           0,
           anchor.x,
           anchor.y,
@@ -417,21 +393,29 @@ export class AcApMLeaderCmd extends AcEdCommand {
           1
         ]
       }
-      mleader.contentBasePosition = anchor
-      mleader.contentType = AcDbMLeaderContentType.BlockContent
-    } else {
-      mleader.contentType = AcDbMLeaderContentType.NoneContent
     }
 
     db.tables.blockTable.modelSpace.appendEntity(mleader)
+    if (mleader.annotative && db.cannoscale) {
+      acdbAddAnnotationScaleToObject(mleader, db.cannoscale)
+    }
   }
 
   private async openMTextEditor(
     context: AcApContext,
-    location: AcGePoint3dLike
+    mleader: AcDbMLeader,
+    location: AcGePoint3dLike,
+    attachmentPoint: AcGiMTextAttachmentPoint = AcGiMTextAttachmentPoint.TopLeft
   ): Promise<string | null> {
     const view = context.view as AcTrView2d
-    const textHeight = this.pixelsToWorldY(view, 24)
+    const db = context.doc.database
+    // Edit with the multileader's own text height and style, like AutoCAD.
+    const styleTextHeight = mleader.resolveAnnotativePresentation().textHeight
+    const textHeight =
+      styleTextHeight > 0 ? styleTextHeight : this.pixelsToWorldY(view, 24)
+    const textStyleName = mleader.textStyleId
+      ? db.tables.textStyleTable.getIdAt(mleader.textStyleId)?.name
+      : undefined
     const availableFonts =
       (await AcApDocManager.instance.getAvaiableFonts()) ?? []
     const toolbarFontFamilies = Array.from(
@@ -445,8 +429,10 @@ export class AcApMLeaderCmd extends AcEdCommand {
     const result = await this.mtextEditor.open({
       view,
       location,
+      initialAttachmentPoint: attachmentPoint,
       width: Math.max(textHeight * 12, 1),
       textHeight,
+      textStyleName,
       toolbarFontFamilies
     })
     if (!result) return null

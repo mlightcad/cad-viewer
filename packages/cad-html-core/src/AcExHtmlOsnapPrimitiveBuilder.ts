@@ -516,11 +516,10 @@ function appendPathEdge(
   verts.push({ x: end.x, y: end.y, z: end.z ?? 0, bulge: 0 })
 }
 
-function finalizePathVertices(verts: AcExOsnapPathVertex[]): AcExOsnapPathVertex[] {
-  if (
-    verts.length >= 2 &&
-    samePoint2d(verts[0]!, verts[verts.length - 1]!)
-  ) {
+function finalizePathVertices(
+  verts: AcExOsnapPathVertex[]
+): AcExOsnapPathVertex[] {
+  if (verts.length >= 2 && samePoint2d(verts[0]!, verts[verts.length - 1]!)) {
     verts.pop()
   }
   return verts
@@ -583,13 +582,12 @@ function resolveMLeaderLineDrawPoints(
   leader: AcDbMLeaderLeader,
   line: AcDbMLeaderLine
 ): AcGePoint3dLike[] {
-  if (line.vertices.length >= 2) {
-    return line.vertices
-  }
   if (line.vertices.length === 0) {
     return []
   }
-  const start = line.vertices[0]!
+  // AutoCAD stores only the arrowhead and intermediate vertices; every line
+  // ends where its branch meets the landing.
+  const last = line.vertices[line.vertices.length - 1]!
   const end =
     leader.lastLeaderLinePoint ??
     leader.landingPoint ??
@@ -598,13 +596,13 @@ function resolveMLeaderLineDrawPoints(
   if (!end) {
     return line.vertices
   }
-  const dx = start.x - end.x
-  const dy = start.y - end.y
-  const dz = (start.z ?? 0) - (end.z ?? 0)
+  const dx = last.x - end.x
+  const dy = last.y - end.y
+  const dz = (last.z ?? 0) - (end.z ?? 0)
   if (Math.hypot(dx, dy, dz) <= FLOAT_TOL) {
     return line.vertices
   }
-  return [start, end]
+  return [...line.vertices, end]
 }
 
 /**
@@ -1669,7 +1667,8 @@ export function acexHtmlBuildOsnapCatalog(
   // offline RBush index the way it did in the main viewer.
   return {
     primitives: primitives.filter(
-      primitive => primitive.kind !== 'line' && isFiniteOsnapPrimitive(primitive)
+      primitive =>
+        primitive.kind !== 'line' && isFiniteOsnapPrimitive(primitive)
     )
   }
 }

@@ -1,11 +1,13 @@
 import {
   AcDbAlignedDimension,
+  acdbAllocateDimBlockName,
   AcDbArc,
   AcDbCircle,
   AcDbDatabase,
   AcDbDataGenerator,
   AcDbDimension,
   AcDbDimStyleTableRecord,
+  acdbDisposeDimBlock,
   AcDbLine,
   AcDbPolyline,
   AcDbRotatedDimension,
@@ -21,22 +23,14 @@ export interface DimDefinitionPoints {
 }
 
 type DimWithBlock = AcDbDimension & {
-  createDimBlock(name: string): import('@mlightcad/data-model').AcDbBlockTableRecord
+  createDimBlock(
+    name: string
+  ): import('@mlightcad/data-model').AcDbBlockTableRecord
 }
 
 /** Allocate the next anonymous dimension block name `*D{n}`. */
 export function allocateDimBlockName(db: AcDbDatabase): string {
-  const blocks = db.tables.blockTable.newIterator()
-  let maxNum = 0
-  for (const block of blocks) {
-    const name = block.name
-    if (!name.startsWith('*D')) continue
-    const num = Number(name.slice(2))
-    if (Number.isInteger(num) && num > maxNum) {
-      maxNum = num
-    }
-  }
-  return `*D${maxNum + 1}`
+  return acdbAllocateDimBlockName(db)
 }
 
 /** Ensure default arrow resources exist for dimension creation. */
@@ -118,7 +112,10 @@ export const DIM_STYLE_FIELDS = [
 export type DimStyleField = (typeof DIM_STYLE_FIELDS)[number]
 
 const OVERRIDE_STYLE = '*DimOverride'
-const dimStyleOverrides = new WeakMap<AcDbDatabase, Partial<Record<DimStyleField, unknown>>>()
+const dimStyleOverrides = new WeakMap<
+  AcDbDatabase,
+  Partial<Record<DimStyleField, unknown>>
+>()
 
 export function readDimStyleFields(
   style: AcDbDimStyleTableRecord
@@ -168,6 +165,10 @@ function ensureOverrideStyle(
     record.name = OVERRIDE_STYLE
     db.tables.dimStyleTable.add(record)
   }
+  // During a command transaction every symbol-table write needs an open handle,
+  // including a record that was just added in this same edit.
+  record =
+    db.openObjectForWrite<AcDbDimStyleTableRecord>(record.objectId) ?? record
   if (base) writeDimStyleFields(record, readDimStyleFields(base))
   writeDimStyleFields(record, values)
   return record
@@ -185,22 +186,13 @@ export function applyCurrentDimStyle(dim: AcDbDimension, db: AcDbDatabase) {
 }
 
 /**
- * Drop a preview/anonymous dim block and erase its entities.
+ * Drop an anonymous dim block and erase its entities (preview or undo).
  * `blockTable.remove` alone leaves child handles in the database; when the
  * dim command's undo transaction commits, those orphans were notified as
  * `entityAppended` and converted into the scene.
  */
-function disposeDimBlock(db: AcDbDatabase, blockName: string) {
-  const btr = db.tables.blockTable.getAt(blockName)
-  if (!btr) return
-  const ids: string[] = []
-  for (const entity of btr.newIterator()) {
-    ids.push(entity.objectId)
-  }
-  if (ids.length > 0) {
-    btr.removeEntity(ids)
-  }
-  db.tables.blockTable.remove(blockName)
+export function disposeDimBlock(db: AcDbDatabase, blockName: string) {
+  acdbDisposeDimBlock(db, blockName)
 }
 
 /**

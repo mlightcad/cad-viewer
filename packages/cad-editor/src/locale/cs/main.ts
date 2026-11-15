@@ -375,7 +375,8 @@ export default {
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
       move: 'Posune vybrané objekty na novou pozici.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
-      copy: 'Zkopíruje vybrané objekty na nové místo.',
+      scale:
+        'Zvětší nebo zmenší vybrané objekty se zachováním jejich proporcí.',
       erase: 'Odstraní vybrané objekty z výkresu.',
       pasteClip: 'Vloží objekty ze schránky do aktuálního výkresu (PASTECLIP).',
       pasteOrig:
@@ -547,7 +548,7 @@ export default {
       mleaderRemove: 'Odebrat odkaz',
       move: 'Posunout',
       rotate: 'Otočit',
-      copy: 'Kopírovat',
+      scale: 'Měřítko',
       erase: 'Vymazat',
       pasteClip: 'Vložit',
       pasteOrig: 'Vložit do původních souřadnic',

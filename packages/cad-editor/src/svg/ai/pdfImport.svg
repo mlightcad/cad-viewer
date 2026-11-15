@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- PDF page (open bottom so the import arrow can exit) -->
+  <path
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M2.85 13.2V3.15c0-.75.6-1.35 1.35-1.35h7.2L15.2 5.6v7.6"
+  />
+  <path
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linejoin="round"
+    d="M11.4 2v3.1c0 .55.45 1 1 1h3.2"
+  />
+  <!-- PDF type chip -->
+  <rect x="4.7" y="6.4" width="8.4" height="3.5" rx="0.5" fill="currentColor" />
+  <path
+    fill="var(--el-bg-color, #fff)"
+    d="M5.25 6.75h1.25c.82 0 1.35.4 1.35 1.02 0 .62-.53 1.02-1.35 1.02H5.95v1.16h-.7V6.75zm.7.52v.9h.52c.36 0 .62-.17.62-.45s-.26-.45-.62-.45H5.95z"
+  />
+  <path
+    fill="var(--el-bg-color, #fff)"
+    d="M8.2 6.75h1.05c1.05 0 1.72.68 1.72 1.72S10.3 10.2 9.25 10.2H8.2V6.75zm.7.52v2.4h.37c.62 0 1-.48 1-1.2s-.38-1.2-1-1.2H8.9z"
+  />
+  <path
+    fill="var(--el-bg-color, #fff)"
+    d="M11.35 6.75h2.25v.55h-1.55v.72h1.35v.52h-1.35v1.16h-.7V6.75z"
+  />
+  <!-- Import: arrow into the drawing canvas -->
+  <path
+    fill="none"
+    stroke="var(--el-color-primary, currentColor)"
+    stroke-width="1.35"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M10 11.2v5.6M7.4 14.6 10 17.2l2.6-2.6"
+  />
+  <path
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linecap="round"
+    d="M4.2 18.2h11.6"
+  />
+</svg>

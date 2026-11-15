@@ -690,25 +690,44 @@ class HtmlConverterApp {
 
     const document = AcApDocManager.instance.curDocument
     const baseName = getDrawingExportBaseName(fileName)
-    const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
-      view.cadScene,
-      document.database,
-      {
-        title: baseName,
-        background: view.backgroundColor,
-        exportInvisibleLayers: resolved.exportInvisibleLayers,
-        exportLayouts: resolved.exportLayouts,
-        initialView: resolved.initialView,
-        viewerMode: resolved.viewerMode,
-        viewState:
-          resolved.initialView === 'current' &&
-          (resolved.exportLayouts ||
-            view.activeLayoutBtrId === view.modelSpaceBtrId)
-            ? captureAcApHtmlViewState(view)
-            : undefined,
-        canvasAspectRatio: view.width / Math.max(view.height, 1)
+    // Live freeze hides cross-layer INSERT slots. Reveal for collection, then
+    // restore AutoCAD freeze appearance afterward.
+    for (const layer of view.cadScene.layers.values()) {
+      if (!layer.isFrozen) continue
+      for (const layout of view.cadScene.layouts.values()) {
+        layout.applyInsertLayerFreeze(layer.name, false)
       }
-    )
+    }
+    let snapshot
+    try {
+      snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
+        view.cadScene,
+        document.database,
+        {
+          title: baseName,
+          background: view.backgroundColor,
+          exportInvisibleLayers: resolved.exportInvisibleLayers,
+          exportLayouts: resolved.exportLayouts,
+          initialView: resolved.initialView,
+          viewerMode: resolved.viewerMode,
+          viewState:
+            resolved.initialView === 'current' &&
+            (resolved.exportLayouts ||
+              view.activeLayoutBtrId === view.modelSpaceBtrId)
+              ? captureAcApHtmlViewState(view)
+              : undefined,
+          canvasAspectRatio: view.width / Math.max(view.height, 1)
+        }
+      )
+    } finally {
+      for (const layer of view.cadScene.layers.values()) {
+        if (!layer.isFrozen) continue
+        for (const layout of view.cadScene.layouts.values()) {
+          layout.applyInsertLayerFreeze(layer.name, true)
+        }
+      }
+      view.isDirty = true
+    }
     // Live geometry is baked for the canvas on screen. Remap ACI 7 onto the
     // chosen background; `'space'` uses black in model and white on paper.
     acexHtmlApplyBackground(

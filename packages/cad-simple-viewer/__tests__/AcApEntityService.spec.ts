@@ -1,14 +1,70 @@
 import {
+  AcDbAlignedDimension,
   AcDbBlockTableRecord,
   AcDbDatabase,
+  acdbHostApplicationServices,
   AcDbLayerTableRecord,
   AcDbLine,
+  AcGeMatrix3d,
   AcGePoint3d
 } from '@mlightcad/data-model'
 
 import { AcApEntityService } from '../src/service/AcApEntityService'
 
 describe('AcApEntityService', () => {
+  test('scaleEntities scales about the base point and regenerates dimension blocks', () => {
+    const db = new AcDbDatabase()
+    acdbHostApplicationServices().workingDatabase = db
+    const line = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0)
+    )
+    const dim = new AcDbAlignedDimension(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0),
+      new AcGePoint3d(5, 5, 0)
+    )
+    db.tables.blockTable.modelSpace.appendEntity([line, dim])
+    dim.recomputeDimBlock()
+    const oldBlock = dim.dimBlockId
+    const service = new AcApEntityService(db)
+
+    expect(
+      service.scaleEntities([line, dim], new AcGePoint3d(10, 0, 0), 2)
+    ).toBe(2)
+
+    expect(line.startPoint.x).toBeCloseTo(-10)
+    expect(line.endPoint.x).toBeCloseTo(10)
+    expect(dim.xLine1Point.x).toBeCloseTo(-10)
+    expect(dim.measurement).toBeCloseTo(20)
+    // AutoCAD SCALE rebuilds the dimension block at DIMSCALE size.
+    expect(dim.dimBlockId).not.toBe(oldBlock)
+    expect(db.tables.blockTable.getAt(dim.dimBlockId!)).toBeDefined()
+  })
+
+  test('cloneAndTransform can regenerate dimension blocks of the copies', () => {
+    const db = new AcDbDatabase()
+    acdbHostApplicationServices().workingDatabase = db
+    const dim = new AcDbAlignedDimension(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0),
+      new AcGePoint3d(5, 5, 0)
+    )
+    db.tables.blockTable.modelSpace.appendEntity(dim)
+    dim.recomputeDimBlock()
+    const service = new AcApEntityService(db)
+
+    const [copy] = service.cloneAndTransform(
+      [dim],
+      new AcGeMatrix3d().makeScale(3, 3, 3),
+      { regenerateDimensions: true }
+    ) as AcDbAlignedDimension[]
+
+    expect(copy.measurement).toBeCloseTo(30)
+    expect(copy.dimBlockId).not.toBe(dim.dimBlockId)
+    expect(dim.measurement).toBeCloseTo(10)
+  })
+
   test('copyDisplayTraits copies visual properties', () => {
     const source = {
       layer: 'A',
