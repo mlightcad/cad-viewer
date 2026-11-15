@@ -1,9 +1,15 @@
 import {
+  AcDbBlockReference,
   AcDbEntity,
   AcGeBox2d,
+  AcGeMatrix3d,
   AcGePoint2dLike,
+  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
+
+import { resolveBlockSubEntity } from '../input/AcEdOsnapCenterMarks'
+import type { AcEdSpatialQueryResultItem } from './AcEdSpatialQueryResult'
 
 /**
  * Minimal line primitive shape used for crossing-selection refinement.
@@ -121,10 +127,79 @@ export function acedEntityIntersectsSelectionBox(
 }
 
 /**
- * Whether a hierarchical spatial hit should run precise curve-vs-box testing.
+ * Returns whether a block reference's real geometry intersects the
+ * crossing-selection box.
  *
- * Inserts with child boxes are already refined by the child index. Only plain
- * root hits (no `children` array) need geometry refinement for crossing mode.
+ * AutoCAD selects a block reference in crossing mode only when the box
+ * touches the drawn geometry of at least one sub-entity; empty space inside
+ * the block extents (e.g. the interior of a drawing frame) does not count.
+ * The spatial index only filters sub-entities by their AABB, so a closed
+ * border polyline would otherwise make every crossing box inside the frame
+ * select the whole INSERT.
+ *
+ * @param blockRef - Block reference that produced the spatial hit.
+ * @param children - Child boxes returned by the hierarchical spatial query
+ *   (only those whose AABB overlaps the query box).
+ * @param box - Selection box in the coordinate system `outerTransform`
+ *   produces (WCS when omitted).
+ * @param outerTransform - Optional mapping applied after the sub-entity's
+ *   block transform (paper-space viewport selection passes
+ *   `modelPointToPaper`).
+ */
+export function acedBlockReferenceIntersectsSelectionBox(
+  blockRef: AcDbBlockReference,
+  children: readonly AcEdSpatialQueryResultItem[],
+  box: AcGeBox2d,
+  outerTransform?: (point: AcGePoint3dLike) => { x: number; y: number }
+): boolean {
+  for (const child of children) {
+    // Without an outer mapping the child box is already in the selection
+    // space, so full containment means a hit without touching geometry.
+    if (
+      !outerTransform &&
+      box.containsBox(
+        new AcGeBox2d(
+          { x: child.minX, y: child.minY },
+          { x: child.maxX, y: child.maxY }
+        )
+      )
+    ) {
+      return true
+    }
+
+    const found = resolveBlockSubEntity(
+      blockRef,
+      child.id,
+      new AcGeMatrix3d(),
+      {
+        x: (child.minX + child.maxX) / 2,
+        y: (child.minY + child.maxY) / 2,
+        z: 0
+      }
+    )
+    // Unresolvable child: keep the AABB result rather than silently dropping
+    // a selection the user can see.
+    if (!found) return true
+
+    const matrix = found.transform
+    // A fresh point per call: segment tests hold start and end at once.
+    const transform = (p: AcGePoint3dLike) => {
+      const point = new AcGePoint3d(p).applyMatrix4(matrix)
+      return outerTransform ? outerTransform(point) : point
+    }
+    if (acedEntityIntersectsSelectionBox(found.entity, box, transform)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Whether a hierarchical spatial hit is a plain root hit (no `children`
+ * array) that should run precise curve-vs-box testing in crossing mode.
+ *
+ * Block references carry child boxes and are refined per sub-entity with
+ * {@link acedBlockReferenceIntersectsSelectionBox} instead.
  */
 export function acedNeedsCrossingGeometryRefine(item: {
   children?: unknown
