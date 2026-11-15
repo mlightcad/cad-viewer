@@ -1,5 +1,36 @@
 # @mlightcad/pdf-renderer
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- 8bfe54b: Fix dashed hatch patterns (e.g. hexagon/HONEY) exported to PDF: dashes are now anchored to the pattern base point instead of to where each line enters the boundary, and zero-length dots no longer stretch the dash period.
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- 47c83c2: Fix Hangul PDF text and frozen-viewport layer plotting
+
+  Embed Hangul-capable TrueType faces without pdf-lib subsetting so Korean
+  glyphs stay visible in Acrobat, and keep plotting model content through
+  viewports whose border layer is Off/Frozen (AutoCAD frame-hide workflow).
+
+- d7787ad: PDF export no longer drops hatch pattern lines whose offset points to the right of the line direction. AR-CONC and AR-SAND, and any mirrored hatch, lost about half their line families on export (`tessellateHatchPattern` counted no lines when the spacing was negative).
+
+  Hatch recognition (`pdfimport` and `pdfhatch`):
+  - **AR-CONC style patterns:** recognized even though their dot-only lines leave no strokes in the PDF, and their lines are placed one by one when no single translation fits all of them.
+  - **Patterns spread over several rooms:** split into patches when the whole is too large to bound.
+  - **Touching hatches of one pattern:** kept apart. Their strokes stop on the shared edge instead of crossing it, while axis lines drawn across one hatch still keep it whole.
+  - **Face boundaries:** large faces holding only stray strokes are no longer pulled into a boundary.
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

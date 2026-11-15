@@ -1,5 +1,54 @@
 # @mlightcad/three-renderer
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- 228004a: Add layer preview mode to `cad.view.capturePreview`.
+  - `cad.view.capturePreview({ layers: ['A', 'B'] })` renders only model-space geometry on those layers (INSERTs contribute just their fragments on those layers) and frames the PNG to the combined extents of the layers, so the image has no large empty margins. Names are case-insensitive; unknown names throw; `layers` cannot be combined with `selection`.
+  - `CaptureDrawingPreviewFailure` adds `'no-layers'`; `normalizeCadCapturePreviewOptions` returns `NormalizedCadCapturePreviewOptions`.
+  - New `AcApEntityPreviewConvertor.captureLayers`, `AcTrLayout.findLayers` / `computeLayerPreviewBoundsBox` / `createLayerPreviewRoot`, `AcTrLayer.getEntityIds` / `computeContentBoundingBox`, and `AcTrBatchedGroup.getEntityIds`.
+
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- 2632f9e: Fix jig previews and pasted blocks drawing with thicker lines than the drawing. Transient previews (PASTECLIP, MOVE, COPY, grip edits, ...) used to force lineweights on, so they showed fat lines with LWDISPLAY off, and a block template built for the preview was then reused for the committed entity. Previews now follow LWDISPLAY like the entities they preview. `AcTrRenderer` also reports `cacheVariant`, so block templates built with lineweights shown are cached apart from regular ones.
+- 2018b40: Fix window (left-to-right) selection of INSERTs whose block contains MTEXT/TEXT. The renderer's logical text box is local to the rendered object, but it was treated as world space and mapped through the inverse INSERT matrix, so block text ended up indexed at block-local coordinates and the INSERT's spatial bounds stretched far outside its visible geometry. Attribute text (drawn under the inverse INSERT matrix) keeps its previous, correct bounds.
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- 1cf426f: fix: keep the camera when regenerating for LWDISPLAY, and toggle lineweights without a full rebuild after the first fat-line upgrade
+
+  LWDISPLAY used to call `clear()` + regen on every toggle, which snapped the view back to the origin. REGEN now preserves layout cameras via `clearForRegen()`, and after the scene has fat-line geometry later toggles only flip `linewidth` (including batch-owned material clones).
+
+- 84f82ff: `pdftext` (Recover Texts) now recognizes all lines at once: lines are read from the glyph dictionary, every other line goes to the AI model in a few batch requests (up to 20 line images each), and the whole selection is converted in one step without per-line confirmation. Only lines nothing could read are still prompted. When text recognition fails (invalid API key, network, quota, unexpected answer), the reason is shown instead of being silently ignored.
+
+  `AcApTextRecognitionService` gains `recognizeBatch()` and an `onError` option on `recognize()` / `recognizeBatch()`; recognizers can implement the optional `recognizeBatch` method.
+
+  Erasing many entities at once is much faster: `AcApEntityService.eraseEntities` removes them from each block in one pass instead of scanning the block per entity, and the view removes them in bulk (`AcTrBatchedGroup.removeEntities`, `AcTrScene.removeEntities`), compacting each geometry batch once instead of once per entity. Converting about 6000 PDF text strokes in a 93,000-entity drawing went from over 40 seconds of frozen UI to about half a second.
+
+- 05b2041: Fix three issues found when recovering text with `pdftext`:
+  - **Hide original strokes did nothing the first time.** Hiding an entity collapses its batch slot, but only set `needsUpdate`. While a batch attribute still had update ranges recorded by earlier appends, three.js uploaded just those ranges, so the change stayed on the CPU until a later full upload (the second toggle). The draw-visibility strategies now record the range they change.
+  - **Merged MTEXT moved down.** The viewer anchors MTEXT on its drawn glyphs, so a top-left anchor at the cap height pushed text whose glyphs are shorter than the cap height (e.g. CJK) down. Merged text is now attached bottom-left at the ink bottom of its last line, like a TEXT at its baseline.
+  - **Merged MTEXT lost the gaps between characters.** Letter-spaced text such as "剪 力 墙 身 表" or "标 高" is now merged with the number of spaces that keeps each character at its original place (measured in the chosen fonts), also between CJK characters.
+
+  `AcApFontUtil.measureTextWidth` now matches the renderer (`@mlightcad/mtext-renderer` 0.13.9): each glyph is sized with the scale of the font that supplies it, so a CJK cell of `txt.shx` + `gbcbig.shx` measures one text height (it measured 4/3), and a space advances by the style font's space glyph at the text height. This also fixes width auto-fit of recovered and imported CJK text.
+
+- b4306a7: fix: stop shared complex-linetype / repeated glyphs from landing at 2P after flatten
+
+  After `AcTrGroup` flatten, empty glyph shells keep `matrixAutoUpdate = false`
+  with placement already in `matrix`. Shared draw reset `position`/`rotation`
+  alone and left that stale matrix, so `collapseInverseParentTransformIntoPlacement`
+  baked P into children and placement was applied again. Recompose `matrix` from
+  TRS after each reset/restore. Also bump `@mlightcad/data-model` to 1.15.23,
+  `@mlightcad/libredwg-converter` to 3.15.23, `@mlightcad/mtext-renderer` to
+  0.13.9, and `@mlightcad/mtext-input-box` to 0.3.9.
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

@@ -1,5 +1,92 @@
 # @mlightcad/cad-mcp-server
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- c987f64: Absorb `@mlightcad/cad-simple-ui-plugin` into `@mlightcad/cad-simple-viewer`.
+  - Built-in plain-DOM toolbar + dock palettes enable by default via `AcApDocManagerOptions.simpleUi` (opt out with `simpleUi: false`). Chrome loads lazily through a dynamic import when enabled.
+  - `cad-editor` reuses the shared DOM find / design-review / measurements palettes; the Vue layer manager remains editor-only.
+  - Remove the separate `@mlightcad/cad-simple-ui-plugin` package and the `@mlightcad/cad-simple-viewer/simple-ui` / `/find` subpaths; import types and helpers from `@mlightcad/cad-simple-viewer` and pass toolbar/dock options through `simpleUi`.
+  - Read chrome via `simpleUi` / `simpleUiReady` (replaces `simpleUiPlugin` and `pluginManager.getPlugin('SimpleUiPlugin')`).
+
+- b8fbeac: feat(agent): queue follow-ups, edit/resend messages, and relative timestamps
+
+  Add Cursor-style follow-up queueing while the agent is busy, inline edit/resend
+  for prior user turns, message copy, and relative timestamps. Also document
+  common `tx.draw*` argument names and allow object property keys named like
+  banned globals (`{ window: n }`) while still blocking free identifiers.
+
+- Updated dependencies [c987f64]
+- Updated dependencies [9c6be36]
+- Updated dependencies [2632f9e]
+- Updated dependencies [03ff81b]
+- Updated dependencies [2018b40]
+- Updated dependencies [279f460]
+- Updated dependencies [228004a]
+- Updated dependencies [75c44d2]
+- Updated dependencies [aa2a7f7]
+- Updated dependencies [1477693]
+- Updated dependencies [2632f9e]
+- Updated dependencies [c3dcfa2]
+- Updated dependencies [76a6673]
+- Updated dependencies [b340dd6]
+- Updated dependencies [f599e38]
+- Updated dependencies [2a75363]
+- Updated dependencies [0b7c923]
+- Updated dependencies [0acd637]
+- Updated dependencies [8bfe54b]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [4252a9d]
+- Updated dependencies [2741958]
+- Updated dependencies [a1a707b]
+- Updated dependencies [1784dd4]
+- Updated dependencies [1cf426f]
+- Updated dependencies [c2cc263]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b340dd6]
+- Updated dependencies [eb0f5e8]
+- Updated dependencies [47c83c2]
+- Updated dependencies [529b935]
+- Updated dependencies [529b935]
+- Updated dependencies [47c83c2]
+- Updated dependencies [d7787ad]
+- Updated dependencies [510b0dc]
+- Updated dependencies [e4b1046]
+- Updated dependencies [ec6b73d]
+- Updated dependencies [3fefca4]
+- Updated dependencies [242c8db]
+- Updated dependencies [1795cc0]
+- Updated dependencies [7f15f66]
+- Updated dependencies [f80a8c1]
+- Updated dependencies [833c202]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies [ed40d25]
+- Updated dependencies
+- Updated dependencies [ee7d5da]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b8fbeac]
+- Updated dependencies [b4306a7]
+- Updated dependencies [68d4365]
+- Updated dependencies [f6048ff]
+- Updated dependencies [6d80103]
+- Updated dependencies [ac1f322]
+- Updated dependencies [69825da]
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.4
+  - @mlightcad/three-renderer@1.8.0-preview.4
+  - @mlightcad/cad-script-core@1.8.0-preview.4
+  - @mlightcad/cad-agent-core@1.8.0-preview.4
+  - @mlightcad/cad-html-plugin@1.8.0-preview.4
+  - @mlightcad/cad-pdf-core@1.8.0-preview.4
+  - @mlightcad/pdf-renderer@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

@@ -1,5 +1,215 @@
 # @mlightcad/cad-viewer
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- c987f64: Absorb `@mlightcad/cad-simple-ui-plugin` into `@mlightcad/cad-simple-viewer`.
+  - Built-in plain-DOM toolbar + dock palettes enable by default via `AcApDocManagerOptions.simpleUi` (opt out with `simpleUi: false`). Chrome loads lazily through a dynamic import when enabled.
+  - `cad-editor` reuses the shared DOM find / design-review / measurements palettes; the Vue layer manager remains editor-only.
+  - Remove the separate `@mlightcad/cad-simple-ui-plugin` package and the `@mlightcad/cad-simple-viewer/simple-ui` / `/find` subpaths; import types and helpers from `@mlightcad/cad-simple-viewer` and pass toolbar/dock options through `simpleUi`.
+  - Read chrome via `simpleUi` / `simpleUiReady` (replaces `simpleUiPlugin` and `pluginManager.getPlugin('SimpleUiPlugin')`).
+
+- 9c6be36: Add AutoCAD-compatible groups: GROUP / -GROUP / UNGROUP / GROUPEDIT / CLASSICGROUP, PICKSTYLE group selection, GROUPDISPLAYMODE grips, Object Grouping dialog, and a Home → Groups ribbon panel.
+- 2632f9e: Add AutoCAD clipboard commands: `COPYCLIP` (Ctrl+C), `CUTCLIP` (Ctrl+X), `COPYBASE` (Ctrl+Shift+C), `PASTECLIP` (Ctrl+V), `PASTEORIG` and `PASTEBLOCK` (Ctrl+Shift+V). Copying writes the objects and every layer, linetype, style and block they use into a temporary drawing; pasting creates what the target drawing lacks and keeps its own definitions for names it already has, as AutoCAD does. The clipboard is shared by every open drawing and is also written to the system clipboard, so objects can be pasted into this app in another browser tab. The Home ribbon tab has a new Clipboard panel, and the simple UI toolbar has Copy, Cut and Paste buttons. The clipboard is available to other code as `AcApDocManager.instance.clipboard`.
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- 2741958: PDF import is renamed to AutoCAD's commands: `ipdf` becomes **PDFIMPORT** and **-PDFIMPORT**. `PDFIMPORT` (the AI ribbon's Import PDF button, now item `cmd-pdfimport`) opens an Import PDF dialog after the file is picked, laid out like AutoCAD's: the file name with Browse, the page to import with a page preview or a thumbnail grid and the page size, the insertion point (X/Y, or "Specify insertion point on-screen" to pick it after OK), the scale and the import mode (Recover drawing / Keep PDF appearance). Location, scale and mode are remembered for the next import. The dialog lives in `@mlightcad/cad-pdf-plugin` (`AcUiPdfImportDialog`) and is framework-free. `-PDFIMPORT` (`AcApImportPdfPromptCmd`) keeps the former command-line prompts for page, insertion point, `Scale` and `Mode`. Strings move from `jig.ipdf` / `command.ACAD.ipdf` to `jig.pdfimport` / `command.ACAD.pdfimport` and `command.ACAD.-pdfimport`, in all locales.
+- 1784dd4: feat: add LEADER, MLEADER, and MLEADEREDIT with Annotation ribbon dropdown
+
+  Interactive AutoCAD-style leader / multileader creation and edit commands
+  with live jig preview. Home → Annotation gains a Multileader dropdown
+  (create / add leader / remove leader); Dim Style moves to row 3.
+
+- f39393b: Add the Multileader Style Manager and Modify Multileader Style dialogs (MLEADERSTYLE / MLS), with AutoCAD-style Format, Structure, and Content tabs and a style preview that uses the current canvas background.
+- eb0f5e8: feat: named views and AutoCAD-style View ribbon tab
+
+  Add `VIEW` / `NEWVIEW` / `viewrestore` with View Manager and New View dialogs,
+  layer-snapshot XDATA on `viewTable` records, and a View ribbon tab (Navigate +
+  Named Views) wired to pan/zoom and named-view restore.
+
+- 529b935: PDF block recovery:
+  - `ipdf` turns Form XObjects that are painted repeatedly with identical content into blocks with one reference per paint.
+  - New `pdfblock` command: select one instance of a repeated symbol, and every rotated or mirrored (optionally scaled) copy is found, highlighted and replaced by block references.
+  - New Make Block button in the AI > PDF ribbon panel.
+
+  Small circles far from the page origin are now recognized as circles; Float32 rounding used to leave them as two-arc polylines. `pdftext` and `pdfblock` pre-fill their default answers.
+
+- 529b935: New `pdfdim` command turns exploded PDF dimensions back into dimension objects: linear (any angle, inside or outside arrows, architectural ticks, chained), radius and diameter. It infers the drawing scale from the dimension texts and creates a `PDF_DIM` style matching the PDF's text height and arrow size, with DIMLFAC set to that scale. A Recover Dims button joins the AI > PDF ribbon panel.
+- 7f15f66: New `pdfhatch` command (AI tab → PDF → Recover Hatch) turns the loose strokes a PDF made of a pattern hatch back into a hatch object. Select the hatched area with the lines around it: regular strokes are matched against `acadiso.pat` (dot patterns such as ANSI36 included, even when the PDF dropped the dots), then user-defined single or crossed lines, and otherwise measured into a custom `PDF_HATCH` pattern (spacing, stagger and dashes). The boundary comes from closed outlines in the selection or from the faces the selected lines, arcs and polylines enclose, even when they cross, meet in T-junctions or run past the hatch; islands stay holes. The hatches are previewed in place of their strokes and converted all at once or one by one, and only objects a hatch redraws completely are erased.
+
+  `acapPdfRecognizeHatches` gains the options behind it: `faceBoundaries`, `customPatterns`, `boundaries` (caller-supplied loops) and a `trace` callback. Library matching now ignores extra line families in a region (the line work around a hatch) and prefers the pattern that explains most of it, so ANSI32-style hatches next to their boundary lines are no longer split into ANSI31 pieces. `PdfRecognizedHatchPattern` has a new `custom` variant, which `acapPdfCreatePatternHatch` writes as a Custom hatch with explicit definition lines.
+
+- ed40d25: `pdftext` (Recover Text) now opens a review panel in the palette instead of asking for unread lines one by one on the command line. Per font kind (SHX line text / TrueType outline text) you choose an existing text style or create one, see which font and big font it uses and replace them, adjust the height scale and the width factor (auto-fit to the original width or manual), and fix or type the text of every line. The result is previewed in the drawing, which stays pannable and zoomable; Apply converts in one undo step, Cancel or closing the palette changes nothing.
+
+  Each line is detected as SHX or TrueType text from its strokes, and SHX text now stays SHX text by default (a `PDF_SHX` style with `txt` + `gbcbig`). Before, every recovered line used the current style, which in the default setup draws in `simsun`, so recovered SHX text changed look and its CJK characters grew noticeably.
+
+  New `AcApPaletteService` in `@mlightcad/cad-simple-viewer` lets commands show non-modal panels in the host palette: the tool palette in `cad-editor`, the dock panel in `cad-simple-ui-plugin`, or a built-in docked panel otherwise. `acapZoomToVisible` (frame a box in the canvas area a palette does not cover) is now exported too.
+
+  Characters recovered as separate lines can be merged into one MTEXT in the panel: select lines with Ctrl/Shift+click and **Merge into MText**, or **Merge adjacent** to merge everything that stands next to each other on one baseline. Lines on different baselines become paragraphs with the measured line spacing; width auto-fit applies per paragraph (`\W`). **Split** undoes a merge.
+
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+- e0738a9: New **AI** ribbon tab. Its **Agent** panel now holds the CAD Agent button, which moves out of Home > Utilities. Its **PDF** panel holds Import PDF (`ipdf`), Calibrate Scale (`pdfscale`) and Recover Text (`pdftext`).
+- b340dd6: Add the AutoCAD-style `SCALE` command (alias `SC`). The Home ribbon tab's Modify panel shows a Scale button where the Copy button used to be; Copy remains available from the Clipboard panel.
+  - Select objects, specify a base point, then type or drag the scale factor (dragging uses the cursor distance from the base point).
+  - `Copy` keeps the originals and scales copies; `Reference` derives the factor from a reference length (typed or two points) and a new length (typed, dragged, or `Points`).
+  - The last scale factor, reference length and new length are offered as defaults, like AutoCAD.
+  - `AcApEntityService.scaleEntities()` scales entities uniformly around a base point.
+
+- 68d4365: feat(llm): share one AI model configuration between the CAD Agent and PDF OCR
+
+  The LLM provider settings move from `@mlightcad/cad-agent-plugin` into the new
+  `@mlightcad/cad-llm-plugin`, which adds the `llmsettings` command and a
+  framework-free settings dialog (model in use, built-in and custom providers,
+  model catalogs). `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService`
+  so features can open the dialog or check whether a vision model is configured
+  without depending on the plugin. `pdftext` now hints once per session when no
+  image-capable model is configured, and OCR falls back to the first
+  image-capable configured model when the model in use is text-only.
+  `@mlightcad/cad-editor` registers the plugin when installed and adds an
+  AI → Model Settings ribbon button. The agent panel's gear button opens the
+  shared dialog. Saved settings carry over unchanged. See the upgrade guide for
+  host migration.
+
+- f6048ff: Add Smart Blocks: Search and Convert (AutoCAD 2026 `BSEARCH`). Select one instance; every identical copy in model space is found (rotated, mirrored and optionally scaled copies, optionally existing block references and copies whose text differs) and highlighted. Review the instances in a toolbar over the canvas, include or exclude them, then convert the selection and the included instances into a new block (text variations become attributes) or an existing block definition, in one undo step. `-BSEARCH` offers the same workflow at the command line; `BCONVERT` is an alias. The ribbon gets a Search and Convert button on the Insert and AI tabs.
+
+  The shape matching that `pdfblock` used moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-viewer` (`acedFindShapeMatches`, `acedEntityToShapeFeature`) and now also handles single-shape templates under rotation and mirroring, heavy 2D/3D polylines with bulges, 2D solids, traces, points and hatches, with per-kind spatial grids for large drawings. `pdfblock` now runs the `-BSEARCH` workflow. The old `cad-pdf-plugin` exports remain as deprecated aliases.
+
+- 6d80103: Add Smart Blocks: Detect and Convert (`BDETECT`). Without a selection, the editor finds groups of repeated objects anywhere in the drawing and lists them in a Detection tab of the tool palette, with thumbnails, editable block names and progress while it searches. Click a group to highlight its instances, review one with the Search and Convert toolbar, or convert the checked groups into new blocks at once; texts that differ between instances become attributes, and the whole run undoes in one step. The ribbon gets a Detect and Convert button on the Insert and AI tabs.
+
+  `@mlightcad/cad-simple-viewer` adds the underlying API: `acapDetectSmartBlocks`, `acapDetectSmartBlocksAsync` (time-sliced, with progress and cancellation) and `acapConvertSmartBlockCluster`. Unlike AutoCAD's cloud model, detection is local and geometric and finds any repeated group. Searches over an unchanged drawing can share an `AcApSmartBlockCandidatePool` and the new `AcEdShapeMatchOptions.gridCache`; the matcher now picks its first anchor by kind and size rarity, which makes searches in line-heavy drawings faster.
+
+- ac1f322: Add `@mlightcad/cad-svg-converter` so File → Open can load `.svg` as editable CAD entities (basic vector subset). `cad-simple-viewer` routes the `svg` converter key and accepts `.svg` in open UI; `cad-editor` registers the converter in `initializeCadViewer`.
+- 69825da: Add AutoCAD-compatible UCS and UCSMAN: active UCS transforms, UCS icon overlay, Named UCSs / Settings dialog (no Orthographic tab), and View → Coordinates ribbon controls.
+
+### Patch Changes
+
+- e2aea74: `BSEARCH` (Smart Blocks: Search and Convert) now reviews its results in a Search and Convert tab of the tool palette, like Detect and Convert and Recover Text, instead of a toolbar over the canvas. The tab shows a preview of the selected objects, the search options and a list of every found instance with what sets it apart (rotation, mirroring, scale, its texts): click a row to zoom to it and use its check box to include or exclude it. Closing the palette cancels the command. Reviewing a group from Detect and Convert uses the same tab and returns to the detection list afterwards. The unreleased `MlBSearchReviewBar` component is removed.
+
+  Ribbon: the AI tab's agent button is now labelled "Agent", and the Model Settings, Search and Convert, Detect and Convert, Find and Count icons use the theme's icon color like Quick Select and the agent. Find has a new icon that shows it searches text.
+
+- 279f460: `BSEARCH`: selected texts no longer take part in the geometry match. Like AutoCAD, copies are found by their geometry and each selected text picks up the text sitting at the same place in the copy, so labels whose insertion point moves with the string (axis bubbles "1" / "10" / "B" imported from PDF) are found and become attributes. Text variations (`TEXTTOATTRIBUTE`) are now on by default, as in AutoCAD; turn them off to accept only identical text. `AcEdShapeMatchOptions` gains an `accept` callback that lets symmetric shapes try their other transforms.
+
+  When existing block references are converted into a new block with attributes, each reference now keeps its own attribute values and placement instead of getting the source text's value at the source position.
+
+- 1477693: Show a busy overlay during clipboard copy, cut and paste so large selections do not freeze the UI without feedback. `AcApClipboard.set` now awaits system-clipboard DXF serialization so the overlay stays up for the whole blocking write. Also use the custom undo/redo SVG icons in the ribbon header instead of Element Plus refresh icons.
+- c3dcfa2: Complete the UI translations for every supported language. Japanese and Korean were mostly English (ribbon, menus, dialogs, properties, command prompts, plugins, and the exported HTML viewer); Turkish, Czech and Arabic were missing the dimension/multileader style dialogs, view and UCS managers, and many command prompts. All of these now show in the selected language instead of falling back to English.
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- cafbb8f: feat(ribbon): give Import PDF a dedicated icon
+
+  Replace the generic upload glyph with a PDF page plus import-arrow icon so the
+  AI tab button reads as both PDF and import.
+
+- 1795cc0: `pdfdim` opens a palette review like `pdftext` / `pdfhatch`: edit recovered values, pick or create a dim style (with the shared dim-style preview), then Apply. Value text may still be exploded strokes (before `pdftext`) — digits and CAD symbols are read with a built-in grid template matcher (no LLM), and linear dimensions fall back to the measured length when strokes cannot be read. Recovered dimensions pin paper sizes via entity overrides so an existing style with a large DIMSCALE cannot hide extension lines or blow up the text. Also preserves inside/outside arrow direction and rejects stroke misreadings such as "111".
+- ee7d5da: Remove the redundant bottom-left axes gizmo and keep the UCS icon Y axis upright while a drawing is still opening.
+- 17e4920: feat(ribbon): redesign AI tab icons
+
+  The Recognize Text, Recognize Dimensions and Recognize Hatch buttons now share
+  a scan-viewfinder frame around the recognized object, Create Block shows loose
+  geometry being converted into a block with a base point, and the Agent button
+  uses a robot icon instead of a chat bubble.
+
+- 17e4920: fix(ribbon): unify icon line weights
+
+  Ribbon and toolbar icons now share one line weight: 1/16 of the icon size
+  (1.25 in 20-unit and 1.5 in 24-unit viewBoxes), matching Element Plus icons —
+  about 1.6px on large ribbon buttons and 1px on small ones. Thin filled-outline
+  glyphs (draw, modify, layer, text) were thickened; heavy dimension, leader,
+  markup, and measure strokes were thinned. The attribute definition icon is now
+  an outline to match edit attribute, and the elliptical arc icon no longer draws
+  a doubled outline.
+
+- Updated dependencies [c987f64]
+- Updated dependencies [9c6be36]
+- Updated dependencies [2632f9e]
+- Updated dependencies [03ff81b]
+- Updated dependencies [2018b40]
+- Updated dependencies [279f460]
+- Updated dependencies [228004a]
+- Updated dependencies [75c44d2]
+- Updated dependencies [aa2a7f7]
+- Updated dependencies [1477693]
+- Updated dependencies [2632f9e]
+- Updated dependencies [c3dcfa2]
+- Updated dependencies [76a6673]
+- Updated dependencies [b340dd6]
+- Updated dependencies [f599e38]
+- Updated dependencies [2a75363]
+- Updated dependencies [0b7c923]
+- Updated dependencies [0acd637]
+- Updated dependencies [8bfe54b]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [4252a9d]
+- Updated dependencies [2741958]
+- Updated dependencies [a1a707b]
+- Updated dependencies [1784dd4]
+- Updated dependencies [1cf426f]
+- Updated dependencies [c2cc263]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b340dd6]
+- Updated dependencies [eb0f5e8]
+- Updated dependencies [47c83c2]
+- Updated dependencies [529b935]
+- Updated dependencies [529b935]
+- Updated dependencies [47c83c2]
+- Updated dependencies [d7787ad]
+- Updated dependencies [d66d654]
+- Updated dependencies [510b0dc]
+- Updated dependencies [a3cba74]
+- Updated dependencies [e4b1046]
+- Updated dependencies [885bc1a]
+- Updated dependencies [ec6b73d]
+- Updated dependencies [ec6b73d]
+- Updated dependencies [137e36e]
+- Updated dependencies [3fefca4]
+- Updated dependencies [1795cc0]
+- Updated dependencies [242c8db]
+- Updated dependencies [efe8963]
+- Updated dependencies [1795cc0]
+- Updated dependencies [90e5d82]
+- Updated dependencies [7f15f66]
+- Updated dependencies [f80a8c1]
+- Updated dependencies [7f15f66]
+- Updated dependencies [833c202]
+- Updated dependencies [84f82ff]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies [ed40d25]
+- Updated dependencies [4bbb670]
+- Updated dependencies
+- Updated dependencies [ee7d5da]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b8fbeac]
+- Updated dependencies [75c44d2]
+- Updated dependencies [b4306a7]
+- Updated dependencies [68d4365]
+- Updated dependencies [f6048ff]
+- Updated dependencies [6d80103]
+- Updated dependencies [ac1f322]
+- Updated dependencies [69825da]
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.4
+  - @mlightcad/three-renderer@1.8.0-preview.4
+  - @mlightcad/cad-script-core@1.8.0-preview.4
+  - @mlightcad/cad-agent-core@1.8.0-preview.4
+  - @mlightcad/cad-script-plugin@1.8.0-preview.4
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.4
+  - @mlightcad/cad-html-plugin@1.8.0-preview.4
+  - @mlightcad/cad-pdf-core@1.8.0-preview.4
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.4
+  - @mlightcad/pdf-renderer@1.8.0-preview.4
+  - @mlightcad/cad-llm-plugin@1.8.0-preview.4
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.4
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.4
+  - @mlightcad/cad-svg-converter@1.8.0-preview.4
+  - @mlightcad/cad-svg-plugin@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

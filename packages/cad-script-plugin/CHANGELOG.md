@@ -1,5 +1,85 @@
 # @mlightcad/cad-script-plugin
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- 228004a: Add layer preview mode to `cad.view.capturePreview`.
+  - `cad.view.capturePreview({ layers: ['A', 'B'] })` renders only model-space geometry on those layers (INSERTs contribute just their fragments on those layers) and frames the PNG to the combined extents of the layers, so the image has no large empty margins. Names are case-insensitive; unknown names throw; `layers` cannot be combined with `selection`.
+  - `CaptureDrawingPreviewFailure` adds `'no-layers'`; `normalizeCadCapturePreviewOptions` returns `NormalizedCadCapturePreviewOptions`.
+  - New `AcApEntityPreviewConvertor.captureLayers`, `AcTrLayout.findLayers` / `computeLayerPreviewBoundsBox` / `createLayerPreviewRoot`, `AcTrLayer.getEntityIds` / `computeContentBoundingBox`, and `AcTrBatchedGroup.getEntityIds`.
+
+- c3dcfa2: Complete the UI translations for every supported language. Japanese and Korean were mostly English (ribbon, menus, dialogs, properties, command prompts, plugins, and the exported HTML viewer); Turkish, Czech and Arabic were missing the dimension/multileader style dialogs, view and UCS managers, and many command prompts. All of these now show in the selected language instead of falling back to English.
+- b8fbeac: feat(agent): queue follow-ups, edit/resend messages, and relative timestamps
+
+  Add Cursor-style follow-up queueing while the agent is busy, inline edit/resend
+  for prior user turns, message copy, and relative timestamps. Also document
+  common `tx.draw*` argument names and allow object property keys named like
+  banned globals (`{ window: n }`) while still blocking free identifiers.
+
+- 75c44d2: Show `cad.view.capturePreview` images in the script console result panel, with download and clipboard-copy actions beside each preview.
+- Updated dependencies [c987f64]
+- Updated dependencies [9c6be36]
+- Updated dependencies [2632f9e]
+- Updated dependencies [03ff81b]
+- Updated dependencies [279f460]
+- Updated dependencies [228004a]
+- Updated dependencies [75c44d2]
+- Updated dependencies [aa2a7f7]
+- Updated dependencies [1477693]
+- Updated dependencies [2632f9e]
+- Updated dependencies [c3dcfa2]
+- Updated dependencies [76a6673]
+- Updated dependencies [b340dd6]
+- Updated dependencies [f599e38]
+- Updated dependencies [2a75363]
+- Updated dependencies [0b7c923]
+- Updated dependencies [0acd637]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [4252a9d]
+- Updated dependencies [2741958]
+- Updated dependencies [a1a707b]
+- Updated dependencies [1784dd4]
+- Updated dependencies [1cf426f]
+- Updated dependencies [c2cc263]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b340dd6]
+- Updated dependencies [eb0f5e8]
+- Updated dependencies [47c83c2]
+- Updated dependencies [529b935]
+- Updated dependencies [529b935]
+- Updated dependencies [510b0dc]
+- Updated dependencies [e4b1046]
+- Updated dependencies [ec6b73d]
+- Updated dependencies [3fefca4]
+- Updated dependencies [242c8db]
+- Updated dependencies [1795cc0]
+- Updated dependencies [7f15f66]
+- Updated dependencies [f80a8c1]
+- Updated dependencies [833c202]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies [ed40d25]
+- Updated dependencies
+- Updated dependencies [ee7d5da]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b8fbeac]
+- Updated dependencies [68d4365]
+- Updated dependencies [f6048ff]
+- Updated dependencies [6d80103]
+- Updated dependencies [ac1f322]
+- Updated dependencies [69825da]
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.4
+  - @mlightcad/cad-script-core@1.8.0-preview.4
+  - @mlightcad/cad-agent-core@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

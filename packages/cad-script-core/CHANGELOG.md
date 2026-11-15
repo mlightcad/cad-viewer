@@ -1,5 +1,48 @@
 # @mlightcad/cad-script-core
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- 228004a: Add layer preview mode to `cad.view.capturePreview`.
+  - `cad.view.capturePreview({ layers: ['A', 'B'] })` renders only model-space geometry on those layers (INSERTs contribute just their fragments on those layers) and frames the PNG to the combined extents of the layers, so the image has no large empty margins. Names are case-insensitive; unknown names throw; `layers` cannot be combined with `selection`.
+  - `CaptureDrawingPreviewFailure` adds `'no-layers'`; `normalizeCadCapturePreviewOptions` returns `NormalizedCadCapturePreviewOptions`.
+  - New `AcApEntityPreviewConvertor.captureLayers`, `AcTrLayout.findLayers` / `computeLayerPreviewBoundsBox` / `createLayerPreviewRoot`, `AcTrLayer.getEntityIds` / `computeContentBoundingBox`, and `AcTrBatchedGroup.getEntityIds`.
+
+- 75c44d2: Add selection preview mode to `cad.view.capturePreview`.
+  - `CadSession.capturePreview` now takes `{ longSide?, selection? }` instead of a bare pixel number (a bare number is still accepted as `longSide` for compatibility).
+  - Pass `selection: true` to render only the current selection via `AcApEntityPreviewConvertor` (batch geometry + scene bounds; not database `geometricExtents`).
+  - Empty selection returns `reason: 'no-selection'`. Extents mode behavior is unchanged.
+
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- b8fbeac: feat(agent): queue follow-ups, edit/resend messages, and relative timestamps
+
+  Add Cursor-style follow-up queueing while the agent is busy, inline edit/resend
+  for prior user turns, message copy, and relative timestamps. Also document
+  common `tx.draw*` argument names and allow object property keys named like
+  banned globals (`{ window: n }`) while still blocking free identifiers.
+
+- Updated dependencies [2632f9e]
+- Updated dependencies [2018b40]
+- Updated dependencies [228004a]
+- Updated dependencies [f599e38]
+- Updated dependencies [8bfe54b]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [1cf426f]
+- Updated dependencies [47c83c2]
+- Updated dependencies [d7787ad]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies
+- Updated dependencies [b4306a7]
+  - @mlightcad/three-renderer@1.8.0-preview.4
+  - @mlightcad/cad-pdf-core@1.8.0-preview.4
+  - @mlightcad/pdf-renderer@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Minor Changes

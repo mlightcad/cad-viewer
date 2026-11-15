@@ -1,5 +1,100 @@
 # @mlightcad/cad-agent-plugin
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- 242c8db: New `pdftext` command converts exploded PDF text (SHX line text, outlined fonts) back into text objects. It clusters strokes into lines, asks for each line's text, and learns glyph shapes so repeated text converts automatically. `ipdf` now merges text runs that continue one line. `AcApTextRecognitionService` lets hosts register OCR. The CAD Agent plugin registers a recognizer backed by the configured vision model, which pre-fills `pdftext` prompts.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+- 68d4365: feat(llm): share one AI model configuration between the CAD Agent and PDF OCR
+
+  The LLM provider settings move from `@mlightcad/cad-agent-plugin` into the new
+  `@mlightcad/cad-llm-plugin`, which adds the `llmsettings` command and a
+  framework-free settings dialog (model in use, built-in and custom providers,
+  model catalogs). `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService`
+  so features can open the dialog or check whether a vision model is configured
+  without depending on the plugin. `pdftext` now hints once per session when no
+  image-capable model is configured, and OCR falls back to the first
+  image-capable configured model when the model in use is text-only.
+  `@mlightcad/cad-editor` registers the plugin when installed and adds an
+  AI → Model Settings ribbon button. The agent panel's gear button opens the
+  shared dialog. Saved settings carry over unchanged. See the upgrade guide for
+  host migration.
+
+### Patch Changes
+
+- 228004a: Add layer preview mode to `cad.view.capturePreview`.
+  - `cad.view.capturePreview({ layers: ['A', 'B'] })` renders only model-space geometry on those layers (INSERTs contribute just their fragments on those layers) and frames the PNG to the combined extents of the layers, so the image has no large empty margins. Names are case-insensitive; unknown names throw; `layers` cannot be combined with `selection`.
+  - `CaptureDrawingPreviewFailure` adds `'no-layers'`; `normalizeCadCapturePreviewOptions` returns `NormalizedCadCapturePreviewOptions`.
+  - New `AcApEntityPreviewConvertor.captureLayers`, `AcTrLayout.findLayers` / `computeLayerPreviewBoundsBox` / `createLayerPreviewRoot`, `AcTrLayer.getEntityIds` / `computeContentBoundingBox`, and `AcTrBatchedGroup.getEntityIds`.
+
+- c3dcfa2: Complete the UI translations for every supported language. Japanese and Korean were mostly English (ribbon, menus, dialogs, properties, command prompts, plugins, and the exported HTML viewer); Turkish, Czech and Arabic were missing the dimension/multileader style dialogs, view and UCS managers, and many command prompts. All of these now show in the selected language instead of falling back to English.
+- b8fbeac: feat(agent): queue follow-ups, edit/resend messages, and relative timestamps
+
+  Add Cursor-style follow-up queueing while the agent is busy, inline edit/resend
+  for prior user turns, message copy, and relative timestamps. Also document
+  common `tx.draw*` argument names and allow object property keys named like
+  banned globals (`{ window: n }`) while still blocking free identifiers.
+
+- Updated dependencies [c987f64]
+- Updated dependencies [9c6be36]
+- Updated dependencies [2632f9e]
+- Updated dependencies [03ff81b]
+- Updated dependencies [279f460]
+- Updated dependencies [228004a]
+- Updated dependencies [75c44d2]
+- Updated dependencies [aa2a7f7]
+- Updated dependencies [1477693]
+- Updated dependencies [2632f9e]
+- Updated dependencies [c3dcfa2]
+- Updated dependencies [76a6673]
+- Updated dependencies [b340dd6]
+- Updated dependencies [f599e38]
+- Updated dependencies [2a75363]
+- Updated dependencies [0b7c923]
+- Updated dependencies [0acd637]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [4252a9d]
+- Updated dependencies [2741958]
+- Updated dependencies [a1a707b]
+- Updated dependencies [1784dd4]
+- Updated dependencies [1cf426f]
+- Updated dependencies [c2cc263]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b340dd6]
+- Updated dependencies [eb0f5e8]
+- Updated dependencies [47c83c2]
+- Updated dependencies [529b935]
+- Updated dependencies [529b935]
+- Updated dependencies [510b0dc]
+- Updated dependencies [e4b1046]
+- Updated dependencies [ec6b73d]
+- Updated dependencies [3fefca4]
+- Updated dependencies [242c8db]
+- Updated dependencies [1795cc0]
+- Updated dependencies [7f15f66]
+- Updated dependencies [f80a8c1]
+- Updated dependencies [833c202]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies [ed40d25]
+- Updated dependencies [4bbb670]
+- Updated dependencies
+- Updated dependencies [ee7d5da]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [b8fbeac]
+- Updated dependencies [68d4365]
+- Updated dependencies [f6048ff]
+- Updated dependencies [6d80103]
+- Updated dependencies [ac1f322]
+- Updated dependencies [69825da]
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.4
+  - @mlightcad/cad-script-core@1.8.0-preview.4
+  - @mlightcad/cad-agent-core@1.8.0-preview.4
+  - @mlightcad/cad-llm-plugin@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Minor Changes

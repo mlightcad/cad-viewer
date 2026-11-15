@@ -1,5 +1,279 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- c987f64: Absorb `@mlightcad/cad-simple-ui-plugin` into `@mlightcad/cad-simple-viewer`.
+  - Built-in plain-DOM toolbar + dock palettes enable by default via `AcApDocManagerOptions.simpleUi` (opt out with `simpleUi: false`). Chrome loads lazily through a dynamic import when enabled.
+  - `cad-editor` reuses the shared DOM find / design-review / measurements palettes; the Vue layer manager remains editor-only.
+  - Remove the separate `@mlightcad/cad-simple-ui-plugin` package and the `@mlightcad/cad-simple-viewer/simple-ui` / `/find` subpaths; import types and helpers from `@mlightcad/cad-simple-viewer` and pass toolbar/dock options through `simpleUi`.
+  - Read chrome via `simpleUi` / `simpleUiReady` (replaces `simpleUiPlugin` and `pluginManager.getPlugin('SimpleUiPlugin')`).
+
+- 9c6be36: Add AutoCAD-compatible groups: GROUP / -GROUP / UNGROUP / GROUPEDIT / CLASSICGROUP, PICKSTYLE group selection, GROUPDISPLAYMODE grips, Object Grouping dialog, and a Home → Groups ribbon panel.
+- 228004a: Add layer preview mode to `cad.view.capturePreview`.
+  - `cad.view.capturePreview({ layers: ['A', 'B'] })` renders only model-space geometry on those layers (INSERTs contribute just their fragments on those layers) and frames the PNG to the combined extents of the layers, so the image has no large empty margins. Names are case-insensitive; unknown names throw; `layers` cannot be combined with `selection`.
+  - `CaptureDrawingPreviewFailure` adds `'no-layers'`; `normalizeCadCapturePreviewOptions` returns `NormalizedCadCapturePreviewOptions`.
+  - New `AcApEntityPreviewConvertor.captureLayers`, `AcTrLayout.findLayers` / `computeLayerPreviewBoundsBox` / `createLayerPreviewRoot`, `AcTrLayer.getEntityIds` / `computeContentBoundingBox`, and `AcTrBatchedGroup.getEntityIds`.
+
+- 2632f9e: Add AutoCAD clipboard commands: `COPYCLIP` (Ctrl+C), `CUTCLIP` (Ctrl+X), `COPYBASE` (Ctrl+Shift+C), `PASTECLIP` (Ctrl+V), `PASTEORIG` and `PASTEBLOCK` (Ctrl+Shift+V). Copying writes the objects and every layer, linetype, style and block they use into a temporary drawing; pasting creates what the target drawing lacks and keeps its own definitions for names it already has, as AutoCAD does. The clipboard is shared by every open drawing and is also written to the system clipboard, so objects can be pasted into this app in another browser tab. The Home ribbon tab has a new Clipboard panel, and the simple UI toolbar has Copy, Cut and Paste buttons. The clipboard is available to other code as `AcApDocManager.instance.clipboard`.
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- 2741958: PDF import is renamed to AutoCAD's commands: `ipdf` becomes **PDFIMPORT** and **-PDFIMPORT**. `PDFIMPORT` (the AI ribbon's Import PDF button, now item `cmd-pdfimport`) opens an Import PDF dialog after the file is picked, laid out like AutoCAD's: the file name with Browse, the page to import with a page preview or a thumbnail grid and the page size, the insertion point (X/Y, or "Specify insertion point on-screen" to pick it after OK), the scale and the import mode (Recover drawing / Keep PDF appearance). Location, scale and mode are remembered for the next import. The dialog lives in `@mlightcad/cad-pdf-plugin` (`AcUiPdfImportDialog`) and is framework-free. `-PDFIMPORT` (`AcApImportPdfPromptCmd`) keeps the former command-line prompts for page, insertion point, `Scale` and `Mode`. Strings move from `jig.ipdf` / `command.ACAD.ipdf` to `jig.pdfimport` / `command.ACAD.pdfimport` and `command.ACAD.-pdfimport`, in all locales.
+- 1784dd4: feat: add LEADER, MLEADER, and MLEADEREDIT with Annotation ribbon dropdown
+
+  Interactive AutoCAD-style leader / multileader creation and edit commands
+  with live jig preview. Home → Annotation gains a Multileader dropdown
+  (create / add leader / remove leader); Dim Style moves to row 3.
+
+- eb0f5e8: feat: named views and AutoCAD-style View ribbon tab
+
+  Add `VIEW` / `NEWVIEW` / `viewrestore` with View Manager and New View dialogs,
+  layer-snapshot XDATA on `viewTable` records, and a View ribbon tab (Navigate +
+  Named Views) wired to pan/zoom and named-view restore.
+
+- 529b935: PDF block recovery:
+  - `ipdf` turns Form XObjects that are painted repeatedly with identical content into blocks with one reference per paint.
+  - New `pdfblock` command: select one instance of a repeated symbol, and every rotated or mirrored (optionally scaled) copy is found, highlighted and replaced by block references.
+  - New Make Block button in the AI > PDF ribbon panel.
+
+  Small circles far from the page origin are now recognized as circles; Float32 rounding used to leave them as two-arc polylines. `pdftext` and `pdfblock` pre-fill their default answers.
+
+- 529b935: New `pdfdim` command turns exploded PDF dimensions back into dimension objects: linear (any angle, inside or outside arrows, architectural ticks, chained), radius and diameter. It infers the drawing scale from the dimension texts and creates a `PDF_DIM` style matching the PDF's text height and arrow size, with DIMLFAC set to that scale. A Recover Dims button joins the AI > PDF ribbon panel.
+- 510b0dc: PDF import (`ipdf`) now rebuilds CAD curves instead of flattening them: Bézier circles, arcs and ellipses become `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines become bulged polylines, free-form curves become exact splines, and arcs already flattened into short lines are refitted. `ipdf` now asks for the page, insertion point, scale and whether to recognize curves; stroke widths map to line weights and duplicate outlines are dropped. New `pdfscale` command calibrates imported geometry from a known distance.
+- e4b1046: PDF conversion follow-ups:
+  - `ipdf` gives dashed strokes `PDF_DASH_*` linetypes and imported text `PDF_<font family>` text styles. With the `fillHatches` option it turns filled areas into solid hatches, with holes from even-odd fills.
+  - `pdfdim` also recognizes angular dimensions.
+  - `pdfscale` pre-fills the real length from the scale that dimension texts in the selection imply.
+  - `pdftext` remembers confirmed glyph shapes across sessions.
+  - A new user guide page, "Converting PDF Drawings", is available in all seven languages.
+- ec6b73d: feat(cad-pdf-plugin): add Recover / Visual import modes to `ipdf`
+
+  `ipdf` now asks for a `Mode` instead of `Curves`:
+  - **Recover** (default) rebuilds the source drawing as before: curves,
+    duplicate removal, merged text runs, form blocks and text styles.
+  - **Visual** keeps the PDF exactly as painted: every path becomes a line or a
+    flattened polyline and every text run its own text, like `ipdf` did before
+    curve recovery was added.
+
+  The API gains `AcApPdfImportOptions.mode` (`'recover' | 'visual'`); it sets
+  the defaults of the reconstruction options, and explicit options still win.
+
+- 3fefca4: feat(cad-pdf-plugin): fit imported text to its PDF width and import images
+  - `ipdf` now stretches or squeezes each text to the width it had in the PDF.
+    The viewer rarely has the PDF's font, and substitutes used to run long
+    and overlap neighbouring content. Option `fitTextWidth` (default `true`).
+  - PDF images (photos, logos, QR codes) are imported as `AcDbRasterImage`
+    entities named `PDF_IMAGE_n.png`, with rotation and mirroring baked in.
+    Black-on-transparent images such as QR codes are placed on white so they
+    stay readable on a dark canvas. Option `images` (default `true`).
+  - `AcApFontUtil.prepareTextMeasurement` / `measureTextWidth` and
+    `acapMeasureTextWidth` measure single-line text the way the TEXT renderer
+    lays it out.
+
+- 242c8db: New `pdftext` command converts exploded PDF text (SHX line text, outlined fonts) back into text objects. It clusters strokes into lines, asks for each line's text, and learns glyph shapes so repeated text converts automatically. `ipdf` now merges text runs that continue one line. `AcApTextRecognitionService` lets hosts register OCR. The CAD Agent plugin registers a recognizer backed by the configured vision model, which pre-fills `pdftext` prompts.
+- 1795cc0: `pdfdim` opens a palette review like `pdftext` / `pdfhatch`: edit recovered values, pick or create a dim style (with the shared dim-style preview), then Apply. Value text may still be exploded strokes (before `pdftext`) — digits and CAD symbols are read with a built-in grid template matcher (no LLM), and linear dimensions fall back to the measured length when strokes cannot be read. Recovered dimensions pin paper sizes via entity overrides so an existing style with a large DIMSCALE cannot hide extension lines or blow up the text. Also preserves inside/outside arrow direction and rejects stroke misreadings such as "111".
+- 7f15f66: New `pdfhatch` command (AI tab → PDF → Recover Hatch) turns the loose strokes a PDF made of a pattern hatch back into a hatch object. Select the hatched area with the lines around it: regular strokes are matched against `acadiso.pat` (dot patterns such as ANSI36 included, even when the PDF dropped the dots), then user-defined single or crossed lines, and otherwise measured into a custom `PDF_HATCH` pattern (spacing, stagger and dashes). The boundary comes from closed outlines in the selection or from the faces the selected lines, arcs and polylines enclose, even when they cross, meet in T-junctions or run past the hatch; islands stay holes. The hatches are previewed in place of their strokes and converted all at once or one by one, and only objects a hatch redraws completely are erased.
+
+  `acapPdfRecognizeHatches` gains the options behind it: `faceBoundaries`, `customPatterns`, `boundaries` (caller-supplied loops) and a `trace` callback. Library matching now ignores extra line families in a region (the line work around a hatch) and prefers the pattern that explains most of it, so ANSI32-style hatches next to their boundary lines are no longer split into ANSI31 pieces. `PdfRecognizedHatchPattern` has a new `custom` variant, which `acapPdfCreatePatternHatch` writes as a Custom hatch with explicit definition lines.
+
+- ed40d25: `pdftext` (Recover Text) now opens a review panel in the palette instead of asking for unread lines one by one on the command line. Per font kind (SHX line text / TrueType outline text) you choose an existing text style or create one, see which font and big font it uses and replace them, adjust the height scale and the width factor (auto-fit to the original width or manual), and fix or type the text of every line. The result is previewed in the drawing, which stays pannable and zoomable; Apply converts in one undo step, Cancel or closing the palette changes nothing.
+
+  Each line is detected as SHX or TrueType text from its strokes, and SHX text now stays SHX text by default (a `PDF_SHX` style with `txt` + `gbcbig`). Before, every recovered line used the current style, which in the default setup draws in `simsun`, so recovered SHX text changed look and its CJK characters grew noticeably.
+
+  New `AcApPaletteService` in `@mlightcad/cad-simple-viewer` lets commands show non-modal panels in the host palette: the tool palette in `cad-editor`, the dock panel in `cad-simple-ui-plugin`, or a built-in docked panel otherwise. `acapZoomToVisible` (frame a box in the canvas area a palette does not cover) is now exported too.
+
+  Characters recovered as separate lines can be merged into one MTEXT in the panel: select lines with Ctrl/Shift+click and **Merge into MText**, or **Merge adjacent** to merge everything that stands next to each other on one baseline. Lines on different baselines become paragraphs with the measured line spacing; width auto-fit applies per paragraph (`\W`). **Split** undoes a merge.
+
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+- b340dd6: Add the AutoCAD-style `SCALE` command (alias `SC`). The Home ribbon tab's Modify panel shows a Scale button where the Copy button used to be; Copy remains available from the Clipboard panel.
+  - Select objects, specify a base point, then type or drag the scale factor (dragging uses the cursor distance from the base point).
+  - `Copy` keeps the originals and scales copies; `Reference` derives the factor from a reference length (typed or two points) and a new length (typed, dragged, or `Points`).
+  - The last scale factor, reference length and new length are offered as defaults, like AutoCAD.
+  - `AcApEntityService.scaleEntities()` scales entities uniformly around a base point.
+
+- 68d4365: feat(llm): share one AI model configuration between the CAD Agent and PDF OCR
+
+  The LLM provider settings move from `@mlightcad/cad-agent-plugin` into the new
+  `@mlightcad/cad-llm-plugin`, which adds the `llmsettings` command and a
+  framework-free settings dialog (model in use, built-in and custom providers,
+  model catalogs). `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService`
+  so features can open the dialog or check whether a vision model is configured
+  without depending on the plugin. `pdftext` now hints once per session when no
+  image-capable model is configured, and OCR falls back to the first
+  image-capable configured model when the model in use is text-only.
+  `@mlightcad/cad-editor` registers the plugin when installed and adds an
+  AI → Model Settings ribbon button. The agent panel's gear button opens the
+  shared dialog. Saved settings carry over unchanged. See the upgrade guide for
+  host migration.
+
+- f6048ff: Add Smart Blocks: Search and Convert (AutoCAD 2026 `BSEARCH`). Select one instance; every identical copy in model space is found (rotated, mirrored and optionally scaled copies, optionally existing block references and copies whose text differs) and highlighted. Review the instances in a toolbar over the canvas, include or exclude them, then convert the selection and the included instances into a new block (text variations become attributes) or an existing block definition, in one undo step. `-BSEARCH` offers the same workflow at the command line; `BCONVERT` is an alias. The ribbon gets a Search and Convert button on the Insert and AI tabs.
+
+  The shape matching that `pdfblock` used moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-viewer` (`acedFindShapeMatches`, `acedEntityToShapeFeature`) and now also handles single-shape templates under rotation and mirroring, heavy 2D/3D polylines with bulges, 2D solids, traces, points and hatches, with per-kind spatial grids for large drawings. `pdfblock` now runs the `-BSEARCH` workflow. The old `cad-pdf-plugin` exports remain as deprecated aliases.
+
+- 6d80103: Add Smart Blocks: Detect and Convert (`BDETECT`). Without a selection, the editor finds groups of repeated objects anywhere in the drawing and lists them in a Detection tab of the tool palette, with thumbnails, editable block names and progress while it searches. Click a group to highlight its instances, review one with the Search and Convert toolbar, or convert the checked groups into new blocks at once; texts that differ between instances become attributes, and the whole run undoes in one step. The ribbon gets a Detect and Convert button on the Insert and AI tabs.
+
+  `@mlightcad/cad-simple-viewer` adds the underlying API: `acapDetectSmartBlocks`, `acapDetectSmartBlocksAsync` (time-sliced, with progress and cancellation) and `acapConvertSmartBlockCluster`. Unlike AutoCAD's cloud model, detection is local and geometric and finds any repeated group. Searches over an unchanged drawing can share an `AcApSmartBlockCandidatePool` and the new `AcEdShapeMatchOptions.gridCache`; the matcher now picks its first anchor by kind and size rarity, which makes searches in line-heavy drawings faster.
+
+- ac1f322: Add `@mlightcad/cad-svg-converter` so File → Open can load `.svg` as editable CAD entities (basic vector subset). `cad-simple-viewer` routes the `svg` converter key and accepts `.svg` in open UI; `cad-editor` registers the converter in `initializeCadViewer`.
+- 69825da: Add AutoCAD-compatible UCS and UCSMAN: active UCS transforms, UCS icon overlay, Named UCSs / Settings dialog (no Orthographic tab), and View → Coordinates ribbon controls.
+
+### Patch Changes
+
+- 2632f9e: Fix jig previews and pasted blocks drawing with thicker lines than the drawing. Transient previews (PASTECLIP, MOVE, COPY, grip edits, ...) used to force lineweights on, so they showed fat lines with LWDISPLAY off, and a block template built for the preview was then reused for the committed entity. Previews now follow LWDISPLAY like the entities they preview. `AcTrRenderer` also reports `cacheVariant`, so block templates built with lineweights shown are cached apart from regular ones.
+- 03ff81b: fix: keep Insert gallery block thumbnails from leaking title-block text into the drawing
+
+  Opening the block dropdown regenerates geometry thumbnails through the live
+  renderer. TrueType MTEXT in large blocks (for example TITLE-BLOCK) no longer
+  enqueues scene-level mesh-glyph instances that later flush when inserting an
+  unrelated stamp such as CARTANG.
+
+- 279f460: `BSEARCH`: selected texts no longer take part in the geometry match. Like AutoCAD, copies are found by their geometry and each selected text picks up the text sitting at the same place in the copy, so labels whose insertion point moves with the string (axis bubbles "1" / "10" / "B" imported from PDF) are found and become attributes. Text variations (`TEXTTOATTRIBUTE`) are now on by default, as in AutoCAD; turn them off to accept only identical text. `AcEdShapeMatchOptions` gains an `accept` callback that lets symmetric shapes try their other transforms.
+
+  When existing block references are converted into a new block with attributes, each reference now keeps its own attribute values and placement instead of getting the source text's value at the source position.
+
+- aa2a7f7: Commands of lazily loaded plugins (`ipdf`, `chtml`, `csvg`, `agent`, `cadscript`, ...) can now be typed on the command line and on the canvas. Previously they were reported as unknown until their plugin had been loaded another way. Command-line auto-completion also lists them before they are loaded.
+- 1477693: Show a busy overlay during clipboard copy, cut and paste so large selections do not freeze the UI without feedback. `AcApClipboard.set` now awaits system-clipboard DXF serialization so the overlay stays up for the whole blocking write. Also use the custom undo/redo SVG icons in the ribbon header instead of Element Plus refresh icons.
+- c3dcfa2: Complete the UI translations for every supported language. Japanese and Korean were mostly English (ribbon, menus, dialogs, properties, command prompts, plugins, and the exported HTML viewer); Turkish, Czech and Arabic were missing the dimension/multileader style dialogs, view and UCS managers, and many command prompts. All of these now show in the selected language instead of falling back to English.
+- 76a6673: Crossing selection (right-to-left box) now selects a block reference only when the box touches the real geometry of one of its sub-entities, matching AutoCAD. A crossing box drawn in the empty interior of a drawing-frame block no longer selects the frame, in model space and through paper-space viewports. A crossing box inside a filled area (hatch, 2D solid/trace, image/wipeout) still selects it.
+- b340dd6: Fix grip editing of dimensions. Dragging any grip of a linear, aligned, angular, arc length, radius, diameter or ordinate dimension now updates the dimension like AutoCAD: the live preview and the committed result regenerate the dimension block (new measurement, geometry and text), and undo restores the previous dimension.
+- 2a75363: fix: FIND matches the measured value shown by a dimension, with an option to search only override text
+
+  FIND resolved a dimension's block by object id, but `dimBlockId` holds the
+  block name, so the displayed dimension text (e.g. a measured `422`) was never
+  searched. The block is now resolved by name like data-model draws it,
+  including the scale-specific block of annotative dimensions.
+
+  The Find panel gets a "Dimensions: override text only" checkbox
+  (`dimensionOverrideOnly` in `AcApFindOptions`) that searches only the
+  dimension override text, like AutoCAD FIND. The panel options now wrap to the
+  panel width instead of taking one row each, and the Find button is an icon
+  button (its label is the tooltip).
+
+- 0b7c923: fix: FIND again matches text when Model_Space has a nonstandard owner
+
+  Some DWGs parent `*Model_Space` under an intermediate object instead of the
+  BlockTable. FIND used `blockTable.getIdAt`, which rejects those BTRs, so
+  searches returned no hits even though the drawing showed text. Layout BTRs
+  are now resolved with the same fallback as open (#864): `modelSpace` /
+  block-table iteration when `getIdAt` fails.
+
+- 0acd637: Smart Blocks Search and Convert (BSEARCH/BDETECT) now matches light and heavy 2D polylines by the outline they trace instead of their vertex list. Copies of a block that a PDF round trip rebuilt with different vertices (curves or rounded corners recovered as arcs in one copy and left as short segments in another, or closed outlines starting at another vertex) are found again.
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- 4252a9d: fix: create the active layout view when Model layout BTR ids are stale
+
+  Some DWGs leave the Model layout pointing at a handle that is no longer
+  `*Model_Space` while entities use the real model-space id. Opening those
+  drawings activated `currentSpaceId` with no matching layout view, so
+  `zoomTo` / pick crashed and the canvas stayed blank. Heal the Model layout
+  link on open and always ensure a layout view exists for the active space.
+
+  Also keep every locale `main.ts` catalog in the file-open-panel Rollup
+  chunk so ja/ko no longer form a circular edge with the fat viewer chunk
+  (runtime TDZ on init).
+
+- a1a707b: fix: keep drawings with nonstandard Model_Space ownership visible on open
+
+  Some DWGs parent `*Model_Space` under an intermediate object instead of the
+  BlockTable. The scene filter used `blockTable.getIdAt`, which rejects those
+  BTRs, so every model entity was dropped and the canvas stayed blank. Layout
+  space is now resolved with `database.getObjectById` plus model/paper checks.
+
+- 1cf426f: fix: keep the camera when regenerating for LWDISPLAY, and toggle lineweights without a full rebuild after the first fat-line upgrade
+
+  LWDISPLAY used to call `clear()` + regen on every toggle, which snapped the view back to the origin. REGEN now preserves layout cameras via `clearForRegen()`, and after the scene has fat-line geometry later toggles only flip `linewidth` (including batch-owned material clones).
+
+- c2cc263: Make the arc measurement pick only circles, arcs and polyline arcs
+
+  The first pick of `measurearc` now turns generic OSNAP off and ignores clicks
+  that miss a curve, so it no longer snaps to lines or text and no longer drops
+  silently into the free three-point arc (still available through the
+  `ThreePoint` keyword). The arc snap indicator now follows the mouse without
+  OSNAP markers forcing a repaint, the lock works on model-space curves seen
+  through a paper-space viewport, and committed arcs get a dot at each end.
+
+  Curves nested in block references lock too: INSERT hits resolve their
+  sub-entities and the INSERT transform the same way OSNAP does. Curves in an
+  INSERT with a non-uniform scale or a tilted extrusion are drawn as ellipses
+  and are not locked; measure those with `ThreePoint`.
+
+- 17e4920: feat(icons): redesign measure tool icons
+
+  The distance, continuous distance, area, arc length, radius, angle, and
+  coordinate measure icons were redrawn in a new style over one shared notched
+  ruler. The continuous distance icon is the distance icon with a letter "n"
+  above the dimension line. Measure tool and measurement panel icons are now
+  monochrome (`currentColor`) and follow the light/dark theme like the other
+  toolbar icons instead of using the blue accent color.
+
+- b340dd6: Make multileaders behave like AutoCAD.
+  - MLEADER applies the current multileader style: text height, text style, arrow size and landing follow the style (including its overall scale, or the annotation scale for annotative styles). The text is attached by its left or right side depending on the leader direction, one landing gap from the landing, so leaders drawn to the left no longer put the text on top of the landing. The in-place text editor uses the style's text height and text style. Leader type and landing set in the Options branch now take effect.
+  - MLEADEREDIT Add leader joins a leader on the same side of the text to the existing landing, and puts a leader on the other side on a new landing past the far edge of the text. The preview shows the multileader with its real text and style.
+  - Dragging multileader grips now works like AutoCAD (requires the matching `@mlightcad/data-model` release): the arrowhead grip stretches the leader, the landing and text grips move the text with its landing and flip the landing to the other side when needed, and the landing-end grip lengthens the landing.
+  - HTML export snaps to the full leader line of multileaders with intermediate vertices.
+  - `acapBuildMLeaderGeometry` no longer repeats the landing point as the last leader-line vertex (AutoCAD stores it as the branch's last leader point), and new helpers `acapCreateMLeader`, `acapLayoutMLeader`, `acapResolveMLeaderPlacement` and `acapAnnotationScaleFactor` are exported.
+
+- b340dd6: Fix MLEADEREDIT Remove leader (ribbon "Remove Leader", `mleadereditremove`, and the Remove keyword of `mleaderedit`).
+  - A leader can be picked anywhere along its line, not only next to its arrowhead, using a fixed on-screen pick aperture at any zoom level.
+  - Adding or removing leaders is now recorded for UNDO/REDO.
+  - Removing one line from a landing that carries several lines keeps the order of the other landings.
+  - Clicking where there is no leader shows "No leader found at that point" instead of "Must select a multileader".
+
+- 47c83c2: Fix paper-space layout links, open-into-paper loading, and viewport grip mapping
+
+  Heal paper layouts whose `blockTableRecordId` is empty, stale, or wrongly
+  points at `*Model_Space` (common on R14 LibreDWG files) so Layout tabs appear
+  and `$TILEMODE = 0` opens a loaded sheet. Map model-entity grips through the
+  paper viewport used for click or box selection when several viewports overlap.
+
+- f80a8c1: `PDFHATCH` (Recover Hatch) now reviews its results in a palette panel, like `PDFTEXT`, instead of Yes/No/Review prompts. The panel lists every recovered hatch with how well it re-draws its strokes; a hatch can be skipped, switched to another `acadiso.pat` or user-defined pattern, or given another scale and angle (each change is refitted to the strokes and scored, and only strokes the new hatch re-draws completely are replaced). **Add area** picks a point inside an area the recognition missed and fits the best pattern to the strokes there. The fitting is available to other code as `acapPdfFitHatch`, `acapPdfMatchHatch` and `acapPdfBoundaryAt`.
+- 833c202: fix(pdfimport): import large PDF pages without freezing the browser
+
+  PDFIMPORT on dense pages (hundreds of thousands of paths) froze the tab and
+  threw "Maximum call stack size exceeded". The imported entities are now
+  committed in chunks of 5000, still as one undo record, and the view's convert
+  queue no longer spreads the whole batch into `push(...)`.
+
+- 84f82ff: `pdftext` (Recover Texts) now recognizes all lines at once: lines are read from the glyph dictionary, every other line goes to the AI model in a few batch requests (up to 20 line images each), and the whole selection is converted in one step without per-line confirmation. Only lines nothing could read are still prompted. When text recognition fails (invalid API key, network, quota, unexpected answer), the reason is shown instead of being silently ignored.
+
+  `AcApTextRecognitionService` gains `recognizeBatch()` and an `onError` option on `recognize()` / `recognizeBatch()`; recognizers can implement the optional `recognizeBatch` method.
+
+  Erasing many entities at once is much faster: `AcApEntityService.eraseEntities` removes them from each block in one pass instead of scanning the block per entity, and the view removes them in bulk (`AcTrBatchedGroup.removeEntities`, `AcTrScene.removeEntities`), compacting each geometry batch once instead of once per entity. Converting about 6000 PDF text strokes in a 93,000-entity drawing went from over 40 seconds of frozen UI to about half a second.
+
+- 05b2041: Fix three issues found when recovering text with `pdftext`:
+  - **Hide original strokes did nothing the first time.** Hiding an entity collapses its batch slot, but only set `needsUpdate`. While a batch attribute still had update ranges recorded by earlier appends, three.js uploaded just those ranges, so the change stayed on the CPU until a later full upload (the second toggle). The draw-visibility strategies now record the range they change.
+  - **Merged MTEXT moved down.** The viewer anchors MTEXT on its drawn glyphs, so a top-left anchor at the cap height pushed text whose glyphs are shorter than the cap height (e.g. CJK) down. Merged text is now attached bottom-left at the ink bottom of its last line, like a TEXT at its baseline.
+  - **Merged MTEXT lost the gaps between characters.** Letter-spaced text such as "剪 力 墙 身 表" or "标 高" is now merged with the number of spaces that keeps each character at its original place (measured in the chosen fonts), also between CJK characters.
+
+  `AcApFontUtil.measureTextWidth` now matches the renderer (`@mlightcad/mtext-renderer` 0.13.9): each glyph is sized with the scale of the font that supplies it, so a CJK cell of `txt.shx` + `gbcbig.shx` measures one text height (it measured 4/3), and a space advances by the style font's space glyph at the text height. This also fixes width auto-fit of recovered and imported CJK text.
+
+- ee7d5da: Remove the redundant bottom-left axes gizmo and keep the UCS icon Y axis upright while a drawing is still opening.
+- 17e4920: fix(ribbon): unify icon line weights
+
+  Ribbon and toolbar icons now share one line weight: 1/16 of the icon size
+  (1.25 in 20-unit and 1.5 in 24-unit viewBoxes), matching Element Plus icons —
+  about 1.6px on large ribbon buttons and 1px on small ones. Thin filled-outline
+  glyphs (draw, modify, layer, text) were thickened; heavy dimension, leader,
+  markup, and measure strokes were thinned. The attribute definition icon is now
+  an outline to match edit attribute, and the elliptical arc icon no longer draws
+  a doubled outline.
+
+- Updated dependencies [2632f9e]
+- Updated dependencies [2018b40]
+- Updated dependencies [228004a]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [1cf426f]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies
+- Updated dependencies [b4306a7]
+  - @mlightcad/three-renderer@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

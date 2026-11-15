@@ -1,5 +1,59 @@
 # @mlightcad/cad-html-core
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- c3dcfa2: Complete the UI translations for every supported language. Japanese and Korean were mostly English (ribbon, menus, dialogs, properties, command prompts, plugins, and the exported HTML viewer); Turkish, Czech and Arabic were missing the dimension/multileader style dialogs, view and UCS managers, and many command prompts. All of these now show in the selected language instead of falling back to English.
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- 17e4920: feat(icons): redesign measure tool icons
+
+  The distance, continuous distance, area, arc length, radius, angle, and
+  coordinate measure icons were redrawn in a new style over one shared notched
+  ruler. The continuous distance icon is the distance icon with a letter "n"
+  above the dimension line. Measure tool and measurement panel icons are now
+  monochrome (`currentColor`) and follow the light/dark theme like the other
+  toolbar icons instead of using the blue accent color.
+
+- b340dd6: Make multileaders behave like AutoCAD.
+  - MLEADER applies the current multileader style: text height, text style, arrow size and landing follow the style (including its overall scale, or the annotation scale for annotative styles). The text is attached by its left or right side depending on the leader direction, one landing gap from the landing, so leaders drawn to the left no longer put the text on top of the landing. The in-place text editor uses the style's text height and text style. Leader type and landing set in the Options branch now take effect.
+  - MLEADEREDIT Add leader joins a leader on the same side of the text to the existing landing, and puts a leader on the other side on a new landing past the far edge of the text. The preview shows the multileader with its real text and style.
+  - Dragging multileader grips now works like AutoCAD (requires the matching `@mlightcad/data-model` release): the arrowhead grip stretches the leader, the landing and text grips move the text with its landing and flip the landing to the other side when needed, and the landing-end grip lengthens the landing.
+  - HTML export snaps to the full leader line of multileaders with intermediate vertices.
+  - `acapBuildMLeaderGeometry` no longer repeats the landing point as the last leader-line vertex (AutoCAD stores it as the branch's last leader point), and new helpers `acapCreateMLeader`, `acapLayoutMLeader`, `acapResolveMLeaderPlacement` and `acapAnnotationScaleFactor` are exported.
+
+- 17e4920: fix(ribbon): unify icon line weights
+
+  Ribbon and toolbar icons now share one line weight: 1/16 of the icon size
+  (1.25 in 20-unit and 1.5 in 24-unit viewBoxes), matching Element Plus icons —
+  about 1.6px on large ribbon buttons and 1px on small ones. Thin filled-outline
+  glyphs (draw, modify, layer, text) were thickened; heavy dimension, leader,
+  markup, and measure strokes were thinned. The attribute definition icon is now
+  an outline to match edit attribute, and the elliptical arc icon no longer draws
+  a doubled outline.
+
+- Updated dependencies [2632f9e]
+- Updated dependencies [2018b40]
+- Updated dependencies [228004a]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [1cf426f]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies
+- Updated dependencies [b4306a7]
+  - @mlightcad/three-renderer@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes

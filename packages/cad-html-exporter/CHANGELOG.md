@@ -1,5 +1,38 @@
 # @mlightcad/cad-html-exporter
 
+## 1.8.0-preview.4
+
+### Minor Changes
+
+- f599e38: Add an `exportEmptyLayouts` option (default `false`) to HTML and PDF export. Empty paper-space layouts that only contain AutoCAD's default `*Paper_Space` viewport are skipped unless the option is enabled; model space is always kept. Dialogs, `-chtml`/`-cpdf`, script `cad.file.saveHtml`/`savePdf`, and the CLI exporters expose the toggle.
+- feat: completes PDF import with pdftext OCR, pdfhatch and pdfdim recovery plus review palettes, and adds Smart Blocks Search and Detect. New SCALE, LEADER/MLEADER, UCS, named-view and clipboard commands land alongside a shared LLM settings plugin, an SVG Open converter, the AI ribbon tab, and the simple UI folded into cad-simple-viewer.
+
+### Patch Changes
+
+- cafbb8f: fix: keep frozen INSERT geometry exportable and toggleable like AutoCAD
+
+  Freeze still hides the whole reference, but HTML/PDF export now converts and
+  reparents nested fragments so frozen layers can start invisible and be toggled
+  back on. Off INSERT layers keep converting nested on-layer geometry. Layer
+  manager freeze/lock icons use AutoCAD-like blue/yellow colors.
+
+- Updated dependencies [2632f9e]
+- Updated dependencies [2018b40]
+- Updated dependencies [228004a]
+- Updated dependencies [c3dcfa2]
+- Updated dependencies [f599e38]
+- Updated dependencies [cafbb8f]
+- Updated dependencies [1cf426f]
+- Updated dependencies [17e4920]
+- Updated dependencies [b340dd6]
+- Updated dependencies [84f82ff]
+- Updated dependencies [05b2041]
+- Updated dependencies
+- Updated dependencies [17e4920]
+- Updated dependencies [b4306a7]
+  - @mlightcad/three-renderer@1.8.0-preview.4
+  - @mlightcad/cad-html-core@1.8.0-preview.4
+
 ## 1.8.0-preview.3
 
 ### Patch Changes
