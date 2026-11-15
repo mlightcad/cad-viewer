@@ -401,6 +401,16 @@ export interface PdfImportPageContent {
 
 type PdfMatrix = [number, number, number, number, number, number]
 
+/** CAD layer resolved for one PDF optional-content group. */
+export interface PdfImportOcgLayer {
+  layerName: string
+  /**
+   * Initial display state. `false` keeps nested optional content on this
+   * layer, since viewers hide it regardless of inner groups.
+   */
+  visible?: boolean
+}
+
 /**
  * Converts one page operator list into model-space subpaths.
  *
@@ -416,7 +426,7 @@ export function extractPdfImportSubpaths(
   opList: PdfImportOperatorList,
   ops: PdfImportOps,
   viewport: PdfImportViewport,
-  ocgLayers: ReadonlyMap<string, { layerName: string }>,
+  ocgLayers: ReadonlyMap<string, PdfImportOcgLayer>,
   fallbackLayerName?: string,
   options?: PdfImportExtractOptions
 ): PdfImportPageContent {
@@ -441,7 +451,15 @@ export function extractPdfImportSubpaths(
   let currentSegments: PdfImportSegment[] = []
   let currentPathLayerName = fallbackLayerName
   let activeLayerName = fallbackLayerName
-  const markedContentLayerStack: Array<string | undefined> = []
+  // True while inside an OCG that starts hidden. Viewers draw nested optional
+  // content only when every enclosing group is ON, so an inner ON group (e.g.
+  // a frozen INSERT's children on their own layers) must not pull geometry
+  // out of the hidden outer layer.
+  let activeLayerHidden = false
+  const markedContentLayerStack: Array<{
+    layerName: string | undefined
+    hidden: boolean
+  }> = []
 
   let curX = 0
   let curY = 0
@@ -1114,17 +1132,27 @@ export function extractPdfImportSubpaths(
     }
 
     if (fn === ops.beginMarkedContent) {
-      markedContentLayerStack.push(activeLayerName)
+      markedContentLayerStack.push({
+        layerName: activeLayerName,
+        hidden: activeLayerHidden
+      })
       continue
     }
 
     if (fn === ops.beginMarkedContentProps) {
-      markedContentLayerStack.push(activeLayerName)
+      markedContentLayerStack.push({
+        layerName: activeLayerName,
+        hidden: activeLayerHidden
+      })
+      if (activeLayerHidden) {
+        continue
+      }
 
       const target = getPdfMarkedContentTarget(rawArgs)
       if (target.kind === 'ocg') {
-        activeLayerName =
-          ocgLayers.get(target.id)?.layerName ?? fallbackLayerName
+        const ocgLayer = ocgLayers.get(target.id)
+        activeLayerName = ocgLayer?.layerName ?? fallbackLayerName
+        activeLayerHidden = !!ocgLayer && ocgLayer.visible === false
       } else if (target.kind === 'fallback') {
         activeLayerName = fallbackLayerName
       }
@@ -1132,7 +1160,9 @@ export function extractPdfImportSubpaths(
     }
 
     if (fn === ops.endMarkedContent) {
-      activeLayerName = markedContentLayerStack.pop() ?? fallbackLayerName
+      const outer = markedContentLayerStack.pop()
+      activeLayerName = outer ? outer.layerName : fallbackLayerName
+      activeLayerHidden = outer?.hidden ?? false
       continue
     }
 
