@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" d="M4 8h12"/>
-  <path fill="var(--el-color-primary)" d="M4 8 6.2 6.7v2.6Z"/>
-  <path fill="var(--el-color-primary)" d="M16 8 13.8 6.7v2.6Z"/>
-  <path fill="none" stroke="currentColor" stroke-width="1.25" d="M6 4.5v7M14 4.5v7"/>
-  <path fill="none" stroke="currentColor" stroke-width="1.25" d="M5 15.5h10"/>
+  <!-- Linear dimension — AutoCAD Dim Style base glyph -->
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="butt"
+    d="M2.6 2.6v9.8M14.6 2.6v9.8"/>
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="butt"
+    d="M6.8 7.5h3.6"/>
+  <path fill="currentColor" d="M3.2 7.5 6.8 5.7v3.6Z"/>
+  <path fill="currentColor" d="M14 7.5 10.4 5.7v3.6Z"/>
+  <!-- Paintbrush — AutoCAD style cue (flared tip SW, ferrule, handle NE) -->
+  <path fill="currentColor"
+    d="M8.6 18.8c-.2-1.4.7-2.6 2.1-3.5l2.2 2.2c-.9 1.4-2.1 2.3-3.5 2.1-.6-.1-1-.3-.8-.8Z"/>
+  <path fill="currentColor" d="M11.2 15.8 13.1 17.7 12.2 18.6 10.3 16.7Z"/>
+  <path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+    d="M13 17.6 18 12.6"/>
 </svg>

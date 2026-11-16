@@ -368,11 +368,14 @@ export default {
       dimcontinue: 'Vytvoří řetězovou kótu z předchozí.',
       dimbaseline: 'Vytvoří základnovou kótu z předchozí.',
       dimstyle: 'Otevře správce stylů kót.',
+      textStyle: 'Otevře správce textových stylů.',
+      mleaderStyle: 'Otevře správce stylů vícenásobných odkazových čar.',
       mleader: 'Vytvoří vícenásobnou odkazovou čáru.',
       mleaderAdd:
         'Přidá odkazovou čáru k existující vícenásobné odkazové čáře.',
       mleaderRemove:
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
+      script: 'Otevře konzoli CAD skriptu a spustí skript v aktuálním výkresu.',
       move: 'Posune vybrané objekty na novou pozici.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
       scale:
@@ -543,9 +546,12 @@ export default {
       dimcontinue: 'Řetězová',
       dimbaseline: 'Základna',
       dimstyle: 'Styl kót',
+      textStyle: 'Textový styl',
+      mleaderStyle: 'Styl vícenásobné odkazové čáry',
       mleader: 'Vícenásobná odkazová čára',
       mleaderAdd: 'Přidat odkaz',
       mleaderRemove: 'Odebrat odkaz',
+      script: 'Skript',
       move: 'Posunout',
       rotate: 'Otočit',
       scale: 'Měřítko',

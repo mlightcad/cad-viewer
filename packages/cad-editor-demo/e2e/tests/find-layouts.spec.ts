@@ -147,14 +147,16 @@ test.describe('Find palette (full Vue UI)', () => {
     await expect(status(page)).toContainText('whole drawing')
   })
 
-  test('ribbon Find button (Home > Utilities) opens the palette', async ({
+  test('ribbon Find button (Home > Annotation) opens the palette', async ({
     page
   }) => {
     await loadFixture(page)
-    // At the default window size the Utilities group sits in the overflow.
-    const overflow = page.locator('button.ml-ribbon-overflow-trigger:visible')
-    if ((await overflow.count()) > 0) await overflow.first().click()
-    await page.getByText('Find', { exact: true }).first().click()
+    // Ribbon buttons use tooltip as accessible name; address by stable item id.
+    const findButton = page.locator(
+      '[data-ribbon-button-id="cmd-find"]:visible'
+    )
+    await expect(findButton).toBeVisible()
+    await findButton.click()
     await expect(page.getByTestId('find-palette')).toBeVisible()
     await expect(input(page)).toBeFocused()
   })
