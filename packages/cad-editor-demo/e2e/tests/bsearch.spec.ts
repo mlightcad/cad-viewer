@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
+import { clickRibbonButton } from '../helpers/ribbon'
 
 /**
  * BSEARCH (Smart Blocks: Search and Convert) on `bsearch-symbols.dxf`:
@@ -110,7 +111,7 @@ test('BSEARCH reviews matches and converts them into a block', async ({
 
   expect(await selectSymbolA(page)).toBe(4)
   await page.getByRole('tab', { name: 'Insert' }).click()
-  await page.locator('[data-ribbon-button-id="cmd-bsearch"]:visible').click()
+  await clickRibbonButton(page, 'cmd-bsearch')
 
   const panel = page.getByTestId('bsearch-panel')
   await expect(panel).toBeVisible()

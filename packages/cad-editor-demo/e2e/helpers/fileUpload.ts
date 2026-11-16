@@ -28,9 +28,17 @@ export async function uploadFixture(
     initialView?: 'Auto' | 'Extents' | 'Saved'
   }
 ) {
-  const fileInput = page.locator('input[type="file"]').first()
-  await expect(fileInput).toBeAttached()
+  // Prefer the landing drop-zone input; other hidden file inputs may exist.
+  const fileInput = page
+    .locator('.file-open-host input[type="file"], input[type="file"]')
+    .first()
+  await expect(fileInput).toBeAttached({ timeout: 30_000 })
   await selectAccessMode(page, options?.accessMode ?? 'Write')
   await selectInitialViewMode(page, options?.initialView ?? 'Extents')
+  await expect(
+    page.getByRole('radio', {
+      name: new RegExp(`^${options?.initialView ?? 'Extents'}\\b`)
+    })
+  ).toBeChecked()
   await fileInput.setInputFiles(filePath)
 }

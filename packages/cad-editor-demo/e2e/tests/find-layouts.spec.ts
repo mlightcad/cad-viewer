@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
+import { clickRibbonButton } from '../helpers/ribbon'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
@@ -71,13 +72,16 @@ async function runCommand(page: Page, name: string) {
 }
 
 async function loadFixture(page: Page, file = fixturePath) {
-  await page.goto('/')
-  await uploadFixture(page, file)
-  await expect(page.locator('.ml-cad-container')).toBeVisible({
-    timeout: 30000
-  })
+  // Cold Vite / first paint can miss the upload; reload and retry.
+  await expect(async () => {
+    await page.goto('/')
+    await uploadFixture(page, file)
+    await expect(page.locator('.ml-cad-container')).toBeVisible({
+      timeout: 20_000
+    })
+  }).toPass({ timeout: 90_000 })
   await expect(page.locator('.ml-layout-tabs-button')).toHaveCount(3, {
-    timeout: 30000
+    timeout: 30_000
   })
   await page.waitForTimeout(2500)
 }
@@ -151,12 +155,10 @@ test.describe('Find palette (full Vue UI)', () => {
     page
   }) => {
     await loadFixture(page)
-    // Ribbon buttons use tooltip as accessible name; address by stable item id.
-    const findButton = page.locator(
-      '[data-ribbon-button-id="cmd-find"]:visible'
-    )
-    await expect(findButton).toBeVisible()
-    await findButton.click()
+    // Annotation (and Find) can sit in the ribbon overflow at Desktop Chrome
+    // width; clickRibbonButton opens the overflow when needed.
+    await page.getByRole('tab', { name: 'Home' }).click()
+    await clickRibbonButton(page, 'cmd-find')
     await expect(page.getByTestId('find-palette')).toBeVisible()
     await expect(input(page)).toBeFocused()
   })
