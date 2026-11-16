@@ -85,7 +85,15 @@ describe('parsePdfDimensionValue', () => {
     ['12,5', 12.5],
     ['Ø25', 25],
     ['R 10.5', 10.5],
-    ['2x Ø6', 2]
+    // Multiplicity prefixes are not the value.
+    ['2x Ø6', 6],
+    ['4X R3', 3],
+    ['1/2', 0.5],
+    ['1 1/2', 1.5],
+    ['3\'-6"', 42],
+    ['25±0.1', 25],
+    ['%%c12', 12],
+    ['45°', 45]
   ])('%s → %d', (input, expected) => {
     expect(parsePdfDimensionValue(input)).toBe(expected)
   })

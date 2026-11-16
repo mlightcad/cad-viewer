@@ -168,10 +168,16 @@ export class AcApPdfDimSession<Id> {
 
   /** Candidates ready to convert, with the edited text applied. */
   candidatesForApply(): PdfDimensionCandidate<Id>[] {
-    return this.readyRows.map(row => ({
-      ...row.candidate,
-      text: { ...row.candidate.text, text: row.text.trim() }
-    }))
+    return this.readyRows.map(row => {
+      const text = row.text.trim()
+      const candidate: PdfDimensionCandidate<Id> = {
+        ...row.candidate,
+        text: { ...row.candidate.text, text }
+      }
+      // A value the user typed is real text, no longer a stand-in.
+      if (text !== row.candidate.text.text) candidate.measuredText = false
+      return candidate
+    })
   }
 
   /**

@@ -154,10 +154,7 @@ export class AcUiPdfDimPanel<Id> {
     this.styleSection.classList.toggle('is-collapsed', this.styleCollapsed)
     this.styleBody.hidden = this.styleCollapsed
     this.styleChevron.textContent = this.styleCollapsed ? '▶' : '▼'
-    this.styleHeader.setAttribute(
-      'aria-expanded',
-      String(!this.styleCollapsed)
-    )
+    this.styleHeader.setAttribute('aria-expanded', String(!this.styleCollapsed))
   }
 
   selectFirst() {
@@ -338,6 +335,9 @@ function kindLabel(kind: string): string {
   if (kind === 'radius') return t('kindRadius')
   if (kind === 'diameter') return t('kindDiameter')
   if (kind === 'angular') return t('kindAngular')
+  if (kind === 'aligned') return t('kindAligned')
+  if (kind === 'arcLength') return t('kindArcLength')
+  if (kind === 'ordinate') return t('kindOrdinate')
   return kind
 }
 

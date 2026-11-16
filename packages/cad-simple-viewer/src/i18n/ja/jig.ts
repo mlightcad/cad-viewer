@@ -2040,6 +2040,8 @@ export default {
       recoverHint: '円、円弧、曲線、文字、ハッチング、ブロックを再構築します',
       modeVisual: 'PDF の見た目を保持',
       visualHint: 'PDF に描かれたとおりにパスと文字を読み込みます',
+      recognizeDimensions: '寸法を認識',
+      recognizeDimensionsHint: '分解された寸法を寸法オブジェクトに戻します',
       ok: 'OK',
       cancel: 'キャンセル'
     }
@@ -2070,6 +2072,9 @@ export default {
       kindRadius: '半径',
       kindDiameter: '直径',
       kindAngular: '角度',
+      kindAligned: '平行',
+      kindArcLength: '弧長',
+      kindOrdinate: '座標',
       textTip: '寸法値（上書き）',
       measured: '測定値 {value}',
       hideStrokes: '元の線を非表示',

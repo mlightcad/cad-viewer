@@ -51,6 +51,15 @@ export {
   pdfEntitiesToDimInput
 } from './pdfDimensionConvert.js'
 export { pdfEntityToFeature } from './pdfDeprecatedMatching.js'
+export {
+  type AcApPdfImportDimensions,
+  acapPdfRecognizeImportDimensions
+} from './pdfImportDimensions.js'
+export {
+  acapPdfApplyColor,
+  acapPdfBuildPageEntities,
+  type AcApPdfPageEntities
+} from './pdfImportPageEntities.js'
 export { pdfEntityToStroke } from './pdfEntityStrokes.js'
 export {
   buildPdfImportShapes,
@@ -105,6 +114,7 @@ export {
   pdfArrowFromPolygon,
   pdfDimTextIds,
   type PdfAngularDimension,
+  type PdfArcLengthDimension,
   type PdfDimArc,
   type PdfDimCurve,
   type PdfDimensionCandidate,
@@ -115,6 +125,7 @@ export {
   type PdfDimText,
   type PdfDimUnreadText,
   type PdfLinearDimension,
+  type PdfOrdinateDimension,
   type PdfRadialDimension,
   recognizePdfDimensions,
   suggestPdfDimensionScale
@@ -127,6 +138,11 @@ export {
   acapPdfPrepareDimStrokeTexts,
   pdfDimTextPlacement
 } from './pdfDimStrokeTexts.js'
+export {
+  PDF_DIM_THRESHOLDS,
+  PDF_DIM_WEIGHTS,
+  type PdfDimProfile
+} from './recognition/pdfDimScoring.js'
 export {
   recognizePdfDimGlyph,
   recognizePdfDimStrokeText

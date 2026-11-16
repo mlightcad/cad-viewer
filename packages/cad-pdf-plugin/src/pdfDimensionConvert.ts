@@ -8,7 +8,9 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcDb3PointAngularDimension,
+  AcDbAlignedDimension,
   AcDbArc,
+  AcDbArcDimension,
   AcDbBlockReference,
   AcDbCircle,
   type AcDbDatabase,
@@ -18,6 +20,7 @@ import {
   type AcDbEntity,
   AcDbHatch,
   AcDbLine,
+  AcDbOrdinateDimension,
   AcDbPolyline,
   AcDbRadialDimension,
   AcDbRotatedDimension,
@@ -29,7 +32,8 @@ import {
 import {
   parsePdfDimensionValue,
   type PdfDimensionCandidate,
-  type PdfDimInput
+  type PdfDimInput,
+  type PdfLinearDimension
 } from './recognition/pdfDimensionPattern.js'
 
 /** Dimension style created for recovered dimensions. */
@@ -38,9 +42,19 @@ export const PDF_DIM_STYLE = 'PDF_DIM'
 /** Dimension entity created by {@link acapPdfCreateDimensions}. */
 export type PdfDimEntity =
   | AcDbRotatedDimension
+  | AcDbAlignedDimension
   | AcDbRadialDimension
   | AcDbDiametricDimension
   | AcDb3PointAngularDimension
+  | AcDbArcDimension
+  | AcDbOrdinateDimension
+
+/** Whether `c` is a linear (rotated or aligned) dimension. */
+function isLinear<Id>(
+  c: PdfDimensionCandidate<Id>
+): c is PdfLinearDimension<Id> {
+  return c.kind === 'linear' || c.kind === 'aligned'
+}
 
 /**
  * Describes entities for {@link recognizePdfDimensions}: lines and 2-vertex
@@ -73,8 +87,13 @@ export function pdfEntitiesToDimInput<Id>(
       }
       if (entity.closed && vertices.length >= 3) {
         input.polygons.push({ id, vertices })
-      } else if (vertices.length === 2) {
-        input.segments.push({ id, p0: vertices[0], p1: vertices[1] })
+      } else if (vertices.length >= 2) {
+        // PDF paths often draw a dimension line and its extension as one
+        // open polyline. Each straight piece is a segment of the same id,
+        // so recognition consumes the polyline only when it uses it.
+        for (let i = 0; i + 1 < vertices.length; i++) {
+          input.segments.push({ id, p0: vertices[i], p1: vertices[i + 1] })
+        }
       }
     } else if (entity instanceof AcDbHatch) {
       // `pdfimport` imports a filled arrowhead as a solid hatch; its boundary
@@ -83,8 +102,12 @@ export function pdfEntitiesToDimInput<Id>(
       if (vertices) input.polygons.push({ id, vertices })
     } else if (entity instanceof AcDbCircle || entity instanceof AcDbArc) {
       input.curves.push({
+        id,
         center: { x: entity.center.x, y: entity.center.y },
-        radius: entity.radius
+        radius: entity.radius,
+        ...(entity instanceof AcDbArc
+          ? { startAngle: entity.startAngle, endAngle: entity.endAngle }
+          : {})
       })
       if (entity instanceof AcDbArc) {
         input.arcs!.push({
@@ -100,7 +123,8 @@ export function pdfEntitiesToDimInput<Id>(
         id,
         text: entity.textString,
         center: textCenter(entity),
-        height: entity.height
+        height: entity.height,
+        rotation: entity.rotation
       })
     }
   }
@@ -167,10 +191,7 @@ export function acapPdfDimStyleMetrics(
   candidates: PdfDimensionCandidate[],
   scale: number
 ): AcApPdfDimStyleMetrics {
-  const linear = candidates.filter(
-    (c): c is Extract<PdfDimensionCandidate, { kind: 'linear' }> =>
-      c.kind === 'linear'
-  )
+  const linear = candidates.filter(isLinear)
   // Dimensions drawn without terminators report size 0; they must not
   // shrink the arrows of the others, and alone fall back to the text height.
   const rawArrow =
@@ -183,8 +204,7 @@ export function acapPdfDimStyleMetrics(
     0
   // Bare dims (no terminators) keep the text height as arrow size so DIMASZ
   // does not shrink below the recovered label.
-  const arrowSize =
-    rawArrow || rawText || Math.max(measured * 0.05, 1)
+  const arrowSize = rawArrow || rawText || Math.max(measured * 0.05, 1)
   // Prefer arrow-relative text size. Stroke OCR often reports a cluster bbox
   // taller than the glyphs; CAD text is typically ≤ the arrow head.
   const textHeight =
@@ -359,8 +379,7 @@ export function acapPdfCreateDimensions<Id>(
   const name = styleName.trim() || PDF_DIM_STYLE
   const append = options?.append !== false
   const metrics = acapPdfDimStyleMetrics(candidates, scale)
-  const decimals =
-    db.tables.dimStyleTable.getAt(name)?.dimdec ?? metrics.dimdec
+  const decimals = db.tables.dimStyleTable.getAt(name)?.dimdec ?? metrics.dimdec
   const overrides = acapPdfDimStyleOverrides(metrics)
   const appearanceName = options?.appearanceFrom?.trim() || name
   const appearance =
@@ -381,17 +400,27 @@ export function acapPdfCreateDimensions<Id>(
   const created: PdfDimEntity[] = []
   try {
     for (const candidate of candidates) {
-      const prepared =
-        candidate.kind === 'linear'
-          ? ensureLinearExtensions(candidate)
-          : candidate
+      const prepared = isLinear(candidate)
+        ? ensureLinearExtensions(candidate)
+        : candidate
       const dimension = createDimension(prepared)
+      // Radial callouts put their text wherever the drafter dragged it; keep
+      // the PDF position instead of the computed home position.
+      if (prepared.kind === 'radius' || prepared.kind === 'diameter') {
+        dimension.textPosition = new AcGePoint3d(
+          prepared.text.center.x,
+          prepared.text.center.y,
+          0
+        )
+        dimension.isUsingDefaultTextPosition = false
+      }
       // Bake geometry with the override style (*DimOverride), then retarget
       // the entity to the permanent style name for the drawing.
       applyCurrentDimStyle(dimension, db)
       acdbWriteDimStyleOverrides(dimension, overrides)
       const value = parsePdfDimensionValue(prepared.text.text)
       const angular = prepared.kind === 'angular'
+      // Ordinate texts are coordinates, which DIMLFAC also scales.
       const expected = angular ? prepared.measured : prepared.measured * scale
       const plain = (angular ? /^[\s\d.,°]*$/ : /^[\s\d.,]*$/).test(
         prepared.text.text
@@ -400,13 +429,19 @@ export function acapPdfCreateDimensions<Id>(
         value !== undefined &&
         Math.abs(value - expected) <=
           Math.max(expected * 0.005, 0.5 * 10 ** -decimals)
-      if (!agrees || !plain) dimension.dimensionText = prepared.text.text
+      // A stand-in text (unread strokes) is the paper length; the
+      // dimension's own measurement × DIMLFAC is the better value.
+      if ((!agrees || !plain) && !prepared.measuredText) {
+        dimension.dimensionText = prepared.text.text
+      }
       const layer = layerOf?.(prepared)
       if (layer) dimension.layer = layer
       commitDimBlock(db, dimension)
       dimension.dimensionStyleName = name
       if (
-        prepared.kind === 'linear' &&
+        isLinear(prepared) &&
+        prepared.terminator !== 'tick' &&
+        prepared.terminator !== 'dot' &&
         prepared.arrowSize > 0 &&
         dimension.dimBlockId
       ) {
@@ -481,8 +516,8 @@ function orientLinearDimArrows(
  * away from the dimension line so the verticals stay visible after erase.
  */
 function ensureLinearExtensions<Id>(
-  candidate: Extract<PdfDimensionCandidate<Id>, { kind: 'linear' }>
-): Extract<PdfDimensionCandidate<Id>, { kind: 'linear' }> {
+  candidate: PdfLinearDimension<Id>
+): PdfLinearDimension<Id> {
   const ux = Math.cos(candidate.rotation)
   const uy = Math.sin(candidate.rotation)
   const nx = -uy
@@ -548,6 +583,30 @@ function createDimension<Id>(
   candidate: PdfDimensionCandidate<Id>
 ): PdfDimEntity {
   const pt = (p: { x: number; y: number }) => new AcGePoint3d(p.x, p.y, 0)
+  if (candidate.kind === 'aligned') {
+    return new AcDbAlignedDimension(
+      pt(candidate.xLine1),
+      pt(candidate.xLine2),
+      pt(candidate.dimLinePoint)
+    )
+  }
+  if (candidate.kind === 'arcLength') {
+    return new AcDbArcDimension(
+      pt(candidate.center),
+      pt(candidate.xLine1),
+      pt(candidate.xLine2),
+      pt(candidate.arcPoint)
+    )
+  }
+  if (candidate.kind === 'ordinate') {
+    const dimension = new AcDbOrdinateDimension(
+      pt(candidate.definingPoint),
+      pt(candidate.leaderEndPoint)
+    )
+    dimension.origin = pt(candidate.origin)
+    dimension.useXAxis = candidate.useXAxis
+    return dimension
+  }
   if (candidate.kind === 'linear') {
     const dimension = new AcDbRotatedDimension(
       pt(candidate.xLine1),
@@ -571,6 +630,9 @@ function createDimension<Id>(
       pt(candidate.chordPoint),
       candidate.leaderLength
     )
+  }
+  if (candidate.kind !== 'diameter') {
+    throw new Error(`Unknown PDF dimension kind: ${candidate.kind}`)
   }
   const far = {
     x: 2 * candidate.center.x - candidate.chordPoint.x,

@@ -1,4 +1,5 @@
 import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecognition.js'
+import type { PdfDimensionOptions } from './recognition/pdfDimensionPattern.js'
 import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecognition.js'
 
 /**
@@ -25,7 +26,8 @@ export interface AcApPdfImportOptions {
   /**
    * Import mode; it sets the defaults of the reconstruction fields below
    * (`visual` turns off `recognizeCurves`, `removeDuplicates`,
-   * `mergeTextRuns`, `formBlocks` and `textStyles`). Explicit fields still
+   * `mergeTextRuns`, `formBlocks`, `textStyles`, `recognizeHatches` and
+   * `recognizeDimensions`). Explicit fields still
    * win. Default `'recover'`.
    */
   mode?: AcApPdfImportMode
@@ -86,6 +88,16 @@ export interface AcApPdfImportOptions {
   /** Tuning for pattern hatch recognition. */
   hatchRecognition?: PdfHatchRecognitionOptions
   /**
+   * Turn exploded dimensions (arrowheads or ticks, dimension and extension
+   * lines, value text, including SHX stroke text) back into dimension
+   * entities on the `PDF_DIM` dimension style. Only well-supported matches
+   * are converted; `pdfdim` can review the rest. Default `true` in `recover`
+   * mode, `false` in `visual` mode.
+   */
+  recognizeDimensions?: boolean
+  /** Tuning for dimension recognition. */
+  dimensionRecognition?: Omit<PdfDimensionOptions, 'profile' | 'debug'>
+  /**
    * Give imported text a `PDF_<font family>` text style using the PDF font's
    * family. Default `true`.
    */
@@ -107,9 +119,15 @@ export interface AcApPdfImportOptions {
 
 /** Fully populated {@link AcApPdfImportOptions}. */
 export type AcApResolvedPdfImportOptions = Required<
-  Omit<AcApPdfImportOptions, 'curveRecognition' | 'hatchRecognition'>
+  Omit<
+    AcApPdfImportOptions,
+    'curveRecognition' | 'hatchRecognition' | 'dimensionRecognition'
+  >
 > &
-  Pick<AcApPdfImportOptions, 'curveRecognition' | 'hatchRecognition'>
+  Pick<
+    AcApPdfImportOptions,
+    'curveRecognition' | 'hatchRecognition' | 'dimensionRecognition'
+  >
 
 /**
  * Fills defaults for {@link AcApPdfImportOptions}.
@@ -138,6 +156,8 @@ export function resolveAcApPdfImportOptions(
     fillHatches: options?.fillHatches ?? true,
     recognizeHatches: options?.recognizeHatches ?? recover,
     hatchRecognition: options?.hatchRecognition,
+    recognizeDimensions: options?.recognizeDimensions ?? recover,
+    dimensionRecognition: options?.dimensionRecognition,
     textStyles: options?.textStyles ?? recover,
     fitTextWidth: options?.fitTextWidth ?? true,
     images: options?.images ?? true
