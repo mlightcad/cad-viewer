@@ -12,6 +12,8 @@ Al realizar el análisis de DWG/DXF, el procesamiento geométrico y el renderiza
 
 También ofrece algo que rara vez encontrará en otros visores CAD: **exportación con un solo clic a un único archivo HTML autocontenido**. El `.html` descargado incorpora la instantánea del dibujo y un visor ligero en tiempo de ejecución, de modo que los destinatarios pueden abrir, desplazar, hacer zoom, alternar capas y medir distancias en cualquier navegador moderno **sin aplicación CAD, sin servidor y sin instalación**. La mayoría de los visores CAD de escritorio y web solo permiten ver dentro de su propio producto; MLightCAD convierte un dibujo activo en un artefacto portable y sin conexión que puede enviar por correo, archivar o alojar en un servidor de archivos estático, ideal para compartir con clientes, archivos de cumplimiento normativo y flujos de trabajo en entornos aislados. El visor sin conexión también utiliza mucha menos memoria que las herramientas de escritorio tradicionales al abrir el mismo dibujo (consulte la [comparación de memoria](#uso-de-memoria-del-html-autocontenido) más abajo).
 
+MLightCAD también admite la **prerrepresentación del lado del servidor**. El dibujo se analiza y procesa una sola vez en el servidor, y el cliente simplemente muestra el resultado prerrepresentado sin volver a analizar el DWG/DXF ni reconstruir la geometría. Esto reduce drásticamente el uso de memoria en el cliente y hace que las aperturas posteriores del mismo dibujo sean mucho más rápidas, algo especialmente adecuado para visualizar planos en dispositivos móviles.
+
 - [**🌐 Página de inicio**](https://mlightcad.com/)
 - **🌐 Demo en vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 Documentación de la API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
@@ -269,9 +271,9 @@ Leyenda:
 
 * [x] Marco de edición de entidades
 * [x] Mover
-* [x] Copiar
+* [x] Copiar/Pegar
 * [x] Rotar
-* [ ] Escalar
+* [x] Escalar
 * [x] Eliminar
 * [x] Deshacer / rehacer
 

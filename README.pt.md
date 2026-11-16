@@ -12,6 +12,8 @@ Ao realizar a análise de DWG/DXF, o processamento geométrico e a renderizaçã
 
 Ele também oferece algo que você raramente encontra em outros visualizadores CAD — **exportação com um clique para um único arquivo HTML autossuficiente**. O `.html` baixado incorpora o snapshot do desenho e um runtime leve de visualização, para que os destinatários possam abrir, aplicar pan, zoom, alternar camadas e medir distâncias em qualquer navegador moderno **sem app CAD, sem servidor e sem instalação**. A maioria dos visualizadores CAD desktop e web só permite visualizar dentro do próprio produto; o MLightCAD transforma um desenho ativo em um artefato portátil e offline que você pode enviar por e-mail, arquivar ou hospedar em um servidor de arquivos estáticos — ideal para compartilhar com clientes, arquivos de conformidade e fluxos de trabalho air-gapped. O visualizador offline também usa muito menos memória do que ferramentas desktop tradicionais ao abrir o mesmo desenho (veja a [comparação de memória](#uso-de-memória-do-html-autossuficiente) abaixo).
 
+O MLightCAD também oferece suporte a **pré-renderização no servidor**. O desenho é analisado e processado uma única vez no servidor, e o cliente apenas exibe o resultado pré-renderizado, sem reanalisar o DWG/DXF nem reconstruir a geometria. Isso reduz drasticamente o uso de memória no cliente e torna as aberturas seguintes do mesmo desenho muito mais rápidas — uma abordagem especialmente adequada para visualizar desenhos em dispositivos móveis.
+
 - [**🌐 Página inicial**](https://mlightcad.com/)
 - **🌐 Demo ao vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
@@ -269,9 +271,9 @@ Legenda:
 
 * [x] Framework de edição de entidades
 * [x] Mover
-* [x] Copiar
+* [x] Copiar/Colar
 * [x] Rotacionar
-* [ ] Escalar
+* [x] Escalar
 * [x] Excluir
 * [x] Desfazer / refazer
 

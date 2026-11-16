@@ -12,6 +12,8 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 
 It also offers something you will rarely find in other CAD viewers—**one-click export to a single, self-contained HTML file**. The downloaded `.html` embeds the drawing snapshot and a lightweight viewer runtime, so recipients can open, pan, zoom, toggle layers, and measure distances in any modern browser with **no CAD app, no server, and no install**. Most desktop and web CAD viewers only let you view inside their own product; MLightCAD turns a live drawing into a portable, offline artifact you can email, archive, or drop on a static file host—ideal for sharing with clients, compliance archives, and air-gapped workflows. The offline viewer also uses far less memory than traditional desktop tools when opening the same drawing (see [memory comparison](#self-contained-html-memory-usage) below).
 
+MLightCAD also supports **server-side prerendering**. The drawing is parsed and processed once on the server, and the client simply displays the prerendered result instead of re-parsing the DWG/DXF and rebuilding geometry itself. This keeps client-side memory usage very low and makes the second and subsequent opens of the same drawing much faster—an approach particularly well suited to viewing drawings on mobile devices.
+
 - [**🌐 Home Page**](https://mlightcad.com/)
 - **🌐 Live Demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [MCP Server](https://gitmcp.io/mlightcad/cad-viewer)
@@ -269,9 +271,9 @@ Legend:
 
 * [x] Entity editing framework
 * [x] Move
-* [x] Copy
+* [x] Copy/Paste
 * [x] Rotate
-* [ ] Scale
+* [x] Scale
 * [x] Delete
 * [x] Undo / redo
 

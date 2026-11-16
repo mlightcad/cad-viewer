@@ -12,6 +12,8 @@ Tím, že parsování DWG/DXF, zpracování geometrie a vykreslování probíhá
 
 Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — **export jedním kliknutím do jediného samostatného souboru HTML**. Stažený soubor `.html` obsahuje snímek výkresu a lehké běhové prostředí prohlížeče, takže příjemci mohou v jakémkoli moderním prohlížeči otevírat, posouvat, přibližovat, přepínat vrstvy a měřit vzdálenosti **bez CAD aplikace, bez serveru a bez instalace**. Většina desktopových i webových CAD prohlížečů umožňuje prohlížení pouze ve vlastním produktu; MLightCAD promění živý výkres v přenosný offline artefakt, který můžete poslat e-mailem, archivovat nebo umístit na statický souborový hosting — ideální pro sdílení s klienty, archivy pro compliance a izolovaná prostředí bez připojení k síti. Offline prohlížeč také spotřebovává výrazně méně paměti než tradiční desktopové nástroje při otevírání stejného výkresu (viz [porovnání paměti](#spotřeba-paměti-samostatného-html) níže).
 
+MLightCAD navíc podporuje **předrenderování na straně serveru**. Výkres se jednou zpracuje na serveru a klient pouze zobrazí předrenderovaný výsledek, aniž by znovu parsoval DWG/DXF nebo znovu sestavoval geometrii. Výrazně to snižuje spotřebu paměti na klientu a opakované otevření stejného výkresu je mnohem rychlejší — ideální pro prohlížení výkresů na mobilních zařízeních.
+
 - [**🌐 Domovská stránka**](https://mlightcad.com/)
 - **🌐 Živé demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
@@ -269,9 +271,9 @@ Legenda:
 
 * [x] Rámec pro úpravu entit
 * [x] Posun
-* [x] Kopírování
+* [x] Kopírování/Vložení
 * [x] Otočení
-* [ ] Měřítko
+* [x] Měřítko
 * [x] Smazání
 * [x] Zpět / vpřed
 

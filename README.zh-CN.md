@@ -12,6 +12,8 @@ MLightCAD 是`全球首个完全运行在浏览器端、无需依赖任何后端
 
 此外，它还提供市面上 CAD 看图软件中极为少见的能力——**一键导出为单个自包含 HTML 文件**。下载的 `.html` 内嵌图纸快照与轻量查看器运行时，接收方只需用任意现代浏览器即可离线打开、平移缩放、切换图层并测量距离，**无需安装 CAD 软件、无需服务器、无需再打开 MLightCAD**。多数桌面或 Web CAD 看图工具只能在自家产品内查看；MLightCAD 则把当前图纸变成可邮件发送、可归档、可放到静态站点上的便携文件，非常适合对外分享、合规留档与内网隔离环境。离线查看器的内存占用也远低于传统桌面 CAD 看图软件（见下文[内存对比](#自包含-html-内存占用)）。
 
+MLightCAD 同时支持**服务器端预渲染**：图纸在服务器上完成一次解析与处理，客户端只需直接显示预渲染结果，无需再次解析 DWG/DXF 或重建几何数据。这能大幅降低客户端内存占用，并让同一图纸的第二次及之后的打开速度显著加快，尤其适合在移动端看图。
+
 - [**🌐 主页**](https://mlightcad.com/)
 - **🌐 在线演示**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
@@ -269,9 +271,9 @@ MLightCAD 针对复杂图纸渲染进行了多项优化，可在保持高帧率�
 
 -   [x] 实体编辑框架
 -   [x] 移动（Move）
--   [x] 复制（Copy）
+-   [x] 复制/粘贴（Copy/Paste）
 -   [x] 旋转（Rotate）
--   [ ] 缩放（Scale）
+-   [x] 缩放（Scale）
 -   [x] 删除（Delete）
 -   [x] 撤销 / 重做（Undo / Redo）
 
