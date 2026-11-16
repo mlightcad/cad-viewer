@@ -1,5 +1,24 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.5
+
+### Minor Changes
+
+- fix: makes published type declarations resolve under moduleResolution nodenext by emitting explicit .js import specifiers, keeps middle-button panning working while the PAN command is active, and upgrades realdwg-web to 1.15.30 to pick up the latest data-model and DWG conversion fixes.
+
+### Patch Changes
+
+- ac569e8: Fix published type declarations under `moduleResolution: node16`/`nodenext` (#930). Relative imports in package sources now use explicit Node-ESM paths (`./foo.js`, `./foo/index.js`), so the emitted `lib/*.d.ts` resolve and exports such as `AcApDocManager` no longer disappear or degrade to `any`. `@mlightcad/cad-editor` now ships a single bundled `dist/cad-editor.d.ts` (its per-file declarations re-exported `.vue` modules, which Node-ESM resolution cannot follow), so `MlCadViewer` and the other editor exports resolve as well.
+- aad8aed: Keep middle-button pan in pan mode
+
+  Switching the view to `AcEdViewMode.PAN` replaced the mouse mapping with left
+  button only, so dragging with the wheel stopped panning while the hand tool
+  was on. Pan mode now maps both left and middle buttons, matching selection
+  mode and AutoCAD, where the wheel always pans.
+
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.5
+
 ## 1.8.0-preview.4
 
 ### Minor Changes

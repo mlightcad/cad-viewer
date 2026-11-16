@@ -1,5 +1,21 @@
 # @mlightcad/cad-pdf-plugin
 
+## 1.8.0-preview.5
+
+### Minor Changes
+
+- fix: makes published type declarations resolve under moduleResolution nodenext by emitting explicit .js import specifiers, keeps middle-button panning working while the PAN command is active, and upgrades realdwg-web to 1.15.30 to pick up the latest data-model and DWG conversion fixes.
+
+### Patch Changes
+
+- Updated dependencies [ac569e8]
+- Updated dependencies [aad8aed]
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.5
+  - @mlightcad/cad-pdf-core@1.8.0-preview.5
+  - @mlightcad/pdf-renderer@1.8.0-preview.5
+  - @mlightcad/three-renderer@1.8.0-preview.5
+
 ## 1.8.0-preview.4
 
 ### Minor Changes
