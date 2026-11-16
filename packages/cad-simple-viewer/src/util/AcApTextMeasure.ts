@@ -7,7 +7,7 @@ import { FontManager } from '@mlightcad/mtext-renderer'
 export interface AcApTextMeasureFontSource {
   findAndReplaceFont(fontName: string): string
   getFontScaleFactor(fontName: string): number
-  getFontType(fontName: string): string | undefined
+  getFontType(fontName: string): 'shx' | 'mesh' | undefined
   getCharShape(
     char: string,
     fontName: string,
@@ -15,7 +15,8 @@ export interface AcApTextMeasureFontSource {
   ): { width: number } | undefined
   getCharShapeFromDefaults(
     char: string,
-    size: number
+    size: number,
+    preferredType?: 'shx' | 'mesh'
   ): { width: number } | undefined
 }
 
@@ -25,7 +26,7 @@ export interface AcApTextMeasureFontSource {
  * loaded), then the style big font and the default fonts for characters it
  * lacks.
  *
- * Like the renderer (`@mlightcad/mtext-renderer` 0.13.9), each glyph is
+ * Like the renderer (`@mlightcad/mtext-renderer` 0.13.10), each glyph is
  * sized with the scale factor of the font that supplies it
  * (`height × scale`): a big font such as `gbcbig.shx` has its own scale, so
  * a CJK cell of `txt.shx` + `gbcbig.shx` is one text height wide, not the
@@ -75,7 +76,7 @@ export function acapMeasureTextWidth(
     const shape =
       source.getCharShape(char, font, size) ??
       (bigFont ? source.getCharShape(char, bigFont, bigSize) : undefined) ??
-      source.getCharShapeFromDefaults(char, size)
+      source.getCharShapeFromDefaults(char, size, source.getFontType(font))
     if (!shape || !(shape.width > 0)) return undefined
     width += shape.width
   }

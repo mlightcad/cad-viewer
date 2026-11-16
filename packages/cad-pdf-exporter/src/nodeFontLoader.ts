@@ -15,7 +15,7 @@ import { nodeFetchBytes } from './nodeProxy.js'
 
 /** Same CDN root the viewer uses (`…/cad-data/fonts/`). */
 export const DEFAULT_EXPORT_FONTS_URL =
-  'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/'
+  'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/fonts/'
 
 const DEFAULT_FONTS_PRESET = 'modern' as const
 
@@ -199,6 +199,21 @@ function normalizeFontsBaseUrl(url: string): string {
   return url.endsWith('/') ? url : `${url}/`
 }
 
+/**
+ * Maps a jsDelivr GitHub fonts base URL to raw `fonts.json` on the repo
+ * default branch (same fallback as `@mlightcad/mtext-renderer`).
+ */
+function gitHubRawFontsJsonUrl(baseUrl: string): string | null {
+  const match = baseUrl.match(
+    /^https?:\/\/cdn\.jsdelivr\.net\/gh\/([^/]+)\/([^/@]+)(?:@[^/]+)?\/(.*)$/i
+  )
+  if (!match) return null
+  const owner = match[1]
+  const repo = match[2]
+  const path = match[3].endsWith('/') ? match[3] : `${match[3]}/`
+  return `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}fonts.json`
+}
+
 function fontTypeForFile(file: string): 'mesh' | 'shx' {
   const ext = extname(file).toLowerCase()
   return ext === '.shx' ? 'shx' : 'mesh'
@@ -369,6 +384,10 @@ async function createLocalFontLibrary(
 function createFetchFontLibrary(baseUrl: string): NodeFontLibrary {
   let available: FontInfo[] = []
   let availablePromise: Promise<FontInfo[]> | null = null
+  let catalogRefreshPromise: Promise<void> | null = null
+  let catalogRefreshAttempted = false
+  let gitHubRawCatalogPromise: Promise<boolean> | null = null
+  let gitHubRawCatalogAttempted = false
   const entries = new Map<string, FontEntry>()
   let currentBase = baseUrl
 
@@ -381,30 +400,106 @@ function createFetchFontLibrary(baseUrl: string): NodeFontLibrary {
       return response.bytes
     })
 
+  function applyCatalog(fonts: FontInfo[], fileBaseUrl: string): void {
+    entries.clear()
+    for (const font of fonts) {
+      font.url = `${fileBaseUrl}${font.file}`
+      indexFont(entries, font, readerFor(font.url))
+    }
+    available = fonts
+  }
+
+  async function fetchCatalogJson(
+    url: string,
+    bypassHttpCache?: boolean
+  ): Promise<FontInfo[]> {
+    const response = await nodeFetchBytes(
+      url,
+      bypassHttpCache ? { bypassHttpCache: true } : undefined
+    )
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(
+        `Failed to fetch font catalog: ${url} (${response.status})`
+      )
+    }
+    return JSON.parse(new TextDecoder().decode(response.bytes)) as FontInfo[]
+  }
+
   async function ensureCatalog(): Promise<FontInfo[]> {
     if (available.length > 0) return available
     if (availablePromise) return availablePromise
     const url = `${currentBase}fonts.json`
+    const baseAtStart = currentBase
     availablePromise = (async () => {
-      const response = await nodeFetchBytes(url)
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(
-          `Failed to fetch font catalog: ${url} (${response.status})`
-        )
-      }
-      const fonts = JSON.parse(
-        new TextDecoder().decode(response.bytes)
-      ) as FontInfo[]
-      for (const font of fonts) {
-        font.url = `${currentBase}${font.file}`
-        indexFont(entries, font, readerFor(font.url))
-      }
-      available = fonts
+      const fonts = await fetchCatalogJson(url)
+      if (currentBase !== baseAtStart) return ensureCatalog()
+      applyCatalog(fonts, currentBase)
       return fonts
     })().finally(() => {
       availablePromise = null
     })
     return availablePromise
+  }
+
+  async function refreshCatalogFromCdn(): Promise<void> {
+    const baseAtStart = currentBase
+    const fonts = await fetchCatalogJson(`${currentBase}fonts.json`, true)
+    if (currentBase !== baseAtStart) return
+    applyCatalog(fonts, currentBase)
+  }
+
+  async function replaceCatalogFromGitHubRaw(): Promise<boolean> {
+    const rawUrl = gitHubRawFontsJsonUrl(currentBase)
+    if (!rawUrl) return false
+    const baseAtStart = currentBase
+    try {
+      const fonts = await fetchCatalogJson(rawUrl, true)
+      if (currentBase !== baseAtStart) return false
+      // Keep binary URLs on the CDN base; only alias metadata comes from raw.
+      applyCatalog(fonts, currentBase)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Stale jsDelivr branch `fonts.json` can omit newly published faces. Revalidate
+   * once per baseUrl, then fall back once to GitHub raw (mirrors DefaultFontLoader).
+   */
+  async function ensureCatalogRefreshedOnce(
+    neededNames: readonly string[]
+  ): Promise<void> {
+    if (catalogRefreshPromise) {
+      await catalogRefreshPromise
+    } else if (!catalogRefreshAttempted) {
+      catalogRefreshAttempted = true
+      const promise = refreshCatalogFromCdn()
+        .catch(() => undefined)
+        .finally(() => {
+          if (catalogRefreshPromise === promise) catalogRefreshPromise = null
+        })
+      catalogRefreshPromise = promise
+      await promise
+    }
+
+    const stillMissing = neededNames.some(name => {
+      const key = stemOf(name)
+      return key.length > 0 && !entries.has(key)
+    })
+    if (!stillMissing) return
+
+    if (gitHubRawCatalogPromise) {
+      await gitHubRawCatalogPromise
+      return
+    }
+    if (gitHubRawCatalogAttempted) return
+    gitHubRawCatalogAttempted = true
+    const promise = replaceCatalogFromGitHubRaw().finally(() => {
+      if (gitHubRawCatalogPromise === promise) gitHubRawCatalogPromise = null
+    })
+    gitHubRawCatalogPromise = promise
+    await promise
   }
 
   const loader: FontLoader = {
@@ -418,12 +513,23 @@ function createFetchFontLibrary(baseUrl: string): NodeFontLibrary {
       available = []
       entries.clear()
       availablePromise = null
+      catalogRefreshPromise = null
+      catalogRefreshAttempted = false
+      gitHubRawCatalogPromise = null
+      gitHubRawCatalogAttempted = false
     },
     async getAvailableFonts() {
       return ensureCatalog()
     },
     async load(fontNames: readonly string[]): Promise<FontLoadStatus[]> {
       await ensureCatalog()
+      const missingFromCatalog = fontNames.some(name => {
+        const key = stemOf(name)
+        return key.length > 0 && !entries.has(key)
+      })
+      if (missingFromCatalog) {
+        await ensureCatalogRefreshedOnce(fontNames)
+      }
       const statuses: FontLoadStatus[] = []
       for (const name of fontNames) {
         const key = stemOf(name)
@@ -470,6 +576,10 @@ function createFetchFontLibrary(baseUrl: string): NodeFontLibrary {
     async find(fontName) {
       try {
         await ensureCatalog()
+        const key = stemOf(fontName)
+        if (key && !entries.has(key)) {
+          await ensureCatalogRefreshedOnce([fontName])
+        }
       } catch {
         return undefined
       }

@@ -49,7 +49,7 @@ await exportFileToHtml('drawing.dwg', 'drawing.html', {
   // cad-data checkout (faces resolved from its fonts/ directory).
   fontsDir: 'D:/code/cad-data',
   // Or override the remote library (ignored when fontsDir is set).
-  // fontsUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/'
+  // fontsUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/fonts/'
   // Optional commercial DWG parser (must install @mlightcad/dwg-converter):
   // dwgParser: 'dwg',
   // dwgLicenseKey: process.env.DWG_LICENSE_KEY
@@ -131,7 +131,7 @@ folder plus `fonts.json`, or a cad-data checkout (faces resolved from its
 `fonts/` directory). It takes precedence over `fontsUrl`.
 
 Without `fontsDir`, faces come from `fontsUrl` (default
-`https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/`). Those downloads honor
+`https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/fonts/`). Those downloads honor
 `HTTPS_PROXY` / `HTTP_PROXY`, and on Windows the current user's Internet
 Settings proxy when those variables are unset.
 

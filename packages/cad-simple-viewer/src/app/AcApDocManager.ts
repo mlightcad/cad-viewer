@@ -164,7 +164,7 @@ import {
 } from './notification/index.js'
 import { syncCurrentSpaceFromTileMode } from './syncCurrentSpaceFromTileMode.js'
 
-const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
+const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
 const DEFAULT_NEW_DRAWING_TEMPLATE = 'templates/acadiso.dxf'
 /**

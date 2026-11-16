@@ -10,7 +10,7 @@
  */
 const FONT_URL =
   process.env.FONT_URL ??
-  'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/arial.woff'
+  'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/fonts/arial.woff'
 const LOOPS = Number(process.env.LOOPS ?? 20)
 
 /** Mirrors IndexedDB / catalog name lookup for bench purposes. */
