@@ -96,8 +96,10 @@ export class AcTrLayoutView extends AcTrBaseView {
         MIDDLE: THREE.MOUSE.PAN
       }
     } else if (value == AcEdViewMode.PAN) {
+      // Keep middle-button pan so it works regardless of the active mode.
       this._cameraControls.mouseButtons = {
-        LEFT: THREE.MOUSE.PAN
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.PAN
       }
     }
     this._cameraControls.update()
