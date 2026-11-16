@@ -1,4 +1,4 @@
-import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgEntity } from './AcSvgEntity.js'
 
 /**
  * SVG group entity: keeps live children so INSERT clones and ATTRIB

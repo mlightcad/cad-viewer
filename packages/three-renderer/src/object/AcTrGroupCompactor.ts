@@ -3,13 +3,13 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { canMergeIntoBatchOrigin } from '../draw/AcTrBatchDrawPolicy'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import { canMergeIntoBatchOrigin } from '../draw/AcTrBatchDrawPolicy.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
 import {
   getObjectUserData,
   getSceneDrawableUserData
-} from '../util/AcTrObjectUserData'
-import { AcTrEntity } from './AcTrEntity'
+} from '../util/AcTrObjectUserData.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 /**
  * Drawable primitive family used as part of the compact merge key.

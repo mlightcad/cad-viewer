@@ -1,4 +1,4 @@
-import { AcApDocManager } from '../app'
+import { AcApDocManager } from '../app/index.js'
 import {
   type AcApMeasurementRecord,
   type AcApMeasurementType,
@@ -10,9 +10,9 @@ import {
   removeMeasurement,
   subscribeMeasurements,
   subscribeMeasurementSelection
-} from '../command'
-import type { AcUiI18n } from '../i18n/AcUiI18n'
-import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
+} from '../command/index.js'
+import type { AcUiI18n } from '../i18n/AcUiI18n.js'
+import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles.js'
 
 /** Types exposed as filter toggles in the measurement list. */
 const MEASURE_FILTER_TYPES = [

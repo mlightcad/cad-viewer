@@ -11,7 +11,7 @@ import {
   PDFRef
 } from 'pdf-lib'
 
-import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
+import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil.js'
 import type {
   AcPdfColorMode,
   AcPdfFillStyle,
@@ -20,10 +20,10 @@ import type {
   AcPdfPoint,
   AcPdfRgb,
   AcPdfStrokeStyle
-} from '../renderer/AcPdfStyle'
-import type { AcPdfFontManager } from './AcPdfFontManager'
-import { pdfEntityText, pdfHexText } from './AcPdfMarkedContent'
-import { setPageNamedResource } from './AcPdfOcgManager'
+} from '../renderer/AcPdfStyle.js'
+import type { AcPdfFontManager } from './AcPdfFontManager.js'
+import { pdfEntityText, pdfHexText } from './AcPdfMarkedContent.js'
+import { setPageNamedResource } from './AcPdfOcgManager.js'
 
 const KAPPA = 0.5522847498307936
 

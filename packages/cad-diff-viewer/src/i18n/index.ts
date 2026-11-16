@@ -1,6 +1,6 @@
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 
-import { ar, cs, en, ja, ko, tr, zh } from './messages'
+import { ar, cs, en, ja, ko, tr, zh } from './messages.js'
 
 /** Message namespace merged into {@link AcApI18n}. */
 export const DIFF_VIEWER_I18N_PREFIX = 'diffViewer'

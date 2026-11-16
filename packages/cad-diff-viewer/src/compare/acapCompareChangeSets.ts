@@ -1,7 +1,7 @@
 import type {
   AcApDiffChangeKind,
   AcApDiffEntityHit
-} from './acapCompareDrawings'
+} from './acapCompareDrawings.js'
 
 /** Markup-cloud color role derived from a change set's kinds. */
 export type AcApDiffCloudColorRole = 'added' | 'deleted' | 'modified'

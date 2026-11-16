@@ -5,7 +5,7 @@
  * @packageDocumentation
  */
 
-import type { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
+import type { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
 
 /** Toolbar edge placement relative to the viewer host element. */
 export type AcUiToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
@@ -291,13 +291,13 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
  */
 export interface AcUiDefaultToolbarContext {
   /** Returns the current UI theme. */
-  getTheme: () => import('../../editor/global/AcEdUiTheme').AcEdUiTheme
+  getTheme: () => import('../../editor/global/AcEdUiTheme.js').AcEdUiTheme
   /** Applies a UI theme change. */
-  setTheme: (theme: import('../../editor/global/AcEdUiTheme').AcEdUiTheme) => void
+  setTheme: (theme: import('../../editor/global/AcEdUiTheme.js').AcEdUiTheme) => void
   /** Returns the active application locale. */
-  getLocale: () => import('../../i18n/AcApI18n').AcApLocale
+  getLocale: () => import('../../i18n/AcApI18n.js').AcApLocale
   /** Sets the application locale. */
-  setLocale: (locale: import('../../i18n/AcApI18n').AcApLocale) => void
+  setLocale: (locale: import('../../i18n/AcApI18n.js').AcApLocale) => void
   /** Returns the current toolbar edge placement. */
   getPlacement: () => AcUiToolbarPlacement
   /** Moves the toolbar to the given host edge. */

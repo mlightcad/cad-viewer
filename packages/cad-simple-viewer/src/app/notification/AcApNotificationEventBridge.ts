@@ -1,23 +1,23 @@
 import type { AcDbParsingTaskStats, AcDbProgressdEventArgs } from '@mlightcad/data-model'
 
-import { eventBus } from '../../editor/global/eventBus'
-import { acapAnalyzeUnsupportedDrawing } from '../../util/AcApAnalyzeUnsupportedDrawing'
-import { AcApFontUtil } from '../../util/AcApFontUtil'
-import { acapFormatFontsMissedReplacement } from '../../util/AcApFormatFontMissedMessage'
+import { eventBus } from '../../editor/global/eventBus.js'
+import { acapAnalyzeUnsupportedDrawing } from '../../util/AcApAnalyzeUnsupportedDrawing.js'
+import { AcApFontUtil } from '../../util/AcApFontUtil.js'
+import { acapFormatFontsMissedReplacement } from '../../util/AcApFormatFontMissedMessage.js'
 import {
   acapFormatUnsupportedEntitiesMessage,
   acapI18nTranslate
-} from '../../util/AcApFormatUnsupportedEntitiesMessage'
+} from '../../util/AcApFormatUnsupportedEntitiesMessage.js'
 import {
   acapFormatOpenFileErrorMessage,
   acapFormatOpenFileErrorTitle,
   type AcApOpenFileErrorParams
-} from '../../util/AcApOpenFileErrorMessage'
+} from '../../util/AcApOpenFileErrorMessage.js'
 import type {
   AcApDocManager,
   AcDbDocumentEventArgs
-} from '../AcApDocManager'
-import type { AcApNotificationCenter } from './AcApNotificationTypes'
+} from '../AcApDocManager.js'
+import type { AcApNotificationCenter } from './AcApNotificationTypes.js'
 
 /**
  * Subscribes to engine events and forwards user-visible alerts into the active

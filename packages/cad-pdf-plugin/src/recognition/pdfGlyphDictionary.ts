@@ -7,7 +7,7 @@
  * whose glyphs are all known are recognized without asking.
  */
 
-import type { PdfTextGlyph, PdfTextLineCandidate } from './pdfGlyphClustering'
+import type { PdfTextGlyph, PdfTextLineCandidate } from './pdfGlyphClustering.js'
 
 /** Grid used to quantize normalized glyph coordinates (1/GRID of height). */
 const GRID = 16

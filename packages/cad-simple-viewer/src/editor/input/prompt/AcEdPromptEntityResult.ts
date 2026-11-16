@@ -1,7 +1,7 @@
 import { AcDbObjectId, AcGePoint3dLike } from '@mlightcad/data-model'
 
-import { AcEdPromptResult } from './AcEdPromptResult'
-import { AcEdPromptStatus } from './AcEdPromptStatus'
+import { AcEdPromptResult } from './AcEdPromptResult.js'
+import { AcEdPromptStatus } from './AcEdPromptStatus.js'
 
 /**
  * Result of a prompt that asks the user to pick a single entity.

@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData.js'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
   copyArrayContents,
   isBatchGeometryActive
-} from './AcTrBatchedGeometryInfo'
+} from './AcTrBatchedGeometryInfo.js'
 import {
   applyGeometryAt,
   assertReservedCapacity,
@@ -18,8 +18,8 @@ import {
   reserveGeometryId,
   resolveReservedCount,
   validateGeometry
-} from './AcTrBatchedMixin'
-import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
+} from './AcTrBatchedMixin.js'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility/index.js'
 
 /**
  * Per-slot geometry-info type used by {@link AcTrBatchedPoint}.

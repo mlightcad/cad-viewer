@@ -8,7 +8,7 @@ import {
   AcUiFullscreenPanel,
   type AcUiFullscreenPanelLabels,
   type AcUiFullscreenPanelOptions
-} from './AcUiFullscreenPanel'
+} from './AcUiFullscreenPanel.js'
 
 /** Localized chrome strings for {@link AcUiHelpPanel}. */
 export type AcUiHelpPanelLabels = AcUiFullscreenPanelLabels

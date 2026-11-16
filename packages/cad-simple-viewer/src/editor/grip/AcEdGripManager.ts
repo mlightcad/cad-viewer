@@ -6,26 +6,26 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
-import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer'
-import { AcEdMTextEditor } from '../input/ui/AcEdMTextEditor'
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcApDocManager } from '../../app/index.js'
+import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer.js'
+import { AcEdMTextEditor } from '../input/ui/AcEdMTextEditor.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 import {
   applyGripAppearanceToHost,
   isGripAppearanceSysVar,
   readGripAppearance
-} from './AcEdGripAppearance'
-import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession'
-import { AcEdGripHandle } from './AcEdGripHandle'
-import { acedShouldShowGrips } from './AcEdGripPolicy'
-import { AcEdGroupGripEditSession } from './AcEdGroupGripEditSession'
+} from './AcEdGripAppearance.js'
+import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession.js'
+import { AcEdGripHandle } from './AcEdGripHandle.js'
+import { acedShouldShowGrips } from './AcEdGripPolicy.js'
+import { AcEdGroupGripEditSession } from './AcEdGroupGripEditSession.js'
 import {
   acedCoveredGroupGripUnits,
   acedEffectiveGroupDisplayMode,
   acedIdsForEntityGrips,
   acedSelectionBoundingBox,
   acedSelectionCenter
-} from './AcEdGroupGripPolicy'
+} from './AcEdGroupGripPolicy.js'
 
 /** Sentinel grip index for the group-center grip. */
 const GROUP_CENTER_GRIP_INDEX = -1

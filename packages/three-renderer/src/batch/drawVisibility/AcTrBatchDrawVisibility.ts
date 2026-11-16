@@ -3,18 +3,18 @@ import * as THREE from 'three'
 import {
   isBatchGeometryActive,
   isBatchGeometryVisible
-} from '../AcTrBatchedGeometryInfo'
+} from '../AcTrBatchedGeometryInfo.js'
 import {
   AcTrBatchDrawVisibilityStrategy,
   resolveBatchDrawVisibilityMode
-} from './AcTrBatchDrawVisibilityStrategy'
+} from './AcTrBatchDrawVisibilityStrategy.js'
 import type {
   AcTrBatchDrawVisibilityInfo,
   AcTrBatchDrawVisibilityMode
-} from './AcTrBatchDrawVisibilityTypes'
-import { AcTrIndexedBatchDrawVisibilityStrategy } from './AcTrIndexedBatchDrawVisibilityStrategy'
-import { AcTrLine2BatchDrawVisibilityStrategy } from './AcTrLine2BatchDrawVisibilityStrategy'
-import { AcTrVertexBatchDrawVisibilityStrategy } from './AcTrVertexBatchDrawVisibilityStrategy'
+} from './AcTrBatchDrawVisibilityTypes.js'
+import { AcTrIndexedBatchDrawVisibilityStrategy } from './AcTrIndexedBatchDrawVisibilityStrategy.js'
+import { AcTrLine2BatchDrawVisibilityStrategy } from './AcTrLine2BatchDrawVisibilityStrategy.js'
+import { AcTrVertexBatchDrawVisibilityStrategy } from './AcTrVertexBatchDrawVisibilityStrategy.js'
 
 /**
  * Facade that routes batch slot visibility updates to geometry-layout strategies.

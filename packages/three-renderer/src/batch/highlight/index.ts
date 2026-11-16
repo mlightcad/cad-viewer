@@ -2,7 +2,7 @@ export {
   BATCH_SLOT_ID_ATTRIBUTE,
   ensureSlotIdAttribute,
   writeSlotIdRange
-} from './AcTrBatchSlotId'
+} from './AcTrBatchSlotId.js'
 export {
   AcTrBatchHighlightState,
   COMPARE_ROLE_ADDED,
@@ -12,9 +12,9 @@ export {
   compareRoleToMaskValue,
   type AcTrBatchCompareRole,
   type AcTrBatchHighlightKind
-} from './AcTrBatchHighlightState'
+} from './AcTrBatchHighlightState.js'
 export {
   bindBatchHighlightUniforms,
   installBatchHighlightRenderer,
   patchMaterialForBatchHighlight
-} from './AcTrBatchHighlightShaders'
+} from './AcTrBatchHighlightShaders.js'

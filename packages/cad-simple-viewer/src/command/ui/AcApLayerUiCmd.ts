@@ -1,6 +1,6 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, eventBus } from '../../editor'
-import type { AcUiDockPanel } from '../../ui/dock/AcUiDockPanel'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, eventBus } from '../../editor/index.js'
+import type { AcUiDockPanel } from '../../ui/dock/AcUiDockPanel.js'
 
 /** Shared interface for layer UI controllers. */
 export interface AcUiLayerUiController {

@@ -1,7 +1,7 @@
 import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../../app'
-import { AcEdBaseView } from '../../view'
+import { AcApDocManager } from '../../../app/index.js'
+import { AcEdBaseView } from '../../view/index.js'
 
 /**
  * Options for the AcEdRubberBand preview.

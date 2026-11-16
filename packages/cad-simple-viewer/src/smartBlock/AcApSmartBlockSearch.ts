@@ -7,11 +7,11 @@ import {
   AcGeBox2d
 } from '@mlightcad/data-model'
 
-import { excludeLockedLayerIds } from '../service/AcApLockedLayer'
+import { excludeLockedLayerIds } from '../service/AcApLockedLayer.js'
 import {
   acedEntityToShapeFeature,
   type AcEdShapeFeatureOptions
-} from './AcEdShapeFeatures'
+} from './AcEdShapeFeatures.js'
 import {
   type AcEdAffine2d,
   acedFindShapeMatches,
@@ -19,7 +19,7 @@ import {
   type AcEdShapeFeature,
   AcEdShapeGridCache,
   type AcEdShapeMatch
-} from './AcEdShapeMatcher'
+} from './AcEdShapeMatcher.js'
 
 /** Options of a Smart Blocks search (`BSEARCH`). */
 export interface AcApSmartBlockSearchOptions {

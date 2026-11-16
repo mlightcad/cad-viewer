@@ -16,11 +16,11 @@ export * from '@mlightcad/cad-html-core'
  */
 export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
 
-export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
+export { AcApExportHtmlCmd } from './AcApExportHtmlCmd.js'
 export {
   AcApHtmlConvertor,
   type AcApHtmlExportResult
-} from './AcApHtmlConvertor'
+} from './AcApHtmlConvertor.js'
 export {
   type AcApHtmlExportFormat,
   type AcApHtmlExportOptions,
@@ -33,17 +33,17 @@ export {
   clampAcApHtmlChunkSizeMiB,
   resolveAcApHtmlExportOptions,
   resolveAcApHtmlPackageBuildOptions
-} from './AcApHtmlExportOptions'
+} from './AcApHtmlExportOptions.js'
 export {
   type AcApHtmlPluginOptions,
   configureHtmlPlugin,
   DEFAULT_HTML_VIEWER_RUNTIME_URL,
   getHtmlPluginOptions,
   resolveViewerRuntimeUrl
-} from './AcApHtmlPluginOptions'
+} from './AcApHtmlPluginOptions.js'
 export {
   AcApHtmlSnapshotBuilder,
   type AcApHtmlSnapshotBuilderOptions
-} from './AcApHtmlSnapshotBuilder'
-export { createHtmlPlugin } from './createHtmlPlugin'
-export { HTML_PLUGIN_NAME, HTML_PLUGIN_TRIGGERS } from './register'
+} from './AcApHtmlSnapshotBuilder.js'
+export { createHtmlPlugin } from './createHtmlPlugin.js'
+export { HTML_PLUGIN_NAME, HTML_PLUGIN_TRIGGERS } from './register.js'

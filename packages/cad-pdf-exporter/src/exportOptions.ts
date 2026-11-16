@@ -5,7 +5,7 @@ import type {
 } from '@mlightcad/cad-pdf-core'
 import type { AcGiFontMapping } from '@mlightcad/data-model'
 
-import type { AcExDwgParser } from './registerDwg'
+import type { AcExDwgParser } from './registerDwg.js'
 
 /**
  * Options shared by {@link convertDatabaseToPdf} and {@link exportFileToPdf}.

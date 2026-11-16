@@ -95,6 +95,31 @@ export default [
     }
   },
   {
+    // Packages whose `lib/*.d.ts` is emitted by tsc and published as
+    // `"type": "module"`: relative specifiers must be Node-ESM (`./foo.js`,
+    // `./foo/index.js`) or `moduleResolution: node16/nodenext` consumers lose
+    // the re-exported types (#930).
+    files: [
+      'packages/{cad-agent-core,cad-diff-viewer,cad-google-drive-plugin,cad-html-core,cad-html-exporter,cad-html-plugin,cad-llm-plugin,cad-onedrive-plugin,cad-pdf-core,cad-pdf-exporter,cad-pdf-plugin,cad-script-core,cad-simple-viewer,cad-svg-converter,cad-svg-plugin,pdf-renderer,three-renderer}/src/**/*.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          'ImportDeclaration > Literal.source',
+          'ExportNamedDeclaration > Literal.source',
+          'ExportAllDeclaration > Literal.source',
+          'ImportExpression > Literal.source',
+          'TSImportType > Literal.source'
+        ].map(node => ({
+          selector: `${node}[value=/^\\.\\.?(\\x2F|$)/]:not([value=/\\.(js|json|css|svg)$/])`,
+          message:
+            'Relative imports must use an explicit Node-ESM path such as \'./foo.js\' or \'./foo/index.js\'.'
+        }))
+      ]
+    }
+  },
+  {
     rules: {
       '@intlify/vue-i18n/no-dynamic-keys': 'error',
       '@intlify/vue-i18n/no-unused-keys': [

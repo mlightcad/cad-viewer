@@ -2,8 +2,8 @@ import {
   AcDbDatabaseConverterManager
 } from '@mlightcad/data-model'
 
-import { AcDbSvgConverter } from './AcDbSvgConverter'
-import { ACDB_SVG_FILE_TYPE } from './AcDbSvgFileType'
+import { AcDbSvgConverter } from './AcDbSvgConverter.js'
+import { ACDB_SVG_FILE_TYPE } from './AcDbSvgFileType.js'
 
 /**
  * Registers {@link AcDbSvgConverter} for the `'svg'` converter key.

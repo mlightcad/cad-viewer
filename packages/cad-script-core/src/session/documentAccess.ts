@@ -1,5 +1,5 @@
-import type { ToolResult } from '../tools/types'
-import { type CadSession, CadSessionOpenMode } from './CadSession'
+import type { ToolResult } from '../tools/types.js'
+import { type CadSession, CadSessionOpenMode } from './CadSession.js'
 
 /**
  * Verifies that the session has an active drawing.

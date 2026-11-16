@@ -1,5 +1,5 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
 
 /** Actions invoked by the `markuppanel` command to prepare and open review UI. */
 export interface AcUiMarkupPanelCommandActions {

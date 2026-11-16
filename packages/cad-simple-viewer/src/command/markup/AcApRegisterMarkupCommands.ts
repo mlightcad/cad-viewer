@@ -1,21 +1,21 @@
-import type { AcApSystemCommandRegistrar } from '../AcApDrawStyleSession'
+import type { AcApSystemCommandRegistrar } from '../AcApDrawStyleSession.js'
 import {
   type AcApDrawStyleSessionInstallContext,
   acapInstallDrawStyleSessionAccessory
-} from '../AcApDrawStyleSession'
-import { AcApClearMarkupsCmd } from './AcApClearMarkupsCmd'
-import { AcApMarkupArrowCmd } from './AcApMarkupArrowCmd'
-import { AcApMarkupCalloutCmd } from './AcApMarkupCalloutCmd'
-import { AcApMarkupCircleCmd } from './AcApMarkupCircleCmd'
-import { AcApMarkupCloudCmd } from './AcApMarkupCloudCmd'
-import { AcApMarkupHighlightCmd } from './AcApMarkupHighlightCmd'
-import { AcApMarkupExportCmd } from './AcApMarkupImportExportCmd'
-import { AcApMarkupImportCmd } from './AcApMarkupImportExportCmd'
-import { AcApMarkupLineCmd } from './AcApMarkupLineCmd'
-import { AcApMarkupRectCmd } from './AcApMarkupRectCmd'
-import { AcApMarkupStampCmd } from './AcApMarkupStampCmd'
-import { AcApMarkupTextCmd } from './AcApMarkupTextCmd'
-import { AcApMarkupVisibilityCmd } from './AcApMarkupVisibilityCmd'
+} from '../AcApDrawStyleSession.js'
+import { AcApClearMarkupsCmd } from './AcApClearMarkupsCmd.js'
+import { AcApMarkupArrowCmd } from './AcApMarkupArrowCmd.js'
+import { AcApMarkupCalloutCmd } from './AcApMarkupCalloutCmd.js'
+import { AcApMarkupCircleCmd } from './AcApMarkupCircleCmd.js'
+import { AcApMarkupCloudCmd } from './AcApMarkupCloudCmd.js'
+import { AcApMarkupHighlightCmd } from './AcApMarkupHighlightCmd.js'
+import { AcApMarkupExportCmd } from './AcApMarkupImportExportCmd.js'
+import { AcApMarkupImportCmd } from './AcApMarkupImportExportCmd.js'
+import { AcApMarkupLineCmd } from './AcApMarkupLineCmd.js'
+import { AcApMarkupRectCmd } from './AcApMarkupRectCmd.js'
+import { AcApMarkupStampCmd } from './AcApMarkupStampCmd.js'
+import { AcApMarkupTextCmd } from './AcApMarkupTextCmd.js'
+import { AcApMarkupVisibilityCmd } from './AcApMarkupVisibilityCmd.js'
 
 /**
  * Registers markup commands and installs the shared draw-style session

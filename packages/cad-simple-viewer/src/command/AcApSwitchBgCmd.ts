@@ -1,12 +1,12 @@
 import { AcCmColor, AcDbSysVarManager } from '@mlightcad/data-model'
 
-import { AcApContext } from '../app'
-import { AcEdCommand } from '../editor'
+import { AcApContext } from '../app/index.js'
 import {
   layoutBackgroundSysVar,
   toggleBlackWhiteBackgroundColor
-} from '../editor/global/AcEdUiColor'
-import { AcTrView2d } from '../view/AcTrView2d'
+} from '../editor/global/AcEdUiColor.js'
+import { AcEdCommand } from '../editor/index.js'
+import { AcTrView2d } from '../view/AcTrView2d.js'
 
 /**
  * Command for switching the drawing background between white and black.

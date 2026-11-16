@@ -3,7 +3,7 @@ import type {
   AcApNotificationCenter,
   AcApNotificationInput,
   AcApNotificationSource
-} from './AcApNotificationTypes'
+} from './AcApNotificationTypes.js'
 
 /**
  * In-memory notification store used by the built-in DOM notification UI and as

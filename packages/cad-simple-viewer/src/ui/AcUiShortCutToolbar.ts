@@ -14,18 +14,18 @@
 import {
   AcApSettingManager,
   type AcApSettingManagerEventArgs
-} from '../app/AcApSettingManager'
-import { ML_UI_Z_SHORTCUT_TOOLBAR } from '../editor/global/AcEdUiLayout'
+} from '../app/AcApSettingManager.js'
+import { ML_UI_Z_SHORTCUT_TOOLBAR } from '../editor/global/AcEdUiLayout.js'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   resolveUiTheme
-} from '../editor/global/AcEdUiTheme'
-import { AcApI18n } from '../i18n/AcApI18n'
+} from '../editor/global/AcEdUiTheme.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
 import {
   AcUiSimpleToolbar,
   type AcUiSimpleToolbarItem
-} from './AcUiSimpleToolbar'
+} from './AcUiSimpleToolbar.js'
 import {
   createIconElement,
   ICON_CHEVRON_LEFT,
@@ -36,7 +36,7 @@ import {
   ICON_PASTE,
   ICON_REDO,
   ICON_UNDO
-} from './icons'
+} from './icons.js'
 
 const STYLE_ID = 'ml-ui-shortcut-toolbar-styles'
 

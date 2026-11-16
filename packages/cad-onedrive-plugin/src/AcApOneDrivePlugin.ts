@@ -9,8 +9,8 @@ import packageJson from '../package.json'
 import {
   ACAP_ONEDRIVE_DATA_SOURCE_ID,
   AcApOneDriveDataSource
-} from './AcApOneDriveDataSource'
-import type { OneDriveClientOptions } from './oneDriveClient'
+} from './AcApOneDriveDataSource.js'
+import type { OneDriveClientOptions } from './oneDriveClient.js'
 
 /** Options for {@link AcApOneDrivePlugin}. */
 export type AcApOneDrivePluginOptions = OneDriveClientOptions

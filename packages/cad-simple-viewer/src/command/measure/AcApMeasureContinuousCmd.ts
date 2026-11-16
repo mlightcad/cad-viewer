@@ -9,14 +9,14 @@ import {
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapGetCurrentMeasurementStyle,
@@ -26,21 +26,21 @@ import {
   acapScreenSegmentLengthPx,
   formatMeasurementLength,
   MEASUREMENT_LINE_WEIGHT
-} from '../../util'
-import { AcTrView2d } from '../../view'
+} from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   AcApHtmlLivePreview,
   acapStrokeLivePolyline
-} from '../overlay/AcApHtmlLivePreview'
+} from '../overlay/AcApHtmlLivePreview.js'
 import {
   ACAP_OVERLAY_ARROW_SIZE_PX,
   acapSyncLiveOverlayTextHeight
-} from '../overlay/AcApOverlayDrawUtil'
-import { placeDistanceMeasurement } from './AcApMeasureDistanceCmd'
-import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
-import { runMeasurementEdit } from './AcApMeasurementHistory'
-import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
-import { newMeasureOverlayId } from './entity/AcApMeasureEntity'
+} from '../overlay/AcApOverlayDrawUtil.js'
+import { placeDistanceMeasurement } from './AcApMeasureDistanceCmd.js'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd.js'
+import { runMeasurementEdit } from './AcApMeasurementHistory.js'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore.js'
+import { newMeasureOverlayId } from './entity/AcApMeasureEntity.js'
 
 /** Returns the 2D Euclidean distance between two world points. */
 function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {

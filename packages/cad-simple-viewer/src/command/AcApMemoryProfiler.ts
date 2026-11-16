@@ -15,9 +15,9 @@ import {
   type AcTrStyleManagerStats
 } from '@mlightcad/three-renderer'
 
-import type { AcTrSpatialIndexStats } from '../spatialIndex'
-import type { AcTrSceneStats } from '../view/AcTrScene'
-import type { AcTrView2d } from '../view/AcTrView2d'
+import type { AcTrSpatialIndexStats } from '../spatialIndex/index.js'
+import type { AcTrSceneStats } from '../view/AcTrScene.js'
+import type { AcTrView2d } from '../view/AcTrView2d.js'
 
 /** Chrome-only approximate JS heap snapshot. */
 export interface AcApMemoryHeapStats {

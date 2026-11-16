@@ -39,7 +39,7 @@ import { AcGeBox2d } from '@mlightcad/data-model'
 import {
   acapDiffColorToCssHex,
   AcApDiffSettingsDialog
-} from './AcApDiffSettingsDialog'
+} from './AcApDiffSettingsDialog.js'
 import {
   acapChangeSetCloudRole,
   acapCompareDrawings,
@@ -51,8 +51,8 @@ import {
   type AcApDiffEntityHit,
   acapReadCompareSysVars,
   acapWriteCompareSysVars
-} from './compare'
-import { acapDiffViewerT, acapRegisterDiffViewerI18n } from './i18n'
+} from './compare/index.js'
+import { acapDiffViewerT, acapRegisterDiffViewerI18n } from './i18n/index.js'
 import {
   acapCreateEmptyFileIcon,
   acapCreateOpenFileIcon,
@@ -65,8 +65,8 @@ import {
   ICON_SYNC_VIEWS,
   ICON_THEME_MOON,
   ICON_THEME_SUNNY
-} from './icons'
-import { acapInjectDiffViewerStyles } from './injectDiffViewerStyles'
+} from './icons.js'
+import { acapInjectDiffViewerStyles } from './injectDiffViewerStyles.js'
 
 /** Which pane of the comparison widget a drawing occupies. */
 export type AcApDiffViewerSide = 'left' | 'right'

@@ -2,7 +2,7 @@ import { AcDbOpenDatabaseError } from '@mlightcad/data-model'
 import type { FontInfo } from '@mlightcad/mtext-renderer'
 import { AcTrFontLoader } from '@mlightcad/three-renderer'
 
-import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
+import { AcEdFontNotLoadedInfo, eventBus } from '../editor/index.js'
 
 /** Font metadata from the mtext-renderer font repository. */
 export type AcApFontInfo = FontInfo

@@ -1,5 +1,5 @@
-import { AcEdCommand } from './AcEdCommand'
-import { AcEdCommandGroup } from './AcEdCommandStack'
+import { AcEdCommand } from './AcEdCommand.js'
+import { AcEdCommandGroup } from './AcEdCommandStack.js'
 
 /**
  * Represents the type of item returned by command iterator.

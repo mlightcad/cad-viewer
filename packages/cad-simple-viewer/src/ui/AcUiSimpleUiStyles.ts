@@ -1,7 +1,7 @@
 import {
   acuiEnsureToolbarStyles,
   acuiRemoveToolbarStylesIfUnused
-} from './toolbar'
+} from './toolbar/index.js'
 
 const STYLE_ID = 'ml-ex-ui-styles'
 

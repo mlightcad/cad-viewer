@@ -4,7 +4,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -13,15 +13,15 @@ import {
   AcEdPromptEntityOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapAddMLeaderBranch,
   acapCountMLeaderLines,
   acapFindNearestMLeaderLine,
   acapMatchKeyword,
   acapRemoveMLeaderLine
-} from './AcApMLeaderCmdUtil'
+} from './AcApMLeaderCmdUtil.js'
 
 const I18N = 'jig.mleaderedit'
 

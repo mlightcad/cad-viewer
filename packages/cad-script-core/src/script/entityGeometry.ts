@@ -53,7 +53,7 @@ import {
   toSnapshotEntityColor,
   toSnapshotMatrix,
   toSnapshotPoint
-} from './snapshotValue'
+} from './snapshotValue.js'
 
 /** One sampled boundary edge of a hatch loop. */
 interface SnapshotCurvePiece {

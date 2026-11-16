@@ -9,21 +9,21 @@
  * @packageDocumentation
  */
 
-import { AcApDocManager } from '../app/AcApDocManager'
-import { eventBus } from '../editor/global/eventBus'
-import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
-import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
+import { AcApDocManager } from '../app/AcApDocManager.js'
+import { eventBus } from '../editor/global/eventBus.js'
+import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
 import type {
   AcUiShortCutToolbar,
   AcUiShortCutToolbarActionState
-} from '../ui/AcUiShortCutToolbar'
-import { getSessionUndo, runMarkupEdit } from './markup/AcApMarkupHistory'
-import { getMarkupStore } from './markup/AcApMarkupStore'
-import { runMeasurementEdit } from './measure/AcApMeasurementHistory'
+} from '../ui/AcUiShortCutToolbar.js'
+import { getSessionUndo, runMarkupEdit } from './markup/AcApMarkupHistory.js'
+import { getMarkupStore } from './markup/AcApMarkupStore.js'
+import { runMeasurementEdit } from './measure/AcApMeasurementHistory.js'
 import {
   MEASUREMENT_LAYER,
   subscribeMeasurementSelection
-} from './measure/AcApMeasurementStore'
+} from './measure/AcApMeasurementStore.js'
 
 /**
  * Binds document undo stack, selection, and default command actions to a

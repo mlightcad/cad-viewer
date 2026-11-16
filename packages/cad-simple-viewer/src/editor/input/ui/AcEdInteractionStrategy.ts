@@ -1,7 +1,7 @@
-import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
-import { AcEdViewMode } from '../../view/AcEdViewMode'
-import type { AcEdPromptBoxOptions } from '../prompt/AcEdPromptBoxOptions'
-import type { AcEdPromptBoxResult } from '../prompt/AcEdPromptBoxResult'
+import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout.js'
+import { AcEdViewMode } from '../../view/AcEdViewMode.js'
+import type { AcEdPromptBoxOptions } from '../prompt/AcEdPromptBoxOptions.js'
+import type { AcEdPromptBoxResult } from '../prompt/AcEdPromptBoxResult.js'
 
 /**
  * Box-prompt operations the {@link AcEdInteractionStrategy} can choose

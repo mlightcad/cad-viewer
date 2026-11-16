@@ -1,8 +1,8 @@
 import { AcUiDialog } from '@mlightcad/cad-simple-viewer'
 
-import { acapPdfT } from '../acapPdfI18n'
-import type { AcApPdfImportMode } from '../AcApPdfImportOptions'
-import { PDF_PT_TO_MM } from '../pdfVectorImport'
+import { acapPdfT } from '../acapPdfI18n.js'
+import type { AcApPdfImportMode } from '../AcApPdfImportOptions.js'
+import { PDF_PT_TO_MM } from '../pdfVectorImport.js'
 
 const STYLE_ID = 'ml-pdf-import-dialog-styles'
 const MM_PER_INCH = 25.4

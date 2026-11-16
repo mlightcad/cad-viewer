@@ -1,18 +1,18 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { AcTrView2d } from '../../view'
-import { runMeasurementEdit } from './AcApMeasurementHistory'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { AcTrView2d } from '../../view/index.js'
+import { runMeasurementEdit } from './AcApMeasurementHistory.js'
 import {
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER
-} from './AcApMeasurementStore'
+} from './AcApMeasurementStore.js'
 
 export {
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER,
   commitMeasurementGroup,
   type AcApMeasurementGroupExtras
-} from './AcApMeasurementStore'
+} from './AcApMeasurementStore.js'
 
 /**
  * Removes committed measurement overlays on the active layout (detached so

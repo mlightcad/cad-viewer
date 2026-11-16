@@ -24,8 +24,8 @@ import {
   ACAP_COMPARETOLERANCE_MIN,
   acapDefaultCompareSysVars,
   type AcApDiffCompareSysVars
-} from './compare'
-import { acapDiffViewerT } from './i18n'
+} from './compare/index.js'
+import { acapDiffViewerT } from './i18n/index.js'
 
 /** Compare-color channels editable in the settings dialog. */
 type AcApDiffColorRole = keyof Required<AcApCompareDisplayColors>

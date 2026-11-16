@@ -10,25 +10,25 @@ import {
   acapCloneMeasurementStyle,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle
-} from '../../../util'
-import type { AcTrView2d } from '../../../view'
+} from '../../../util/index.js'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
   type AcApOverlayWorldDrawResult,
   acapSeedOverlaySizesFromWcs
-} from '../../overlay'
-import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
+} from '../../overlay/index.js'
+import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry.js'
+import { serializeMeasurementStyle } from '../AcApMeasurementSidecar.js'
 import {
   type AcApMeasurementGroupExtras,
   commitMeasurementGroup,
   MEASUREMENT_LAYER
-} from '../AcApMeasurementStore'
+} from '../AcApMeasurementStore.js'
 import type {
   AcApMeasurementRecord,
   AcApMeasurementSidecarStyle
-} from '../AcApMeasurementTypes'
+} from '../AcApMeasurementTypes.js'
 
 /**
  * Unique overlay id for a measurement group.
@@ -87,7 +87,7 @@ export interface AcApMeasureWorldDrawResult extends AcApOverlayWorldDrawResult {
  * the generic overlay `worldDraw` path because unit labels need the database.
  *
  * Implements {@link AcApOverlaySerializable} via {@link toRecord}. Rehydrate
- * with {@link import('./AcApMeasureEntityFactory').createMeasureEntityFromRecord}.
+ * with {@link import('./AcApMeasureEntityFactory.js').createMeasureEntityFromRecord}.
  */
 export abstract class AcApMeasureEntity
   extends AcApOverlayEntity

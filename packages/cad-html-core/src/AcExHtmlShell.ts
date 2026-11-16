@@ -1,6 +1,6 @@
-import { AcExHtmlIcons } from './AcExHtmlIcons'
-import { acexHtmlBuildPolarAnglesPanel } from './AcExHtmlShellFragments'
-import type { AcExHtmlViewerMode } from './AcExHtmlSnapshotTypes'
+import { AcExHtmlIcons } from './AcExHtmlIcons.js'
+import { acexHtmlBuildPolarAnglesPanel } from './AcExHtmlShellFragments.js'
+import type { AcExHtmlViewerMode } from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Phone breakpoint for the offline HTML chrome.

@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
+import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
 import {
   createIconElement,
   ICON_CHEVRON_DOWN,
@@ -16,24 +16,24 @@ import {
   ICON_CHEVRON_RIGHT,
   ICON_CHEVRON_UP,
   ICON_MORE
-} from '../icons'
-import { AcUiDropdownMenu } from './AcUiDropdownMenu'
-import { AcUiSubToolbar } from './AcUiSubToolbar'
-import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles'
-import { acuiResolveToolbarChrome } from './resolveToolbarChrome'
+} from '../icons.js'
+import { AcUiDropdownMenu } from './AcUiDropdownMenu.js'
+import { AcUiSubToolbar } from './AcUiSubToolbar.js'
+import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles.js'
+import { acuiResolveToolbarChrome } from './resolveToolbarChrome.js'
 import {
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemDisabled,
   acuiItemRequiresDocument,
   acuiResolveEffectiveToolbarItem,
   acuiResolveParentToolbarDisplay
-} from './resolveToolbarItemState'
+} from './resolveToolbarItemState.js'
 import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarChildrenStrip,
   acuiIsToolbarSeparatorItem,
   acuiResolveToolbarChildrenUi
-} from './toolbarItemUtils'
+} from './toolbarItemUtils.js'
 import type {
   AcUiSubToolbarOptions,
   AcUiToolbarDocState,
@@ -42,7 +42,7 @@ import type {
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
   AcUiToolbarSize
-} from './types'
+} from './types.js'
 
 /** Constructor / runtime mount options for {@link AcUiToolbar}. */
 export interface AcUiToolbarMountOptions {

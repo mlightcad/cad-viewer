@@ -9,8 +9,8 @@
 import type { AcCmColor } from '@mlightcad/data-model'
 import { AcTrHtmlCanvasOverlay } from '@mlightcad/three-renderer'
 
-import { acapCssColor } from '../../util'
-import type { AcTrView2d } from '../../view'
+import { acapCssColor } from '../../util/index.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   acapDrawOverlayArrowHead,
   acapDrawOverlayHighlight,
@@ -19,7 +19,7 @@ import {
   acapOverlayArrowSize,
   acapOverlayDash,
   acapScaledOverlayLineWidth
-} from './AcApOverlayDrawUtil'
+} from './AcApOverlayDrawUtil.js'
 
 /** World-space 2D point for live preview strokes. */
 export interface AcApHtmlLivePoint {

@@ -1,6 +1,6 @@
 import mitt, { type Emitter } from 'mitt'
 
-import type { AcApDataSource } from './AcApDataSource'
+import type { AcApDataSource } from './AcApDataSource.js'
 
 /** Events emitted by {@link AcApDataSourceManager}. */
 export type AcApDataSourceManagerEvents = {

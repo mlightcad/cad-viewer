@@ -1,5 +1,5 @@
-import { AcEdPromptKeywordOptions } from '../prompt/AcEdPromptKeywordOptions'
-import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
+import { AcEdPromptKeywordOptions } from '../prompt/AcEdPromptKeywordOptions.js'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler.js'
 
 /**
  * Validates keyword input according to {@link AcEdPromptKeywordOptions}.

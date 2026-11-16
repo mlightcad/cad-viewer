@@ -1,4 +1,4 @@
-import { AcApDocManager } from '../../app'
+import { AcApDocManager } from '../../app/index.js'
 
 /**
  * Utility class for exporting the current CAD drawing to DXF format.

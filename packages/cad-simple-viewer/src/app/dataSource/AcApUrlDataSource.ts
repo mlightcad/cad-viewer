@@ -1,13 +1,13 @@
-import { AcApI18n } from '../../i18n/AcApI18n'
-import { AcUiDialog } from '../../ui/AcUiDialog'
+import { AcApI18n } from '../../i18n/AcApI18n.js'
+import { AcUiDialog } from '../../ui/AcUiDialog.js'
 import type {
   AcApDataSource,
   AcApDataSourceAuthState,
   AcApDataSourceFile
-} from './AcApDataSource'
-import { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds'
+} from './AcApDataSource.js'
+import { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds.js'
 
-export { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds'
+export { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds.js'
 
 /**
  * Compact dialog that asks the user for a drawing file URL.

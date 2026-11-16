@@ -10,26 +10,26 @@ import {
   AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
   type AcApOverlayWorldDrawResult,
   acapSeedOverlaySizesFromWcs
-} from '../../overlay'
+} from '../../overlay/index.js'
 import {
   hitTestMarkupGeometry,
   markupGeometryCenter,
   translateMarkupGeometry
-} from '../AcApMarkupGeometry'
-import { MARKUP_LAYER } from '../AcApMarkupStore'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
+} from '../AcApMarkupGeometry.js'
+import { MARKUP_LAYER } from '../AcApMarkupStore.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
 import {
   cssToMarkupColor,
   MARKUP_FONT_SIZE,
   markupCanvasLineWidth,
   resolveMarkupLineWeight
-} from '../AcApMarkupUtil'
+} from '../AcApMarkupUtil.js'
 
 /**
  * Shared draw state derived from a markup record for HTML / CAD styling.
@@ -74,7 +74,7 @@ export function markupDrawStyleFromRecord(
  * into an {@link AcTrHtmlGroup}.
  *
  * Implements {@link AcApOverlaySerializable} via {@link toRecord}. Rehydrate
- * with {@link import('./AcApMarkupEntityFactory').createMarkupEntityFromRecord}.
+ * with {@link import('./AcApMarkupEntityFactory.js').createMarkupEntityFromRecord}.
  */
 export abstract class AcApMarkupEntity
   extends AcApOverlayEntity

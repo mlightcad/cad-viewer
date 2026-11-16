@@ -15,35 +15,35 @@ import {
   acexHtmlCreateAccessKey,
   acexHtmlDecryptBytes,
   acexHtmlEncryptBytes
-} from './AcExHtmlAccess'
+} from './AcExHtmlAccess.js'
 import {
   acexHtmlEstimateLineBatchBytes,
   acexHtmlEstimateMeshBatchBytes
-} from './AcExHtmlBatchBinaryCodec'
+} from './AcExHtmlBatchBinaryCodec.js'
 import {
   type AcExHtmlBinaryEncoding,
   acexHtmlBytesToText,
   acexHtmlParseBinaryEncoding,
-  acexHtmlTextToBytes} from './AcExHtmlBinaryText'
-import { acexHtmlResolveLocale } from './AcExHtmlI18n'
-import { acexHtmlEstimateOsnapPrimitiveBytes } from './AcExHtmlOsnapCatalogCodec'
+  acexHtmlTextToBytes} from './AcExHtmlBinaryText.js'
+import { acexHtmlResolveLocale } from './AcExHtmlI18n.js'
+import { acexHtmlEstimateOsnapPrimitiveBytes } from './AcExHtmlOsnapCatalogCodec.js'
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
   ACEX_PACKAGE_DIRECTORY_ORIGIN
-} from './AcExHtmlPackageBootstrap'
+} from './AcExHtmlPackageBootstrap.js'
 import {
   acexHtmlBuildPackageDataAsync,
-  type AcExHtmlBuildPackageDataOptions} from './AcExHtmlPackageBuilder'
-import { acexHtmlParsePackageManifest } from './AcExHtmlPackageLoader'
+  type AcExHtmlBuildPackageDataOptions} from './AcExHtmlPackageBuilder.js'
+import { acexHtmlParsePackageManifest } from './AcExHtmlPackageLoader.js'
 import {
   ACEX_EMBEDDED_CHUNK_MAX_BYTES,
   ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
   ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES,
   type AcExHtmlPackageFile,
   type AcExHtmlPackageManifest
-} from './AcExHtmlPackageTypes'
-import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell'
-import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlPackageTypes.js'
+import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell.js'
+import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes.js'
 
 /** MIME type for embedded chunk `<script>` bodies (base85 gzip ACEC/ACEO). */
 export const ACEX_EMBEDDED_CHUNK_MIME =

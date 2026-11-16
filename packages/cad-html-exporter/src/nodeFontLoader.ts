@@ -10,7 +10,7 @@ import {
 } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
-import { nodeFetchBytes } from './nodeProxy'
+import { nodeFetchBytes } from './nodeProxy.js'
 
 /** Same CDN root the viewer uses (`…/cad-data/fonts/`). */
 export const DEFAULT_EXPORT_FONTS_URL =

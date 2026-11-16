@@ -11,13 +11,13 @@ import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   ACEX_OVERLAY_CLOUD_DIAMETER_PX,
   ACEX_OVERLAY_CLOUD_WCS
-} from './AcExHtmlOverlayDom'
+} from './AcExHtmlOverlayDom.js'
 import type {
   AcExMarkupAttachedCallout,
   AcExMarkupGeometry,
   AcExMarkupPoint2d,
   AcExMarkupRecord
-} from './AcExMarkupTypes'
+} from './AcExMarkupTypes.js'
 
 export {
   ACEX_OVERLAY_ARROW_SIZE_PX,

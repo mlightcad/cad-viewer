@@ -5,7 +5,7 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { acedInteractionStrategy } from './ui/AcEdInteractionStrategy'
+import { acedInteractionStrategy } from './ui/AcEdInteractionStrategy.js'
 
 /**
  * Returns whether cursor dynamic input should be active.

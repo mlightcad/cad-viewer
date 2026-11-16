@@ -1,5 +1,5 @@
-import type { Point2dInput } from '../tools/types'
-import type { EntitySnapshot } from './entitySnapshot'
+import type { Point2dInput } from '../tools/types.js'
+import type { EntitySnapshot } from './entitySnapshot.js'
 
 /** One row from {@link CadMeasureApi.check}. */
 export interface MeasureCheck {

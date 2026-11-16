@@ -10,8 +10,8 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import type { AcApDocument } from '../app/AcApDocument'
-import { AcApLayerService } from './AcApLayerService'
+import type { AcApDocument } from '../app/AcApDocument.js'
+import { AcApLayerService } from './AcApLayerService.js'
 
 /** Snapshot of a layer row for UI layer managers and similar consumers. */
 export interface AcApLayerInfo {

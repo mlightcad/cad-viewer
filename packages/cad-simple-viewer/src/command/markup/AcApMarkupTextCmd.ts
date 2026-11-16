@@ -1,21 +1,21 @@
 import { AcTrHtmlBadge } from '@mlightcad/three-renderer'
 
-import { AcApContext } from '../../app'
-import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import type { AcTrView2d } from '../../view'
-import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
-import { createMarkupMeta, promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
-import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
-import { commitMarkup } from './AcApMarkupPresenter'
-import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import { AcApContext } from '../../app/index.js'
+import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import type { AcTrView2d } from '../../view/index.js'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil.js'
+import { createMarkupMeta, promptMarkupCapsuleText } from './AcApMarkupCmdUtil.js'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd.js'
+import { commitMarkup } from './AcApMarkupPresenter.js'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 import {
   defaultMarkupColor,
   defaultMarkupStyle,
   getMarkupFontSize,
   subscribeMarkupDrawStyle
-} from './AcApMarkupUtil'
+} from './AcApMarkupUtil.js'
 
 /**
  * Place a text markup label at a picked world point.

@@ -4,12 +4,12 @@
 
 import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
+import type { AcEdBaseView } from '../../editor/index.js'
 import {
   ACAP_OVERLAY_CLOUD_DIAMETER_PX,
   ACAP_OVERLAY_CLOUD_WCS,
   acapScaledOverlayLineWidth
-} from '../overlay/AcApOverlayDrawUtil'
+} from '../overlay/AcApOverlayDrawUtil.js'
 
 /** World-space vertex with AutoCAD-style bulge to the next vertex. */
 export interface AcApMarkupCloudVertex {

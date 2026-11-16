@@ -23,7 +23,7 @@ import { AcGeCircArc2d, type AcGePoint2dLike } from '@mlightcad/data-model'
 import {
   expandOsnapPath,
   pathEdgeNearAperture
-} from './AcExOsnapPath'
+} from './AcExOsnapPath.js'
 
 /**
  * Squared Euclidean distance between two XY points.

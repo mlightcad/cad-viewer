@@ -1,12 +1,12 @@
-import { MARKUP_STATUSES } from './AcApMarkupStore'
+import { MARKUP_STATUSES } from './AcApMarkupStore.js'
 import type {
   AcApMarkupRecord,
   AcApMarkupSidecarFile,
   AcApMarkupStatus,
   AcApMarkupStyle,
   AcApMarkupType
-} from './AcApMarkupTypes'
-import { MARKUP_LINE_WEIGHT } from './AcApMarkupUtil'
+} from './AcApMarkupTypes.js'
+import { MARKUP_LINE_WEIGHT } from './AcApMarkupUtil.js'
 
 const MARKUP_TYPES: readonly AcApMarkupType[] = [
   'text',

@@ -7,11 +7,11 @@
 
 import type { AcDbOsnapMode } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../view'
-import { AcEdOsnapResolver } from '../AcEdOsnapResolver'
-import type { AcEdMarkerType } from '../marker/AcEdMarker'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
-import { AcEdSnapLoupe } from './AcEdSnapLoupe'
+import type { AcEdBaseView } from '../../view/index.js'
+import { AcEdOsnapResolver } from '../AcEdOsnapResolver.js'
+import type { AcEdMarkerType } from '../marker/AcEdMarker.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
+import { AcEdSnapLoupe } from './AcEdSnapLoupe.js'
 
 /** Lazily created loupe HUD keyed by view. */
 const loupes = new WeakMap<AcEdBaseView, AcEdSnapLoupe>()

@@ -5,12 +5,12 @@ import * as THREE from 'three'
 import {
   asyncDrawSharedGlyphGroup,
   syncDrawSharedGlyphGroup
-} from '../linetype/AcTrComplexLineBuilder'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrMatrixUtil, effectiveLayer } from '../util'
-import { AcTrEntity } from './AcTrEntity'
-import { AcTrGlyphEntity } from './AcTrGlyphEntity'
-import { AcTrGroupCompactor } from './AcTrGroupCompactor'
+} from '../linetype/AcTrComplexLineBuilder.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrMatrixUtil, effectiveLayer } from '../util/index.js'
+import { AcTrEntity } from './AcTrEntity.js'
+import { AcTrGlyphEntity } from './AcTrGlyphEntity.js'
+import { AcTrGroupCompactor } from './AcTrGroupCompactor.js'
 
 export interface AcTrEntityBox {
   minX: number

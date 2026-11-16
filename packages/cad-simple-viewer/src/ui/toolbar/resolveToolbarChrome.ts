@@ -1,7 +1,7 @@
 import type {
   AcUiSubToolbarOptions,
   AcUiToolbarChromeOptions
-} from './types'
+} from './types.js'
 
 /** Resolved toolbar chrome with explicit defaults applied. */
 export type AcUiResolvedToolbarChrome = Required<

@@ -4,7 +4,7 @@ import {
   AcDbEntity
 } from '@mlightcad/data-model'
 
-import { readEntityGeometry } from './entityGeometry'
+import { readEntityGeometry } from './entityGeometry.js'
 import {
   readOptionalBoolean,
   readOptionalNumber,
@@ -14,9 +14,9 @@ import {
   toSnapshotEntityColor,
   toSnapshotPoint,
   toSnapshotTransparency
-} from './snapshotValue'
+} from './snapshotValue.js'
 
-export type { SnapshotPoint } from './snapshotValue'
+export type { SnapshotPoint } from './snapshotValue.js'
 
 /** Plain color copied from an entity. */
 export interface EntityColorSnapshot {

@@ -1,15 +1,15 @@
 import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLaydelEntitySnapshot, AcApLayerService } from '../../service'
-import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLaydelEntitySnapshot, AcApLayerService } from '../../service/index.js'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd.js'
 
 /**
  * Top-level keywords supported by the main `LAYDEL` entity selection prompt.

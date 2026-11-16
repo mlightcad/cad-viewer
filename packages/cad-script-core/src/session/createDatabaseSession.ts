@@ -16,12 +16,12 @@ import {
   type CadSessionLayerInfo,
   CadSessionOpenMode,
   type CadSessionView
-} from './CadSession'
+} from './CadSession.js'
 import {
   isEntityOnLockedLayer,
   LAYER_FROZEN_FLAG,
   LAYER_LOCKED_FLAG
-} from './lockedLayer'
+} from './lockedLayer.js'
 
 /** Options for {@link createDatabaseSession}. */
 export interface CreateDatabaseSessionOptions {

@@ -4,9 +4,9 @@ import {
   AcGiTextStyle
 } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { buildSvgShape } from './AcSvgShapeUtil'
-import { AcSvgStyleContext } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { buildSvgShape } from './AcSvgShapeUtil.js'
+import { AcSvgStyleContext } from './AcSvgStyleUtil.js'
 
 /**
  * SVG entity for AutoCAD SHAPE objects.

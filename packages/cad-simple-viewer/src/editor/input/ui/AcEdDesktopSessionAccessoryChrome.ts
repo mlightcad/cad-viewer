@@ -1,5 +1,5 @@
-import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../../global/AcEdUiLayout'
-import { acedApplyUiTheme, resolveUiTheme } from '../../global/AcEdUiTheme'
+import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../../global/AcEdUiLayout.js'
+import { acedApplyUiTheme, resolveUiTheme } from '../../global/AcEdUiTheme.js'
 
 /** DOM id of the injected stylesheet for desktop session accessory chrome. */
 const STYLE_ID = 'ml-desktop-session-accessory-styles'

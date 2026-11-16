@@ -1,5 +1,5 @@
-import { AcEdPromptAngleOptions } from '../prompt/AcEdPromptAngleOptions'
-import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
+import { AcEdPromptAngleOptions } from '../prompt/AcEdPromptAngleOptions.js'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler.js'
 
 /**
  * Validates angular numeric input.

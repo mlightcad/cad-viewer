@@ -61,7 +61,7 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { acexHtmlWcsPointToOcsArcAngle } from './AcExHtmlOsnapPrimitiveToAcGe'
+import { acexHtmlWcsPointToOcsArcAngle } from './AcExHtmlOsnapPrimitiveToAcGe.js'
 import type {
   AcExHtmlOsnapArcPrimitive,
   AcExHtmlOsnapCatalog,
@@ -69,7 +69,7 @@ import type {
   AcExHtmlOsnapEllipsePrimitive,
   AcExHtmlOsnapPrimitive,
   AcExHtmlOsnapSplinePrimitive
-} from './AcExHtmlOsnapPrimitiveTypes'
+} from './AcExHtmlOsnapPrimitiveTypes.js'
 
 /** Vertex used when packing a fill/frame {@link AcExHtmlOsnapPathPrimitive}. */
 type AcExOsnapPathVertex = AcGePoint3dLike & { bulge?: number }

@@ -19,10 +19,10 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch'
-import type { AcTrBatchHighlightKind } from '../batch/highlight'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrSubEntityTraitsUtil } from '../util'
+import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch.js'
+import type { AcTrBatchHighlightKind } from '../batch/highlight/index.js'
+import { AcTrStyleManager } from '../style/AcTrStyleManager.js'
+import { AcTrSubEntityTraitsUtil } from '../util/index.js'
 
 class AcTrMTextStyleManager implements StyleManager {
   public unsupportedTextStyles: Record<string, number> = {}

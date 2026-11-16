@@ -8,9 +8,9 @@ import {
 import {
   AcEdSelectionStaticPreviewJig,
   AcEdSelectionTransformPreviewJig
-} from '../../editor/input/AcEdSelectionPreviewJig'
-import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
-import { createScaleMatrix } from '../../util/AcApGeTransform'
+} from '../../editor/input/AcEdSelectionPreviewJig.js'
+import { AcEdBaseView } from '../../editor/view/AcEdBaseView.js'
+import { createScaleMatrix } from '../../util/AcApGeTransform.js'
 
 /**
  * Static preview jig used while SCALE asks for supporting inputs such as the

@@ -5,7 +5,7 @@ import {
   AcDbObjectId
 } from '@mlightcad/data-model'
 
-import { LAYER_LOCKED_FLAG } from './types'
+import { LAYER_LOCKED_FLAG } from './types.js'
 
 /**
  * `@mlightcad/data-model` ORs `isLocked = false` with 0, so bit 4 stays set.

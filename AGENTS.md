@@ -49,6 +49,7 @@ Always read the actual source when a dependency's behavior matters; do not infer
 
 - Formatting is owned by Prettier: no semicolons, single quotes, `printWidth: 80`, `trailingComma: none`, single-parameter arrows without parens. Never hand-format.
 - ESLint: single quotes, `simple-import-sort` (third party block, blank line, relative imports), prefix unused vars/args with `_`. Run `pnpm lint:fix` before committing.
+- Relative imports in published `tsc`-built packages use explicit Node-ESM paths: `./foo.js` for `foo.ts`, `./foo/index.js` for a directory (ESLint `no-restricted-syntax` enforces it). The emitted `lib/*.d.ts` keep these specifiers, and `moduleResolution: node16/nodenext` consumers cannot resolve extensionless ones. `cad-editor` is exempt because `vite-plugin-dts` bundles its declarations (`bundleTypes`).
 - TypeScript is `strict` with `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch` (see `tsconfig.base.json`). Avoid `any`; prefer explicit types/interfaces.
 - **Prefixes encode the owning layer** and apply to classes _and_ to exported functions/values, not just types:
   - Classes/types: `AcAp` (app/core), `AcEd` (editor/commands), `AcTr` (three renderer), `AcEx` (extended interaction, e.g. osnap), `AcExHtml` (`cad-html-core`), `AcUi` (UI controllers), `AcSv`/`AcSvg` (SVG), `AcPdf` (PDF renderer), `AcExPdf` (`cad-pdf-core`).

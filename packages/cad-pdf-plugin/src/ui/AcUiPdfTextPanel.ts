@@ -5,13 +5,13 @@ import {
   resolveUiTheme
 } from '@mlightcad/cad-simple-viewer'
 
-import { acapPdfT } from '../acapPdfI18n'
+import { acapPdfT } from '../acapPdfI18n.js'
 import type {
   AcApPdfTextSession,
   PdfTextRow,
   PdfTextStyleNameError
-} from '../AcApPdfTextSession'
-import type { PdfTextFontKind } from '../recognition/pdfTextFontKind'
+} from '../AcApPdfTextSession.js'
+import type { PdfTextFontKind } from '../recognition/pdfTextFontKind.js'
 
 const STYLE_ID = 'ml-pdftext-panel-styles'
 const NEW_STYLE_VALUE = '\u0000new'

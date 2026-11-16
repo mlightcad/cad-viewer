@@ -11,13 +11,13 @@ import {
   AcUiShortCutToolbar,
   type AcUiShortCutToolbarActionState,
   type AcUiSimpleToolbarItem
-} from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlSimpleViewerUi.js'
 import {
   ACEX_HTML_TOP_CHROME_GAP_PX,
   ACEX_HTML_TOP_CHROME_NEAR_TOP_PX,
   acexHtmlTopChromeBottomOffset,
   getAcExHtmlTopChrome
-} from './AcExHtmlTopChrome'
+} from './AcExHtmlTopChrome.js'
 
 /** Dependencies for {@link setupAcExHtmlShortCutToolbar}. */
 export interface AcExHtmlShortCutToolbarContext {

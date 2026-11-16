@@ -1,6 +1,6 @@
-import type { AcTrView2d } from '../../view'
-import { runMarkupEdit } from './AcApMarkupHistory'
-import { getMarkupStore } from './AcApMarkupStore'
+import type { AcTrView2d } from '../../view/index.js'
+import { runMarkupEdit } from './AcApMarkupHistory.js'
+import { getMarkupStore } from './AcApMarkupStore.js'
 
 /**
  * Options for {@link bindMarkupInlineTextEdit}.

@@ -7,8 +7,8 @@
 import type {
   PdfTextGlyph,
   PdfTextLineCandidate
-} from './pdfGlyphClustering'
-import type { PdfRecPoint } from './pdfRecGeometry'
+} from './pdfGlyphClustering.js'
+import type { PdfRecPoint } from './pdfRecGeometry.js'
 
 /** Grid size for one glyph (width × height). */
 const GW = 12

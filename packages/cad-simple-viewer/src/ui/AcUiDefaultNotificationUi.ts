@@ -13,7 +13,7 @@ import {
   type AcApNotificationCenter,
   type AcApNotificationGroup,
   type AcApNotificationSource
-} from '../app/notification/AcApNotificationTypes'
+} from '../app/notification/AcApNotificationTypes.js'
 import {
   acedGetUiLayout,
   acedSubscribeUiLayout,
@@ -21,14 +21,14 @@ import {
   ML_UI_SESSION_PANEL_INSET,
   ML_UI_SESSION_PANEL_WIDTH,
   ML_UI_Z_NOTIFICATION
-} from '../editor/global/AcEdUiLayout'
+} from '../editor/global/AcEdUiLayout.js'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   resolveUiTheme
-} from '../editor/global/AcEdUiTheme'
-import { acapI18nTranslate } from '../util/AcApFormatUnsupportedEntitiesMessage'
-import { acapAppendLinkedText } from '../util/AcApMessageLink'
+} from '../editor/global/AcEdUiTheme.js'
+import { acapI18nTranslate } from '../util/AcApFormatUnsupportedEntitiesMessage.js'
+import { acapAppendLinkedText } from '../util/AcApMessageLink.js'
 
 /** DOM id for the injected stylesheet. */
 const STYLE_ID = 'ml-ui-notification-center-styles'

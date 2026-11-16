@@ -12,10 +12,10 @@ import {
   type AcExHtmlExporterOptions,
   type AcExHtmlExportResult,
   resolveAcExHtmlPackageBuildOptions
-} from './exportOptions'
-import { loadViewerRuntime } from './loadViewerRuntime'
-import { installNodeSnapshotCompressor } from './nodeGzip'
-import { zipPackageEntries } from './nodeZip'
+} from './exportOptions.js'
+import { loadViewerRuntime } from './loadViewerRuntime.js'
+import { installNodeSnapshotCompressor } from './nodeGzip.js'
+import { zipPackageEntries } from './nodeZip.js'
 
 /**
  * Packs a snapshot into HTML or a multi-file zip using the shared core APIs.

@@ -2,10 +2,10 @@ import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   resolveUiTheme
-} from '../editor/global/AcEdUiTheme'
-import type { AcApFindViewInsets } from '../find/AcApFindNavigator'
-import { AcApI18n } from '../i18n/AcApI18n'
-import { AcUiDockPanel } from '../ui/dock/AcUiDockPanel'
+} from '../editor/global/AcEdUiTheme.js'
+import type { AcApFindViewInsets } from '../find/AcApFindNavigator.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
+import { AcUiDockPanel } from '../ui/dock/AcUiDockPanel.js'
 
 /** Panel content a command shows in the host UI's palette. */
 export interface AcApPaletteContent {

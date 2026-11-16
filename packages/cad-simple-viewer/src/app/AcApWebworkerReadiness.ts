@@ -1,5 +1,5 @@
-import type { AcApWebworkerFiles } from './AcApDocManager'
-import { MTEXT_RENDERER_WORKER_FILE } from './AcApWorkerAssets'
+import type { AcApWebworkerFiles } from './AcApDocManager.js'
+import { MTEXT_RENDERER_WORKER_FILE } from './AcApWorkerAssets.js'
 
 /** Default worker script URLs used when `webworkerFileUrls` is omitted. */
 export const DEFAULT_WEBWORKER_FILE_URLS = {

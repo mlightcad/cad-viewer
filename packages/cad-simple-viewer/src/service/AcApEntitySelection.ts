@@ -1,9 +1,9 @@
 import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../app'
-import { AcEdPromptSelectionOptions, AcEdPromptStatus } from '../editor'
-import { AcApI18n } from '../i18n'
-import { excludeLockedLayerIds } from './AcApLockedLayer'
+import { AcApContext, AcApDocManager } from '../app/index.js'
+import { AcEdPromptSelectionOptions, AcEdPromptStatus } from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
+import { excludeLockedLayerIds } from './AcApLockedLayer.js'
 
 /**
  * Prompts for a selection and returns entity ids when the user confirms.

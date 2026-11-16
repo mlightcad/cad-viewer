@@ -1,7 +1,7 @@
 import { accmYieldForPaint } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor'
-import { AcApProgress } from './AcApProgress'
+import { eventBus } from '../editor/index.js'
+import { AcApProgress } from './AcApProgress.js'
 
 /**
  * Reference-counted busy overlay for long-running application operations.

@@ -3,16 +3,16 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcTrBufferGeometryUtil, AcTrMaterialUtil } from '../util'
 import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
-} from '../util/AcTrMaterialUtil'
+} from '../util/AcTrMaterialUtil.js'
 import {
   getHighlightUserData,
   getSceneDrawableUserData
-} from '../util/AcTrObjectUserData'
-import type { AcTrBatchHighlightKind } from './highlight'
+} from '../util/AcTrObjectUserData.js'
+import { AcTrBufferGeometryUtil, AcTrMaterialUtil } from '../util/index.js'
+import type { AcTrBatchHighlightKind } from './highlight/index.js'
 
 /**
  * Drawable families that can share one block-template geometry across INSERTs.

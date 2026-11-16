@@ -1,6 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcEdSpatialQueryResultItem } from '../editor/view'
+import { AcEdSpatialQueryResultItem } from '../editor/view/index.js'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
@@ -8,7 +8,7 @@ import {
   AcTrSpatialSearchOptions,
   estimateSpatialItemsBytes,
   isSpatialBoxFullyInside
-} from './AcTrSpatialIndex'
+} from './AcTrSpatialIndex.js'
 
 /** Approx. Map entry overhead (key pointer + value pointer + slot). */
 const MAP_ENTRY_BYTES = 40

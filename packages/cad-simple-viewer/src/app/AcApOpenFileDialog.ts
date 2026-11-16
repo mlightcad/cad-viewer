@@ -1,9 +1,9 @@
 import { log } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor/global/eventBus'
-import type { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
-import { acapPickLocalCadFile } from './dataSource/AcApLocalDataSource'
-import { acapOpenDataSourceResult } from './dataSource/acapOpenDataSourceResult'
+import { eventBus } from '../editor/global/eventBus.js'
+import type { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions.js'
+import { acapPickLocalCadFile } from './dataSource/AcApLocalDataSource.js'
+import { acapOpenDataSourceResult } from './dataSource/acapOpenDataSourceResult.js'
 
 /**
  * Resolver for default options used by the built-in OPEN file dialog.

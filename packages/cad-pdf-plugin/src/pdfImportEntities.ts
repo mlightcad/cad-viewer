@@ -13,12 +13,12 @@ import {
   HATCH_PATTERN_USER
 } from '@mlightcad/data-model'
 
-import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
+import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition.js'
 import type {
   PdfHatchDefinitionLine,
   PdfRecognizedHatchPattern
-} from './recognition/pdfHatchRecognition'
-import { cubicAt, type PdfRecPoint } from './recognition/pdfRecGeometry'
+} from './recognition/pdfHatchRecognition.js'
+import { cubicAt, type PdfRecPoint } from './recognition/pdfRecGeometry.js'
 
 /** Name prefix for linetypes created from PDF dash patterns. */
 export const PDF_DASH_LINETYPE_PREFIX = 'PDF_DASH_'

@@ -5,9 +5,9 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import type { AcApClipboardContent } from '../../app/AcApClipboard'
-import { AcEdPreviewJig } from '../../editor/input/AcEdPreviewJig'
-import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
+import type { AcApClipboardContent } from '../../app/AcApClipboard.js'
+import { AcEdPreviewJig } from '../../editor/input/AcEdPreviewJig.js'
+import { AcEdBaseView } from '../../editor/view/AcEdBaseView.js'
 
 /**
  * Preview for PASTECLIP / PASTEBLOCK: shows the clipboard objects following

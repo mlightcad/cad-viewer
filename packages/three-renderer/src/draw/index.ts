@@ -1,2 +1,2 @@
-export * from './AcTrBatchDrawPolicy'
-export * from './AcTrDrawMode'
+export * from './AcTrBatchDrawPolicy.js'
+export * from './AcTrDrawMode.js'

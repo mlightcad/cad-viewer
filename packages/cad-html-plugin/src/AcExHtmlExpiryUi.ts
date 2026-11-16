@@ -5,7 +5,7 @@ import {
   acexHtmlFormatExpiresAt
 } from '@mlightcad/cad-html-core'
 
-import { showAcExHtmlAccessExpired } from './AcExHtmlAccessGate'
+import { showAcExHtmlAccessExpired } from './AcExHtmlAccessGate.js'
 
 /**
  * Options for {@link setupAcExHtmlExpiryMonitor}.

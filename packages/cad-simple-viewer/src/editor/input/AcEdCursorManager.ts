@@ -3,8 +3,8 @@ import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 import {
   ACGI_MODEL_SPACE_BACKGROUND,
   cursorColorForBackground
-} from '../global/AcEdUiColor'
-import { AcEdBaseView } from '../view'
+} from '../global/AcEdUiColor.js'
+import { AcEdBaseView } from '../view/index.js'
 
 /**
  * Enumeration of cursor types available in the CAD editor.

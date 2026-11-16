@@ -5,12 +5,12 @@
  * @packageDocumentation
  */
 
-import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme.js'
 import {
   type AcUiAciIndexPicker,
   acuiCreateAciIndexPicker
-} from './AcUiAciPaletteUi'
-import { AcUiDialog } from './AcUiDialog'
+} from './AcUiAciPaletteUi.js'
+import { AcUiDialog } from './AcUiDialog.js'
 
 /** Localized labels for {@link AcUiAciColorDialog}. */
 export interface AcUiAciColorDialogLabels {

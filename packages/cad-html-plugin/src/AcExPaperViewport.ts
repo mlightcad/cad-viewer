@@ -4,7 +4,7 @@ import {
   type AcExCssRect,
   acexCssRectToWcsBox,
   acexIntersectCssRects
-} from './AcExCssRect'
+} from './AcExCssRect.js'
 
 const EPS = 1e-12
 

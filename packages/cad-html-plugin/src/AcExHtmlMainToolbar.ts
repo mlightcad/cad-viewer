@@ -21,7 +21,7 @@ import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import {
   acexHtmlIsMobileNavUi,
   acexHtmlIsPhoneLayout
-} from './AcExHtmlDrawerSheet'
+} from './AcExHtmlDrawerSheet.js'
 import {
   AcEdOpenMode,
   acuiCopyDynamicToolbarChildren,
@@ -30,13 +30,13 @@ import {
   type AcUiToolbarI18n,
   type AcUiToolbarItem,
   type AcUiToolbarPlacement
-} from './AcExHtmlSimpleViewerUi'
-import type { AcExMarkupMode } from './AcExMarkup'
-import type { AcExMeasureMode } from './AcExMeasurement'
+} from './AcExHtmlSimpleViewerUi.js'
+import type { AcExMarkupMode } from './AcExMarkup.js'
+import type { AcExMeasureMode } from './AcExMeasurement.js'
 import {
   acexIsSimulatedMouseEnabled,
   acexToggleSimulatedMouse
-} from './AcExTouchPickStrategy'
+} from './AcExTouchPickStrategy.js'
 
 /** Theme values persisted by the offline HTML shell. */
 export type AcExHtmlToolbarTheme = 'dark' | 'light'

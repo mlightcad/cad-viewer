@@ -1,7 +1,7 @@
 import { AcDbPredefinedAcadIsoPat } from '@mlightcad/data-model'
 
-import type { PdfHatchInput } from './pdfHatchRecover'
-import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
+import type { PdfHatchInput } from './pdfHatchRecover.js'
+import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition.js'
 import {
   acapPdfBoundaryAt,
   acapPdfFitHatch,
@@ -9,8 +9,8 @@ import {
   type PdfHatchMatch,
   type PdfHatchPatternRequest,
   type PdfRecognizedHatch
-} from './recognition/pdfHatchRecognition'
-import type { PdfRecPoint } from './recognition/pdfRecGeometry'
+} from './recognition/pdfHatchRecognition.js'
+import type { PdfRecPoint } from './recognition/pdfRecGeometry.js'
 
 /** Lowest precision of a hatch shown as a good match. */
 export const PDF_HATCH_GOOD_PRECISION = 0.95

@@ -1,5 +1,5 @@
-import type { AcApContext } from '../../app'
-import { AcApDocManager } from '../../app'
+import type { AcApContext } from '../../app/index.js'
+import { AcApDocManager } from '../../app/index.js'
 import {
   type AcEdCommand,
   AcEdCorsorType,
@@ -7,23 +7,23 @@ import {
   AcEdPromptStatus,
   AcEdPromptStringOptions,
   AcEdViewMode
-} from '../../editor'
-import { acedInteractionStrategy } from '../../editor/input/ui/AcEdInteractionStrategy'
-import { AcApI18n } from '../../i18n'
-import { acuiBindDrawStyleSessionAccessory } from '../../ui/AcUiDrawStyle'
-import type { AcTrView2d } from '../../view'
-import { editMarkupHtmlText } from './AcApMarkupTextEdit'
+} from '../../editor/index.js'
+import { acedInteractionStrategy } from '../../editor/input/ui/AcEdInteractionStrategy.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acuiBindDrawStyleSessionAccessory } from '../../ui/AcUiDrawStyle.js'
+import type { AcTrView2d } from '../../view/index.js'
+import { editMarkupHtmlText } from './AcApMarkupTextEdit.js'
 import type {
   AcApMarkupMeta,
   AcApMarkupRecord,
   AcApMarkupType
-} from './AcApMarkupTypes'
+} from './AcApMarkupTypes.js'
 import {
   createMarkupId,
   defaultMarkupStyle,
   getMarkupAuthor,
   markupNow
-} from './AcApMarkupUtil'
+} from './AcApMarkupUtil.js'
 
 /** Shared open-mode for all Design Review markup commands. */
 export const MARKUP_OPEN_MODE = AcEdOpenMode.Review

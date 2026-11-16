@@ -8,14 +8,14 @@ import {
   AcGePoint3d,
   AcGePoint3dLike} from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
-import { AcEdPromptEntityOptions, AcEdPromptStatus } from '../../editor'
-import { AcApI18n } from '../../i18n'
+import { AcApDocManager } from '../../app/index.js'
+import { AcEdPromptEntityOptions, AcEdPromptStatus } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   getChainBaseId,
   getChainCursorId,
   selectChainDimension
-} from './AcApDimCmdUtil'
+} from './AcApDimCmdUtil.js'
 
 export type ChainKind = 'continue' | 'baseline'
 

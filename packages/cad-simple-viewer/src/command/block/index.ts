@@ -1,1 +1,1 @@
-export * from './AcApDashBSearchCmd'
+export * from './AcApDashBSearchCmd.js'

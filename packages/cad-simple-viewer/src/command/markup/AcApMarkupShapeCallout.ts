@@ -20,16 +20,16 @@ import {
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
-import type { AcApContext } from '../../app'
+import type { AcApContext } from '../../app/index.js'
+import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout'
-import { AcApI18n } from '../../i18n'
-import type { AcTrView2d } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   type AcApHtmlLivePoint,
   AcApHtmlLivePreview,
@@ -37,18 +37,18 @@ import {
   acapStrokeLiveCircle,
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
-} from '../overlay/AcApHtmlLivePreview'
-import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
-import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
+} from '../overlay/AcApHtmlLivePreview.js'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil.js'
+import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil.js'
 import {
   markupCloudVertices,
   tessellateMarkupCloud
-} from './AcApMarkupShapeBuilder'
-import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
+} from './AcApMarkupShapeBuilder.js'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore.js'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupPoint2d
-} from './AcApMarkupTypes'
+} from './AcApMarkupTypes.js'
 import {
   defaultMarkupColor,
   defaultMarkupStyle,
@@ -56,7 +56,7 @@ import {
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   subscribeMarkupDrawStyle
-} from './AcApMarkupUtil'
+} from './AcApMarkupUtil.js'
 
 /** Session flag: whether shape markups attach a callout by default. */
 let shapeCalloutEnabled = true

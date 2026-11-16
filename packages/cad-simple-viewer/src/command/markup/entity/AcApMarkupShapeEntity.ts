@@ -1,23 +1,23 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 import { AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
-import {
-  acapFitOverlayCanvas,
-  type AcApOverlayWorldDrawResult} from '../../overlay'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapLiveRectCorners,
   acapStrokeLiveCircle,
   acapStrokeLivePolyline
-} from '../../overlay/AcApHtmlLivePreview'
-import { strokeMarkupCloud } from '../AcApMarkupShapeBuilder'
-import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
+} from '../../overlay/AcApHtmlLivePreview.js'
+import {
+  acapFitOverlayCanvas,
+  type AcApOverlayWorldDrawResult} from '../../overlay/index.js'
+import { strokeMarkupCloud } from '../AcApMarkupShapeBuilder.js'
+import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
 import {
   bindMarkupCenterMove,
   publishAttachedCallout
-} from './AcApMarkupEntityGrips'
+} from './AcApMarkupEntityGrips.js'
 
 /**
  * Cloud / rect / circle markup with optional attached callout.

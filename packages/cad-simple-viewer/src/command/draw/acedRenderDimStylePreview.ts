@@ -6,7 +6,7 @@ import {
   DIM_PREVIEW_WIDTH,
   type DimPreviewScene,
   type DimPreviewText
-} from './dimStylePreview'
+} from './dimStylePreview.js'
 
 /**
  * Renders the shared dim-style preview scene into an SVG element (plain DOM).

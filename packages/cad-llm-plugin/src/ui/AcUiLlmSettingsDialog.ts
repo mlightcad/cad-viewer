@@ -1,11 +1,11 @@
 import { AcUiDialog } from '@mlightcad/cad-simple-viewer'
 
-import { type AcApLlmLabelKey, llmT } from '../i18n'
+import { type AcApLlmLabelKey, llmT } from '../i18n/index.js'
 import {
   type AcApLlmDiscoveredModel,
   acapLlmFetchAvailableModels,
   AcApLlmModelListingError
-} from '../model/AcApLlmModelListing'
+} from '../model/AcApLlmModelListing.js'
 import {
   ACAP_LLM_CUSTOM_PROVIDER_ID_PATTERN,
   type AcApLlmConfig,
@@ -19,7 +19,7 @@ import {
   acapLlmResolveVisionSettings,
   acapLlmSaveConfig,
   acapLlmUpsertProvider
-} from '../storage/AcApLlmConfigStore'
+} from '../storage/AcApLlmConfigStore.js'
 import {
   ACAP_LLM_API_PROTOCOLS,
   ACAP_LLM_BUILTIN_PROVIDER_IDS,
@@ -30,14 +30,14 @@ import {
   acapLlmIsBuiltinProviderId,
   type AcApLlmModelEntry,
   acapLlmVisionAfterIdEdit
-} from '../storage/AcApLlmModelCatalog'
-import { acapLlmAreProvidersEqual } from '../storage/settingsEquality'
-import { acapLlmModelChoices } from './AcApLlmModelChoices'
+} from '../storage/AcApLlmModelCatalog.js'
+import { acapLlmAreProvidersEqual } from '../storage/settingsEquality.js'
+import { acapLlmModelChoices } from './AcApLlmModelChoices.js'
 import {
   acapLlmBuiltinProviderLabel,
   acapLlmProviderLabel
-} from './AcApLlmProviderLabels'
-import { LLM_SETTINGS_STYLES } from './llmSettingsStyles'
+} from './AcApLlmProviderLabels.js'
+import { LLM_SETTINGS_STYLES } from './llmSettingsStyles.js'
 
 /** Options for {@link AcUiLlmSettingsDialog.open}. */
 export interface AcUiLlmSettingsDialogOptions {

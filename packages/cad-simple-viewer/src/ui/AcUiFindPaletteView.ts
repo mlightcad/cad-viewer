@@ -1,17 +1,17 @@
-import type { AcApDocManager } from '../app'
+import type { AcApDocManager } from '../app/index.js'
+import {
+  type AcApFindViewInsets,
+  acapNavigateToFindHit
+} from '../find/AcApFindNavigator.js'
 import {
   acuiFindExcerpt,
   type AcUiFindLayoutHit,
   type AcUiFindScope,
   acuiFindText
-} from '../find'
-import {
-  type AcApFindViewInsets,
-  acapNavigateToFindHit
-} from '../find/AcApFindNavigator'
-import type { AcUiI18n } from '../i18n/AcUiI18n'
-import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
-import { ICON_FIND } from './icons'
+} from '../find/index.js'
+import type { AcUiI18n } from '../i18n/AcUiI18n.js'
+import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles.js'
+import { ICON_FIND } from './icons.js'
 
 /** Constructor options for {@link AcUiFindPaletteView}. */
 export interface AcUiFindPaletteViewOptions {

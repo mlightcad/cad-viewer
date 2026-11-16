@@ -1,8 +1,8 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
-import type { AcTrView2d } from '../../view'
-import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
+import type { AcEdBaseView } from '../../editor/index.js'
+import type { AcTrView2d } from '../../view/index.js'
+import type { AcApMeasurementRecord } from './AcApMeasurementTypes.js'
 
 /**
  * Callback that replaces one measurement visual on a view from a record.

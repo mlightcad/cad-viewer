@@ -1,14 +1,14 @@
-import { AcApDocManager, AcApSettingManager } from '../../../app'
-import { AcApI18n } from '../../../i18n'
-import { AcEdPromptKeywordOptions } from '../prompt'
+import { AcApDocManager, AcApSettingManager } from '../../../app/index.js'
+import { AcApI18n } from '../../../i18n/index.js'
+import { AcEdPromptKeywordOptions } from '../prompt/index.js'
 import {
   AcEdCommandLineSessionControl,
   AcEdKeywordSession,
   AcEdPromptInputMode,
   AcEdPromptInputResult,
   AcEdPromptInputSession
-} from '../session'
-import { AcEdMessageType } from './AcEdMessageType'
+} from '../session/index.js'
+import { AcEdMessageType } from './AcEdMessageType.js'
 
 /**
  * AutoCAD-style floating command line with Promise-based execution.

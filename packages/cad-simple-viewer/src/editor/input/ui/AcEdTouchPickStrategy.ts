@@ -8,7 +8,7 @@
  * sample offset and whether a crosshair is drawn.
  */
 
-import { AcApSettingManager } from '../../../app/AcApSettingManager'
+import { AcApSettingManager } from '../../../app/AcApSettingManager.js'
 
 /**
  * Vertical offset (CSS px) from the finger contact to the simulated-mouse

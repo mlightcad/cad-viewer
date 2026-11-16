@@ -1,11 +1,11 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
-import { eventBus } from '../../editor/global/eventBus'
-import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
-import { getActiveMarkupBag } from './AcApMarkupSession'
-import { getMarkupStore } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import { eventBus } from '../../editor/global/eventBus.js'
+import type { AcEdBaseView } from '../../editor/index.js'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit.js'
+import { getActiveMarkupBag } from './AcApMarkupSession.js'
+import { getMarkupStore } from './AcApMarkupStore.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 
 /**
  * One undoable markup store mutation (full-store snapshots).

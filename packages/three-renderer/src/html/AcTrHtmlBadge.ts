@@ -1,7 +1,7 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
-import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement'
+import { acTrHtmlCssColor } from './AcTrHtmlColorUtil.js'
+import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement.js'
 
 /** Reference font size used to author px padding / radius on measure badges. */
 export const AC_TR_HTML_BADGE_REF_FONT_PX = 13

@@ -1,20 +1,20 @@
 import { AcGeBox2d, AcGeMatrix3d } from '@mlightcad/data-model'
 import { PDFDocument, PDFImage } from 'pdf-lib'
 
-import type { AcPdfEntity } from '../renderer/AcPdfEntity'
-import type { AcPdfColorMode } from '../renderer/AcPdfStyle'
-import { acPdfRevealFrozenLayersForOcg } from '../viewport/AcPdfLayerVisibility'
-import type { AcPdfFormRegistry } from './AcPdfContentWriter'
-import { AcPdfContentWriter } from './AcPdfContentWriter'
-import type { AcPdfFontManager } from './AcPdfFontManager'
-import { AcPdfOcgManager } from './AcPdfOcgManager'
+import type { AcPdfEntity } from '../renderer/AcPdfEntity.js'
+import type { AcPdfColorMode } from '../renderer/AcPdfStyle.js'
+import { acPdfRevealFrozenLayersForOcg } from '../viewport/AcPdfLayerVisibility.js'
+import type { AcPdfFormRegistry } from './AcPdfContentWriter.js'
+import { AcPdfContentWriter } from './AcPdfContentWriter.js'
+import type { AcPdfFontManager } from './AcPdfFontManager.js'
+import { AcPdfOcgManager } from './AcPdfOcgManager.js'
 import {
   type AcPdfPageLayoutInput,
   computePageLayout,
   PDF_MIN_STROKE_PT,
   pdfCoordinateDecimals,
   pdfRebaseOrigin
-} from './AcPdfPageLayout'
+} from './AcPdfPageLayout.js'
 
 export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
   background: 'none' | number

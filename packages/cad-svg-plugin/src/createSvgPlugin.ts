@@ -1,4 +1,4 @@
-import { AcApSvgPlugin } from './AcApSvgPlugin'
+import { AcApSvgPlugin } from './AcApSvgPlugin.js'
 
 /**
  * Creates an SVG export plugin instance.

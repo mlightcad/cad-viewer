@@ -1,15 +1,15 @@
 import { AcDbMText } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdMTextEditor,
   AcEdOpenMode,
   AcEdPromptBoxOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcTrView2d } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcTrView2d } from '../../view/index.js'
 
 /**
  * Command to create one mtext entity.

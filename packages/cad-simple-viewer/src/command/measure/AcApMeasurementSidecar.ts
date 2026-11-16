@@ -1,12 +1,12 @@
-import type { AcEdBaseView } from '../../editor'
+import type { AcEdBaseView } from '../../editor/index.js'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
-} from '../../util/AcApMeasurementUtil'
-import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
+} from '../../util/AcApMeasurementUtil.js'
+import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil.js'
 import type {
   AcApMeasurementGeometry,
   AcApMeasurementPoint2d,
@@ -14,7 +14,7 @@ import type {
   AcApMeasurementSidecarFile,
   AcApMeasurementSidecarStyle,
   AcApMeasurementType
-} from './AcApMeasurementTypes'
+} from './AcApMeasurementTypes.js'
 
 const MEASUREMENT_TYPES: readonly AcApMeasurementType[] = [
   'distance',

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { getMaterialRuntimeUserData } from './AcTrObjectUserData'
+import { getMaterialRuntimeUserData } from './AcTrObjectUserData.js'
 
 /**
  * Selection highlight color.

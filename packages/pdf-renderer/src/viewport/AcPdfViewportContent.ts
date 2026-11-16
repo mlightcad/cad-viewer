@@ -1,12 +1,12 @@
 import { AcGeBox2d, AcGeMatrix3d } from '@mlightcad/data-model'
 
-import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer'
+import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer.js'
 import {
   AcPdfEntity,
   type AcPdfPaintContext
-} from '../renderer/AcPdfEntity'
-import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
-import type { AcPdfOp } from '../renderer/AcPdfStyle'
+} from '../renderer/AcPdfEntity.js'
+import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil.js'
+import type { AcPdfOp } from '../renderer/AcPdfStyle.js'
 
 /**
  * Paper-space viewport content backed by the shared model-space drawables.

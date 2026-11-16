@@ -1,19 +1,19 @@
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcTrView2d } from '../../view'
-import { runMeasurementEdit } from './AcApMeasurementHistory'
-import { placeMeasurementRecord } from './AcApMeasurementPlace'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcTrView2d } from '../../view/index.js'
+import { runMeasurementEdit } from './AcApMeasurementHistory.js'
+import { placeMeasurementRecord } from './AcApMeasurementPlace.js'
 import {
   measurementSidecarFileName,
   parseMeasurementSidecar,
   stringifyMeasurementSidecar
-} from './AcApMeasurementSidecar'
-import { collectMeasurementRecords } from './AcApMeasurementStore'
+} from './AcApMeasurementSidecar.js'
+import { collectMeasurementRecords } from './AcApMeasurementStore.js'
 
 function downloadText(filename: string, text: string): void {
   if (typeof document === 'undefined') return

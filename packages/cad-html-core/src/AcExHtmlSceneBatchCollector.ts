@@ -23,12 +23,12 @@ import {
   acexHtmlOmitNonFinitePrimitives,
   acexHtmlReadBatchWorldOffset,
   acexHtmlRebasePlainDrawableSliceAroundCentroid
-} from './AcExHtmlBatchBuffers'
+} from './AcExHtmlBatchBuffers.js'
 import {
   acexHtmlEncodeTextureForExport,
   acexHtmlExportUvsForPositionSlice,
   acexHtmlIsTransparentImagePlaceholder
-} from './AcExHtmlMeshTextureExport'
+} from './AcExHtmlMeshTextureExport.js'
 import {
   acexHtmlComputeLineDistancesForSegments,
   acexHtmlExportVertexAttributeSlice,
@@ -37,8 +37,8 @@ import {
   acexHtmlExtractLinePattern,
   acexHtmlRebaseHatchPatternToLocalOffset,
   acexHtmlTransformHatchPatternToWorldSpace
-} from './AcExHtmlPatternSnapshot'
-import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlPatternSnapshot.js'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes.js'
 
 /** Slice of buffer geometry exported for HTML snapshot batches. */
 export interface AcExHtmlBufferGeometrySlice {

@@ -1,9 +1,9 @@
 import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcApDocManager } from '../../app'
-import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
-import { AcTrView2d } from '../../view'
+import { AcApDocManager } from '../../app/index.js'
+import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil.js'
+import { AcTrView2d } from '../../view/index.js'
 
 /** Supported raster export formats. */
 export type AcApRasterImageFormat = 'png' | 'jpeg' | 'bmp'

@@ -1,19 +1,19 @@
-import { AcApSettingManager } from '../app/AcApSettingManager'
-import { AcEdSessionAccessoryMountSkippedError } from '../editor/command/AcEdCommand'
+import { AcApSettingManager } from '../app/AcApSettingManager.js'
+import { AcEdSessionAccessoryMountSkippedError } from '../editor/command/AcEdCommand.js'
 import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
   type AcEdDrawStyleSessionHost,
   type AcEdSessionAccessory,
   type AcEdSessionAccessoryOptions
-} from '../editor/command/AcEdSessionAccessory'
+} from '../editor/command/AcEdSessionAccessory.js'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand
-} from '../util/AcApCommandUtil'
+} from '../util/AcApCommandUtil.js'
 import {
   ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
   type AcUiShortCutToolbar
-} from './AcUiShortCutToolbar'
+} from './AcUiShortCutToolbar.js'
 
 /**
  * Kind of drawing session served by the draw-style session accessory.

@@ -9,8 +9,8 @@ import {
 import {
   AcTrBatchDrawPolicy,
   alwaysBatchDrawPolicy
-} from '../draw/AcTrBatchDrawPolicy'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+} from '../draw/AcTrBatchDrawPolicy.js'
+import { AcTrStyleManager } from '../style/AcTrStyleManager.js'
 
 /**
  * Per-renderer shared services passed into drawable objects during conversion.

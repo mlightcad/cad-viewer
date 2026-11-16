@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet.js'
 
 const STRIP_IDS = [
   'mlcad-snap-strip',

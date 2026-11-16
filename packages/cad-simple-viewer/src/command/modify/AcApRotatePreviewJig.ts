@@ -8,9 +8,9 @@ import {
 import {
   AcEdSelectionStaticPreviewJig,
   AcEdSelectionTransformPreviewJig
-} from '../../editor/input/AcEdSelectionPreviewJig'
-import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
-import { createRotationMatrix } from '../../util/AcApGeTransform'
+} from '../../editor/input/AcEdSelectionPreviewJig.js'
+import { AcEdBaseView } from '../../editor/view/AcEdBaseView.js'
+import { createRotationMatrix } from '../../util/AcApGeTransform.js'
 
 /**
  * Static preview jig used while ROTATE asks for supporting inputs such as

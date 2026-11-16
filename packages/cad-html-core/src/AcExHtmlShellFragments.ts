@@ -2,8 +2,8 @@ import {
   ACEX_HTML_LOCALE_BADGES,
   ACEX_HTML_LOCALES,
   type AcExHtmlLocale
-} from './AcExHtmlI18n'
-import { AcExHtmlIcons, acexHtmlToolbarButton } from './AcExHtmlIcons'
+} from './AcExHtmlI18n.js'
+import { AcExHtmlIcons, acexHtmlToolbarButton } from './AcExHtmlIcons.js'
 
 /** Common polar angle increments for the offline HTML viewer. */
 export const ACEX_POLAR_ANGLE_INCREMENTS = [90, 45, 30, 23, 18, 10, 5] as const

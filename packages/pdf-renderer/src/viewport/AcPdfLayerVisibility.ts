@@ -1,7 +1,7 @@
 import { type AcDbDatabase, AcGeBox2d } from '@mlightcad/data-model'
 
-import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer'
-import type { AcPdfEntity } from '../renderer/AcPdfEntity'
+import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer.js'
+import type { AcPdfEntity } from '../renderer/AcPdfEntity.js'
 
 /**
  * Layer names that are Off or Frozen in the drawing's layer table.

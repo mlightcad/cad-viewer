@@ -3,10 +3,10 @@ import {
   AcDbProgressdEventArgs
 } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor'
-import { AcApI18n } from '../i18n'
-import { AcApProgress } from './AcApProgress'
-import { isOpenFileProgressComplete } from './openFileProgress'
+import { eventBus } from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
+import { AcApProgress } from './AcApProgress.js'
+import { isOpenFileProgressComplete } from './openFileProgress.js'
 
 /**
  * Manages the open-file progress overlay and normalized progress events.

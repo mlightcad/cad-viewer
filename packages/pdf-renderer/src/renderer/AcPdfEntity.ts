@@ -5,11 +5,11 @@ import {
   AcGiEntity
 } from '@mlightcad/data-model'
 
-import type { AcPdfContentWriter } from '../pdf/AcPdfContentWriter'
-import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer'
-import type { AcPdfOcgManager } from '../pdf/AcPdfOcgManager'
-import { AcPdfMatrixUtil } from './AcPdfMatrixUtil'
-import type { AcPdfOp } from './AcPdfStyle'
+import type { AcPdfContentWriter } from '../pdf/AcPdfContentWriter.js'
+import { effectivePdfLayer } from '../pdf/AcPdfEffectiveLayer.js'
+import type { AcPdfOcgManager } from '../pdf/AcPdfOcgManager.js'
+import { AcPdfMatrixUtil } from './AcPdfMatrixUtil.js'
+import type { AcPdfOp } from './AcPdfStyle.js'
 
 export interface AcPdfPaintContext {
   writer: AcPdfContentWriter

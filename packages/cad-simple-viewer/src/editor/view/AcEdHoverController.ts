@@ -4,7 +4,7 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import type { AcEdViewHoverEventArgs } from './AcEdBaseView'
+import type { AcEdViewHoverEventArgs } from './AcEdBaseView.js'
 
 /**
  * Interface implemented by a view that hosts hover behavior.

@@ -1,5 +1,5 @@
-import type { AcEdBaseView } from '../../editor'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import type { AcEdBaseView } from '../../editor/index.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 
 /**
  * Callback that republishes one markup visual on a view.

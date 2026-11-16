@@ -5,8 +5,8 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
-import { AcApLlmSettingsCmd } from './command/AcApLlmSettingsCmd'
-import { LLM_PLUGIN_NAME } from './constants'
+import { AcApLlmSettingsCmd } from './command/AcApLlmSettingsCmd.js'
+import { LLM_PLUGIN_NAME } from './constants.js'
 
 /**
  * Shared AI model settings plugin.

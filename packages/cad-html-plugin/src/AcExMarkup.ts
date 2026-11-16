@@ -13,8 +13,8 @@ import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
 
-import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
-import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
+import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel.js'
+import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks.js'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPositionWcsOverlay,
@@ -24,8 +24,8 @@ import {
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
   acexSyncLiveOverlayTextHeight
-} from './AcExHtmlOverlayDom'
-import { acedIsMobileOrPadUi } from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlOverlayDom.js'
+import { acedIsMobileOrPadUi } from './AcExHtmlSimpleViewerUi.js'
 import {
   acexComputeLeaderTipOnShape,
   acexDrawMarkupArrowHead,
@@ -43,18 +43,18 @@ import {
   acexOverlayArrowSize,
   acexStrokeMarkupCloud,
   acexTranslateMarkupGeometry
-} from './AcExMarkupGeometry'
-import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+} from './AcExMarkupGeometry.js'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag.js'
 import {
   acexMarkupSidecarFileName,
   parseAcExMarkupSidecar,
   stringifyAcExMarkupSidecar
-} from './AcExMarkupSidecar'
+} from './AcExMarkupSidecar.js'
 import {
   editAcExMarkupHtmlText,
   isAcExMarkupDoublePointer,
   isAcExMarkupHtmlTextEditing
-} from './AcExMarkupTextEdit'
+} from './AcExMarkupTextEdit.js'
 import type {
   AcExMarkupAttachedCallout,
   AcExMarkupGeometry,
@@ -64,15 +64,15 @@ import type {
   AcExMarkupSidecarFile,
   AcExMarkupStatus,
   AcExMarkupStyle
-} from './AcExMarkupTypes'
-import type { AcExTrackingOptions } from './AcExMeasureTracking'
-import { constrainToAcExTracking } from './AcExMeasureTracking'
-import type { AcExHtmlOsnapPoint } from './AcExOsnap'
-import { acexOverlayGripClassName } from './AcExOverlayGrip'
-import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
-import type { AcExSessionHistory } from './AcExSessionHistory'
+} from './AcExMarkupTypes.js'
+import type { AcExTrackingOptions } from './AcExMeasureTracking.js'
+import { constrainToAcExTracking } from './AcExMeasureTracking.js'
+import type { AcExHtmlOsnapPoint } from './AcExOsnap.js'
+import { acexOverlayGripClassName } from './AcExOverlayGrip.js'
+import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox.js'
+import type { AcExSessionHistory } from './AcExSessionHistory.js'
 
-export type { AcExMarkupMode } from './AcExMarkupTypes'
+export type { AcExMarkupMode } from './AcExMarkupTypes.js'
 
 /** Default markup stroke color (ACI red). */
 export const ACEX_MARKUP_COLOR = '#e53935'

@@ -7,7 +7,7 @@ import {
   AcGeVector3d
 } from '@mlightcad/data-model'
 
-import { AcTrBufferGeometryUtil } from './AcTrBufferGeometryUtil'
+import { AcTrBufferGeometryUtil } from './AcTrBufferGeometryUtil.js'
 
 const FINITE_VECTOR_EPS = 1e-12
 const reportedIssues = new Set<string>()

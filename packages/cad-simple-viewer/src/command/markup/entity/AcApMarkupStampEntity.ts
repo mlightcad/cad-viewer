@@ -1,10 +1,10 @@
 import { AcTrHtmlStamp } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
-import type { AcApOverlayWorldDrawResult } from '../../overlay'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
-import { bindMarkupCenterMove } from './AcApMarkupEntityGrips'
+import type { AcTrView2d } from '../../../view/index.js'
+import type { AcApOverlayWorldDrawResult } from '../../overlay/index.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
+import { bindMarkupCenterMove } from './AcApMarkupEntityGrips.js'
 
 /**
  * Stamp or symbol markup rendered as an {@link AcTrHtmlStamp}.

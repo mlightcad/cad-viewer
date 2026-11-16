@@ -1,22 +1,22 @@
-import { createIconElement } from '../icons'
-import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles'
-import { acuiComputeWrapPackSlot } from './acuiWrapPackLayout'
-import type { AcUiResolvedToolbarChrome } from './resolveToolbarChrome'
+import { createIconElement } from '../icons.js'
+import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles.js'
+import { acuiComputeWrapPackSlot } from './acuiWrapPackLayout.js'
+import type { AcUiResolvedToolbarChrome } from './resolveToolbarChrome.js'
 import {
   acuiIsToolbarItemDisabled,
   acuiItemRequiresDocument,
   acuiResolveEffectiveToolbarItem
-} from './resolveToolbarItemState'
+} from './resolveToolbarItemState.js'
 import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarSeparatorItem
-} from './toolbarItemUtils'
+} from './toolbarItemUtils.js'
 import type {
   AcUiSubToolbarPosition,
   AcUiToolbarI18n,
   AcUiToolbarItem,
   AcUiToolbarPlacement
-} from './types'
+} from './types.js'
 
 /** Constructor options for {@link AcUiSubToolbar}. */
 export interface AcUiSubToolbarMountOptions {

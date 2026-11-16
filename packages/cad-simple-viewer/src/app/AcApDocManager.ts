@@ -11,6 +11,7 @@ import {
 import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
+import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession.js'
 import {
   AcApAboutCmd,
   AcApArcCmd,
@@ -103,66 +104,65 @@ import {
   AcApZoomCmd,
   resetMarkupSession,
   resetMeasurementSession
-} from '../command'
-import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession'
-import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
-import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
+} from '../command/index.js'
+import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands.js'
+import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands.js'
 import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
   AcEdOpenMode,
   eventBus
-} from '../editor'
-import { AcApPluginManager } from '../plugin/AcApPluginManager'
+} from '../editor/index.js'
+import { AcApPluginManager } from '../plugin/AcApPluginManager.js'
 import {
   acapCollectPaperViewportsBox,
   acapResolveLayoutFrameBox
-} from '../util/AcApLayoutViewFraming'
-import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType'
-import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
-import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
-import { AcTrView2d } from '../view'
-import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay'
-import type { AcTrLayout } from '../view/AcTrLayout'
-import { AcApBusyIndicator } from './AcApBusyIndicator'
-import { AcApClipboard } from './AcApClipboard'
-import { acapBindCommandServices } from './AcApCommandServices'
-import { AcApContext } from './AcApContext'
-import { AcApDocSession } from './AcApDocSession'
-import { ACAP_DEFAULT_DOCS_BASE_URL, acapSetDocsBaseUrl } from './AcApDocsUrl'
-import { AcApDocument } from './AcApDocument'
-import { AcApFontLoader } from './AcApFontLoader'
-import { acapHealModelLayoutLink } from './acapHealModelLayoutLink'
+} from '../util/AcApLayoutViewFraming.js'
+import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType.js'
+import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser.js'
+import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase.js'
+import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay.js'
+import type { AcTrLayout } from '../view/AcTrLayout.js'
+import { AcTrView2d } from '../view/index.js'
+import { AcApBusyIndicator } from './AcApBusyIndicator.js'
+import { AcApClipboard } from './AcApClipboard.js'
+import { acapBindCommandServices } from './AcApCommandServices.js'
+import { AcApContext } from './AcApContext.js'
+import { AcApDocSession } from './AcApDocSession.js'
+import { ACAP_DEFAULT_DOCS_BASE_URL, acapSetDocsBaseUrl } from './AcApDocsUrl.js'
+import { AcApDocument } from './AcApDocument.js'
+import { AcApFontLoader } from './AcApFontLoader.js'
+import { acapHealModelLayoutLink } from './acapHealModelLayoutLink.js'
 import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
-} from './AcApOpenDatabaseOptions'
+} from './AcApOpenDatabaseOptions.js'
 import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
   acapUninstallOpenFileDialog,
   acapUpdateOpenFileDialogOptions
-} from './AcApOpenFileDialog'
-import { AcApOpenFileProfiler } from './AcApOpenFileProfiler'
-import { AcApOpenFileProgressController } from './AcApOpenFileProgressController'
+} from './AcApOpenFileDialog.js'
+import { AcApOpenFileProfiler } from './AcApOpenFileProfiler.js'
+import { AcApOpenFileProgressController } from './AcApOpenFileProgressController.js'
 import {
   checkWebworkerReadiness,
   DEFAULT_WEBWORKER_FILE_URLS,
   resetWebworkerReadinessCache
-} from './AcApWebworkerReadiness'
-import { AcApXrefManager } from './AcApXrefManager'
+} from './AcApWebworkerReadiness.js'
+import { AcApXrefManager } from './AcApXrefManager.js'
 import {
   AcApDataSourceManager,
   AcApLocalDataSource,
   AcApUrlDataSource
-} from './dataSource'
+} from './dataSource/index.js'
 import {
   acapDisposeNotificationService,
   acapInstallNotificationService,
   type AcUiNotificationBellPlacement
-} from './notification'
-import { syncCurrentSpaceFromTileMode } from './syncCurrentSpaceFromTileMode'
+} from './notification/index.js'
+import { syncCurrentSpaceFromTileMode } from './syncCurrentSpaceFromTileMode.js'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
@@ -363,8 +363,8 @@ export interface AcApDocManagerOptions {
      * Each item can be a plugin instance or a factory function that returns a plugin.
      */
     fromConfig?: Array<
-      | import('../plugin/AcApPlugin').AcApPlugin
-      | (() => import('../plugin/AcApPlugin').AcApPlugin)
+      | import('../plugin/AcApPlugin.js').AcApPlugin
+      | (() => import('../plugin/AcApPlugin.js').AcApPlugin)
     >
     /**
      * Load plugins from a folder using dynamic imports.
@@ -470,7 +470,7 @@ export interface AcApDocManagerOptions {
    * - `false`: do not load (use for `cad-editor`, CLI, headless)
    * - object: enable with those {@link AcUiSimpleUiOptions}
    */
-  simpleUi?: boolean | import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
+  simpleUi?: boolean | import('../ui/AcUiSimpleUiOptions.js').AcUiSimpleUiOptions
 }
 
 /**
@@ -521,10 +521,10 @@ export class AcApDocManager {
   private _pluginManager: AcApPluginManager
   /** Resolved when built-in simple UI chrome finishes loading (or skipped). */
   private _simpleUiReady: Promise<
-    import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome | undefined
+    import('../ui/AcApSimpleUiChrome.js').AcApSimpleUiChrome | undefined
   > = Promise.resolve(undefined)
   /** Built-in simple UI chrome when {@link simpleUi} is enabled. */
-  private _simpleUiChrome?: import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome
+  private _simpleUiChrome?: import('../ui/AcApSimpleUiChrome.js').AcApSimpleUiChrome
   /** Data source manager (local, URL, cloud plugins) */
   private _dataSourceManager: AcApDataSourceManager
   /**
@@ -2932,10 +2932,10 @@ export class AcApDocManager {
    * Dynamically loads built-in simple UI chrome (`toolbar` + dock palettes).
    */
   private async loadSimpleUi(
-    options: import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
+    options: import('../ui/AcUiSimpleUiOptions.js').AcUiSimpleUiOptions
   ) {
     try {
-      const { AcApSimpleUiChrome } = await import('../ui/AcApSimpleUiChrome')
+      const { AcApSimpleUiChrome } = await import('../ui/AcApSimpleUiChrome.js')
       const chrome = new AcApSimpleUiChrome(options)
       chrome.start(this.commandManager)
       this._simpleUiChrome = chrome

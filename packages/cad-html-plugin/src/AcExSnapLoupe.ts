@@ -1,11 +1,11 @@
-import type { AcExHtmlOsnapMode } from './AcExOsnap'
-import { acexOsnapModeToMarkerType } from './AcExOsnap'
-import type { AcExOsnapMarkerShape } from './AcExOsnapMarker'
+import type { AcExHtmlOsnapMode } from './AcExOsnap.js'
+import { acexOsnapModeToMarkerType } from './AcExOsnap.js'
+import type { AcExOsnapMarkerShape } from './AcExOsnapMarker.js'
 import {
   ACEX_SNAP_LOUPE_TOP_INSET_PX,
   acexLoupeLocalFromCanvasDelta,
   acexResolveLoupePlacement
-} from './AcExSnapLoupeMath'
+} from './AcExSnapLoupeMath.js'
 
 export {
   ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
@@ -15,7 +15,7 @@ export {
   ACEX_SNAP_LOUPE_ZOOM,
   acexLoupeLocalFromCanvasDelta,
   acexResolveLoupePlacement
-} from './AcExSnapLoupeMath'
+} from './AcExSnapLoupeMath.js'
 
 /**
  * DOM chrome for the offline HTML snap loupe (border and OSNAP glyph).

@@ -1,4 +1,4 @@
-import type { AcDbSvgPoint } from './svgTypes'
+import type { AcDbSvgPoint } from './svgTypes.js'
 
 const PATH_COMMANDS = /([MmLlHhVvCcQqAaZzSsTt])/g
 

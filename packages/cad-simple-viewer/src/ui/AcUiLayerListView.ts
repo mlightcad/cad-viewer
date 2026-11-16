@@ -1,10 +1,10 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../app'
-import type { AcUiI18n } from '../i18n/AcUiI18n'
-import { type AcApLayerInfo, AcApLayerStore } from '../service'
-import { AcUiColorPicker } from './AcUiColorPicker'
-import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
+import { AcApDocManager } from '../app/index.js'
+import type { AcUiI18n } from '../i18n/AcUiI18n.js'
+import { type AcApLayerInfo, AcApLayerStore } from '../service/index.js'
+import { AcUiColorPicker } from './AcUiColorPicker.js'
+import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles.js'
 
 /** Sort direction for the layer name column. */
 export type AcUiLayerNameSortOrder = 'none' | 'asc' | 'desc'

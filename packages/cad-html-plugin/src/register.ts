@@ -1,6 +1,6 @@
 import type { AcApPluginManager } from '@mlightcad/cad-simple-viewer'
 
-import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
+import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions.js'
 
 /** Lazy plugin name for HTML export. */
 export const HTML_PLUGIN_NAME = 'HtmlPlugin'
@@ -50,4 +50,4 @@ export function registerLazyHtmlPlugin(
   })
 }
 
-export type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
+export type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions.js'

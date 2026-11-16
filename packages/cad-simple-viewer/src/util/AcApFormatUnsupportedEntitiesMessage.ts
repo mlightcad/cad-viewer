@@ -1,5 +1,5 @@
-import { AcApI18n } from '../i18n/AcApI18n'
-import type { AcApUnsupportedDrawingAnalysis } from './AcApAnalyzeUnsupportedDrawing'
+import { AcApI18n } from '../i18n/AcApI18n.js'
+import type { AcApUnsupportedDrawingAnalysis } from './AcApAnalyzeUnsupportedDrawing.js'
 
 /**
  * Translation function used by notification message formatters.

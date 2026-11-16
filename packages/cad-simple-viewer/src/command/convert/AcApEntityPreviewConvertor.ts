@@ -5,9 +5,9 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcApDocManager } from '../../app'
-import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
-import { AcTrView2d } from '../../view'
+import { AcApDocManager } from '../../app/index.js'
+import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil.js'
+import { AcTrView2d } from '../../view/index.js'
 
 export type AcApEntityPreviewExportFailure =
   | 'no-preview-root'

@@ -7,8 +7,8 @@
  * the data model.
  */
 
-import type { PdfTextGlyph, PdfTextLineCandidate } from './pdfGlyphClustering'
-import type { PdfRecPoint } from './pdfRecGeometry'
+import type { PdfTextGlyph, PdfTextLineCandidate } from './pdfGlyphClustering.js'
+import type { PdfRecPoint } from './pdfRecGeometry.js'
 
 /** One line taking part in a merge. */
 export interface PdfTextMergePart<Id> {

@@ -20,7 +20,7 @@ import type {
   AcExHtmlOsnapEllipsePrimitive,
   AcExHtmlOsnapPrimitive,
   AcExHtmlOsnapSplinePrimitive
-} from './AcExHtmlOsnapPrimitiveTypes'
+} from './AcExHtmlOsnapPrimitiveTypes.js'
 
 /** Discriminated result of {@link acexHtmlPrimitiveToAcGeCurve}. */
 export type AcExHtmlOsnapAcGeCurve =

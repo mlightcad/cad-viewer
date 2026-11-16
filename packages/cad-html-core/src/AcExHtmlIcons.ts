@@ -53,7 +53,7 @@ import {
   ICON_ZOOM_ORIGINAL,
   ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW
-} from './AcExHtmlIconSvgs'
+} from './AcExHtmlIconSvgs.js'
 
 /**
  * Inline SVG markup keyed by toolbar / layer UI usage.

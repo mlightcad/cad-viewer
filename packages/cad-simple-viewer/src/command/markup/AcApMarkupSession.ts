@@ -1,7 +1,7 @@
-import type { AcApMarkupHistory, AcApSessionUndo } from './AcApMarkupHistory'
-import type { AcApMarkupPresenter } from './AcApMarkupPresenter'
-import type { AcApMarkupStore } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import type { AcApMarkupHistory, AcApSessionUndo } from './AcApMarkupHistory.js'
+import type { AcApMarkupPresenter } from './AcApMarkupPresenter.js'
+import type { AcApMarkupStore } from './AcApMarkupStore.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 
 /** Per-document markup bags (store + presenter + history). */
 export interface AcApMarkupSessionBag {

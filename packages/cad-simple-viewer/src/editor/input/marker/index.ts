@@ -1,2 +1,2 @@
-export * from './AcEdMarker'
-export * from './AcEdOSnapMarkerManager'
+export * from './AcEdMarker.js'
+export * from './AcEdOSnapMarkerManager.js'

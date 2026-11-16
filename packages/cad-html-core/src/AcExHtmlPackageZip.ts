@@ -1,6 +1,6 @@
 import { unzipSync, zipSync } from 'fflate'
 
-import type { AcExHtmlPackageFile, AcExHtmlPackageFiles } from './AcExHtmlPackageTypes'
+import type { AcExHtmlPackageFile, AcExHtmlPackageFiles } from './AcExHtmlPackageTypes.js'
 
 function isSafeZipPath(path: string): boolean {
   if (!path || path.startsWith('/') || path.includes('\\') || path.includes('\0')) {

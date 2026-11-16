@@ -1,6 +1,6 @@
-import { AcTrHtmlCanvasOverlay } from './AcTrHtmlCanvasOverlay'
-import { AC_TR_HTML_DEFAULT_LAYER, AcTrHtmlElement } from './AcTrHtmlElement'
-import { acTrIsHtmlGrip } from './AcTrHtmlGrip'
+import { AcTrHtmlCanvasOverlay } from './AcTrHtmlCanvasOverlay.js'
+import { AC_TR_HTML_DEFAULT_LAYER, AcTrHtmlElement } from './AcTrHtmlElement.js'
+import { acTrIsHtmlGrip } from './AcTrHtmlGrip.js'
 
 /**
  * Options for an {@link AcTrHtmlGroup}.

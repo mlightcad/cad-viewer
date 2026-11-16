@@ -1,15 +1,15 @@
-import type { AcApDataSourceMenuItem } from '../app/dataSource/acapBuildDataSourceMenu'
+import type { AcApDataSourceMenuItem } from '../app/dataSource/acapBuildDataSourceMenu.js'
 import type {
   AcApDataSource,
   AcApDataSourceAccountProfile
-} from '../app/dataSource/AcApDataSource'
-import { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager'
-import { acapInvokeDataSourceMenuAction } from '../app/dataSource/acapInvokeDataSourceMenuAction'
-import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
+} from '../app/dataSource/AcApDataSource.js'
+import { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager.js'
+import { acapInvokeDataSourceMenuAction } from '../app/dataSource/acapInvokeDataSourceMenuAction.js'
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme.js'
 import {
   AcUiFileOpenPanel,
   type AcUiFileOpenPanelCardSize
-} from './AcUiFileOpenPanel'
+} from './AcUiFileOpenPanel.js'
 
 /**
  * Normalized open intent emitted by {@link AcUiFileOpenLanding}.

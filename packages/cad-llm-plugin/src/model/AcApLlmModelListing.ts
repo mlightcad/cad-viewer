@@ -1,6 +1,6 @@
-import type { AcApLlmApiProtocol } from '../storage/AcApLlmModelCatalog'
-import { ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess'
-import { acapLlmNormalizeBaseUrl } from './normalizeLlmBaseUrl'
+import type { AcApLlmApiProtocol } from '../storage/AcApLlmModelCatalog.js'
+import { ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess.js'
+import { acapLlmNormalizeBaseUrl } from './normalizeLlmBaseUrl.js'
 
 /** One model reported by a provider's model-listing endpoint. */
 export interface AcApLlmDiscoveredModel {

@@ -13,7 +13,7 @@ import type {
   AcExMeasurementSidecarFile,
   AcExMeasurementSidecarStyle,
   AcExMeasurementType
-} from './AcExMeasurementTypes'
+} from './AcExMeasurementTypes.js'
 
 /** Default overlay line weight: hairline (1 CSS px, not zoom-scaled). */
 export const ACEX_MEASUREMENT_LINE_WEIGHT = 0

@@ -2,13 +2,13 @@
 // stack does not transitively pull in the editor's DOM-heavy input UI through
 // AcEdBaseView. Keeps unit tests for the stack runnable in the Node Jest env.
 // Type-only import — needed solely for typing markActive/cancelActive parameters.
-import type { AcEdBaseView } from '../view/AcEdBaseView'
-import { AcEdOpenMode } from '../view/AcEdOpenMode'
-import { AcEdCommand } from './AcEdCommand'
+import type { AcEdBaseView } from '../view/AcEdBaseView.js'
+import { AcEdOpenMode } from '../view/AcEdOpenMode.js'
+import { AcEdCommand } from './AcEdCommand.js'
 import {
   AcEdCommandIterator,
   AcEdCommandIteratorItem
-} from './AcEdCommandIterator'
+} from './AcEdCommandIterator.js'
 
 /**
  * Interface representing a command group in the command stack.

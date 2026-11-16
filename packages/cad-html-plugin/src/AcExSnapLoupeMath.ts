@@ -1,7 +1,7 @@
 import {
   acexHtmlTopChromeBottomOffset,
   getAcExHtmlTopChrome
-} from './AcExHtmlTopChrome'
+} from './AcExHtmlTopChrome.js'
 
 /** Square loupe size in CSS pixels. */
 export const ACEX_SNAP_LOUPE_SIZE_PX = 128

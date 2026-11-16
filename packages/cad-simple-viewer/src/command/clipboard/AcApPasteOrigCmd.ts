@@ -1,9 +1,9 @@
 import { AcGeMatrix3d } from '@mlightcad/data-model'
 
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapReadClipboard } from './AcApClipboardUtils'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapReadClipboard } from './AcApClipboardUtils.js'
 
 /**
  * PASTEORIG: pastes the clipboard objects at the coordinates they had in the

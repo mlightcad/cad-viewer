@@ -1,17 +1,17 @@
 import type { AcCmEventManager } from '@mlightcad/data-model'
 
-import type { AcEdCommand } from '../../command/AcEdCommand'
+import type { AcEdCommand } from '../../command/AcEdCommand.js'
 import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryEventArgs,
   AcEdSessionAccessoryHostInfo,
   AcEdSessionAccessoryOptions,
   AcEdSessionAccessorySlot
-} from '../../command/AcEdSessionAccessory'
-import type { AcEdBaseView } from '../../view/AcEdBaseView'
-import { AcEdDesktopSessionAccessoryChrome } from './AcEdDesktopSessionAccessoryChrome'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
-import type { AcEdMobileCommandChrome } from './AcEdMobileCommandChrome'
+} from '../../command/AcEdSessionAccessory.js'
+import type { AcEdBaseView } from '../../view/AcEdBaseView.js'
+import { AcEdDesktopSessionAccessoryChrome } from './AcEdDesktopSessionAccessoryChrome.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
+import type { AcEdMobileCommandChrome } from './AcEdMobileCommandChrome.js'
 
 /** Subset of editor events used by the session accessory controller. */
 export interface AcEdSessionAccessoryEditorEvents {

@@ -1,6 +1,6 @@
 import { AcDbLayerTableRecord } from '@mlightcad/data-model'
 
-import { LAYER_LOCKED_FLAG } from './types'
+import { LAYER_LOCKED_FLAG } from './types.js'
 
 /**
  * Layer flags that can be changed by `LAYISO` and restored by `LAYUNISO`.

@@ -8,8 +8,8 @@ import {
   AcGeVector3d
 } from '@mlightcad/data-model'
 
-import { AcEdPreviewJig } from '../input/AcEdPreviewJig'
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcEdPreviewJig } from '../input/AcEdPreviewJig.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 
 /**
  * Temporary anonymous block used to preview a dimension being grip-edited.

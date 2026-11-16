@@ -1,14 +1,14 @@
 import { AcGeBox2d, AcGePoint2d } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../../view'
-import { AcEdMarker, AcEdMarkerType } from '../marker/AcEdMarker'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
+import { AcEdBaseView } from '../../view/index.js'
+import { AcEdMarker, AcEdMarkerType } from '../marker/AcEdMarker.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
 import {
   ACED_SNAP_LOUPE_SIZE_PX,
   ACED_SNAP_LOUPE_ZOOM,
   acedLoupeLocalFromCanvasDelta,
   acedResolveLoupePlacement
-} from './AcEdSnapLoupeMath'
+} from './AcEdSnapLoupeMath.js'
 
 export {
   ACED_SNAP_LOUPE_GAP_BELOW_PROMPT_PX,
@@ -17,7 +17,7 @@ export {
   ACED_SNAP_LOUPE_ZOOM,
   acedLoupeLocalFromCanvasDelta,
   acedResolveLoupePlacement
-} from './AcEdSnapLoupeMath'
+} from './AcEdSnapLoupeMath.js'
 
 /**
  * DOM chrome for the mobile snap loupe: border and OSNAP glyph.

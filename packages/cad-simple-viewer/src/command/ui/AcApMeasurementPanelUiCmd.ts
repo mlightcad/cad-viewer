@@ -1,5 +1,5 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
 
 /** Actions invoked by the `measurementpanel` command to prepare and open measurement UI. */
 export interface AcUiMeasurementPanelCommandActions {

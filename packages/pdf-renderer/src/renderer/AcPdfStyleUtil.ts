@@ -5,13 +5,13 @@ import {
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
-import { lineWeightToDrawingUnits } from '../AcPdfUnits'
-import { isComplexLineType } from '../linetype/AcPdfLineTypeStroker'
+import { lineWeightToDrawingUnits } from '../AcPdfUnits.js'
+import { isComplexLineType } from '../linetype/AcPdfLineTypeStroker.js'
 import {
   AcPdfFillStyle,
   AcPdfStrokeStyle,
   rgbFromPacked
-} from './AcPdfStyle'
+} from './AcPdfStyle.js'
 
 /** Runtime style options passed from {@link AcPdfRenderer}. */
 export interface AcPdfStyleContext {

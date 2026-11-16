@@ -7,10 +7,10 @@ import {
   AcGiLineWeight
 } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
-import { acCmColorToCssHex, parseCssToAcCmColor } from '../../util/AcApCssColor'
-import { ACAP_OVERLAY_ARROW_SIZE_PX, acapScaleWcsWithFont, acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
-import type { AcApMarkupStyle } from './AcApMarkupTypes'
+import type { AcEdBaseView } from '../../editor/index.js'
+import { acCmColorToCssHex, parseCssToAcCmColor } from '../../util/AcApCssColor.js'
+import { ACAP_OVERLAY_ARROW_SIZE_PX, acapScaleWcsWithFont, acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil.js'
+import type { AcApMarkupStyle } from './AcApMarkupTypes.js'
 
 /** Factory default markup color (ACI red) used to seed the draw style. */
 export function createDefaultMarkupColor(): AcCmColor {

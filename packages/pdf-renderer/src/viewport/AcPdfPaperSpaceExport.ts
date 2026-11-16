@@ -8,16 +8,16 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { AcPdfEntity } from '../renderer/AcPdfEntity'
-import type { AcPdfRenderer } from '../renderer/AcPdfRenderer'
-import { acPdfApplyDatabaseLayerVisibility } from './AcPdfLayerVisibility'
+import { AcPdfEntity } from '../renderer/AcPdfEntity.js'
+import type { AcPdfRenderer } from '../renderer/AcPdfRenderer.js'
+import { acPdfApplyDatabaseLayerVisibility } from './AcPdfLayerVisibility.js'
 import {
   buildModelToPaperMatrix,
   isDefaultPaperSpaceViewport,
   resolveViewportBoxes,
   resolveViewportFrozenLayers
-} from './AcPdfPaperViewport'
-import { AcPdfViewportContent } from './AcPdfViewportContent'
+} from './AcPdfPaperViewport.js'
+import { AcPdfViewportContent } from './AcPdfViewportContent.js'
 
 /**
  * Attaches common PDF metadata copied from the source database entity.

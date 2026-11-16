@@ -5,12 +5,12 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer'
-import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
-import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
-import { AcEdMarkerManager } from '../input/marker'
-import { AcEdBaseView } from '../view/AcEdBaseView'
-import { AcEdGripPreviewJig } from './AcEdGripPreviewJig'
+import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer.js'
+import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit.js'
+import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver.js'
+import { AcEdMarkerManager } from '../input/marker/index.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
+import { AcEdGripPreviewJig } from './AcEdGripPreviewJig.js'
 
 export interface AcEdGripEditTarget {
   entityId: AcDbObjectId

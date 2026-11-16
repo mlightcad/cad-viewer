@@ -12,8 +12,8 @@ import {
   type ToolResult
 } from '@mlightcad/cad-script-core'
 
-import { createDocManagerSession } from '../session/createDocManagerSession'
-import { withViewerDefaults } from '../session/withViewerDefaults'
+import { createDocManagerSession } from '../session/createDocManagerSession.js'
+import { withViewerDefaults } from '../session/withViewerDefaults.js'
 
 /**
  * {@link CoreCadActionExecutor} bound to the viewer.

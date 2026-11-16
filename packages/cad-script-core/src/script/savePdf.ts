@@ -1,12 +1,12 @@
 import { acexPdfExportDatabase } from '@mlightcad/cad-pdf-core'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { CadSession } from '../session/CadSession'
-import type { ToolResultSavedFile } from '../tools/types'
+import type { CadSession } from '../session/CadSession.js'
+import type { ToolResultSavedFile } from '../tools/types.js'
 import {
   deliverSavedFileBytes,
   toSavedFileSummary
-} from './deliverSavedFile'
+} from './deliverSavedFile.js'
 
 /** Options for `cad.file.savePdf`. A string is treated as `path`. */
 export type CadScriptPdfSaveOptions =

@@ -7,21 +7,21 @@
 export {
   ACAP_ONEDRIVE_DATA_SOURCE_ID,
   AcApOneDriveDataSource
-} from './AcApOneDriveDataSource'
-export type { AcApOneDrivePluginOptions } from './AcApOneDrivePlugin'
-export { AcApOneDrivePlugin } from './AcApOneDrivePlugin'
-export { createOneDrivePlugin } from './createOneDrivePlugin'
+} from './AcApOneDriveDataSource.js'
+export type { AcApOneDrivePluginOptions } from './AcApOneDrivePlugin.js'
+export { AcApOneDrivePlugin } from './AcApOneDrivePlugin.js'
+export { createOneDrivePlugin } from './createOneDrivePlugin.js'
 export type {
   DriveFile,
   OneDriveClientOptions,
   OneDrivePickerAuthCommand,
   UserInfo
-} from './oneDriveClient'
+} from './oneDriveClient.js'
 export {
   isAllowedMicrosoftResourceUrl,
   isAllowedPickerMessageOrigin,
   OneDriveClient,
   resolveDefaultRedirectUri,
   resolveOneDrivePickerScopes
-} from './oneDriveClient'
-export { ONEDRIVE_PLUGIN_NAME } from './register'
+} from './oneDriveClient.js'
+export { ONEDRIVE_PLUGIN_NAME } from './register.js'

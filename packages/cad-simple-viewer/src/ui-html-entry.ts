@@ -13,33 +13,33 @@ export {
   acedApplyCanvasTouchCalloutStyles,
   acedClearDomSelection,
   acedGuardCanvasTouchCallout
-} from './editor/input/ui/AcEdCanvasTouchCalloutGuard'
-export { AcEdEntityPickCancelChrome } from './editor/input/ui/AcEdEntityPickCancelChrome'
+} from './editor/input/ui/AcEdCanvasTouchCalloutGuard.js'
+export { AcEdEntityPickCancelChrome } from './editor/input/ui/AcEdEntityPickCancelChrome.js'
 export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
-} from './editor/input/ui/AcEdTouchPointTiming'
+} from './editor/input/ui/AcEdTouchPointTiming.js'
 export {
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout
-} from './editor/global/AcEdUiLayout'
-export { AcUiAciColorDialog } from './ui/AcUiAciColorDialog'
+} from './editor/global/AcEdUiLayout.js'
+export { AcUiAciColorDialog } from './ui/AcUiAciColorDialog.js'
 export type {
   AcUiAciColorDialogLabels,
   AcUiAciColorDialogOptions
-} from './ui/AcUiAciColorDialog'
-export { AcUiFullscreenPanel } from './ui/AcUiFullscreenPanel'
+} from './ui/AcUiAciColorDialog.js'
+export { AcUiFullscreenPanel } from './ui/AcUiFullscreenPanel.js'
 export type {
   AcUiFullscreenPanelLabels,
   AcUiFullscreenPanelOptions
-} from './ui/AcUiFullscreenPanel'
-export { AcUiHelpPanel } from './ui/AcUiHelpPanel'
+} from './ui/AcUiFullscreenPanel.js'
+export { AcUiHelpPanel } from './ui/AcUiHelpPanel.js'
 export type {
   AcUiHelpPanelLabels,
   AcUiHelpPanelOptions,
   AcUiHelpPanelShowOptions
-} from './ui/AcUiHelpPanel'
-export { AcUiMobileSessionPanel } from './ui/AcUiMobileSessionPanel'
+} from './ui/AcUiHelpPanel.js'
+export { AcUiMobileSessionPanel } from './ui/AcUiMobileSessionPanel.js'
 export type {
   AcUiMobileSessionPanelLabels,
   AcUiMobileSessionPanelOptions,
@@ -47,46 +47,46 @@ export type {
   AcUiMobileSessionPanelCallbacks,
   AcUiMobileSessionKeyword,
   AcUiMobileSessionMetricTexts
-} from './ui/AcUiMobileSessionPanel'
-export { AcUiShortCutToolbar } from './ui/AcUiShortCutToolbar'
+} from './ui/AcUiMobileSessionPanel.js'
+export { AcUiShortCutToolbar } from './ui/AcUiShortCutToolbar.js'
 export type {
   AcUiShortCutToolbarActionState,
   AcUiShortCutToolbarOptions
-} from './ui/AcUiShortCutToolbar'
-export { AcUiSimpleToolbar } from './ui/AcUiSimpleToolbar'
-export type { AcUiSimpleToolbarItem } from './ui/AcUiSimpleToolbar'
-export { AcEdOpenMode } from './editor/view/AcEdOpenMode'
-export { AcUiToolbar } from './ui/toolbar/AcUiToolbar'
-export type { AcUiToolbarMountOptions } from './ui/toolbar/AcUiToolbar'
+} from './ui/AcUiShortCutToolbar.js'
+export { AcUiSimpleToolbar } from './ui/AcUiSimpleToolbar.js'
+export type { AcUiSimpleToolbarItem } from './ui/AcUiSimpleToolbar.js'
+export { AcEdOpenMode } from './editor/view/AcEdOpenMode.js'
+export { AcUiToolbar } from './ui/toolbar/AcUiToolbar.js'
+export type { AcUiToolbarMountOptions } from './ui/toolbar/AcUiToolbar.js'
 export {
   acuiEnsureToolbarStyles,
   acuiRemoveToolbarStylesIfUnused
-} from './ui/toolbar/AcUiToolbarStyles'
-export { acuiCopyDynamicToolbarChildren } from './ui/toolbar/toolbarItemUtils'
+} from './ui/toolbar/AcUiToolbarStyles.js'
+export { acuiCopyDynamicToolbarChildren } from './ui/toolbar/toolbarItemUtils.js'
 export type {
   AcUiToolbarDocState,
   AcUiToolbarI18n,
   AcUiToolbarItem,
   AcUiToolbarPlacement,
   AcUiToolbarChildrenUi
-} from './ui/toolbar/types'
-export { AcUiTextHeightDialog } from './ui/AcUiTextHeightDialog'
+} from './ui/toolbar/types.js'
+export { AcUiTextHeightDialog } from './ui/AcUiTextHeightDialog.js'
 export type {
   AcUiTextHeightDialogLabels,
   AcUiTextHeightDialogOptions,
   AcUiTextHeightDialogResult,
   AcUiTextHeightMode
-} from './ui/AcUiTextHeightDialog'
+} from './ui/AcUiTextHeightDialog.js'
 export {
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial
-} from './ui/touch-point-tutorial'
+} from './ui/touch-point-tutorial.js'
 export type {
   AcUiTouchPointTutorialConfig,
   AcUiTouchPointTutorialLabels,
   AcUiTouchPointTutorialPrefs
-} from './ui/touch-point-tutorial'
+} from './ui/touch-point-tutorial.js'
 export {
   createIconElement,
   ICON_CLOSE,
@@ -94,4 +94,4 @@ export {
   ICON_REDO,
   ICON_TEXT_HEIGHT,
   ICON_UNDO
-} from './ui/icons'
+} from './ui/icons.js'

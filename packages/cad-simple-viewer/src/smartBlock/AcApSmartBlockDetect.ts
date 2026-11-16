@@ -4,13 +4,13 @@ import type {
   AcDbObjectId
 } from '@mlightcad/data-model'
 
-import { excludeLockedLayerIds } from '../service/AcApLockedLayer'
+import { excludeLockedLayerIds } from '../service/AcApLockedLayer.js'
 import {
   acapConvertSmartBlock,
   acapInvertAffine2d,
   type AcApSmartBlockAttributeSpec,
   type AcApSmartBlockConvertResult
-} from './AcApSmartBlockConvert'
+} from './AcApSmartBlockConvert.js'
 import {
   acapBuildSmartBlockTemplate,
   acapComposeAffine2d,
@@ -21,14 +21,14 @@ import {
   type AcApSmartBlockSearchOptions,
   acapSmartBlockTemplateCenter,
   acapSmartBlockVariableTexts
-} from './AcApSmartBlockSearch'
+} from './AcApSmartBlockSearch.js'
 import {
   type AcEdAffine2d,
   acedApplyAffine2d,
   acedFindShapeMatches,
   type AcEdPoint2d,
   type AcEdShapeFeature,
-  acedShapeLandsOn} from './AcEdShapeMatcher'
+  acedShapeLandsOn} from './AcEdShapeMatcher.js'
 
 /** Options of {@link acapDetectSmartBlocks} (`BDETECT`). */
 export interface AcApSmartBlockDetectOptions extends Pick<

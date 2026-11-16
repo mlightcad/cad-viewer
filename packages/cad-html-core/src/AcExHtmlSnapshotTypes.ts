@@ -1,4 +1,4 @@
-import type { AcExHtmlOsnapCatalog } from './AcExHtmlOsnapPrimitiveTypes'
+import type { AcExHtmlOsnapCatalog } from './AcExHtmlOsnapPrimitiveTypes.js'
 
 /**
  * Current snapshot schema version.

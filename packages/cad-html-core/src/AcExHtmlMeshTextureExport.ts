@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers'
-import type { AcExHtmlMeshTexture } from './AcExHtmlSnapshotTypes'
+import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers.js'
+import type { AcExHtmlMeshTexture } from './AcExHtmlSnapshotTypes.js'
 
 /** RGBA image a headless host can turn into PNG bytes without a canvas. */
 export interface AcExHtmlHeadlessPngSource {

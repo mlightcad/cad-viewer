@@ -2,17 +2,17 @@ import {
   type AcExHtmlBinaryEncoding,
   acexHtmlBytesToText,
   acexHtmlParseBinaryEncoding,
-  acexHtmlTextToBytes} from './AcExHtmlBinaryText'
+  acexHtmlTextToBytes} from './AcExHtmlBinaryText.js'
 import {
   acexHtmlDecodeSnapshotBinary,
   acexHtmlEncodeSnapshotBinary
-} from './AcExHtmlSnapshotBinaryCodec'
+} from './AcExHtmlSnapshotBinaryCodec.js'
 import {
   acexHtmlCompressSnapshotBinary,
   acexHtmlDecompressSnapshotBinary,
   type AcExHtmlEncodedSnapshot,
-  type AcExHtmlSnapshotCompression} from './AcExHtmlSnapshotCompression'
-import { ACEX_SNAPSHOT_VERSION, type AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
+  type AcExHtmlSnapshotCompression} from './AcExHtmlSnapshotCompression.js'
+import { ACEX_SNAPSHOT_VERSION, type AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes.js'
 
 const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+binary'
 

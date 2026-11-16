@@ -1,12 +1,12 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import { convertDatabaseToSnapshot } from './convertDatabase'
+import { convertDatabaseToSnapshot } from './convertDatabase.js'
 import type {
   AcExHtmlExporterOptions,
   AcExHtmlExportResult
-} from './exportOptions'
-import { extractDrawingPreviewJpeg } from './extractPreviewJpeg'
-import { packSnapshot } from './packSnapshot'
+} from './exportOptions.js'
+import { extractDrawingPreviewJpeg } from './extractPreviewJpeg.js'
+import { packSnapshot } from './packSnapshot.js'
 
 /**
  * Converts an already-open {@link AcDbDatabase} to offline HTML or a package zip.

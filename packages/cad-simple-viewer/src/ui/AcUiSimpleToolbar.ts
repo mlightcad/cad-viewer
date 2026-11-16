@@ -5,8 +5,8 @@
  * @packageDocumentation
  */
 
-import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { createIconElement, ICON_MORE } from './icons'
+import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { createIconElement, ICON_MORE } from './icons.js'
 
 /** Toolbar item used by {@link AcUiSimpleToolbar}. */
 export interface AcUiSimpleToolbarItem {

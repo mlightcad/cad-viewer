@@ -31,9 +31,9 @@ import {
 import * as THREE from 'three'
 import type { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import type { AcExHtmlExporterOptions } from './exportOptions'
-import { preloadDrawingFonts, setupExportTextRendering } from './nodeFontLoader'
-import { withWorkingDatabase } from './withWorkingDatabase'
+import type { AcExHtmlExporterOptions } from './exportOptions.js'
+import { preloadDrawingFonts, setupExportTextRendering } from './nodeFontLoader.js'
+import { withWorkingDatabase } from './withWorkingDatabase.js'
 
 interface LayerBucket {
   group: AcTrBatchedGroup

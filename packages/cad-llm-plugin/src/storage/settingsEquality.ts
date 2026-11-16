@@ -1,5 +1,5 @@
-import type { AcApLlmProviderConfig } from './AcApLlmConfigStore'
-import type { AcApLlmModelEntry } from './AcApLlmModelCatalog'
+import type { AcApLlmProviderConfig } from './AcApLlmConfigStore.js'
+import type { AcApLlmModelEntry } from './AcApLlmModelCatalog.js'
 
 /**
  * Compares two model catalogs entry by entry.

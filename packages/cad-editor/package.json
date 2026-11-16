@@ -50,6 +50,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.58.0",
     "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",

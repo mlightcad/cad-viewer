@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-import type { CadScriptLimits } from '../script/createCadScriptHost'
-import { executeCadScript } from '../script/executeCadScript'
-import { CAD_SCRIPT_API_SUMMARY } from '../script/scriptApi'
-import type { CadSession } from '../session/CadSession'
-import type { CadToolDefinition } from './types'
+import type { CadScriptLimits } from '../script/createCadScriptHost.js'
+import { executeCadScript } from '../script/executeCadScript.js'
+import { CAD_SCRIPT_API_SUMMARY } from '../script/scriptApi.js'
+import type { CadSession } from '../session/CadSession.js'
+import type { CadToolDefinition } from './types.js'
 
 /** Options for {@link createCadToolCatalog}. */
 export interface CadToolCatalogOptions {

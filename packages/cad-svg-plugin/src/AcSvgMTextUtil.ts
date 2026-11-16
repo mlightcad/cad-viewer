@@ -19,13 +19,13 @@ import {
   TokenType
 } from '@mlightcad/mtext-parser'
 
-import { AcSvgExportUtil } from './AcSvgExportUtil'
+import { AcSvgExportUtil } from './AcSvgExportUtil.js'
 import {
   normalizeCadFontName,
   resolveSvgFontFamily,
   resolveSvgFontSizeScale
-} from './AcSvgFontMap'
-import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+} from './AcSvgFontMap.js'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil.js'
 
 const DEFAULT_LINE_SPACE_FACTOR = 1.0
 const LINE_SPACING_SCALE_FACTOR = 5 / 3
@@ -1364,4 +1364,4 @@ export {
   resolveSvgFontSizeScale,
   setSvgFontMapping,
   setSvgFontSizeScales
-} from './AcSvgFontMap'
+} from './AcSvgFontMap.js'

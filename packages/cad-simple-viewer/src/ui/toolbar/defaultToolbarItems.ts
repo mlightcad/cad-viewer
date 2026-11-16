@@ -1,15 +1,15 @@
-import { AcApDocManager, AcApSettingManager } from '../../app'
 import {
   acapBuildDataSourceMenu,
   acapIsSingleLocalOpen
-} from '../../app/dataSource/acapBuildDataSourceMenu'
-import { acapRunDataSourceMenuAction } from '../../app/dataSource/acapRunDataSourceMenuAction'
+} from '../../app/dataSource/acapBuildDataSourceMenu.js'
+import { acapRunDataSourceMenuAction } from '../../app/dataSource/acapRunDataSourceMenuAction.js'
+import { AcApDocManager, AcApSettingManager } from '../../app/index.js'
 import {
   isMarkupVisible,
   isMeasurementVisible
-} from '../../command'
-import { AcEdOpenMode, type AcEdUiTheme } from '../../editor'
-import type { AcApLocale } from '../../i18n'
+} from '../../command/index.js'
+import { AcEdOpenMode, type AcEdUiTheme } from '../../editor/index.js'
+import type { AcApLocale } from '../../i18n/index.js'
 import {
   ICON_ANNOTATION,
   ICON_ANNOTATION_HIDE,
@@ -59,14 +59,14 @@ import {
   ICON_ZOOM_ORIGINAL,
   ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW
-} from '../icons'
-import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem'
-import { acuiCopyDynamicToolbarChildren } from './toolbarItemUtils'
+} from '../icons.js'
+import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem.js'
+import { acuiCopyDynamicToolbarChildren } from './toolbarItemUtils.js'
 import type {
   AcUiDefaultToolbarContext,
   AcUiToolbarItem,
   AcUiToolbarPlacement
-} from './types'
+} from './types.js'
 
 const TOOLBAR_PLACEMENTS: AcUiToolbarPlacement[] = [
   'top',

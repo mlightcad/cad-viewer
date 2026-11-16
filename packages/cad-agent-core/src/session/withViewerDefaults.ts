@@ -2,9 +2,9 @@ import type { CadSession } from '@mlightcad/cad-script-core'
 import { acapRunDatabaseEdit } from '@mlightcad/cad-simple-viewer'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import { exportDrawingHtml } from '../export/exportDrawingHtml'
-import { exportDrawingPdf } from '../export/exportDrawingPdf'
-import { captureDrawingPreview } from '../preview/captureDrawingPreview'
+import { exportDrawingHtml } from '../export/exportDrawingHtml.js'
+import { exportDrawingPdf } from '../export/exportDrawingPdf.js'
+import { captureDrawingPreview } from '../preview/captureDrawingPreview.js'
 
 /**
  * Viewer implementation of {@link CadSession.runEdit}: one undo mark plus the

@@ -10,14 +10,14 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcEdLayerInfo } from '../editor'
-import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
-import { AcTrLayer } from './AcTrLayer'
+import { AcEdLayerInfo } from '../editor/index.js'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex.js'
+import { AcTrLayer } from './AcTrLayer.js'
 import {
   type AcTrEntityPreviewRootOptions,
   AcTrLayout,
   AcTrLayoutStats
-} from './AcTrLayout'
+} from './AcTrLayout.js'
 
 /** Layout search order when building entity preview geometry. */
 export type AcTrEntityPreviewScope = 'active-first' | 'all'

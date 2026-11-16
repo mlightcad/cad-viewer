@@ -4,46 +4,46 @@
  * @packageDocumentation
  */
 
-import { installNodeSnapshotCompressor } from './nodeGzip'
-import { installNodeRasterCodec } from './nodeRaster'
+import { installNodeSnapshotCompressor } from './nodeGzip.js'
+import { installNodeRasterCodec } from './nodeRaster.js'
 
 export {
   exportDatabaseToHtml
-} from './exportDatabase'
+} from './exportDatabase.js'
 export {
   exportFileToHtml
-} from './exportFile'
+} from './exportFile.js'
 export {
   convertDatabaseToSnapshot
-} from './convertDatabase'
+} from './convertDatabase.js'
 export {
   packSnapshot
-} from './packSnapshot'
+} from './packSnapshot.js'
 export {
   extractDrawingPreviewJpeg
-} from './extractPreviewJpeg'
+} from './extractPreviewJpeg.js'
 export {
   ensureDwgParserRegistered,
   ensureLibreDwgRegistered
-} from './registerDwg'
+} from './registerDwg.js'
 export type {
   AcExDwgParser,
   AcExDwgParserRegisterOptions
-} from './registerDwg'
+} from './registerDwg.js'
 export {
   loadViewerRuntime
-} from './loadViewerRuntime'
+} from './loadViewerRuntime.js'
 export {
   resolveAcExHtmlPackageBuildOptions
-} from './exportOptions'
+} from './exportOptions.js'
 export {
   writePackageDirectory
-} from './writePackageDirectory'
+} from './writePackageDirectory.js'
 export type {
   AcExHtmlExportFormat,
   AcExHtmlExporterOptions,
   AcExHtmlExportResult
-} from './exportOptions'
+} from './exportOptions.js'
 
 installNodeRasterCodec()
 installNodeSnapshotCompressor()

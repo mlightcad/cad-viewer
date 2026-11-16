@@ -1,4 +1,4 @@
-import { eventBus } from './eventBus'
+import { eventBus } from './eventBus.js'
 
 /**
  * Display an error or warning message. In order to decouple UI from this module,

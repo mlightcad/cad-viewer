@@ -1,8 +1,8 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../editor'
-import { AcApContext } from './AcApContext'
-import { AcApDocument } from './AcApDocument'
+import { AcEdBaseView } from '../editor/index.js'
+import { AcApContext } from './AcApContext.js'
+import { AcApDocument } from './AcApDocument.js'
 
 type SceneVisibilityView = AcEdBaseView & {
   hasEntity(objectId: AcDbObjectId): boolean

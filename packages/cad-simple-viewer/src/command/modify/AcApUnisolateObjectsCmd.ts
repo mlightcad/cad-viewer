@@ -1,6 +1,6 @@
-import { AcApContext, unisolateObjects } from '../../app'
-import { AcEdCommand } from '../../editor'
-import { AcApI18n } from '../../i18n'
+import { AcApContext, unisolateObjects } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 /**
  * Command to redisplay all objects temporarily hidden by HIDEOBJECTS.

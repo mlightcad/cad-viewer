@@ -1,32 +1,32 @@
 import {
   AcApSettingManager,
   type AcApSettingManagerEventArgs
-} from '../app/AcApSettingManager'
-import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
+} from '../app/AcApSettingManager.js'
+import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack.js'
 import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
   type AcEdSessionAccessory
-} from '../editor/command/AcEdSessionAccessory'
-import { acedIsMobileOrPadUi, acedSubscribeUiLayout } from '../editor/global/AcEdUiLayout'
+} from '../editor/command/AcEdSessionAccessory.js'
+import { acedIsMobileOrPadUi, acedSubscribeUiLayout } from '../editor/global/AcEdUiLayout.js'
 import {
   type AcUiDrawStyleKind,
   acuiResolveDrawStyleKind,
   acuiShouldShowDrawStyleToolbar
-} from '../ui/AcUiDrawStyle'
-import { AcUiDrawStyleSessionAccessory } from '../ui/AcUiDrawStyleSessionAccessory'
+} from '../ui/AcUiDrawStyle.js'
+import { AcUiDrawStyleSessionAccessory } from '../ui/AcUiDrawStyleSessionAccessory.js'
 import {
   ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
   AcUiShortCutToolbar
-} from '../ui/AcUiShortCutToolbar'
-import { acapDrawStyleKindForCommand } from '../util/AcApCommandUtil'
-import type { AcTrView2d } from '../view'
-import type { AcApDrawStyleSessionInstallContext } from './AcApDrawStyleSession'
-import { acapBindShortCutToolbarDocState } from './AcApShortCutToolbarDocBind'
-import { getMarkupStore } from './markup/AcApMarkupStore'
+} from '../ui/AcUiShortCutToolbar.js'
+import { acapDrawStyleKindForCommand } from '../util/AcApCommandUtil.js'
+import type { AcTrView2d } from '../view/index.js'
+import type { AcApDrawStyleSessionInstallContext } from './AcApDrawStyleSession.js'
+import { acapBindShortCutToolbarDocState } from './AcApShortCutToolbarDocBind.js'
+import { getMarkupStore } from './markup/AcApMarkupStore.js'
 import {
   getSelectedMeasurementId,
   subscribeMeasurementSelection
-} from './measure/AcApMeasurementStore'
+} from './measure/AcApMeasurementStore.js'
 
 /**
  * Registers draw-style controls, shortcut toolbar, and selection-driven

@@ -1,5 +1,5 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
 
 /** Global command name for `LAYERP`; excluded from pre-operation capture. */
 const LAYERP_COMMAND_NAME = 'layerp'

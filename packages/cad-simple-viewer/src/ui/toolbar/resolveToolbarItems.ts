@@ -1,9 +1,9 @@
-import type { AcEdUiLayoutKind } from '../../editor'
+import type { AcEdUiLayoutKind } from '../../editor/index.js'
 import {
   acuiCreateDefaultToolbarItems,
   acuiCreateOpenToolbarItem,
   acuiCreatePhoneToolbarItems
-} from './defaultToolbarItems'
+} from './defaultToolbarItems.js'
 import {
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemDisabled,
@@ -12,15 +12,15 @@ import {
   acuiResolveEffectiveToolbarItem,
   acuiResolveParentToolbarDisplay,
   acuiResolveSelectedChildItem
-} from './resolveToolbarItemState'
+} from './resolveToolbarItemState.js'
 import {
   acuiExpandToolbarItemConfigs,
   acuiIndexToolbarItems,
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarSeparatorItem
-} from './toolbarItemUtils'
-import type { AcUiToolbarItem, AcUiToolbarOptions } from './types'
-import type { AcUiDefaultToolbarContext } from './types'
+} from './toolbarItemUtils.js'
+import type { AcUiToolbarItem, AcUiToolbarOptions } from './types.js'
+import type { AcUiDefaultToolbarContext } from './types.js'
 
 export {
   acuiFilterVisibleToolbarItems,

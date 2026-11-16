@@ -1,12 +1,12 @@
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapCopySelectionToClipboard } from './AcApClipboardUtils'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapCopySelectionToClipboard } from './AcApClipboardUtils.js'
 
 /**
  * COPYBASE (Ctrl+Shift+C): copies the selected objects to the clipboard with

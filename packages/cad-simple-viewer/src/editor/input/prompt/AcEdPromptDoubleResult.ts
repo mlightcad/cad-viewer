@@ -1,5 +1,5 @@
-import { AcEdPromptNumericalResult } from './AcEdPromptNumericalResult'
-import { AcEdPromptStatus } from './AcEdPromptStatus'
+import { AcEdPromptNumericalResult } from './AcEdPromptNumericalResult.js'
+import { AcEdPromptStatus } from './AcEdPromptStatus.js'
 
 /**
  * Result of a prompt requesting a double precision floating-point value.

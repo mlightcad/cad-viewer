@@ -1,4 +1,4 @@
-import type { AcUiSimpleUiOptions } from './AcUiSimpleUiOptions'
+import type { AcUiSimpleUiOptions } from './AcUiSimpleUiOptions.js'
 
 /** Resolved chrome options with explicit defaults for nested sections. */
 export type AcUiNormalizedSimpleUiOptions = Required<

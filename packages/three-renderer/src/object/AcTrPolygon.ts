@@ -12,12 +12,12 @@ import { GeometryEpsilon, PolyBool } from '@velipso/polybool'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { AcTrEntity } from './AcTrEntity'
-import { resolveSelfIntersectingHatchLoop } from './AcTrHatchLoopRepair'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy.js'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import { AcTrEntity } from './AcTrEntity.js'
+import { resolveSelfIntersectingHatchLoop } from './AcTrHatchLoopRepair.js'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
   return points

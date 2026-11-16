@@ -1,4 +1,4 @@
-import { AcApPdfPlugin, type AcApPdfPluginOptions } from './AcApPdfPlugin'
+import { AcApPdfPlugin, type AcApPdfPluginOptions } from './AcApPdfPlugin.js'
 
 /**
  * Creates a PDF plugin instance.

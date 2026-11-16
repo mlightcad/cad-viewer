@@ -1,7 +1,7 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 
-import { isSafePackagePath } from './nodeZip'
+import { isSafePackagePath } from './nodeZip.js'
 
 /**
  * Writes multi-file package members into `outputDir`.

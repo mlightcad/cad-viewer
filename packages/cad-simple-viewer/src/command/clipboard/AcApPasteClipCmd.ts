@@ -1,11 +1,11 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { AcApI18n } from '../../i18n'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapPasteTransform,
   acapPromptPastePoint,
   acapReadClipboard
-} from './AcApClipboardUtils'
+} from './AcApClipboardUtils.js'
 
 /**
  * PASTECLIP (Ctrl+V): inserts the clipboard objects at a picked point.

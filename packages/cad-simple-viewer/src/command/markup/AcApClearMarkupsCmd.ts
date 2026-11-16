@@ -1,8 +1,8 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
-import type { AcTrView2d } from '../../view'
-import { configureMarkupCommand } from './AcApMarkupCmdUtil'
-import { getMarkupPresenter } from './AcApMarkupPresenter'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
+import type { AcTrView2d } from '../../view/index.js'
+import { configureMarkupCommand } from './AcApMarkupCmdUtil.js'
+import { getMarkupPresenter } from './AcApMarkupPresenter.js'
 
 /**
  * Clear Design Review markups on the active layout (Model / paper space).

@@ -1,4 +1,4 @@
-import { AcEdPromptNumericalOptions } from './AcEdPromptNumericalOptions'
+import { AcEdPromptNumericalOptions } from './AcEdPromptNumericalOptions.js'
 
 /**
  * Options for prompting the user to enter an integer (whole number),

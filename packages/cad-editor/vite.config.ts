@@ -31,18 +31,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     dts({
       include: ['src/**/*.ts', 'src/**/*.vue'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
-      beforeWriteFile: (filePath, content) => {
-        const normalized = filePath.replace(/\\/g, '/')
-        if (normalized.endsWith('/dist/index.d.ts')) {
-          return {
-            filePath: filePath.replace(/index\.d\.ts$/, `${packageId}.d.ts`),
-            content: content.replace(
-              '//# sourceMappingURL=index.d.ts.map',
-              `//# sourceMappingURL=${packageId}.d.ts.map`
-            )
-          }
-        }
-      }
+      // Bundle into one entry declaration: per-file output re-exports
+      // `./Foo.vue`, which `moduleResolution: node16/nodenext` cannot resolve
+      // (#930) and which cannot be spelled as a `.js` specifier in sources.
+      bundleTypes: true
     }) as PluginOption
   ]
 

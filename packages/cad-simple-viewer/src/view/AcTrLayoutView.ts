@@ -10,8 +10,8 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcEdViewMode } from '../editor/view/AcEdBaseView'
-import { AcTrScene } from './AcTrScene'
+import { AcEdViewMode } from '../editor/view/AcEdBaseView.js'
+import { AcTrScene } from './AcTrScene.js'
 
 /**
  * Interface for database entity event arguments.

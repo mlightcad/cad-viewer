@@ -10,9 +10,9 @@ import {
 import {
   createRotationMatrix,
   createScaleMatrix
-} from '../util/AcApGeTransform'
-import { isEntityOnLockedLayer } from './AcApLockedLayer'
-import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit'
+} from '../util/AcApGeTransform.js'
+import { isEntityOnLockedLayer } from './AcApLockedLayer.js'
+import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit.js'
 
 /**
  * Options for {@link AcApEntityService.cloneAndTransform}.

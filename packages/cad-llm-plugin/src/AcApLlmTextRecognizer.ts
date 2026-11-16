@@ -4,13 +4,13 @@ import type {
 } from '@mlightcad/cad-simple-viewer'
 import { generateText } from 'ai'
 
-import { llmT } from './i18n'
-import { acapLlmCreateModel } from './model/AcApLlmModelFactory'
-import { acapLlmSkipDataUrlDownload } from './model/skipDataUrlDownload'
+import { llmT } from './i18n/index.js'
+import { acapLlmCreateModel } from './model/AcApLlmModelFactory.js'
+import { acapLlmSkipDataUrlDownload } from './model/skipDataUrlDownload.js'
 import {
   acapLlmLoadConfig,
   acapLlmResolveVisionSettings
-} from './storage/AcApLlmConfigStore'
+} from './storage/AcApLlmConfigStore.js'
 
 const TEXT_RECOGNITION_SYSTEM_PROMPT = `You read text from images of CAD drawings.
 

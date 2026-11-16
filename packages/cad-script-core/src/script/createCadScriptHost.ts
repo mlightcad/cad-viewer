@@ -1,42 +1,42 @@
 import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
-import { getDrawingContext } from '../context/DrawingContextProvider'
+import { getDrawingContext } from '../context/DrawingContextProvider.js'
 import {
   type CadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions
-} from '../preview/types'
-import type { CadSession } from '../session/CadSession'
-import { requireDocument } from '../session/documentAccess'
-import { runInsideScriptEdit } from '../session/editDepth'
-import { isEntityOnLockedLayer } from '../session/lockedLayer'
-import { runSessionEdit } from '../session/runSessionEdit'
-import { CadActionExecutor } from '../tools/CadActionExecutor'
-import type { Point2dInput, ToolResult } from '../tools/types'
-import { createCadMeasure } from './createCadMeasure'
+} from '../preview/types.js'
+import type { CadSession } from '../session/CadSession.js'
+import { requireDocument } from '../session/documentAccess.js'
+import { runInsideScriptEdit } from '../session/editDepth.js'
+import { isEntityOnLockedLayer } from '../session/lockedLayer.js'
+import { runSessionEdit } from '../session/runSessionEdit.js'
+import { CadActionExecutor } from '../tools/CadActionExecutor.js'
+import type { Point2dInput, ToolResult } from '../tools/types.js'
+import { createCadMeasure } from './createCadMeasure.js'
 import {
   type EntitySnapshot,
   iterateLayoutEntities,
   openEntityFilterView,
   toEntitySnapshot
-} from './entitySnapshot'
+} from './entitySnapshot.js'
 import {
   type CadScriptDxfSaveRequest,
   normalizeDxfSaveRequest
-} from './saveDxf'
+} from './saveDxf.js'
 import {
   type CadScriptHtmlSaveRequest,
   normalizeHtmlSaveRequest
-} from './saveHtml'
+} from './saveHtml.js'
 import {
   type CadScriptPdfSaveRequest,
   normalizePdfSaveRequest
-} from './savePdf'
-import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
+} from './savePdf.js'
+import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi.js'
 import {
   type BlockSnapshot,
   toBlockSnapshots,
   toDatabaseTables
-} from './tableSnapshot'
+} from './tableSnapshot.js'
 
 /** Queued screenshot request from `cad.view.capturePreview`. */
 export interface CadScriptPreviewRequest {

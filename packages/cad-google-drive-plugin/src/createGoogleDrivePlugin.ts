@@ -1,7 +1,7 @@
 import {
   AcApGoogleDrivePlugin,
   type AcApGoogleDrivePluginOptions
-} from './AcApGoogleDrivePlugin'
+} from './AcApGoogleDrivePlugin.js'
 
 /**
  * Creates a Google Drive plugin instance.

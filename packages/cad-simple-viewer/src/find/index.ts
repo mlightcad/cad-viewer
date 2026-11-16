@@ -1,6 +1,6 @@
-export * from './findDrawing'
-export * from './findText'
-export * from './AcApFindNavigator'
+export * from './findDrawing.js'
+export * from './findText.js'
+export * from './AcApFindNavigator.js'
 
 import {
   type AcApFindBox,
@@ -12,7 +12,7 @@ import {
   type AcApFindScope,
   acapFindText,
   acapListFindLayouts
-} from './findDrawing'
+} from './findDrawing.js'
 import {
   ACAP_FIND_MAX_RESULTS,
   type AcApFindBlockTableRecordLike,
@@ -26,7 +26,7 @@ import {
   acapMTextToPlainText,
   acapNormalizeFindText,
   acapResolveFindBlockTableRecord
-} from './findText'
+} from './findText.js'
 
 /**
  * Legacy `acui*` aliases kept for simple-ui call sites and older imports.

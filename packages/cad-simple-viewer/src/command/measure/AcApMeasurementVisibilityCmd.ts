@@ -1,10 +1,10 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import type { AcTrView2d } from '../../view'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   isMeasurementVisible,
   setMeasurementVisible
-} from './AcApMeasurementStore'
+} from './AcApMeasurementStore.js'
 
 /**
  * Toggle measurement overlay visibility on the current layout.

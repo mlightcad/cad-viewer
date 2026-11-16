@@ -18,16 +18,16 @@ import {
 } from '@mlightcad/data-model'
 import { tessellateHatchPattern } from '@mlightcad/pdf-renderer'
 
-import type { PdfImportShapeItem } from '../pdfImportShapes'
-import type { PdfRecognizedShape } from './pdfCurveRecognition'
+import type { PdfImportShapeItem } from '../pdfImportShapes.js'
+import type { PdfRecognizedShape } from './pdfCurveRecognition.js'
 import {
   acapPdfFaceArrangement,
   acapPdfFaceBoundaryIn,
   acapPdfFaceBoundaryParts,
   acapPdfShapePolyline,
   type PdfFaceArrangement
-} from './pdfHatchFaces'
-import type { PdfRecPoint } from './pdfRecGeometry'
+} from './pdfHatchFaces.js'
+import type { PdfRecPoint } from './pdfRecGeometry.js'
 
 /**
  * One hatch pattern line in drawing coordinates, in the DXF convention:

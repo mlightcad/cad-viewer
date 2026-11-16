@@ -4,7 +4,7 @@ import {
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
 
-import { AcApPdfImportConvertor } from './AcApPdfImportConvertor'
+import { AcApPdfImportConvertor } from './AcApPdfImportConvertor.js'
 
 /**
  * Command-line variant of {@link AcApImportPdfCmd}: imports vector geometry

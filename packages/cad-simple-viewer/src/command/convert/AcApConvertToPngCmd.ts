@@ -1,4 +1,4 @@
-import { AcApConvertToRasterImageCmd } from './AcApConvertToRasterImageCmd'
+import { AcApConvertToRasterImageCmd } from './AcApConvertToRasterImageCmd.js'
 
 /**
  * Command for exporting the current CAD drawing to PNG format (`pngout`).

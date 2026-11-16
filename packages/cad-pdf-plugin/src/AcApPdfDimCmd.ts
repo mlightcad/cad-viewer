@@ -14,18 +14,18 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import { AcApPdfDimSession } from './AcApPdfDimSession'
-import { acapPdfT } from './acapPdfI18n'
-import { AcApPdfTextCmd } from './AcApPdfTextCmd'
+import { AcApPdfDimSession } from './AcApPdfDimSession.js'
+import { acapPdfT } from './acapPdfI18n.js'
+import { AcApPdfTextCmd } from './AcApPdfTextCmd.js'
 import {
   acapPdfCreateDimensions,
   acapPdfDisposeDimensionPreviews,
   type PdfDimEntity,
   pdfEntitiesToDimInput
-} from './pdfDimensionConvert'
-import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts'
-import { recognizePdfDimensions } from './recognition/pdfDimensionPattern'
-import { AcUiPdfDimPanel } from './ui/AcUiPdfDimPanel'
+} from './pdfDimensionConvert.js'
+import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts.js'
+import { recognizePdfDimensions } from './recognition/pdfDimensionPattern.js'
+import { AcUiPdfDimPanel } from './ui/AcUiPdfDimPanel.js'
 
 /** Delay before an edit redraws the preview (ms). */
 const PREVIEW_DELAY = 120

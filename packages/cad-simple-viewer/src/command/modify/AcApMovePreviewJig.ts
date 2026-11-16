@@ -5,8 +5,8 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcEdSelectionTransformPreviewJig } from '../../editor/input/AcEdSelectionPreviewJig'
-import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
+import { AcEdSelectionTransformPreviewJig } from '../../editor/input/AcEdSelectionPreviewJig.js'
+import { AcEdBaseView } from '../../editor/view/AcEdBaseView.js'
 
 /**
  * MOVE preview jig.

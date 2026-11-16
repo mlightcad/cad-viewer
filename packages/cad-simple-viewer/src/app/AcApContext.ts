@@ -8,13 +8,13 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../editor/view/AcEdBaseView'
-import { AcTrView2d } from '../view'
-import { AcApDocument } from './AcApDocument'
+import { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
+import { AcTrView2d } from '../view/index.js'
+import { AcApDocument } from './AcApDocument.js'
 import {
   type AcDbEntityModifiedEventArgs,
   canApplyVisibilityOnlySceneUpdate
-} from './AcApEntityUpdate'
+} from './AcApEntityUpdate.js'
 
 function asEntityList(entity: AcDbEntity | AcDbEntity[]): AcDbEntity[] {
   return Array.isArray(entity) ? entity : [entity]

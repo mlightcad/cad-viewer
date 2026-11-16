@@ -35,6 +35,8 @@ describe('@mlightcad/cad-simple-viewer/file-open-panel', () => {
         if (!spec) continue
         const resolved = resolve(dirname(file), spec)
         const candidates = [
+          // Sources use Node-ESM specifiers (`./foo.js`, `./foo/index.js`).
+          resolved.replace(/\.js$/, '.ts'),
           resolved,
           `${resolved}.ts`,
           resolve(resolved, 'index.ts')

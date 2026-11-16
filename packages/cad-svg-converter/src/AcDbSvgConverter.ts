@@ -9,9 +9,9 @@ import {
   type AcDbDatabaseConverterReadOptions
 } from '@mlightcad/data-model'
 
-import { acdbSvgParseDocument } from './svgParse'
-import { acdbSvgModelToEntities } from './svgToEntities'
-import type { AcDbSvgModel } from './svgTypes'
+import { acdbSvgParseDocument } from './svgParse.js'
+import { acdbSvgModelToEntities } from './svgToEntities.js'
+import type { AcDbSvgModel } from './svgTypes.js'
 
 const PARSE_START_PCT = 1
 const PARSE_END_PCT = 30

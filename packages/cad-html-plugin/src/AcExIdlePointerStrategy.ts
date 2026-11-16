@@ -1,5 +1,5 @@
-import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
-import type { AcExHtmlNavMode } from './AcExHtmlNavTools'
+import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet.js'
+import type { AcExHtmlNavMode } from './AcExHtmlNavTools.js'
 
 /**
  * Shared canvas operations used by {@link AcExIdlePointerStrategy}.

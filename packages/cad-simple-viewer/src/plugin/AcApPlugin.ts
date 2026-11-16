@@ -1,5 +1,5 @@
-import { AcApContext } from '../app/AcApContext'
-import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
+import { AcApContext } from '../app/AcApContext.js'
+import { AcEdCommandStack } from '../editor/command/AcEdCommandStack.js'
 
 /**
  * Plugin interface that all plugins must implement.

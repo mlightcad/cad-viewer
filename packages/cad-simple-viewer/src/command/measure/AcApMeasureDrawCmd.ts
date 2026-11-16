@@ -1,7 +1,7 @@
-import type { AcApContext } from '../../app/AcApContext'
-import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
-import { withDrawOverlayInput } from '../AcApDrawOverlayInput'
-import { AcApDrawStyleDrawCmd } from '../AcApDrawStyleDrawCmd'
+import type { AcApContext } from '../../app/AcApContext.js'
+import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
+import { withDrawOverlayInput } from '../AcApDrawOverlayInput.js'
+import { AcApDrawStyleDrawCmd } from '../AcApDrawStyleDrawCmd.js'
 
 /**
  * Shared input session for commands that create measurement overlays.

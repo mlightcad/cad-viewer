@@ -7,13 +7,13 @@ import {
   AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
 
-import { AcApPdfConvertor } from './AcApPdfConvertor'
+import { AcApPdfConvertor } from './AcApPdfConvertor.js'
 import {
   type AcApPdfColorMode,
   type AcApPdfExportOptions,
   type AcApPdfModelSpaceFit,
   resolveAcApPdfExportOptions
-} from './AcApPdfExportOptions'
+} from './AcApPdfExportOptions.js'
 
 /**
  * Command for converting the current CAD drawing to PDF format.

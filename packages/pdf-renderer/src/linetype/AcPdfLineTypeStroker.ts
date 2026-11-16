@@ -1,6 +1,6 @@
 import type { AcGiLineTypePatternElement } from '@mlightcad/data-model'
 
-import type { AcPdfPoint } from '../renderer/AcPdfStyle'
+import type { AcPdfPoint } from '../renderer/AcPdfStyle.js'
 
 /**
  * Complex linetype pattern fields from RealDWG plus PDF-compatible aliases.

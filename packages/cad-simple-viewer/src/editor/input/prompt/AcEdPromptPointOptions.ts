@@ -1,6 +1,6 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcEdPromptOptions } from './AcEdPromptOptions'
+import { AcEdPromptOptions } from './AcEdPromptOptions.js'
 
 /**
  * Represents options for prompting the user to select a point, similar to

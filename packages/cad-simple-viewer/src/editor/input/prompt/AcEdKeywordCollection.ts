@@ -1,4 +1,4 @@
-import { AcEdKeyword } from './AcEdKeyword'
+import { AcEdKeyword } from './AcEdKeyword.js'
 
 /**
  * Structured keyword-prompt render payload used by command-line UI.

@@ -1,16 +1,16 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge'
-import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
+import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge.js'
+import { acTrHtmlCssColor } from './AcTrHtmlColorUtil.js'
 import {
   AC_TR_HTML_DOT_BORDER_EM,
   AC_TR_HTML_DOT_SIZE_EM
-} from './AcTrHtmlDot'
+} from './AcTrHtmlDot.js'
 import {
   AC_TR_HTML_SELECTED_CLASS,
   AcTrHtmlElement,
   type AcTrHtmlElementOptions
-} from './AcTrHtmlElement'
+} from './AcTrHtmlElement.js'
 
 /** Class on overlay endpoint grips (hidden until the parent group is selected). */
 export const AC_TR_HTML_GRIP_CLASS = 'ml-html-grip'

@@ -1,4 +1,4 @@
-import type { AcPdfPoint, AcPdfRgb } from '../renderer/AcPdfStyle'
+import type { AcPdfPoint, AcPdfRgb } from '../renderer/AcPdfStyle.js'
 
 /** CAD gradient fill (subset of AcGi hatch gradient). */
 export interface AcPdfGradientFill {

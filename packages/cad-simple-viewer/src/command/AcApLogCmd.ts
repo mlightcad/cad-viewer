@@ -1,8 +1,8 @@
 import { AcCmPerformanceCollector, log } from '@mlightcad/data-model'
 
-import { AcApContext } from '../app'
-import { AcEdCommand } from '../editor'
-import { AcTrView2d } from '../view'
+import { AcApContext } from '../app/index.js'
+import { AcEdCommand } from '../editor/index.js'
+import { AcTrView2d } from '../view/index.js'
 
 /**
  * This is an internal command used to log some debug information in console.

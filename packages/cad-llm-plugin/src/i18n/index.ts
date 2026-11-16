@@ -1,13 +1,13 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
-import { llmAr } from './ar'
-import { llmCommandDescriptions } from './command'
-import { llmCs } from './cs'
-import { llmEn } from './en'
-import { llmJa } from './ja'
-import { llmKo } from './ko'
-import { llmTr } from './tr'
-import { llmZh } from './zh'
+import { llmAr } from './ar.js'
+import { llmCommandDescriptions } from './command.js'
+import { llmCs } from './cs.js'
+import { llmEn } from './en.js'
+import { llmJa } from './ja.js'
+import { llmKo } from './ko.js'
+import { llmTr } from './tr.js'
+import { llmZh } from './zh.js'
 
 /** i18n key prefix of every AI model settings string. */
 export const LLM_I18N_PREFIX = 'main.llm'

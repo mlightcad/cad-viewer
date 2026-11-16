@@ -13,41 +13,41 @@ import {
 } from '@mlightcad/data-model'
 import { debounce } from 'lodash-es'
 
-import { AcApDocManager } from '../../app'
-import { AcApI18n } from '../../i18n'
-import { acapExpandSelectionByGroups } from '../../service/AcApGroup'
-import { excludeLockedLayerIds } from '../../service/AcApLockedLayer'
-import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
+import { AcApDocManager } from '../../app/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapExpandSelectionByGroups } from '../../service/AcApGroup.js'
+import { excludeLockedLayerIds } from '../../service/AcApLockedLayer.js'
+import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex.js'
 import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryHostInfo
-} from '../command/AcEdSessionAccessory'
-import { AcEdSessionProviderRegistry } from '../command/AcEdSessionProviderRegistry'
-import { AcEdCorsorType, AcEdSelectionSet } from '../input'
-import { AcEditor } from '../input/AcEditor'
+} from '../command/AcEdSessionAccessory.js'
+import { AcEdSessionProviderRegistry } from '../command/AcEdSessionProviderRegistry.js'
+import { AcEditor } from '../input/AcEditor.js'
 import {
   type AcEdOsnapPoint,
   AcEdOsnapResolver
-} from '../input/AcEdOsnapResolver'
-import { AcEdMarkerManager } from '../input/marker'
+} from '../input/AcEdOsnapResolver.js'
+import { AcEdCorsorType, AcEdSelectionSet } from '../input/index.js'
+import { AcEdMarkerManager } from '../input/marker/index.js'
 import {
   acedDisposeMobileSnapLoupe,
   acedHideMobileSnapLoupe,
   acedRefreshMobileSnapLoupe
-} from '../input/ui/AcEdMobileSnapLoupe'
-import { AcEdHoverController } from './AcEdHoverController'
+} from '../input/ui/AcEdMobileSnapLoupe.js'
+import { AcEdHoverController } from './AcEdHoverController.js'
 import {
   AcEdSelectionAction,
   resolveSelectionActionFromEvent
-} from './AcEdSelectionAction'
+} from './AcEdSelectionAction.js'
 import {
   AcEdSpatialQueryResultItemEx,
   isEffectiveSpatialQueryHit
-} from './AcEdSpatialQueryResult'
-import { AcEdViewMode } from './AcEdViewMode'
-import { acedMergeSelectionIds } from './AcEdViewportBoxSelection'
+} from './AcEdSpatialQueryResult.js'
+import { AcEdViewMode } from './AcEdViewMode.js'
+import { acedMergeSelectionIds } from './AcEdViewportBoxSelection.js'
 
-export { AcEdViewMode } from './AcEdViewMode'
+export { AcEdViewMode } from './AcEdViewMode.js'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -129,11 +129,11 @@ export interface AcEdViewRenderFrameEventArgs {
  */
 export type AcEdSelectionMode = 'window' | 'crossing'
 
-export type { AcEdSelectionAction } from './AcEdSelectionAction'
+export type { AcEdSelectionAction } from './AcEdSelectionAction.js'
 export {
   resolvePointerSelectionAction,
   resolveSelectionActionFromEvent
-} from './AcEdSelectionAction'
+} from './AcEdSelectionAction.js'
 
 /**
  * One unresolved external reference reported by the viewer.

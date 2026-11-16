@@ -6,7 +6,7 @@
  * loading the PDF worker.
  */
 
-import { getPdfMarkedContentTarget } from './pdfOptionalContent'
+import { getPdfMarkedContentTarget } from './pdfOptionalContent.js'
 
 /** 1 PDF point in mm (1 pt = 1/72 inch = 25.4/72 mm) */
 export const PDF_PT_TO_MM = 25.4 / 72

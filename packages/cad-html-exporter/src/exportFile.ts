@@ -3,14 +3,14 @@ import { basename, extname } from 'node:path'
 
 import { AcDbDatabase, AcDbFileType } from '@mlightcad/data-model'
 
-import { exportDatabaseToHtml } from './exportDatabase'
+import { exportDatabaseToHtml } from './exportDatabase.js'
 import type {
   AcExHtmlExporterOptions,
   AcExHtmlExportResult
-} from './exportOptions'
-import { ensureDwgParserRegistered } from './registerDwg'
-import { withWorkingDatabase } from './withWorkingDatabase'
-import { writePackageDirectory } from './writePackageDirectory'
+} from './exportOptions.js'
+import { ensureDwgParserRegistered } from './registerDwg.js'
+import { withWorkingDatabase } from './withWorkingDatabase.js'
+import { writePackageDirectory } from './writePackageDirectory.js'
 
 /**
  * Reads a DXF/DWG from disk, converts it, and writes HTML, a zip package, or

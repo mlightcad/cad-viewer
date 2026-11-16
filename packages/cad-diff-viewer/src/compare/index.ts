@@ -4,7 +4,7 @@ export {
   type AcApDiffChangeSet,
   type AcApDiffChangeSetExtents,
   type AcApDiffCloudColorRole
-} from './acapCompareChangeSets'
+} from './acapCompareChangeSets.js'
 export {
   acapCompareDrawings,
   type AcApDiffChangeKind,
@@ -13,7 +13,7 @@ export {
   type AcApDiffEntityHit,
   type AcApDiffFieldChange,
   type AcApDiffHitSide
-} from './acapCompareDrawings'
+} from './acapCompareDrawings.js'
 export {
   ACAP_COMPAREHATCH_DEFAULT,
   ACAP_COMPAREPROPS_COLOR,
@@ -36,4 +36,4 @@ export {
   acapToleranceFromCompareTolerance,
   acapWriteCompareSysVars,
   type AcApDiffCompareSysVars
-} from './acapCompareSysVars'
+} from './acapCompareSysVars.js'

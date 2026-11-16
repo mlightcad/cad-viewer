@@ -1,9 +1,9 @@
-import { AcApContext } from '../app'
-import { AcEdCommand, eventBus } from '../editor'
-import { AcApI18n } from '../i18n'
-import { AcApFontUtil, type FontLoadStatus } from '../util/AcApFontUtil'
+import { AcApContext } from '../app/index.js'
+import { AcEdCommand, eventBus } from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
+import { AcApFontUtil, type FontLoadStatus } from '../util/AcApFontUtil.js'
 
-export type { FontLoadStatus } from '../util/AcApFontUtil'
+export type { FontLoadStatus } from '../util/AcApFontUtil.js'
 
 export interface AcApCacheFontOptions {
   /** Optional alias names (e.g. missed drawing font names) */

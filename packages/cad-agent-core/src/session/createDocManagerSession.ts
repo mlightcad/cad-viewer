@@ -5,8 +5,8 @@ import type {
 } from '@mlightcad/cad-script-core'
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
-import { captureDrawingPreview } from '../preview/captureDrawingPreview'
-import { viewerRunEdit } from './withViewerDefaults'
+import { captureDrawingPreview } from '../preview/captureDrawingPreview.js'
+import { viewerRunEdit } from './withViewerDefaults.js'
 
 /**
  * Session that reads {@link AcApDocManager.instance} on every call.

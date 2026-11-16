@@ -1,10 +1,10 @@
-import type { AcExHtmlAccessManifest } from './AcExHtmlAccess'
-import { acexHtmlResolveLocale } from './AcExHtmlI18n'
-import { ACEX_DEFAULT_MANIFEST_HREF } from './AcExHtmlPackageBootstrap'
-import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell'
-import { acexHtmlEncodeSnapshot, acexHtmlSnapshotMimeType } from './AcExHtmlSnapshotCodec'
-import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCompression'
-import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlAccessManifest } from './AcExHtmlAccess.js'
+import { acexHtmlResolveLocale } from './AcExHtmlI18n.js'
+import { ACEX_DEFAULT_MANIFEST_HREF } from './AcExHtmlPackageBootstrap.js'
+import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell.js'
+import { acexHtmlEncodeSnapshot, acexHtmlSnapshotMimeType } from './AcExHtmlSnapshotCodec.js'
+import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCompression.js'
+import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Options passed to {@link acexHtmlPackHtml} when assembling a self-contained HTML file.

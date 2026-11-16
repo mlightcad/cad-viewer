@@ -4,14 +4,14 @@ import {
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapGetCurrentMeasurementStyle,
@@ -22,16 +22,16 @@ import {
   acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle,
   MEASUREMENT_LINE_WEIGHT
-} from '../../util'
-import { AcTrView2d } from '../../view'
+} from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
-} from '../overlay/AcApHtmlLivePreview'
-import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
-import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
-import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
-import { AcApMeasureAngleEntity } from './entity'
+} from '../overlay/AcApHtmlLivePreview.js'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil.js'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd.js'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore.js'
+import { AcApMeasureAngleEntity } from './entity/index.js'
 
 /** Returns the angle in degrees between two arms sharing a common vertex. */
 function calcAngleDeg(

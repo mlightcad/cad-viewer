@@ -5,8 +5,8 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../../view'
-import { acedIsDynamicInputEnabled } from '../AcEdDynamicInput'
+import { AcEdBaseView } from '../../view/index.js'
+import { acedIsDynamicInputEnabled } from '../AcEdDynamicInput.js'
 
 /**
  * AcEdFloatingMessage

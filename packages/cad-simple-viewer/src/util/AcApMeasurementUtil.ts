@@ -6,7 +6,7 @@ import {
   AcGiLineWeight
 } from '@mlightcad/data-model'
 
-import { acCmColorToCssHex, parseCssToAcCmColor } from './AcApCssColor'
+import { acCmColorToCssHex, parseCssToAcCmColor } from './AcApCssColor.js'
 
 /**
  * Overlay line weight meaning "no CAD lineweight" (hairline).

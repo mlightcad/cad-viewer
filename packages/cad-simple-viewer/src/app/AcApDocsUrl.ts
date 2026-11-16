@@ -16,7 +16,7 @@
  * ```
  */
 
-import { MLIGHTCAD_DOCS_URL } from './AcApBrand'
+import { MLIGHTCAD_DOCS_URL } from './AcApBrand.js'
 
 /** Magnifier (mobile) guide page relative to the docs root. */
 export const ACAP_DOCS_PATH_MAGNIFIER = 'guide/magnifier.html'

@@ -4,8 +4,8 @@ import {
 } from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
-import { AcEdMessageType } from '../input/ui/AcEdMessageType'
-import { AcEdOpenMode } from '../view/AcEdOpenMode'
+import { AcEdMessageType } from '../input/ui/AcEdMessageType.js'
+import { AcEdOpenMode } from '../view/AcEdOpenMode.js'
 
 export interface AcEdFontNotLoadedInfo {
   /** Font name */
@@ -118,7 +118,7 @@ export type AcEdEvents = {
  *
  * @example
  * ```typescript
- * import { eventBus } from './eventBus';
+ * import { eventBus } from './eventBus.js';
  *
  * // Listen for file opening events
  * eventBus.on('open-file', () => {

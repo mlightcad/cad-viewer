@@ -4,17 +4,17 @@
  * `AcApPdfImportConvertor` so this stage stays unit-testable.
  */
 
-import type { AcApResolvedPdfImportOptions } from './AcApPdfImportOptions'
+import type { AcApResolvedPdfImportOptions } from './AcApPdfImportOptions.js'
 import type {
   PdfImportedSubpath,
   PdfImportPageContent,
   PdfImportPoint,
   PdfImportSegment
-} from './pdfVectorImport'
+} from './pdfVectorImport.js'
 import {
   type PdfRecognizedShape,
   recognizePdfCurves
-} from './recognition/pdfCurveRecognition'
+} from './recognition/pdfCurveRecognition.js'
 
 /** One shape ready to become a CAD entity. */
 export interface PdfImportShapeItem {

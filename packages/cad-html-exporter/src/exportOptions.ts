@@ -5,7 +5,7 @@ import {
   type AcExHtmlViewerMode
 } from '@mlightcad/cad-html-core'
 
-import type { AcExDwgParser } from './registerDwg'
+import type { AcExDwgParser } from './registerDwg.js'
 
 /** Packaging mode for headless HTML export. */
 export type AcExHtmlExportFormat = 'single' | 'multi'

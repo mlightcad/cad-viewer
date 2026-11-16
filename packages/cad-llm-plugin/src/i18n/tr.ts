@@ -1,4 +1,4 @@
-import type { llmEn } from './en'
+import type { llmEn } from './en.js'
 
 /** Turkish strings for the AI model settings dialog. */
 export const llmTr = {

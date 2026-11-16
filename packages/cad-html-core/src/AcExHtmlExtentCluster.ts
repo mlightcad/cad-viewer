@@ -1,4 +1,4 @@
-import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Axis-aligned box used while peeling outlier clusters for intelligent fit.

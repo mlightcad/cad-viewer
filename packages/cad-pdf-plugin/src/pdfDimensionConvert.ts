@@ -30,7 +30,7 @@ import {
   parsePdfDimensionValue,
   type PdfDimensionCandidate,
   type PdfDimInput
-} from './recognition/pdfDimensionPattern'
+} from './recognition/pdfDimensionPattern.js'
 
 /** Dimension style created for recovered dimensions. */
 export const PDF_DIM_STYLE = 'PDF_DIM'

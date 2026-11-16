@@ -1,5 +1,5 @@
-import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecognition'
-import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecognition'
+import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecognition.js'
+import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecognition.js'
 
 /**
  * How `pdfimport` turns a PDF page into CAD entities.

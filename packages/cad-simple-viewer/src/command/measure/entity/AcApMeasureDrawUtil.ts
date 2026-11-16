@@ -4,17 +4,17 @@ import {
   AcGeMathUtil
 } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../../editor'
-import { acapColorToCssAlpha, acapCssColor } from '../../../util'
+import type { AcEdBaseView } from '../../../editor/index.js'
+import { acapColorToCssAlpha, acapCssColor } from '../../../util/index.js'
 import {
   acapDrawOverlayArrowHead,
   acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth,
   acapWcsToScreenPx
-} from '../../overlay/AcApOverlayDrawUtil'
-import { measureAngleArcRadiusWcs } from '../AcApMeasureAngleArc'
+} from '../../overlay/AcApOverlayDrawUtil.js'
+import { measureAngleArcRadiusWcs } from '../AcApMeasureAngleArc.js'
 
-export { MEASURE_ANGLE_ARC_RADIUS_FRACTION } from '../AcApMeasureAngleArc'
+export { MEASURE_ANGLE_ARC_RADIUS_FRACTION } from '../AcApMeasureAngleArc.js'
 
 /** Arc end-dot radius as a fraction of the overlay arrow-head length. */
 const ARC_END_DOT_RADIUS_FRACTION = 0.35

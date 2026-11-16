@@ -4,31 +4,31 @@ import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 import {
   type AcApMeasurementValue,
   formatMeasurementValue
-} from '../../util/AcApMeasurementUnits'
+} from '../../util/AcApMeasurementUnits.js'
 import {
   acapCloneMeasurementStyle,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
-} from '../../util/AcApMeasurementUtil'
-import type { AcTrView2d } from '../../view'
+} from '../../util/AcApMeasurementUtil.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   ACAP_OVERLAY_ARROW_SIZE_PX,
   acapScaleWcsWithFont,
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
-} from '../overlay/AcApOverlayDrawUtil'
+} from '../overlay/AcApOverlayDrawUtil.js'
 import {
   hitTestMeasurementGeometry,
   measurementFocusBox
-} from './AcApMeasurementGeometry'
-import { runMeasurementEdit } from './AcApMeasurementHistory'
-import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
+} from './AcApMeasurementGeometry.js'
+import { runMeasurementEdit } from './AcApMeasurementHistory.js'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar.js'
 import type {
   AcApMeasurementRecord,
   AcApMeasurementSidecarStyle
-} from './AcApMeasurementTypes'
+} from './AcApMeasurementTypes.js'
 
 /** HTML transient layer for committed measurement overlays. */
 export const MEASUREMENT_LAYER = 'measurement'

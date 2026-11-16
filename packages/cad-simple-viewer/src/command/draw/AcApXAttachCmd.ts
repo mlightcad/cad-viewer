@@ -13,7 +13,7 @@ import {
   AcApContext,
   AcApDocManager,
   AcApXrefManager
-} from '../../app'
+} from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -24,10 +24,10 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   eventBus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
-import { acapWithSecondaryDatabase } from '../../util/AcApSecondaryDatabase'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit.js'
+import { acapWithSecondaryDatabase } from '../../util/AcApSecondaryDatabase.js'
 
 /** Accept list for drawing file pickers (AutoCAD XATTACH formats). */
 const XREF_FILE_ACCEPT = '.dwg,.dxf'

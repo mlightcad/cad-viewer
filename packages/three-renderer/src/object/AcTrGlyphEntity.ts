@@ -12,22 +12,22 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch'
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch.js'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import {
+  getSceneDrawableUserData,
+  resolveMTextRenderRoot
+} from '../util/AcTrObjectUserData.js'
+import { isThreeGeometryLeaf } from '../util/AcTrThreeObjectGuards.js'
 import {
   AcTrMTextColorUtil,
   type AcTrMTextEntityTraits,
   AcTrSubEntityTraitsUtil
-} from '../util'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import {
-  getSceneDrawableUserData,
-  resolveMTextRenderRoot
-} from '../util/AcTrObjectUserData'
-import { isThreeGeometryLeaf } from '../util/AcTrThreeObjectGuards'
-import { AcTrEntity } from './AcTrEntity'
+} from '../util/index.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 /** Scratch box reused by {@link AcTrGlyphEntity.raycast} during bbox fallback. */
 const _raycastBox = /*@__PURE__*/ new THREE.Box3()

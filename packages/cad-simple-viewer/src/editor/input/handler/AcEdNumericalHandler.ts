@@ -1,5 +1,5 @@
-import { AcEdPromptNumericalOptions } from '../prompt/AcEdPromptNumericalOptions'
-import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
+import { AcEdPromptNumericalOptions } from '../prompt/AcEdPromptNumericalOptions.js'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler.js'
 
 /**
  * Handles validation and parsing of numerical user input.

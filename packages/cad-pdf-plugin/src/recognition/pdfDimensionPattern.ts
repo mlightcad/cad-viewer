@@ -6,7 +6,7 @@
  * with plain data, so the recognizer is unit-testable without the data model.
  */
 
-import { cross, dist, dot, type PdfRecPoint, sub } from './pdfRecGeometry'
+import { cross, dist, dot, type PdfRecPoint, sub } from './pdfRecGeometry.js'
 
 /** A straight segment (line, or 2-vertex polyline). */
 export interface PdfDimSegment<Id = unknown> {

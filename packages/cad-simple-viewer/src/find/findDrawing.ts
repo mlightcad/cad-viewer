@@ -16,7 +16,7 @@ import {
   type AcApFindOptions,
   acapFindTextInLayout,
   acapResolveFindBlockTableRecord
-} from './findText'
+} from './findText.js'
 
 /**
  * Where to search.

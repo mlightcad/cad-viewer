@@ -23,7 +23,7 @@ import {
   distSq,
   inwardArcAlignment,
   isBetterArcLock
-} from './AcExOsnapGeometry'
+} from './AcExOsnapGeometry.js'
 import {
   ACEX_MAX_INTERSECTION_SOURCES,
   intersectionGeomToleranceForSnap,
@@ -31,13 +31,13 @@ import {
   intersectLineSegmentPoints,
   intersectPrimitivePair,
   isIntersectionCapablePrimitive
-} from './AcExOsnapIntersections'
+} from './AcExOsnapIntersections.js'
 import {
   expandOsnapPath,
   isOsnapPathPrimitive,
   pathEdgeNearAperture,
   pathPrimitiveBounds
-} from './AcExOsnapPath'
+} from './AcExOsnapPath.js'
 
 export type { AcExHtmlOsnapMode, AcExHtmlOsnapPoint } from '@mlightcad/cad-html-core'
 export { ACEX_DEFAULT_OSNAP_MODES } from '@mlightcad/cad-html-core'

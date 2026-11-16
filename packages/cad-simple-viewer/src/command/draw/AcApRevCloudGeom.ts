@@ -9,7 +9,7 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
+import type { AcEdBaseView } from '../../editor/index.js'
 
 /** Classic AutoCAD scallop: 180° arc (`bulge = tan(π/4)`). */
 export const REVCLOUD_BULGE = 1

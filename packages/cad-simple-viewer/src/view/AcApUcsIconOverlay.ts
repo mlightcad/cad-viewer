@@ -1,10 +1,10 @@
 import { AcGePoint2d, AcGePoint3d } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
+import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
 import {
   type AcApUcsFrame,
   AcApUcsService
-} from '../service/AcApUcsService'
+} from '../service/AcApUcsService.js'
 
 const ICON_SIZE = 56
 const AXIS_LEN = 28

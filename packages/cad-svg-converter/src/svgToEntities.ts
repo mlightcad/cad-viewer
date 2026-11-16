@@ -28,7 +28,7 @@ import type {
   AcDbSvgPoint,
   AcDbSvgPrimitive,
   AcDbSvgStyle
-} from './svgTypes'
+} from './svgTypes.js'
 
 const LINE_WEIGHTS: AcGiLineWeight[] = [
   AcGiLineWeight.LineWeight000,

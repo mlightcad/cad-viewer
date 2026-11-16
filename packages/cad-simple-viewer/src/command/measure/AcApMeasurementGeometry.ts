@@ -7,9 +7,9 @@ import {
   distPointToPolylinePx,
   distPointToSegmentPx,
   pointInPolygonPx
-} from '../../util/AcApScreenHitTest'
-import { measureAngleArcRadiusWcs } from './AcApMeasureAngleArc'
-import type { AcApMeasurementGeometry } from './AcApMeasurementTypes'
+} from '../../util/AcApScreenHitTest.js'
+import { measureAngleArcRadiusWcs } from './AcApMeasureAngleArc.js'
+import type { AcApMeasurementGeometry } from './AcApMeasurementTypes.js'
 
 type WorldToScreen = (point: { x: number; y: number }) => AcApScreenPoint
 

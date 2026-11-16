@@ -4,7 +4,7 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../editor'
+import type { AcEdBaseView } from '../editor/index.js'
 
 /**
  * Minimal database surface needed to fall back to header extents.

@@ -9,16 +9,16 @@ import {
   AcTrGradientBounds,
   createGradientHatchShaderMaterial,
   normalizeGradientBounds
-} from './AcTrGradientHatchShaders'
+} from './AcTrGradientHatchShaders.js'
 import {
   AcTrPatternLine,
   createHatchPatternShaderMaterial
-} from './AcTrHatchPatternShaders'
-import { AcTrMaterialManager, AcTrMaterialSide } from './AcTrMaterialManager'
+} from './AcTrHatchPatternShaders.js'
+import { AcTrMaterialManager, AcTrMaterialSide } from './AcTrMaterialManager.js'
 import {
   getMaterialMetadata,
   setMaterialMetadata
-} from './AcTrMaterialMetadata'
+} from './AcTrMaterialMetadata.js'
 
 export interface AcTrFillMaterialOptions {
   rebaseOffset: THREE.Vector2

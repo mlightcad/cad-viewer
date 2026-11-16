@@ -1,11 +1,11 @@
 import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
 
-import type { AcUiI18n } from '../i18n/AcUiI18n'
+import type { AcUiI18n } from '../i18n/AcUiI18n.js'
 import {
   type AcUiAciIndexPicker,
   acuiCreateAciIndexPicker
-} from './AcUiAciPaletteUi'
-import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
+} from './AcUiAciPaletteUi.js'
+import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles.js'
 
 /**
  * Modal ACI color picker dialog for layer color selection.

@@ -3,8 +3,8 @@ import {
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
-import { applyMarkupStyleToSelection } from '../command/markup/AcApMarkupPresenter'
-import { getMarkupStore } from '../command/markup/AcApMarkupStore'
+import { applyMarkupStyleToSelection } from '../command/markup/AcApMarkupPresenter.js'
+import { getMarkupStore } from '../command/markup/AcApMarkupStore.js'
 import {
   cssToMarkupColor,
   defaultMarkupColor,
@@ -14,19 +14,19 @@ import {
   markupColorToCss,
   setMarkupDrawColor,
   setMarkupTextHeight
-} from '../command/markup/AcApMarkupUtil'
+} from '../command/markup/AcApMarkupUtil.js'
 import {
   applyMeasurementStyleToSelection,
   getActiveMeasurementStyle,
   getMeasurementSnapshot,
   getSelectedMeasurementId
-} from '../command/measure/AcApMeasurementStore'
+} from '../command/measure/AcApMeasurementStore.js'
 import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
   type AcEdSessionAccessory
-} from '../editor/command/AcEdSessionAccessory'
-import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { AcApI18n } from '../i18n'
+} from '../editor/command/AcEdSessionAccessory.js'
+import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { AcApI18n } from '../i18n/index.js'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
@@ -36,23 +36,23 @@ import {
   acapGetMeasurementTextHeightMode,
   acapSetMeasurementDrawColor,
   acapSetMeasurementTextHeight
-} from '../util/AcApMeasurementUtil'
-import type { AcTrView2d } from '../view'
-import { AcUiAciColorDialog } from './AcUiAciColorDialog'
+} from '../util/AcApMeasurementUtil.js'
+import type { AcTrView2d } from '../view/index.js'
+import { AcUiAciColorDialog } from './AcUiAciColorDialog.js'
 import {
   type AcUiAciPaletteStacks,
   acuiCreateAciPaletteStacks,
   acuiEnsureAciPaletteStyles
-} from './AcUiAciPaletteUi'
+} from './AcUiAciPaletteUi.js'
 import {
   type AcUiDrawStyleKind
-} from './AcUiDrawStyle'
+} from './AcUiDrawStyle.js'
 import {
   acuiOpenTextHeightDialog,
   acuiResolveTextHeightDialogInitials,
   acuiResolveTextHeightPatch
-} from './AcUiTextHeightDialogHelpers'
-import { createIconElement, ICON_TEXT_HEIGHT } from './icons'
+} from './AcUiTextHeightDialogHelpers.js'
+import { createIconElement, ICON_TEXT_HEIGHT } from './icons.js'
 
 /** DOM id of the injected stylesheet for draw-style controls. */
 const STYLE_ID = 'ml-draw-style-session-accessory-styles'

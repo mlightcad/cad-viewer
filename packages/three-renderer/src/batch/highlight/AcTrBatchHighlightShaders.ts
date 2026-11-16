@@ -3,9 +3,9 @@ import * as THREE from 'three'
 import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
-} from '../../util/AcTrMaterialUtil'
-import { getMaterialRuntimeUserData } from '../../util/AcTrObjectUserData'
-import { AcTrBatchHighlightState } from './AcTrBatchHighlightState'
+} from '../../util/AcTrMaterialUtil.js'
+import { getMaterialRuntimeUserData } from '../../util/AcTrObjectUserData.js'
+import { AcTrBatchHighlightState } from './AcTrBatchHighlightState.js'
 
 /** Uniform bag injected into batch highlight shader programs. */
 export type AcTrBatchHighlightUniforms = {

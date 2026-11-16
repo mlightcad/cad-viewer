@@ -1,6 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert'
+import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert.js'
 
 /**
  * Item returned by spatial query

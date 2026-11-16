@@ -6,11 +6,11 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
-import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
-import { AcTrMaterialCacheStats } from './AcTrMaterialManager'
-import { AcTrPointMaterialManager } from './AcTrPointMaterialManager'
-import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
+import { AcTrFillMaterialManager } from './AcTrFillMaterialManager.js'
+import { AcTrLineMaterialManager } from './AcTrLineMaterialManager.js'
+import { AcTrMaterialCacheStats } from './AcTrMaterialManager.js'
+import { AcTrPointMaterialManager } from './AcTrPointMaterialManager.js'
+import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions.js'
 
 /** Aggregated material-cache stats across point / line / fill managers. */
 export interface AcTrStyleManagerStats {

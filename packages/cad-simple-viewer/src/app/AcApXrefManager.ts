@@ -8,8 +8,8 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import type { AcTrLayout } from '../view/AcTrLayout'
-import { AcApDocManager } from './AcApDocManager'
+import type { AcTrLayout } from '../view/AcTrLayout.js'
+import { AcApDocManager } from './AcApDocManager.js'
 
 /**
  * Transform applied to a reference overlay (from XATTACH INSERT).

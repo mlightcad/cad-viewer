@@ -3,7 +3,7 @@ import { type AcDbDatabase, type AcDbEntity } from '@mlightcad/data-model'
 import {
   acapBuildCompareChangeSets,
   type AcApDiffChangeSet
-} from './acapCompareChangeSets'
+} from './acapCompareChangeSets.js'
 import {
   ACAP_COMPAREHATCH_DEFAULT,
   ACAP_COMPAREPROPS_COLOR,
@@ -18,7 +18,7 @@ import {
   ACAP_COMPARETEXT_DEFAULT,
   ACAP_COMPARETOLERANCE_DEFAULT,
   acapToleranceFromCompareTolerance
-} from './acapCompareSysVars'
+} from './acapCompareSysVars.js'
 
 /** Change classification for one compared entity. */
 export type AcApDiffChangeKind = 'added' | 'deleted' | 'modified' | 'unchanged'

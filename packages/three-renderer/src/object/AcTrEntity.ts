@@ -1,21 +1,21 @@
 import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy.js'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import {
+  type AcTrEntityUserData,
+  getObjectUserData,
+  getSceneDrawableUserData
+} from '../util/AcTrObjectUserData.js'
 import {
   AcTrMaterialUtil,
   AcTrMatrixUtil,
   effectiveLayer,
   isObjectHierarchyVisible
-} from '../util'
-import {
-  type AcTrEntityUserData,
-  getObjectUserData,
-  getSceneDrawableUserData
-} from '../util/AcTrObjectUserData'
-import { AcTrObject } from './AcTrObject'
+} from '../util/index.js'
+import { AcTrObject } from './AcTrObject.js'
 
 /**
  * Represent the display object of one drawing entity.

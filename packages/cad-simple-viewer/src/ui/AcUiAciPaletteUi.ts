@@ -11,7 +11,7 @@ import {
   ACI_GRAY_PALETTE_INDICES,
   ACI_LARGE_PALETTE_INDICES,
   ACI_SMALL_PALETTE_INDICES
-} from '../util/AcApAciPalette'
+} from '../util/AcApAciPalette.js'
 
 /** DOM id of the injected shared ACI palette stylesheet. */
 const STYLE_ID = 'ml-aci-palette-styles'

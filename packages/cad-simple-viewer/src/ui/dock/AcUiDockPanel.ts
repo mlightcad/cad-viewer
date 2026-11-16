@@ -1,7 +1,7 @@
 import {
   acedIsMobileUiLayout,
   ML_UI_MOBILE_MEDIA_QUERY
-} from '../../editor/global/AcEdUiLayout'
+} from '../../editor/global/AcEdUiLayout.js'
 import {
   createIconElement,
   ICON_CHEVRON_DOWN,
@@ -11,11 +11,11 @@ import {
   ICON_PLACEMENT_LEFT,
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP
-} from '../icons'
+} from '../icons.js'
 import {
   acuiEnsureDockPanelStyles,
   acuiRemoveDockPanelStylesIfUnused
-} from './acuiDockPanelStyles'
+} from './acuiDockPanelStyles.js'
 
 /** Dock panel edge placement relative to the viewer host element. */
 export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'

@@ -1,6 +1,6 @@
 import { AcDbGroup, AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -9,13 +9,13 @@ import {
   AcEdPromptSelectionOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapFindGroupsContaining,
   acapGetGroupByName,
   acapValidateGroupName
-} from '../../service/AcApGroup'
+} from '../../service/AcApGroup.js'
 
 /**
  * GROUPEDIT — add/remove objects or rename a group.

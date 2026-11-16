@@ -6,8 +6,8 @@ import {
 import { AcTrRenderer } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcApLayerService } from '../service/AcApLayerService'
-import { AcTrScene } from './AcTrScene'
+import { AcApLayerService } from '../service/AcApLayerService.js'
+import { AcTrScene } from './AcTrScene.js'
 
 /**
  * Synchronizes scene drawable materials with live layer-table style changes.

@@ -8,8 +8,8 @@
  * @packageDocumentation
  */
 
-import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
-import { AcUiDialog } from './AcUiDialog'
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { AcUiDialog } from './AcUiDialog.js'
 
 /** Text height authoring mode. */
 export type AcUiTextHeightMode = 'adaptive' | 'custom'

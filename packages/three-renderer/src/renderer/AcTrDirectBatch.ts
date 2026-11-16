@@ -1,7 +1,7 @@
 import { AcDbEntity, AcDbRay, AcDbXline } from '@mlightcad/data-model'
 
-import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
-import type { AcTrEntity } from '../object/AcTrEntity'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy.js'
+import type { AcTrEntity } from '../object/AcTrEntity.js'
 import {
   type AcTrDirectEntityMeta,
   buildAreaGeometry,
@@ -10,8 +10,8 @@ import {
   buildOffsetRingDirectGeometry,
   buildPointGeometry,
   isDirectBatchRejectedMaterial
-} from '../object/AcTrLineGeometryBuilder'
-import type { AcTrRenderer } from './AcTrRenderer'
+} from '../object/AcTrLineGeometryBuilder.js'
+import type { AcTrRenderer } from './AcTrRenderer.js'
 
 /**
  * Whether the entity advertises a single batchable draw primitive.

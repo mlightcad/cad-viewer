@@ -5,10 +5,10 @@ import {
 } from '@mlightcad/data-model'
 import { ShapeData } from '@mlightcad/mtext-renderer'
 
-import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../util'
-import { AcTrGlyphEntity } from './AcTrGlyphEntity'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../util/index.js'
+import { AcTrGlyphEntity } from './AcTrGlyphEntity.js'
 
 /**
  * Display object for a CAD SHAPE entity rendered through the mtext-renderer.

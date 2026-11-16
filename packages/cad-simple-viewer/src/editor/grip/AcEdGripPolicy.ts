@@ -1,4 +1,4 @@
-import { AcEdOpenMode } from '../view/AcEdOpenMode'
+import { AcEdOpenMode } from '../view/AcEdOpenMode.js'
 
 /**
  * Returns whether grips should be suppressed for the given selection count,

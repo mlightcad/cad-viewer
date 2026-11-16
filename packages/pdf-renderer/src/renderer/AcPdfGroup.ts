@@ -1,4 +1,4 @@
-import { AcPdfEntity } from './AcPdfEntity'
+import { AcPdfEntity } from './AcPdfEntity.js'
 
 /**
  * Group of PDF drawables. Children stay live so INSERT clones and ATTRIB

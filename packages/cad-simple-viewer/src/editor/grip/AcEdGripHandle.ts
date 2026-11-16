@@ -4,7 +4,7 @@ import { injectMlGripHandleCss } from '@mlightcad/three-renderer'
 import {
   type AcEdGripAppearance,
   applyGripAppearanceToHost
-} from './AcEdGripAppearance'
+} from './AcEdGripAppearance.js'
 
 /** Visual state of a grip handle. */
 export type AcEdGripHandleState = 'normal' | 'hover' | 'hot'

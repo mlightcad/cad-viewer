@@ -1,5 +1,5 @@
-import { ICON_TOOLBAR_PLACEMENT } from '../icons'
-import type { AcUiToolbarItem } from './types'
+import { ICON_TOOLBAR_PLACEMENT } from '../icons.js'
+import type { AcUiToolbarItem } from './types.js'
 
 /** One selectable entry in a toolbar layout switcher submenu. */
 export interface AcUiToolbarLayoutPreset {

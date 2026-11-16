@@ -1,11 +1,11 @@
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupCalloutEntity } from './AcApMarkupCalloutEntity'
-import type { AcApMarkupEntity } from './AcApMarkupEntity'
-import { AcApMarkupHighlightEntity } from './AcApMarkupHighlightEntity'
-import { AcApMarkupSegmentEntity } from './AcApMarkupSegmentEntity'
-import { AcApMarkupShapeEntity } from './AcApMarkupShapeEntity'
-import { AcApMarkupStampEntity } from './AcApMarkupStampEntity'
-import { AcApMarkupTextEntity } from './AcApMarkupTextEntity'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupCalloutEntity } from './AcApMarkupCalloutEntity.js'
+import type { AcApMarkupEntity } from './AcApMarkupEntity.js'
+import { AcApMarkupHighlightEntity } from './AcApMarkupHighlightEntity.js'
+import { AcApMarkupSegmentEntity } from './AcApMarkupSegmentEntity.js'
+import { AcApMarkupShapeEntity } from './AcApMarkupShapeEntity.js'
+import { AcApMarkupStampEntity } from './AcApMarkupStampEntity.js'
+import { AcApMarkupTextEntity } from './AcApMarkupTextEntity.js'
 
 /**
  * Create the concrete markup entity for a store / sidecar record (deserialize).

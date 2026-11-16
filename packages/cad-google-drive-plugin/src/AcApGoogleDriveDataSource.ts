@@ -11,7 +11,7 @@ import {
 import {
   GoogleDriveClient,
   type GoogleDriveClientOptions
-} from './googleDriveClient'
+} from './googleDriveClient.js'
 
 /** Built-in Google Drive data source id. */
 export const ACAP_GOOGLE_DRIVE_DATA_SOURCE_ID = 'googledrive'

@@ -1,9 +1,9 @@
 import { log } from '@mlightcad/data-model'
 
-import { AcApContext } from '../app/AcApContext'
-import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
-import { AcApLazyPluginRegistration } from './AcApLazyPluginRegistration'
-import { AcApPlugin } from './AcApPlugin'
+import { AcApContext } from '../app/AcApContext.js'
+import { AcEdCommandStack } from '../editor/command/AcEdCommandStack.js'
+import { AcApLazyPluginRegistration } from './AcApLazyPluginRegistration.js'
+import { AcApPlugin } from './AcApPlugin.js'
 
 /**
  * Plugin manager for dynamically loading and unloading plugins.

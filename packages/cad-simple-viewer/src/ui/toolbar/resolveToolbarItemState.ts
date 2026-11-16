@@ -5,12 +5,12 @@
  * @packageDocumentation
  */
 
-import type { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
+import type { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
 import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarSeparatorItem
-} from './toolbarItemUtils'
-import type { AcUiToolbarItem } from './types'
+} from './toolbarItemUtils.js'
+import type { AcUiToolbarItem } from './types.js'
 
 /**
  * Returns whether a toolbar item should be shown for the given document open mode.

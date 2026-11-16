@@ -5,15 +5,15 @@
 // App runtime services (busy indicator, command-line messages) are reached via
 // {@link acapCommandServices} instead of importing AcApDocManager, which would
 // create a circular init cycle with concrete command classes.
-import { acapCommandServices } from '../../app/AcApCommandServices'
-import type { AcApContext } from '../../app/AcApContext'
-import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
-import { eventBus } from '../global/eventBus'
-import { AcEdMessageType } from '../input/ui/AcEdMessageType'
-import { AcEdOpenMode } from '../view/AcEdOpenMode'
+import { acapCommandServices } from '../../app/AcApCommandServices.js'
+import type { AcApContext } from '../../app/AcApContext.js'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit.js'
+import { eventBus } from '../global/eventBus.js'
+import { AcEdMessageType } from '../input/ui/AcEdMessageType.js'
+import { AcEdOpenMode } from '../view/AcEdOpenMode.js'
 import {
   type AcEdSessionAccessory
-} from './AcEdSessionAccessory'
+} from './AcEdSessionAccessory.js'
 
 /**
  * Thrown from {@link AcEdSessionAccessory.mount} when the accessory declines to

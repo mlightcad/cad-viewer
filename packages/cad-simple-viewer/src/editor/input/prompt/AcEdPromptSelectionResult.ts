@@ -1,6 +1,6 @@
-import { AcEdSelectionSet } from '../AcEdSelectionSet'
-import { AcEdPromptResult } from './AcEdPromptResult'
-import { AcEdPromptStatus } from './AcEdPromptStatus'
+import { AcEdSelectionSet } from '../AcEdSelectionSet.js'
+import { AcEdPromptResult } from './AcEdPromptResult.js'
+import { AcEdPromptStatus } from './AcEdPromptStatus.js'
 
 /**
  * Result of a prompt that requests a selection set.

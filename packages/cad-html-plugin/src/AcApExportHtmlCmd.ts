@@ -8,7 +8,7 @@ import {
   AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
 
-import { AcApHtmlConvertor } from './AcApHtmlConvertor'
+import { AcApHtmlConvertor } from './AcApHtmlConvertor.js'
 import {
   type AcApHtmlExportOptions,
   ACEX_MAX_CHUNK_SIZE_MIB,
@@ -17,8 +17,8 @@ import {
   acexChunkSizeMiBToBytes,
   clampAcApHtmlChunkSizeMiB,
   resolveAcApHtmlExportOptions
-} from './AcApHtmlExportOptions'
-import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
+} from './AcApHtmlExportOptions.js'
+import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions.js'
 
 /**
  * Editor command that exports the active drawing as a self-contained HTML file

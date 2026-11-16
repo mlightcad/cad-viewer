@@ -8,8 +8,8 @@ import {
   AcDbSpline
 } from '@mlightcad/data-model'
 
-import type { PdfTextStroke } from './recognition/pdfGlyphClustering'
-import type { PdfRecPoint } from './recognition/pdfRecGeometry'
+import type { PdfTextStroke } from './recognition/pdfGlyphClustering.js'
+import type { PdfRecPoint } from './recognition/pdfRecGeometry.js'
 
 /** Samples along a full circle; arcs use a proportional share. */
 const CIRCLE_SAMPLES = 24

@@ -1,13 +1,13 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 import type * as THREE from 'three'
 
-import { acexHtmlGetDocsBaseUrl } from './AcExHtmlDocsUrl'
-import { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout'
-import { acexHtmlComputeLayoutViewExtents } from './AcExHtmlLayerExtents'
-import { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder'
-import { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector'
-import { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView'
-import { acexHtmlCollectBatchesFromObject3D } from './AcExHtmlSceneBatchCollector'
+import { acexHtmlGetDocsBaseUrl } from './AcExHtmlDocsUrl.js'
+import { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout.js'
+import { acexHtmlComputeLayoutViewExtents } from './AcExHtmlLayerExtents.js'
+import { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder.js'
+import { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector.js'
+import { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView.js'
+import { acexHtmlCollectBatchesFromObject3D } from './AcExHtmlSceneBatchCollector.js'
 import {
   ACEX_SNAPSHOT_VERSION,
   type AcExHtmlInitialViewMode,
@@ -18,8 +18,8 @@ import {
   type AcExHtmlSnapshot,
   type AcExHtmlViewerMode,
   type AcExHtmlViewState
-} from './AcExHtmlSnapshotTypes'
-import { acexHtmlBuildViewerMetadata } from './AcExHtmlViewerMetadata'
+} from './AcExHtmlSnapshotTypes.js'
+import { acexHtmlBuildViewerMetadata } from './AcExHtmlViewerMetadata.js'
 
 /**
  * Layer table row for an export snapshot (visibility is independent of

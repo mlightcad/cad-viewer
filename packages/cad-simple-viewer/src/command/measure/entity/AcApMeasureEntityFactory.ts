@@ -1,11 +1,11 @@
-import { deserializeMeasurementStyle } from '../AcApMeasurementSidecar'
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
-import { AcApMeasureAngleEntity } from './AcApMeasureAngleEntity'
-import { AcApMeasureArcEntity } from './AcApMeasureArcEntity'
-import { AcApMeasureAreaEntity } from './AcApMeasureAreaEntity'
-import { AcApMeasureDistanceEntity } from './AcApMeasureDistanceEntity'
-import type { AcApMeasureEntity } from './AcApMeasureEntity'
-import { AcApMeasurePointEntity } from './AcApMeasurePointEntity'
+import { deserializeMeasurementStyle } from '../AcApMeasurementSidecar.js'
+import type { AcApMeasurementRecord } from '../AcApMeasurementTypes.js'
+import { AcApMeasureAngleEntity } from './AcApMeasureAngleEntity.js'
+import { AcApMeasureArcEntity } from './AcApMeasureArcEntity.js'
+import { AcApMeasureAreaEntity } from './AcApMeasureAreaEntity.js'
+import { AcApMeasureDistanceEntity } from './AcApMeasureDistanceEntity.js'
+import type { AcApMeasureEntity } from './AcApMeasureEntity.js'
+import { AcApMeasurePointEntity } from './AcApMeasurePointEntity.js'
 
 /**
  * Creates a concrete measure entity from a sidecar / store record (deserialize).

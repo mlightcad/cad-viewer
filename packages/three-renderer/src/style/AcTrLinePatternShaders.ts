@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import {
   isComplexPatternElement,
   normalizeComplexPatternElement
-} from '../linetype'
+} from '../linetype/index.js'
 
 export class AcTrLinePatternShaders {
   /**

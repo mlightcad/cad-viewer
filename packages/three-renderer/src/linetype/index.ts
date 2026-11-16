@@ -9,7 +9,7 @@ export {
   resolveLinetypeEmbeddedText,
   syncComplexLineTypeGlyphs,
   syncDrawSharedGlyphGroup
-} from './AcTrComplexLineBuilder'
+} from './AcTrComplexLineBuilder.js'
 export {
   COMPLEX_LTYPE_ABSOLUTE_ROTATION,
   COMPLEX_LTYPE_SHAPE,
@@ -26,4 +26,4 @@ export {
   type AcTrLineWalkPlacement,
   type AcTrLineWalkPoint,
   type AcTrLineWalkResult
-} from './AcTrLineTypeWalker'
+} from './AcTrLineTypeWalker.js'

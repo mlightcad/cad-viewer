@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { AcTrBatchDrawVisibilityStrategy } from './AcTrBatchDrawVisibilityStrategy'
-import type { AcTrBatchDrawVisibilityInfo } from './AcTrBatchDrawVisibilityTypes'
+import { AcTrBatchDrawVisibilityStrategy } from './AcTrBatchDrawVisibilityStrategy.js'
+import type { AcTrBatchDrawVisibilityInfo } from './AcTrBatchDrawVisibilityTypes.js'
 
 /**
  * Draw-visibility strategy for wide-line `LineSegments2` batches.

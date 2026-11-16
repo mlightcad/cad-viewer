@@ -7,8 +7,8 @@ import {
 } from '@mlightcad/data-model'
 import { AcTrEntity, type AcTrRenderer } from '@mlightcad/three-renderer'
 
-import { AcApDocManager } from '../../app'
-import { AcTrView2d } from '../../view'
+import { AcApDocManager } from '../../app/index.js'
+import { AcTrView2d } from '../../view/index.js'
 
 const DEFAULT_PREVIEW_SIZE = 64
 

@@ -5,12 +5,12 @@ import {
   AcTrMaterialUtil,
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
-} from '../util/AcTrMaterialUtil'
+} from '../util/AcTrMaterialUtil.js'
 import {
   getHighlightUserData,
   getSceneDrawableUserData
-} from '../util/AcTrObjectUserData'
-import type { AcTrBatchHighlightKind } from './highlight'
+} from '../util/AcTrObjectUserData.js'
+import type { AcTrBatchHighlightKind } from './highlight/index.js'
 
 const _matrix = /*@__PURE__*/ new THREE.Matrix4()
 const _world = /*@__PURE__*/ new THREE.Matrix4()

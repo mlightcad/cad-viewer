@@ -11,14 +11,14 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { AcGeMatrix3d, AcGePoint3d } from '@mlightcad/data-model'
 
-import { acapPdfT } from './acapPdfI18n'
-import { AcApPdfTextCmd } from './AcApPdfTextCmd'
-import { acapPdfNiceScale, pdfEntitiesToDimInput } from './pdfDimensionConvert'
-import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts'
+import { acapPdfT } from './acapPdfI18n.js'
+import { AcApPdfTextCmd } from './AcApPdfTextCmd.js'
+import { acapPdfNiceScale, pdfEntitiesToDimInput } from './pdfDimensionConvert.js'
+import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts.js'
 import {
   recognizePdfDimensions,
   suggestPdfDimensionScale
-} from './recognition/pdfDimensionPattern'
+} from './recognition/pdfDimensionPattern.js'
 
 /**
  * `pdfscale`: calibrates imported PDF geometry to real-world units.

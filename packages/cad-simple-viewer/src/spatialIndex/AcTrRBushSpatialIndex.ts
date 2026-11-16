@@ -1,8 +1,8 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
-import { AcEdSpatialQueryResultItem } from '../editor/view'
-import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
+import { AcEdSpatialQueryResultItem } from '../editor/view/index.js'
+import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert.js'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
@@ -10,7 +10,7 @@ import {
   AcTrSpatialSearchOptions,
   estimateSpatialItemsBytes,
   isSpatialBoxFullyInside
-} from './AcTrSpatialIndex'
+} from './AcTrSpatialIndex.js'
 
 /** Approx. Map entry overhead (key pointer + value pointer + slot). */
 const ID_MAP_ENTRY_BYTES = 40
