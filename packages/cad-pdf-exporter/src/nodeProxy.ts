@@ -16,7 +16,9 @@ const FETCH_TIMEOUT_MS = 180_000
  * Accepts `host:port`, `http://host:port`, and the WinINET map form
  * `http=host:port;https=host:port`. SOCKS-only values are ignored.
  */
-export function normalizeProxyServer(raw: string | undefined): string | undefined {
+export function normalizeProxyServer(
+  raw: string | undefined
+): string | undefined {
   if (!raw) return
   const value = raw.trim()
   if (!value || /^socks/i.test(value)) return
@@ -124,21 +126,27 @@ function proxyAgent(proxyUrl: string): https.Agent {
   return agent
 }
 
+export interface NodeFetchBytesOptions {
+  /** Ask caches / CDNs for a fresh response (catalog revalidation). */
+  bypassHttpCache?: boolean
+}
+
 /**
  * GET binary with optional HTTP proxy and a few retries.
  * Used for the font CDN, which browsers reach through the system proxy while
  * Node `fetch` does not.
  */
 export async function nodeFetchBytes(
-  url: string
+  url: string,
+  options?: NodeFetchBytesOptions
 ): Promise<{ status: number; bytes: Uint8Array }> {
   const proxy = resolveOutboundProxy()
   let lastError: unknown
   for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
     try {
       return proxy
-        ? await fetchBytesViaProxy(url, proxy, MAX_REDIRECTS)
-        : await fetchBytesDirect(url)
+        ? await fetchBytesViaProxy(url, proxy, MAX_REDIRECTS, options)
+        : await fetchBytesDirect(url, options)
     } catch (error) {
       lastError = error
     }
@@ -147,9 +155,13 @@ export async function nodeFetchBytes(
 }
 
 async function fetchBytesDirect(
-  url: string
+  url: string,
+  options?: NodeFetchBytesOptions
 ): Promise<{ status: number; bytes: Uint8Array }> {
-  const response = await fetch(url)
+  const response = await fetch(
+    url,
+    options?.bypassHttpCache ? { cache: 'no-cache' } : undefined
+  )
   return {
     status: response.status,
     bytes: new Uint8Array(await response.arrayBuffer())
@@ -159,18 +171,24 @@ async function fetchBytesDirect(
 function fetchBytesViaProxy(
   url: string,
   proxyUrl: string,
-  redirectsLeft: number
+  redirectsLeft: number,
+  options?: NodeFetchBytesOptions
 ): Promise<{ status: number; bytes: Uint8Array }> {
   return new Promise((resolve, reject) => {
     const target = new URL(url)
+    const headers: Record<string, string> = {
+      'accept-encoding': 'identity',
+      'user-agent': 'cad-pdf-exporter'
+    }
+    if (options?.bypassHttpCache) {
+      headers['cache-control'] = 'no-cache'
+      headers.pragma = 'no-cache'
+    }
     const req = https.get(
       url,
       {
         agent: proxyAgent(proxyUrl),
-        headers: {
-          'accept-encoding': 'identity',
-          'user-agent': 'cad-pdf-exporter'
-        }
+        headers
       },
       res => {
         const status = res.statusCode ?? 0
@@ -182,7 +200,7 @@ function fetchBytesViaProxy(
         ) {
           res.resume()
           const next = new URL(res.headers.location, target).toString()
-          fetchBytesViaProxy(next, proxyUrl, redirectsLeft - 1).then(
+          fetchBytesViaProxy(next, proxyUrl, redirectsLeft - 1, options).then(
             resolve,
             reject
           )

@@ -40,6 +40,17 @@ describe('acapMeasureTextWidth', () => {
     ).toBe(30)
   })
 
+  test('forwards the style font type to default-font glyph lookup', () => {
+    const source = fakeSource()
+    const spy = jest.fn(source.getCharShapeFromDefaults)
+    source.getCharShapeFromDefaults = spy
+    source.getFontType = () => 'shx'
+    source.getCharShape = () => undefined
+    // latin scale is 2 → defaults are queried at height × 2 = 20
+    expect(acapMeasureTextWidth('中', 'latin', 10, { source })).toBe(20)
+    expect(spy).toHaveBeenCalledWith('中', 20, 'shx')
+  })
+
   test('uses the renderer blank width when a font has no space glyph', () => {
     const source = fakeSource()
     source.getCharShape = (char, font, size) =>

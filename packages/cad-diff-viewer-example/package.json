@@ -22,7 +22,7 @@
     "@mlightcad/data-model": "1.15.30",
     "@mlightcad/libredwg-converter": "3.15.30",
     "@mlightcad/mtext-parser": "1.5.7",
-    "@mlightcad/mtext-renderer": "0.13.9",
+    "@mlightcad/mtext-renderer": "0.13.10",
     "@mlightcad/three-renderer": "workspace:*",
     "three": "^0.186.1"
   }
