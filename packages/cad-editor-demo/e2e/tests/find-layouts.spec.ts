@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
+import { clickRibbonButton } from '../helpers/ribbon'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
@@ -71,13 +72,16 @@ async function runCommand(page: Page, name: string) {
 }
 
 async function loadFixture(page: Page, file = fixturePath) {
-  await page.goto('/')
-  await uploadFixture(page, file)
-  await expect(page.locator('.ml-cad-container')).toBeVisible({
-    timeout: 30000
-  })
+  // Cold Vite / first paint can miss the upload; reload and retry.
+  await expect(async () => {
+    await page.goto('/')
+    await uploadFixture(page, file)
+    await expect(page.locator('.ml-cad-container')).toBeVisible({
+      timeout: 20_000
+    })
+  }).toPass({ timeout: 90_000 })
   await expect(page.locator('.ml-layout-tabs-button')).toHaveCount(3, {
-    timeout: 30000
+    timeout: 30_000
   })
   await page.waitForTimeout(2500)
 }
@@ -147,14 +151,14 @@ test.describe('Find palette (full Vue UI)', () => {
     await expect(status(page)).toContainText('whole drawing')
   })
 
-  test('ribbon Find button (Home > Utilities) opens the palette', async ({
+  test('ribbon Find button (Home > Annotation) opens the palette', async ({
     page
   }) => {
     await loadFixture(page)
-    // At the default window size the Utilities group sits in the overflow.
-    const overflow = page.locator('button.ml-ribbon-overflow-trigger:visible')
-    if ((await overflow.count()) > 0) await overflow.first().click()
-    await page.getByText('Find', { exact: true }).first().click()
+    // Annotation (and Find) can sit in the ribbon overflow at Desktop Chrome
+    // width; clickRibbonButton opens the overflow when needed.
+    await page.getByRole('tab', { name: 'Home' }).click()
+    await clickRibbonButton(page, 'cmd-find')
     await expect(page.getByTestId('find-palette')).toBeVisible()
     await expect(input(page)).toBeFocused()
   })

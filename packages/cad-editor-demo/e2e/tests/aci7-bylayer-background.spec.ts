@@ -38,12 +38,45 @@ type SceneColorSummary = {
   redLayerColors: number[]
 }
 
-async function waitForViewer(page: Page) {
+async function waitForViewerReady(page: Page) {
   await expect(page.locator('.ml-cad-container')).toBeVisible({
-    timeout: 60_000
+    timeout: 30_000
   })
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
-  await page.waitForTimeout(2500)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const v = (
+            window as Window & {
+              AcApDocManager?: {
+                instance?: { curView?: { isConvertingEntities?: boolean } }
+              }
+            }
+          ).AcApDocManager?.instance?.curView
+          return !!v && v.isConvertingEntities !== true
+        }),
+      { timeout: 60_000 }
+    )
+    .toBe(true)
+  // Materials for ByLayer ACI-7 settle after conversion completes.
+  await expect
+    .poll(async () => (await readSceneColorSummary(page)).layer0Colors.length, {
+      timeout: 30_000
+    })
+    .toBeGreaterThan(0)
+}
+
+/** Cold Vite / first paint can miss the upload; reload and retry. */
+async function openFixture(page: Page) {
+  await expect(async () => {
+    await page.goto('/')
+    await uploadFixture(page, fixturePath)
+    await expect(page.locator('.ml-cad-container')).toBeVisible({
+      timeout: 20_000
+    })
+  }).toPass({ timeout: 90_000 })
+  await waitForViewerReady(page)
 }
 
 async function getCanvasColorCounts(page: Page): Promise<ColorCounts> {
@@ -177,9 +210,7 @@ async function runSwitchBg(page: Page): Promise<boolean> {
 test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)', async ({
   page
 }) => {
-  await page.goto('/')
-  await uploadFixture(page, fixturePath)
-  await waitForViewer(page)
+  await openFixture(page)
 
   const initial = await readSceneColorSummary(page)
   expect(initial.backgroundColor).not.toBeNull()
@@ -194,10 +225,13 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   expect(darkCounts.white).toBeGreaterThan(20)
 
   expect(await runSwitchBg(page)).toBe(true)
-  await page.waitForTimeout(1000)
+  await expect
+    .poll(async () => (await readSceneColorSummary(page)).backgroundColor, {
+      timeout: 10_000
+    })
+    .not.toBe(initial.backgroundColor)
 
   const light = await readSceneColorSummary(page)
-  expect(light.backgroundColor).not.toBe(initial.backgroundColor)
   // Light canvas: ByLayer ACI-7 must flip to black (legible). Explicit red
   // must not be rewritten by the theme.
   expect(light.layer0Colors.every(hex => hex === 0x000000)).toBe(true)
@@ -207,10 +241,13 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   expect(lightCounts.black).toBeGreaterThan(20)
 
   expect(await runSwitchBg(page)).toBe(true)
-  await page.waitForTimeout(1000)
+  await expect
+    .poll(async () => (await readSceneColorSummary(page)).backgroundColor, {
+      timeout: 10_000
+    })
+    .toBe(initial.backgroundColor)
 
   const restored = await readSceneColorSummary(page)
-  expect(restored.backgroundColor).toBe(initial.backgroundColor)
   expect(restored.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(restored.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
+import { clickRibbonButton } from '../helpers/ribbon'
 
 /**
  * BDETECT (Smart Blocks: Detect and Convert) on `bsearch-symbols.dxf`: four
@@ -92,7 +93,7 @@ test('BDETECT finds repeated symbols and converts them into a block', async ({
     .toBe(10)
 
   await page.getByRole('tab', { name: 'Insert' }).click()
-  await page.locator('[data-ribbon-button-id="cmd-bdetect"]:visible').click()
+  await clickRibbonButton(page, 'cmd-bdetect')
 
   const panel = page.getByTestId('bdetect-panel')
   await expect(page.getByTestId('bdetect-count')).toHaveText(

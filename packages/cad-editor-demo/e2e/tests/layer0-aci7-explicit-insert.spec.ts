@@ -41,7 +41,7 @@ type SceneMaterial = {
 
 async function waitForViewer(page: Page) {
   await expect(page.locator('.ml-cad-container')).toBeVisible({
-    timeout: 60_000
+    timeout: 30_000
   })
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
   await expect
@@ -60,7 +60,21 @@ async function waitForViewer(page: Page) {
       { timeout: 60_000 }
     )
     .toBe(true)
-  await page.waitForTimeout(3000)
+  await expect
+    .poll(async () => (await readMaterials(page)).length, { timeout: 30_000 })
+    .toBeGreaterThan(0)
+}
+
+/** Cold Vite / first paint can miss the upload; reload and retry. */
+async function openFixture(page: Page) {
+  await expect(async () => {
+    await page.goto('/')
+    await uploadFixture(page, fixturePath)
+    await expect(page.locator('.ml-cad-container')).toBeVisible({
+      timeout: 20_000
+    })
+  }).toPass({ timeout: 90_000 })
+  await waitForViewer(page)
 }
 
 async function readMaterials(page: Page): Promise<SceneMaterial[]> {
@@ -136,9 +150,7 @@ async function readMaterials(page: Page): Promise<SceneMaterial[]> {
 test('explicit ACI-7 block colour on layer 0 does not inherit the INSERT layer', async ({
   page
 }) => {
-  await page.goto('/')
-  await uploadFixture(page, fixturePath)
-  await waitForViewer(page)
+  await openFixture(page)
 
   const materials = await readMaterials(page)
   expect(materials.length).toBeGreaterThan(0)

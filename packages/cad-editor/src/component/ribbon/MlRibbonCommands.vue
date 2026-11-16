@@ -166,6 +166,7 @@ import {
   mleader,
   mleaderAdd,
   mleaderRemove,
+  mleaderStyle,
   mline,
   move,
   mtext,
@@ -189,8 +190,10 @@ import {
   rect,
   revFreeDraw,
   scale,
+  script,
   setting,
   splineFitPoints,
+  textStyle,
   ucs,
   ucsObject,
   ucsOrigin,
@@ -1439,6 +1442,7 @@ const buildBaseTabs = (
   measurementVisible: boolean,
   agentPluginEnabled: boolean,
   llmPluginEnabled: boolean,
+  scriptPluginEnabled: boolean,
   namedViewNames: string[] = []
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
@@ -1468,9 +1472,12 @@ const buildBaseTabs = (
     dimcontinue: t('main.ribbon.tooltip.dimcontinue'),
     dimbaseline: t('main.ribbon.tooltip.dimbaseline'),
     dimstyle: t('main.ribbon.tooltip.dimstyle'),
+    textStyle: t('main.ribbon.tooltip.textStyle'),
+    mleaderStyle: t('main.ribbon.tooltip.mleaderStyle'),
     mleader: t('main.ribbon.tooltip.mleader'),
     mleaderAdd: t('main.ribbon.tooltip.mleaderAdd'),
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
+    script: t('main.ribbon.tooltip.script'),
     move: t('main.ribbon.tooltip.move'),
     rotate: t('main.ribbon.tooltip.rotate'),
     scale: t('main.ribbon.tooltip.scale'),
@@ -2783,6 +2790,29 @@ const buildBaseTabs = (
           id: 'home-annotation',
           title: t('main.ribbon.group.annotation'),
           orientation: 'row',
+          footerMenuItems: [
+            {
+              id: 'cmd-style',
+              type: 'button',
+              label: t('main.ribbon.command.textStyle'),
+              tooltip: ribbonTooltips.textStyle,
+              props: { icon: textStyle }
+            },
+            {
+              id: 'cmd-dimstyle',
+              type: 'button',
+              label: t('main.ribbon.command.dimstyle'),
+              tooltip: ribbonTooltips.dimstyle,
+              props: { icon: dimStyle }
+            },
+            {
+              id: 'cmd-mleaderstyle',
+              type: 'button',
+              label: t('main.ribbon.command.mleaderStyle'),
+              tooltip: ribbonTooltips.mleaderStyle,
+              props: { icon: mleaderStyle }
+            }
+          ],
           collections: [
             {
               id: 'home-annotation-main',
@@ -2803,6 +2833,14 @@ const buildBaseTabs = (
               layout: 'column',
               rows: 3,
               items: [
+                {
+                  id: 'cmd-find',
+                  type: 'button',
+                  label: t('main.ribbon.command.find'),
+                  tooltip: ribbonTooltips.find,
+                  size: 'small',
+                  props: { icon: find }
+                },
                 {
                   id: 'cmd-dimension',
                   type: 'dropdown',
@@ -2900,14 +2938,6 @@ const buildBaseTabs = (
                       }
                     ]
                   }
-                },
-                {
-                  id: 'cmd-dimstyle',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimstyle'),
-                  tooltip: ribbonTooltips.dimstyle,
-                  size: 'small',
-                  props: { icon: dimStyle }
                 }
               ]
             }
@@ -2935,18 +2965,6 @@ const buildBaseTabs = (
                   }
                 },
                 {
-                  id: 'cmd-find',
-                  type: 'button',
-                  label: t('main.ribbon.command.find'),
-                  tooltip: ribbonTooltips.find,
-                  size: 'large',
-                  props: {
-                    icon: find,
-                    labelWrapLines: 2,
-                    labelWrapWidth: 'max-content'
-                  }
-                },
-                {
                   id: 'cmd-countlist',
                   type: 'button',
                   label: t('main.ribbon.command.countList'),
@@ -2969,7 +2987,23 @@ const buildBaseTabs = (
                     labelWrapLines: 2,
                     labelWrapWidth: 'max-content'
                   }
-                }
+                },
+                ...(scriptPluginEnabled
+                  ? [
+                      {
+                        id: 'cmd-cadscript',
+                        type: 'button' as const,
+                        label: t('main.ribbon.command.script'),
+                        tooltip: ribbonTooltips.script,
+                        size: 'large' as const,
+                        props: {
+                          icon: script,
+                          labelWrapLines: 2,
+                          labelWrapWidth: 'max-content'
+                        }
+                      }
+                    ]
+                  : [])
               ]
             }
           ]
@@ -3396,6 +3430,7 @@ const ribbonData = computed(() => {
   locale.value
   store.features.agentPlugin
   store.features.llmPlugin
+  store.features.scriptPlugin
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
@@ -3472,7 +3507,9 @@ const ribbonData = computed(() => {
   commandByItemId.set('mleader', 'mleader')
   commandByItemId.set('mleader-add', 'mleaderedit')
   commandByItemId.set('mleader-remove', 'mleadereditremove')
+  commandByItemId.set('cmd-style', 'style')
   commandByItemId.set('cmd-dimstyle', 'dimstyle')
+  commandByItemId.set('cmd-mleaderstyle', 'mleaderstyle')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-scale', 'scale')
@@ -3508,6 +3545,9 @@ const ribbonData = computed(() => {
   }
   if (store.features.llmPlugin) {
     commandByItemId.set('cmd-llmsettings', 'llmsettings')
+  }
+  if (store.features.scriptPlugin) {
+    commandByItemId.set('cmd-cadscript', 'cadscript')
   }
   commandByItemId.set('cmd-pdfimport', 'pdfimport')
   commandByItemId.set('cmd-pdfscale', 'pdfscale')
@@ -3587,6 +3627,7 @@ const ribbonData = computed(() => {
     measurementVisible,
     store.features.agentPlugin,
     store.features.llmPlugin,
+    store.features.scriptPlugin,
     namedViewNames
   )
   return {
