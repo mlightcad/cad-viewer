@@ -6,7 +6,7 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -20,8 +20,8 @@ import {
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 const FILLET_BULGE_BASE = Math.tan(Math.PI / 8)
 

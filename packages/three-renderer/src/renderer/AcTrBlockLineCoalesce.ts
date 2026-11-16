@@ -2,8 +2,8 @@ import { AcDbRenderingCache, AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-import { AcTrEntity } from '../object/AcTrEntity'
-import { AcTrGroup } from '../object/AcTrGroup'
+import { AcTrEntity } from '../object/AcTrEntity.js'
+import { AcTrGroup } from '../object/AcTrGroup.js'
 
 /**
  * Shared vertex buffer for one block-template draw.

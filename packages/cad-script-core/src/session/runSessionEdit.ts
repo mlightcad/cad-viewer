@@ -1,6 +1,6 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { CadSession } from './CadSession'
+import type { CadSession } from './CadSession.js'
 
 /**
  * Runs `fn` as one undoable edit through the session.

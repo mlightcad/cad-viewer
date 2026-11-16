@@ -18,25 +18,25 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import { acapPdfT } from './acapPdfI18n'
+import { acapPdfT } from './acapPdfI18n.js'
 import {
   AcApPdfTextSession,
   type PdfTextMeasurer,
   type PdfTextRow,
   type PdfTextRowSource
-} from './AcApPdfTextSession'
-import { pdfEntityToStroke } from './pdfEntityStrokes'
+} from './AcApPdfTextSession.js'
+import { pdfEntityToStroke } from './pdfEntityStrokes.js'
 import {
   clusterPdfTextStrokes,
   type PdfTextLineCandidate,
   type PdfTextStroke
-} from './recognition/pdfGlyphClustering'
-import { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary'
+} from './recognition/pdfGlyphClustering.js'
+import { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary.js'
 import {
   classifyPdfTextLineFont,
   type PdfTextFontKind
-} from './recognition/pdfTextFontKind'
-import { AcUiPdfTextPanel } from './ui/AcUiPdfTextPanel'
+} from './recognition/pdfTextFontKind.js'
+import { AcUiPdfTextPanel } from './ui/AcUiPdfTextPanel.js'
 
 /** `localStorage` key of the persisted glyph dictionary. */
 export const PDF_GLYPH_STORAGE_KEY = 'mlightcad.pdftext.glyphs.v1'

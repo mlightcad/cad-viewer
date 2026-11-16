@@ -6,7 +6,7 @@
  *
  * See `docs/notification-center.md` for architecture and host-override guidance.
  */
-export * from './AcApNotificationTypes'
-export * from './AcApNotificationStore'
-export * from './AcApNotificationEventBridge'
-export * from './AcApNotificationService'
+export * from './AcApNotificationTypes.js'
+export * from './AcApNotificationStore.js'
+export * from './AcApNotificationEventBridge.js'
+export * from './AcApNotificationService.js'

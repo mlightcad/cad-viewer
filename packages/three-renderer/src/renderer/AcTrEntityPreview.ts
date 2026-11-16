@@ -2,9 +2,9 @@ import { AcGeBox2d, AcGePoint2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
-import { AcTrCamera } from '../viewport/AcTrCamera'
-import type { AcTrRenderer } from './AcTrRenderer'
+import { AcTrMaterialManager } from '../style/AcTrMaterialManager.js'
+import { AcTrCamera } from '../viewport/AcTrCamera.js'
+import type { AcTrRenderer } from './AcTrRenderer.js'
 
 /** Options for {@link AcTrEntityPreview.capture}. */
 export interface AcTrEntityPreviewOptions {

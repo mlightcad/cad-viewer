@@ -14,35 +14,35 @@ import {
   type AcApMeasurementStyle,
   acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle
-} from '../../../util'
-import type { AcTrView2d } from '../../../view'
+} from '../../../util/index.js'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapBindOverlayPointerDrag,
   acapPlaceOverlayHtml,
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
-} from '../../overlay'
-import { runMeasurementEdit } from '../AcApMeasurementHistory'
-import { republishMeasurement } from '../AcApMeasurementRepublish'
+} from '../../overlay/index.js'
+import { runMeasurementEdit } from '../AcApMeasurementHistory.js'
+import { republishMeasurement } from '../AcApMeasurementRepublish.js'
 import {
   getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
-} from '../AcApMeasurementStore'
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
+} from '../AcApMeasurementStore.js'
+import type { AcApMeasurementRecord } from '../AcApMeasurementTypes.js'
 import {
   drawMeasureAngleArcOnCanvas,
   measureAngleDeg
-} from './AcApMeasureDrawUtil'
+} from './AcApMeasureDrawUtil.js'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
-} from './AcApMeasureEntity'
+} from './AcApMeasureEntity.js'
 import {
   measureAngleBadgeWorld,
   selectMeasurementGroup
-} from './AcApMeasureEntityGrips'
+} from './AcApMeasureEntityGrips.js'
 
 type Point2 = { x: number; y: number }
 

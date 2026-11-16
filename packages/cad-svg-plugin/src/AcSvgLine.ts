@@ -1,7 +1,7 @@
 import { AcGePoint3dLike, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil.js'
 
 export class AcSvgLine extends AcSvgEntity {
   constructor(

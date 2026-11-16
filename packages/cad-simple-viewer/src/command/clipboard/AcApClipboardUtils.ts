@@ -7,12 +7,12 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
-import type { AcApClipboardContent } from '../../app/AcApClipboard'
-import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service'
-import { AcApPastePreviewJig } from './AcApPastePreviewJig'
+import type { AcApClipboardContent } from '../../app/AcApClipboard.js'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
+import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/index.js'
+import { AcApPastePreviewJig } from './AcApPastePreviewJig.js'
 
 /**
  * Returns the lower-left corner of the entities' combined extents, which is

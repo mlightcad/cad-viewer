@@ -4,8 +4,8 @@ import {
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil.js'
 
 /** Default point radius in drawing units when displaySize is 0 or not set. */
 const DEFAULT_POINT_RADIUS = 0.5

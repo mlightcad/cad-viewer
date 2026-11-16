@@ -11,14 +11,14 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { AcApEntityService } from '../service/AcApEntityService'
+import { AcApEntityService } from '../service/AcApEntityService.js'
 import {
   acapComposeAffine2d,
   acapDecomposeAffine2d,
   type AcApSmartBlockMatch,
   type AcApSmartBlockTemplate
-} from './AcApSmartBlockSearch'
-import type { AcEdAffine2d, AcEdPoint2d } from './AcEdShapeMatcher'
+} from './AcApSmartBlockSearch.js'
+import type { AcEdAffine2d, AcEdPoint2d } from './AcEdShapeMatcher.js'
 
 /** Turns one varying template text into a block attribute. */
 export interface AcApSmartBlockAttributeSpec {

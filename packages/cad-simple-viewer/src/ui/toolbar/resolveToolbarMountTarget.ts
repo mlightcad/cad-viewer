@@ -1,5 +1,5 @@
-import { AcApDocManager } from '../../app'
-import { acuiSkipUiLayoutWrappers } from './resolveDockMountTarget'
+import { AcApDocManager } from '../../app/index.js'
+import { acuiSkipUiLayoutWrappers } from './resolveDockMountTarget.js'
 
 /**
  * Resolves the DOM element that receives the floating viewer toolbar.

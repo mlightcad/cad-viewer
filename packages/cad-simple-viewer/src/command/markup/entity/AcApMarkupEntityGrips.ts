@@ -10,7 +10,7 @@ import {
   type AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapBindOverlayCalloutGrips,
   acapBindOverlayPointerDrag,
@@ -18,29 +18,29 @@ import {
   acapFitOverlayCanvas,
   acapPlaceOverlayHtml,
   acapSeedOverlaySizesFromWcs
-} from '../../overlay'
+} from '../../overlay/index.js'
 import {
   markupGeometryCenter,
   translateMarkupGeometry,
   translateMarkupPoint
-} from '../AcApMarkupGeometry'
-import { runMarkupEdit } from '../AcApMarkupHistory'
-import { republishMarkup } from '../AcApMarkupRepublish'
-import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout'
-import { computeLeaderTipOnShape } from '../AcApMarkupShapeCallout'
-import { getMarkupStore } from '../AcApMarkupStore'
-import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit'
+} from '../AcApMarkupGeometry.js'
+import { runMarkupEdit } from '../AcApMarkupHistory.js'
+import { republishMarkup } from '../AcApMarkupRepublish.js'
+import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout.js'
+import { computeLeaderTipOnShape } from '../AcApMarkupShapeCallout.js'
+import { getMarkupStore } from '../AcApMarkupStore.js'
+import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit.js'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupPoint2d,
   AcApMarkupRecord
-} from '../AcApMarkupTypes'
+} from '../AcApMarkupTypes.js'
 import {
   MARKUP_FONT_SIZE,
   markupCanvasLineWidth,
   resolveMarkupLineWeight
-} from '../AcApMarkupUtil'
-import type { AcApMarkupDrawStyle } from './AcApMarkupEntity'
+} from '../AcApMarkupUtil.js'
+import type { AcApMarkupDrawStyle } from './AcApMarkupEntity.js'
 
 /**
  * Live visuals for a shape-attached callout (leader + tip + bubble).

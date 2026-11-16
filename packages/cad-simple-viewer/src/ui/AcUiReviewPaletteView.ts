@@ -1,4 +1,4 @@
-import { AcApDocManager } from '../app'
+import { AcApDocManager } from '../app/index.js'
 import {
   type AcApMarkupRecord,
   type AcApMarkupStatus,
@@ -7,10 +7,10 @@ import {
   getMarkupStore,
   MARKUP_STATUSES,
   runMarkupEdit
-} from '../command'
-import type { AcUiI18n } from '../i18n/AcUiI18n'
-import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
-import { createIconElement, ICON_DOCK_CLOSE } from './icons'
+} from '../command/index.js'
+import type { AcUiI18n } from '../i18n/AcUiI18n.js'
+import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles.js'
+import { createIconElement, ICON_DOCK_CLOSE } from './icons.js'
 
 /** Constructor options for {@link AcUiReviewPaletteView}. */
 export interface AcUiReviewPaletteViewOptions {

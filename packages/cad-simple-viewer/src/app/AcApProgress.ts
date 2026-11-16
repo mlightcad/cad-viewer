@@ -1,4 +1,4 @@
-import { acapCreateMlightcadIcon } from './AcApBrand'
+import { acapCreateMlightcadIcon } from './AcApBrand.js'
 
 /**
  * Configuration options for {@link AcApProgress}.

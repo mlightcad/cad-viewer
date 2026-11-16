@@ -1,4 +1,4 @@
-import { AcEdFloatingInputBox } from './AcEdFloatingInputBox'
+import { AcEdFloatingInputBox } from './AcEdFloatingInputBox.js'
 import {
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
@@ -8,7 +8,7 @@ import {
   AcEdFloatingInputRawData,
   AcEdFloatingInputValidationCallback,
   AcEdFloatingInputValidationResult
-} from './AcEdFloatingInputTypes'
+} from './AcEdFloatingInputTypes.js'
 
 /**
  * Construction options for {@link AcEdFloatingInputBoxes}.

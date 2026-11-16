@@ -8,13 +8,13 @@
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { acexScreenPxToWcs } from './AcExHtmlOverlayDom'
+import { acexScreenPxToWcs } from './AcExHtmlOverlayDom.js'
 import {
   AcUiAciColorDialog,
   type AcUiSimpleToolbarItem,
-  ICON_TEXT_HEIGHT} from './AcExHtmlSimpleViewerUi'
-import { AcUiTextHeightDialog } from './AcExHtmlSimpleViewerUi'
-import type { AcExDrawStyleKind } from './AcExSessionDrawStyle'
+  ICON_TEXT_HEIGHT} from './AcExHtmlSimpleViewerUi.js'
+import { AcUiTextHeightDialog } from './AcExHtmlSimpleViewerUi.js'
+import type { AcExDrawStyleKind } from './AcExSessionDrawStyle.js'
 
 function colorFromAci(index: number): AcCmColor {
   const color = new AcCmColor()

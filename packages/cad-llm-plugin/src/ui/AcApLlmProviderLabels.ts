@@ -1,9 +1,9 @@
-import { type AcApLlmLabelKey, llmT } from '../i18n'
-import type { AcApLlmProviderConfig } from '../storage/AcApLlmConfigStore'
+import { type AcApLlmLabelKey, llmT } from '../i18n/index.js'
+import type { AcApLlmProviderConfig } from '../storage/AcApLlmConfigStore.js'
 import {
   type AcApLlmBuiltinProviderId,
   acapLlmIsBuiltinProviderId
-} from '../storage/AcApLlmModelCatalog'
+} from '../storage/AcApLlmModelCatalog.js'
 
 /** i18n key of each built-in provider's display name. */
 const BUILTIN_PROVIDER_LABEL_KEYS: Record<

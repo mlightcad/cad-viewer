@@ -1,9 +1,9 @@
-import { AcApHtmlPlugin } from './AcApHtmlPlugin'
+import { AcApHtmlPlugin } from './AcApHtmlPlugin.js'
 import {
   type AcApHtmlPluginOptions,
   configureHtmlPlugin,
   getHtmlPluginOptions
-} from './AcApHtmlPluginOptions'
+} from './AcApHtmlPluginOptions.js'
 
 /**
  * Creates an HTML export plugin instance.

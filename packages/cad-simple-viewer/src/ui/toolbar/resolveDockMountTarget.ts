@@ -1,4 +1,4 @@
-import { AcApDocManager } from '../../app'
+import { AcApDocManager } from '../../app/index.js'
 
 const DEFAULT_UI_LAYOUT_WRAPPERS = [
   'ml-ex-ui-dock-main',

@@ -10,15 +10,15 @@ import {
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
-import type { AcApLayerPreviousSnapshot } from '../app/AcApLayerSessionState'
+import type { AcApLayerPreviousSnapshot } from '../app/AcApLayerSessionState.js'
 import {
   AcApLayerIsoLayerSnapshot,
   AcApLayerIsoSnapshot,
   getLayerIsoState,
   isSameLayerIsoState
-} from './AcApLayerIsoState'
-import { isEntityOnLockedLayer as entityLayerIsLocked } from './AcApLockedLayer'
-import { acapRunServiceEdit, LAYER_EDIT_LABEL } from './AcApServiceEdit'
+} from './AcApLayerIsoState.js'
+import { isEntityOnLockedLayer as entityLayerIsLocked } from './AcApLockedLayer.js'
+import { acapRunServiceEdit, LAYER_EDIT_LABEL } from './AcApServiceEdit.js'
 import {
   AcApDeleteLayerResult,
   AcApLaydelEntitySnapshot,
@@ -29,7 +29,7 @@ import {
   AcApSetLayersVisibilityOptions,
   LAYER_FROZEN_FLAG,
   LAYER_LOCKED_FLAG
-} from './types'
+} from './types.js'
 
 /** Modify entry shape used by the database transaction recorder. */
 type AcApLayerModifyChange = {

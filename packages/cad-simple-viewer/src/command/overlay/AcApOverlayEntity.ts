@@ -6,7 +6,7 @@ import type {
 } from '@mlightcad/data-model'
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../view'
+import type { AcTrView2d } from '../../view/index.js'
 
 /**
  * Result of building one overlay's visuals (HTML group + optional CAD extras).
@@ -36,7 +36,7 @@ export interface AcApOverlayWorldDrawResult {
  * overlay types compose them inside {@link subWorldDraw}.
  *
  * Persistable overlays also implement
- * {@link import('./AcApOverlaySerializable').AcApOverlaySerializable} with a
+ * {@link import('./AcApOverlaySerializable.js').AcApOverlaySerializable} with a
  * domain record type; deserialize via domain factories, not this base class.
  */
 export abstract class AcApOverlayEntity {

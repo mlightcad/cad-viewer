@@ -10,12 +10,12 @@
 
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 
-import type { AcExMarkupController } from './AcExMarkup'
+import type { AcExMarkupController } from './AcExMarkup.js'
 import type {
   AcExMarkupRecord,
   AcExMarkupStatus,
   AcExMarkupType
-} from './AcExMarkupTypes'
+} from './AcExMarkupTypes.js'
 
 const STATUSES: readonly AcExMarkupStatus[] = [
   'open',

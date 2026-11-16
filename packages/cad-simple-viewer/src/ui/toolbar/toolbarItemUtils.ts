@@ -4,7 +4,7 @@ import type {
   AcUiToolbarItemConfig,
   AcUiToolbarPresetRef,
   AcUiToolbarSeparator
-} from './types'
+} from './types.js'
 
 /**
  * Resolves how nested children are presented. Defaults to `'menu'`.

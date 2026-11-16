@@ -11,7 +11,7 @@ import {
 import * as THREE from 'three'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcEdLayerInfo } from '../editor'
+import { AcEdLayerInfo } from '../editor/index.js'
 
 /**
  * Statistics for a CAD layer including name and batched rendering metrics.

@@ -1,11 +1,11 @@
-import type { AcApDataSource } from '../app/dataSource/AcApDataSource'
-import type { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager'
-import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
+import type { AcApDataSource } from '../app/dataSource/AcApDataSource.js'
+import type { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager.js'
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme.js'
 import {
   AcUiFileOpenLanding,
   type AcUiFileOpenLandingOptions,
   type AcUiFileOpenRequest
-} from './AcUiFileOpenLanding'
+} from './AcUiFileOpenLanding.js'
 
 /**
  * Minimal DocManager surface needed by {@link AcUiFileOpenSession}.

@@ -9,8 +9,8 @@ import type {
   AcApPdfDimSession,
   PdfDimRow,
   PdfDimStyleNameError
-} from '../AcApPdfDimSession'
-import { acapPdfT } from '../acapPdfI18n'
+} from '../AcApPdfDimSession.js'
+import { acapPdfT } from '../acapPdfI18n.js'
 
 const STYLE_ID = 'ml-pdfdim-panel-styles'
 const NEW_STYLE_VALUE = '\u0000new'

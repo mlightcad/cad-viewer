@@ -5,15 +5,15 @@
  * @packageDocumentation
  */
 
-import { acapScreenPxToWcs, acapWcsToScreenPx } from '../command/overlay/AcApOverlayDrawUtil'
-import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { AcApI18n } from '../i18n'
-import type { AcTrView2d } from '../view'
+import { acapScreenPxToWcs, acapWcsToScreenPx } from '../command/overlay/AcApOverlayDrawUtil.js'
+import { resolveUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { AcApI18n } from '../i18n/index.js'
+import type { AcTrView2d } from '../view/index.js'
 import {
   AcUiTextHeightDialog,
   type AcUiTextHeightDialogResult,
   type AcUiTextHeightMode
-} from './AcUiTextHeightDialog'
+} from './AcUiTextHeightDialog.js'
 
 /** Options for {@link acuiOpenTextHeightDialog}. */
 export interface AcUiOpenTextHeightDialogOptions {

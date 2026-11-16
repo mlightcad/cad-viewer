@@ -19,7 +19,7 @@ import {
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import type { AcEdPoint2d, AcEdShapeFeature } from './AcEdShapeMatcher'
+import type { AcEdPoint2d, AcEdShapeFeature } from './AcEdShapeMatcher.js'
 
 /** Options for {@link acedEntityToShapeFeature}. */
 export interface AcEdShapeFeatureOptions {

@@ -13,8 +13,8 @@ import {
 } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../view/AcTrView2d'
-import { getLastFontLoadStats } from './AcApFontLoader'
+import type { AcTrView2d } from '../view/AcTrView2d.js'
+import { getLastFontLoadStats } from './AcApFontLoader.js'
 
 type StageStats = {
   durationMs: number

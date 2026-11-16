@@ -1,7 +1,7 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcTrDrawMode } from './AcTrDrawMode'
+import type { AcTrDrawMode } from './AcTrDrawMode.js'
 
 /**
  * World-coordinate magnitude above which {@link defaultBatchDrawPolicy} chooses

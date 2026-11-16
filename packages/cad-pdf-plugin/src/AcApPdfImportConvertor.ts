@@ -36,15 +36,15 @@ import {
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import * as pdfjsLib from 'pdfjs-dist'
 
-import { acapPdfT } from './acapPdfI18n'
+import { acapPdfT } from './acapPdfI18n.js'
 import {
   type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
   resolveAcApPdfImportOptions
-} from './AcApPdfImportOptions'
-import { acapPdfImportResourceUrls } from './AcApPdfImportResources'
-import { acapPdfAppendEntities } from './pdfImportAppend'
+} from './AcApPdfImportOptions.js'
+import { acapPdfImportResourceUrls } from './AcApPdfImportResources.js'
+import { acapPdfAppendEntities } from './pdfImportAppend.js'
 import {
   acapPdfCreatePatternHatch,
   acapPdfCreateSolidHatch,
@@ -53,40 +53,40 @@ import {
   acapPdfFitWidthFactor,
   acapPdfFontFamily,
   acapPdfShapeToLoop
-} from './pdfImportEntities'
-import { acapPdfRasterizeImage, type PdfJsImageLike } from './pdfImportImages'
+} from './pdfImportEntities.js'
+import { acapPdfRasterizeImage, type PdfJsImageLike } from './pdfImportImages.js'
 import {
   buildPdfImportShapes,
   orderPdfImportPaints,
   type PdfImportShapeItem
-} from './pdfImportShapes'
+} from './pdfImportShapes.js'
 import {
   allocatePdfFallbackLayerName,
   collectPdfOcgLayers,
   normalizeCadLayerKey,
   pdfOperatorListHasOptionalContent,
   type PdfOptionalContentConfigLike
-} from './pdfOptionalContent'
+} from './pdfOptionalContent.js'
 import {
   extractPdfImportSubpaths,
   PDF_IMPORT_FOREGROUND_COLOR,
   type PdfImportedImage,
   type PdfImportedText,
   type PdfImportOps
-} from './pdfVectorImport'
-import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
-import { buildPdfFormBlocks } from './recognition/pdfFormBlocks'
+} from './pdfVectorImport.js'
+import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition.js'
+import { buildPdfFormBlocks } from './recognition/pdfFormBlocks.js'
 import {
   acapPdfRecognizeHatches,
   type PdfRecognizedHatch
-} from './recognition/pdfHatchRecognition'
-import { mergePdfTextRuns } from './recognition/pdfTextRunMerge'
+} from './recognition/pdfHatchRecognition.js'
+import { mergePdfTextRuns } from './recognition/pdfTextRunMerge.js'
 import {
   AcUiPdfImportDialog,
   type AcUiPdfImportDialogValues,
   type AcUiPdfImportDocument,
   type AcUiPdfImportSource
-} from './ui/AcUiPdfImportDialog'
+} from './ui/AcUiPdfImportDialog.js'
 
 /**
  * PDF.js worker shipped beside this module.

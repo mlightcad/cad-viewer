@@ -13,13 +13,13 @@ import type {
   PdfImportFormInstance,
   PdfImportPageContent,
   PdfImportSegment
-} from '../pdfVectorImport'
+} from '../pdfVectorImport.js'
 import {
   type PdfCurveRecognitionOptions,
   type PdfRecognizedShape,
   recognizePdfCurves
-} from './pdfCurveRecognition'
-import type { PdfRecPoint } from './pdfRecGeometry'
+} from './pdfCurveRecognition.js'
+import type { PdfRecPoint } from './pdfRecGeometry.js'
 
 /** One shape of a block definition. */
 export interface PdfFormBlockShape {

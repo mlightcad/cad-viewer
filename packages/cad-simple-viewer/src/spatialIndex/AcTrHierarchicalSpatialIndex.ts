@@ -7,17 +7,17 @@ import {
   AcEdSpatialQueryResultItemEx,
   unionSpatialQueryItems,
   uniquifySpatialItemIds
-} from '../editor/view/AcEdSpatialQueryResult'
-import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
-import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
-import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
+} from '../editor/view/AcEdSpatialQueryResult.js'
+import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert.js'
+import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex.js'
+import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex.js'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
   AcTrSpatialIndexStats,
   AcTrSpatialSearchOptions,
   isSpatialBoxFullyInside
-} from './AcTrSpatialIndex'
+} from './AcTrSpatialIndex.js'
 
 /**
  * A two-level (hierarchical) spatial index designed for complex CAD

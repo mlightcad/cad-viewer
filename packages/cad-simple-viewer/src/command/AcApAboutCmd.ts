@@ -1,6 +1,6 @@
-import { AcApContext } from '../app/AcApContext'
-import { AcEdCommand } from '../editor'
-import { AcUiAboutDialog } from '../ui/AcUiAboutDialog'
+import { AcApContext } from '../app/AcApContext.js'
+import { AcEdCommand } from '../editor/index.js'
+import { AcUiAboutDialog } from '../ui/AcUiAboutDialog.js'
 
 /**
  * Command that opens the mlightcad About dialog.

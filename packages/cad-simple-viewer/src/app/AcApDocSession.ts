@@ -1,9 +1,9 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcTrLayout } from '../view/AcTrLayout'
-import type { AcTrViewSessionState } from '../view/AcTrViewSessionState'
-import type { AcApContext } from './AcApContext'
-import type { AcApDocument } from './AcApDocument'
+import type { AcTrLayout } from '../view/AcTrLayout.js'
+import type { AcTrViewSessionState } from '../view/AcTrViewSessionState.js'
+import type { AcApContext } from './AcApContext.js'
+import type { AcApDocument } from './AcApDocument.js'
 
 /**
  * Overlay database rendered into a document session's scene.

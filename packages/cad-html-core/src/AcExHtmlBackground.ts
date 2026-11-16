@@ -1,4 +1,4 @@
-import type { AcExHtmlLayoutSnapshot, AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlLayoutSnapshot, AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes.js'
 
 /** Black canvas written into exported HTML (`0x000000`). */
 export const ACEX_HTML_BACKGROUND_BLACK = 0x000000

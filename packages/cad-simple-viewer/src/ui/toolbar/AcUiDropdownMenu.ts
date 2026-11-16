@@ -1,6 +1,6 @@
-import { createIconElement } from '../icons'
-import { acuiIsToolbarSeparatorItem } from './toolbarItemUtils'
-import type { AcUiToolbarI18n, AcUiToolbarItem } from './types'
+import { createIconElement } from '../icons.js'
+import { acuiIsToolbarSeparatorItem } from './toolbarItemUtils.js'
+import type { AcUiToolbarI18n, AcUiToolbarItem } from './types.js'
 
 /**
  * Fixed-position dropdown menu for toolbar submenu items.

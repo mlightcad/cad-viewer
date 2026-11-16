@@ -4,8 +4,8 @@
 
 import type { AcTrHtmlElement } from '@mlightcad/three-renderer'
 
-import type { AcEdBaseView } from '../../editor'
-import type { AcTrView2d } from '../../view'
+import type { AcEdBaseView } from '../../editor/index.js'
+import type { AcTrView2d } from '../../view/index.js'
 
 /** Dataset key storing stroke width in world units for view-synced canvas pens. */
 export const ACAP_OVERLAY_STROKE_WCS = 'overlayStrokeWcs'

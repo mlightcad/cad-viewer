@@ -1,9 +1,9 @@
 import type { AcDbObjectId } from '@mlightcad/data-model'
 import type { AcTrMeshGlyphWorldBatch } from '@mlightcad/three-renderer'
 
-import type { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
-import type { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
-import type { AcTrScene } from './AcTrScene'
+import type { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions.js'
+import type { AcTrLayoutViewManager } from './AcTrLayoutViewManager.js'
+import type { AcTrScene } from './AcTrScene.js'
 
 /**
  * GPU and camera state for one parked document session.

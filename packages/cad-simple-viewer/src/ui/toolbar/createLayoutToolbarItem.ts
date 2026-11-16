@@ -1,9 +1,9 @@
 import { acdbHostApplicationServices } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
-import { ICON_LAYOUT } from '../icons'
-import { acuiCopyDynamicToolbarChildren } from './toolbarItemUtils'
-import type { AcUiToolbarItem } from './types'
+import { AcApDocManager } from '../../app/index.js'
+import { ICON_LAYOUT } from '../icons.js'
+import { acuiCopyDynamicToolbarChildren } from './toolbarItemUtils.js'
+import type { AcUiToolbarItem } from './types.js'
 
 /** One selectable drawing layout (model space or paper space). */
 interface DocumentLayoutInfo {

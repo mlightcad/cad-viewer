@@ -2,8 +2,8 @@
  * Shared measurement grip helpers (selection + angle badge placement).
  */
 
-import type { AcTrView2d } from '../../../view'
-import { MEASURE_ANGLE_BADGE_OFFSET_FRACTION } from '../AcApMeasureAngleArc'
+import type { AcTrView2d } from '../../../view/index.js'
+import { MEASURE_ANGLE_BADGE_OFFSET_FRACTION } from '../AcApMeasureAngleArc.js'
 
 /**
  * Select a measurement HTML group (syncs store selection via onSelectedChanged).

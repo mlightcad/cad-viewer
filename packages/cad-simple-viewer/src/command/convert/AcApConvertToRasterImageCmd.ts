@@ -1,19 +1,19 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdPromptBoxOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveDrawingExtents } from '../../util'
-import { AcTrView2d } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveDrawingExtents } from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   AcApRasterImageConvertor,
   AcApRasterImageFormat
-} from './AcApRasterImageConvertor'
+} from './AcApRasterImageConvertor.js'
 
 const DEFAULT_LONG_SIDE_PX = 1024
 

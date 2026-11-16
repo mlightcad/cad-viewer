@@ -1,6 +1,6 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcEdPromptOptions } from './AcEdPromptOptions'
+import { AcEdPromptOptions } from './AcEdPromptOptions.js'
 
 /**
  * Options for prompting the user to enter an angle, similar to

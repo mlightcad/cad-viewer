@@ -1,16 +1,16 @@
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import type { AcTrView2d } from '../../view'
-import { createMarkupMeta, promptMarkupText } from './AcApMarkupCmdUtil'
-import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
-import { commitMarkup } from './AcApMarkupPresenter'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
-import { defaultMarkupStyle } from './AcApMarkupUtil'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import type { AcTrView2d } from '../../view/index.js'
+import { createMarkupMeta, promptMarkupText } from './AcApMarkupCmdUtil.js'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd.js'
+import { commitMarkup } from './AcApMarkupPresenter.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
+import { defaultMarkupStyle } from './AcApMarkupUtil.js'
 
 const BUILTIN_STAMPS = new Set([
   'approved',

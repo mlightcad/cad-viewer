@@ -8,15 +8,15 @@
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
-import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
-import { acexScreenPxToWcs } from './AcExHtmlOverlayDom'
+import type { AcExSessionAccessory } from './AcExCommandSessionPanel.js'
+import { acexScreenPxToWcs } from './AcExHtmlOverlayDom.js'
 import {
   AcUiAciColorDialog,
   AcUiTextHeightDialog,
   type AcUiTextHeightDialogResult,
   createIconElement,
   ICON_TEXT_HEIGHT
-} from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlSimpleViewerUi.js'
 
 /** Active drawing session that owns the accessory. */
 export type AcExDrawStyleKind = 'measure' | 'markup'

@@ -1,14 +1,14 @@
 import { AcCmColor, AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay } from '@mlightcad/three-renderer'
 
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapColorToCssAlpha,
@@ -19,16 +19,16 @@ import {
   type AcApMeasurementStyle,
   acapScreenAreaBadgeRefLengthPx,
   formatMeasurementArea
-} from '../../util'
-import { AcTrView2d } from '../../view'
+} from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   acapOverlayDash,
   acapScaledOverlayLineWidth,
   acapSyncLiveOverlayTextHeight
-} from '../overlay/AcApOverlayDrawUtil'
-import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
-import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
-import { AcApMeasureAreaEntity } from './entity'
+} from '../overlay/AcApOverlayDrawUtil.js'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd.js'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore.js'
+import { AcApMeasureAreaEntity } from './entity/index.js'
 
 /**
  * Rubber-band jig: fires onMove on each cursor update so the command can

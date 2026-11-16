@@ -1,10 +1,10 @@
-import type { AcEdUiLayoutKind, AcEdUiTheme } from '../editor'
-import type { AcApLocale } from '../i18n'
-import type { AcUiDockPanelSide } from './dock/AcUiDockPanel'
+import type { AcEdUiLayoutKind, AcEdUiTheme } from '../editor/index.js'
+import type { AcApLocale } from '../i18n/index.js'
+import type { AcUiDockPanelSide } from './dock/AcUiDockPanel.js'
 import type {
   AcUiToolbarItemConfig,
   AcUiToolbarOptions
-} from './toolbar/types'
+} from './toolbar/types.js'
 
 export type {
   AcUiSubToolbarOptions,
@@ -23,7 +23,7 @@ export type {
   AcUiToolbarSeparator,
   AcUiToolbarSize,
   AcUiDefaultToolbarContext
-} from './toolbar/types'
+} from './toolbar/types.js'
 
 /** Toolbar item list passed to {@link AcApSimpleUiChrome.setToolbarItems}. */
 export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'

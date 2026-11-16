@@ -8,24 +8,26 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApDocManager, AcApSettingManager } from '../../../app'
-import { AcApI18n } from '../../../i18n'
-import { isEntityOnLockedLayer as entityIsOnLockedLayer } from '../../../service/AcApLockedLayer'
-import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog'
+import { AcApDocManager, AcApSettingManager } from '../../../app/index.js'
+import { AcApI18n } from '../../../i18n/index.js'
+import { isEntityOnLockedLayer as entityIsOnLockedLayer } from '../../../service/AcApLockedLayer.js'
+import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog.js'
 import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryHostInfo
-} from '../../command/AcEdSessionAccessory'
+} from '../../command/AcEdSessionAccessory.js'
 import {
   acedIsMobileUiLayout,
   acedShouldHideDesktopCommandLine,
   acedSubscribeUiLayout
-} from '../../global/AcEdUiLayout'
-import type { AcEdBaseView } from '../../view'
-import { AcEdInputModifiers } from '../AcEdInputModifiers'
-import { AcEdInputToggles } from '../AcEdInputToggles'
-import type { AcEditor } from '../AcEditor'
-import { AcEdSelectionSet } from '../AcEdSelectionSet'
+} from '../../global/AcEdUiLayout.js'
+import type { AcEdBaseView } from '../../view/index.js'
+import { AcEdInputModifiers } from '../AcEdInputModifiers.js'
+import { AcEdInputToggles } from '../AcEdInputToggles.js'
+import type { AcEditor } from '../AcEditor.js'
+import { AcEdSelectionSet } from '../AcEdSelectionSet.js'
+import { AcEdPointInputContext } from '../handler/AcEdInputHandler.js'
+import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler.js'
 import {
   AcEdAngleHandler,
   AcEdDistanceHandler,
@@ -35,10 +37,8 @@ import {
   AcEdNumericalHandler,
   AcEdPointHandler,
   AcEdStringHandler
-} from '../handler'
-import { AcEdPointInputContext } from '../handler/AcEdInputHandler'
-import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
-import { AcEdMarkerManager } from '../marker'
+} from '../handler/index.js'
+import { AcEdMarkerManager } from '../marker/index.js'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
@@ -60,37 +60,37 @@ import {
   AcEdPromptSelectionResult,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../prompt'
-import { AcEdPromptInputMode } from '../session/AcEdPromptInputSession'
-import { AcEdCommandLine } from './AcEdCommandLine'
-import { AcEdEntityPickCancelChrome } from './AcEdEntityPickCancelChrome'
-import { AcEdFloatingInput } from './AcEdFloatingInput'
+} from '../prompt/index.js'
+import { AcEdPromptInputMode } from '../session/AcEdPromptInputSession.js'
+import { AcEdCommandLine } from './AcEdCommandLine.js'
+import { AcEdEntityPickCancelChrome } from './AcEdEntityPickCancelChrome.js'
+import { AcEdFloatingInput } from './AcEdFloatingInput.js'
 import {
   AcEdFloatingInputBoxCount,
   AcEdFloatingInputCommitCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputRawData
-} from './AcEdFloatingInputTypes'
-import { AcEdFloatingMessage } from './AcEdFloatingMessage'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
-import { acedIsConfirmKey } from './AcEdKeyboardUtil'
-import { AcEdMessageType } from './AcEdMessageType'
-import { acedAttachMobileBoxGesture } from './AcEdMobileBoxGesture'
+} from './AcEdFloatingInputTypes.js'
+import { AcEdFloatingMessage } from './AcEdFloatingMessage.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
+import { acedIsConfirmKey } from './AcEdKeyboardUtil.js'
+import { AcEdMessageType } from './AcEdMessageType.js'
+import { acedAttachMobileBoxGesture } from './AcEdMobileBoxGesture.js'
 import {
   AcEdMobileCommandChrome,
   type AcEdMobileKeywordChip
-} from './AcEdMobileCommandChrome'
+} from './AcEdMobileCommandChrome.js'
 import {
   acedComputeSessionMetrics,
   type AcEdMobileSessionMetrics
-} from './AcEdMobileSessionMetrics'
-import { AcEdSessionAccessoryController } from './AcEdSessionAccessoryController'
+} from './AcEdMobileSessionMetrics.js'
+import { AcEdSessionAccessoryController } from './AcEdSessionAccessoryController.js'
 import {
   acedIsTouchDerivedMouseEvent,
   acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse
-} from './AcEdTouchPointSession'
+} from './AcEdTouchPointSession.js'
 
 /**
  * Internal control-flow error used to propagate keyword picks out of

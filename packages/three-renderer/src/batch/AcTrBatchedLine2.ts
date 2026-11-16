@@ -3,8 +3,8 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData.js'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
@@ -12,7 +12,7 @@ import {
   copyAttributeData,
   isBatchGeometryActive,
   isBatchGeometryVisible
-} from './AcTrBatchedGeometryInfo'
+} from './AcTrBatchedGeometryInfo.js'
 import {
   assertReservedCapacity,
   createAcTrBatchedMixin,
@@ -20,9 +20,9 @@ import {
   growCapacityIfNeeded,
   reserveGeometryId,
   resolveReservedCount
-} from './AcTrBatchedMixin'
-import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
-import { ensureSlotIdAttribute, writeSlotIdRange } from './highlight'
+} from './AcTrBatchedMixin.js'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility/index.js'
+import { ensureSlotIdAttribute, writeSlotIdRange } from './highlight/index.js'
 
 type AcTrBatchedLine2GeometryInfo = AcTrVertexBatchGeometryInfo
 

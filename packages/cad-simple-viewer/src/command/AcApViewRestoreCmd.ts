@@ -1,13 +1,13 @@
-import type { AcApContext } from '../app/AcApContext'
-import { AcApDocManager } from '../app/AcApDocManager'
+import type { AcApContext } from '../app/AcApContext.js'
+import { AcApDocManager } from '../app/AcApDocManager.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../editor'
-import { AcApI18n } from '../i18n'
-import { AcApNamedViewService } from '../service/AcApNamedViewService'
+} from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
+import { AcApNamedViewService } from '../service/AcApNamedViewService.js'
 
 /**
  * Command-line restore for a named view (`viewrestore` / scripted use).

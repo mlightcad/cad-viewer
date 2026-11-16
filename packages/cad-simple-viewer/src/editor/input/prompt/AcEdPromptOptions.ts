@@ -1,10 +1,10 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcEdPreviewJig } from '../AcEdPreviewJig'
+import { AcEdPreviewJig } from '../AcEdPreviewJig.js'
 import {
   AcEdKeywordCollection,
   AcEdKeywordPromptFormat
-} from './AcEdKeywordCollection'
+} from './AcEdKeywordCollection.js'
 
 /**
  * Represents the base class for prompt options in the Editor, similar to `Autodesk.AutoCAD.EditorInput.PromptOptions`.

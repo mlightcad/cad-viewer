@@ -1,9 +1,9 @@
-import { AcApDocManager } from '../AcApDocManager'
-import type { AcApOpenDatabaseOptions } from '../AcApOpenDatabaseOptions'
-import type { AcApDataSourceMenuItem } from './acapBuildDataSourceMenu'
-import type { AcApDataSourceManager } from './AcApDataSourceManager'
-import { acapInvokeDataSourceMenuAction } from './acapInvokeDataSourceMenuAction'
-import { acapOpenDataSourceResult } from './acapOpenDataSourceResult'
+import { AcApDocManager } from '../AcApDocManager.js'
+import type { AcApOpenDatabaseOptions } from '../AcApOpenDatabaseOptions.js'
+import type { AcApDataSourceMenuItem } from './acapBuildDataSourceMenu.js'
+import type { AcApDataSourceManager } from './AcApDataSourceManager.js'
+import { acapInvokeDataSourceMenuAction } from './acapInvokeDataSourceMenuAction.js'
+import { acapOpenDataSourceResult } from './acapOpenDataSourceResult.js'
 
 /**
  * Runs the action associated with a data-source menu item and opens pick results.

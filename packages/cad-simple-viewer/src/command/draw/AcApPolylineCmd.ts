@@ -7,7 +7,7 @@ import {
   TAU
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -20,8 +20,8 @@ import {
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 /**
  * Preview jig that dynamically updates a polyline while the user is acquiring

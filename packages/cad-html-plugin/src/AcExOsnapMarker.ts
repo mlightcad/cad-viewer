@@ -1,5 +1,5 @@
-import type { AcExHtmlOsnapMode } from './AcExOsnap'
-import { acexOsnapModeToMarkerType } from './AcExOsnap'
+import type { AcExHtmlOsnapMode } from './AcExOsnap.js'
+import { acexOsnapModeToMarkerType } from './AcExOsnap.js'
 
 /**
  * Visual shape of an object-snap marker in the offline HTML viewer.

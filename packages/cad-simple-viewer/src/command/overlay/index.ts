@@ -7,7 +7,7 @@
  * from `./AcApHtmlLivePreview` so light grip helpers stay loadable under jsdom.
  */
 
-export * from './AcApOverlayDrawUtil'
-export * from './AcApOverlayEntity'
-export * from './AcApOverlayGripHost'
-export * from './AcApOverlaySerializable'
+export * from './AcApOverlayDrawUtil.js'
+export * from './AcApOverlayEntity.js'
+export * from './AcApOverlayGripHost.js'
+export * from './AcApOverlaySerializable.js'

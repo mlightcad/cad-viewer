@@ -5,7 +5,7 @@
 
 import type { AcTrHtmlElement, AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../view'
+import type { AcTrView2d } from '../../view/index.js'
 
 /** Overlay grip class; keep as a string so this module stays jsdom-loadable. */
 const HTML_GRIP_CLASS = 'ml-html-grip'

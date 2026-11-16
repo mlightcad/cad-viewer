@@ -7,8 +7,8 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { AcCmUiYieldGate, accmYieldForPaint } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { AcSvgRenderer } from './AcSvgRenderer'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { AcSvgRenderer } from './AcSvgRenderer.js'
 
 /** Time budget between UI yields while drawing entities for SVG export. */
 const SVG_EXPORT_YIELD_BUDGET_MS = 200

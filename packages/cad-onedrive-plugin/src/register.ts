@@ -1,6 +1,6 @@
 import type { AcApPluginManager } from '@mlightcad/cad-simple-viewer'
 
-import type { AcApOneDrivePluginOptions } from './AcApOneDrivePlugin'
+import type { AcApOneDrivePluginOptions } from './AcApOneDrivePlugin.js'
 
 /** Eager plugin name for OneDrive data source. */
 export const ONEDRIVE_PLUGIN_NAME = 'OneDrivePlugin'

@@ -8,12 +8,12 @@ import type {
 import type {
   CadCapturePreviewOptions,
   CaptureDrawingPreviewResult
-} from '../preview/types'
+} from '../preview/types.js'
 import type {
   CadScriptHtmlExportOptions,
   CadScriptHtmlExportResult
-} from '../script/saveHtml'
-import type { CadScriptPdfExportOptions } from '../script/savePdf'
+} from '../script/saveHtml.js'
+import type { CadScriptPdfExportOptions } from '../script/savePdf.js'
 
 /**
  * Open-mode codes used by {@link CadSessionDocument.openMode}.

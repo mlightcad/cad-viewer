@@ -1,4 +1,4 @@
-import { AcEdNumericalHandler } from './AcEdNumericalHandler'
+import { AcEdNumericalHandler } from './AcEdNumericalHandler.js'
 
 /**
  * Validates distance input.

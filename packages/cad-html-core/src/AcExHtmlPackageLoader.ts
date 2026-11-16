@@ -1,21 +1,21 @@
-import { acexHtmlDecodeChunkPayload } from './AcExHtmlChunkBinaryCodec'
-import { acexHtmlDecodeOsnapCatalogPayload } from './AcExHtmlOsnapCatalogCodec'
-import type { AcExHtmlOsnapPrimitive } from './AcExHtmlOsnapPrimitiveTypes'
-import { acexHtmlGlobalFetch } from './AcExHtmlPackageBootstrap'
+import { acexHtmlDecodeChunkPayload } from './AcExHtmlChunkBinaryCodec.js'
+import { acexHtmlDecodeOsnapCatalogPayload } from './AcExHtmlOsnapCatalogCodec.js'
+import type { AcExHtmlOsnapPrimitive } from './AcExHtmlOsnapPrimitiveTypes.js'
+import { acexHtmlGlobalFetch } from './AcExHtmlPackageBootstrap.js'
 import {
   ACEX_PACKAGE_VERSION,
   ACEX_SNAPSHOT_VERSION,
   type AcExHtmlPackageChunkRef,
   type AcExHtmlPackageManifest,
   type AcExHtmlPackageOsnapChunkRef
-} from './AcExHtmlPackageTypes'
-import { ACEX_MAX_COMPRESSED_BYTES } from './AcExHtmlSnapshotCompression'
+} from './AcExHtmlPackageTypes.js'
+import { ACEX_MAX_COMPRESSED_BYTES } from './AcExHtmlSnapshotCompression.js'
 import type {
   AcExHtmlLayoutSnapshot,
   AcExHtmlLineBatch,
   AcExHtmlMeshBatch,
   AcExHtmlSnapshot
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 export interface AcExHtmlPackageLoadProgress {
   loadedChunks: number

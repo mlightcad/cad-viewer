@@ -1,6 +1,6 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -10,10 +10,10 @@ import {
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service'
-import { AcApMovePreviewJig } from './AcApMovePreviewJig'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/index.js'
+import { AcApMovePreviewJig } from './AcApMovePreviewJig.js'
 
 /**
  * Command to move selected entities by a displacement vector.

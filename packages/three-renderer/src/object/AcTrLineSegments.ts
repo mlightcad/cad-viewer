@@ -4,18 +4,18 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy.js'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
 import {
   asyncComplexLineTypeGlyphs,
   buildComplexLineTypeGeometry,
   hasPendingComplexLineTypeGlyphs,
   isComplexLineType,
   syncComplexLineTypeGlyphs
-} from '../linetype'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
-import { AcTrEntity } from './AcTrEntity'
+} from '../linetype/index.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util/index.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 export class AcTrLineSegments extends AcTrEntity {
   private _hasComplexGlyphs = false

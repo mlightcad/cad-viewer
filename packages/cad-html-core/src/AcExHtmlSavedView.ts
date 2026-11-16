@@ -1,6 +1,6 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Default canvas aspect used when capturing AutoCAD's saved model-space

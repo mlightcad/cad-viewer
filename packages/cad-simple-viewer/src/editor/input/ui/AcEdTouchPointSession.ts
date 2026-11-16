@@ -8,12 +8,12 @@
 import {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
-} from './AcEdTouchPointTiming'
+} from './AcEdTouchPointTiming.js'
 
 export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
-} from './AcEdTouchPointTiming'
+} from './AcEdTouchPointTiming.js'
 
 let followingClickSink: ((event: Event) => void) | null = null
 let followingClickSinkTimer: ReturnType<typeof setTimeout> | null = null

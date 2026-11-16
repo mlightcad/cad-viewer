@@ -1,56 +1,56 @@
-import './types/three-material'
+import './types/three-material.js'
 
-export * from './batch/AcTrBatchedGroup'
-export { AcTrMeshGlyphWorldBatch } from './batch/AcTrMeshGlyphWorldBatch'
+export * from './batch/AcTrBatchedGroup.js'
+export { AcTrMeshGlyphWorldBatch } from './batch/AcTrMeshGlyphWorldBatch.js'
 export {
   isBatchGeometryActive,
   isBatchGeometryVisible
-} from './batch/AcTrBatchedGeometryInfo'
-export * from './draw'
-export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
-export { AcTrBatchedLine2 } from './batch/AcTrBatchedLine2'
-export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
-export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'
-export * from './linetype'
-export * from './object/AcTrObject'
-export * from './object/AcTrEntity'
+} from './batch/AcTrBatchedGeometryInfo.js'
+export * from './draw/index.js'
+export { AcTrBatchedLine } from './batch/AcTrBatchedLine.js'
+export { AcTrBatchedLine2 } from './batch/AcTrBatchedLine2.js'
+export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh.js'
+export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint.js'
+export * from './linetype/index.js'
+export * from './object/AcTrObject.js'
+export * from './object/AcTrEntity.js'
 export {
   setHeadlessRasterDecoder,
   type AcTrHeadlessRasterDecoder,
   type AcTrHeadlessRasterImage
-} from './object/AcTrImage'
-export * from './object/AcTrGlyphEntity'
-export * from './object/AcTrMText'
-export * from './object/AcTrShape'
-export * from './object/AcTrLineGeometryBuilder'
-export * from './object/AcTrGroup'
-export * from './html'
-export * from './object/AcTrTransientManager'
-export * from './object/AcTrPreviewOverlayManager'
-export * from './renderer'
-export * from './viewport'
-export * from './style/AcTrMaterialMetadata'
+} from './object/AcTrImage.js'
+export * from './object/AcTrGlyphEntity.js'
+export * from './object/AcTrMText.js'
+export * from './object/AcTrShape.js'
+export * from './object/AcTrLineGeometryBuilder.js'
+export * from './object/AcTrGroup.js'
+export * from './html/index.js'
+export * from './object/AcTrTransientManager.js'
+export * from './object/AcTrPreviewOverlayManager.js'
+export * from './renderer/index.js'
+export * from './viewport/index.js'
+export * from './style/AcTrMaterialMetadata.js'
 export {
   applyLineWeightDisplay,
   AcTrLineMaterialManager
-} from './style/AcTrLineMaterialManager'
-export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders'
-export { AcTrStyleManager, type AcTrStyleManagerStats } from './style/AcTrStyleManager'
+} from './style/AcTrLineMaterialManager.js'
+export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders.js'
+export { AcTrStyleManager, type AcTrStyleManagerStats } from './style/AcTrStyleManager.js'
 export {
   type AcTrMaterialCacheStats
-} from './style/AcTrMaterialManager'
+} from './style/AcTrMaterialManager.js'
 export {
   createGradientHatchShaderMaterial,
   createGradientHatchShaderMaterialFromUniforms,
   type AcTrGradientHatchStyle
-} from './style/AcTrGradientHatchShaders'
+} from './style/AcTrGradientHatchShaders.js'
 export {
   createHatchPatternShaderMaterial,
   type AcTrPatternLine
-} from './style/AcTrHatchPatternShaders'
-export { wrapPatternBaseToLocalFrame } from './style/AcTrFillMaterialManager'
-export * from './util/AcTrMTextColorUtil'
-export { AcTrMatrixUtil } from './util/AcTrMatrixUtil'
+} from './style/AcTrHatchPatternShaders.js'
+export { wrapPatternBaseToLocalFrame } from './style/AcTrFillMaterialManager.js'
+export * from './util/AcTrMTextColorUtil.js'
+export { AcTrMatrixUtil } from './util/AcTrMatrixUtil.js'
 export {
   getSceneDrawableUserData,
   isHighlightCloneDrawable,
@@ -62,6 +62,6 @@ export {
   syncStyleMaterialIdFromMaterials,
   type AcTrHighlightOverlayGroup,
   type AcTrHighlightOverlayGroupUserData
-} from './util/AcTrObjectUserData'
-export { isObjectHierarchyVisible } from './util/AcTrVisibility'
-export { effectiveLayer } from './util/AcTrEffectiveLayer'
+} from './util/AcTrObjectUserData.js'
+export { isObjectHierarchyVisible } from './util/AcTrVisibility.js'
+export { effectiveLayer } from './util/AcTrEffectiveLayer.js'

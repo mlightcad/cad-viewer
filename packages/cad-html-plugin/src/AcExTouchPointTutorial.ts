@@ -7,7 +7,7 @@ import {
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial,
   type AcUiTouchPointTutorialPrefs
-} from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlSimpleViewerUi.js'
 
 /** `localStorage` key for offline HTML tutorial preferences. */
 export const ACEX_TOUCH_POINT_TUTORIAL_PREFS_KEY =

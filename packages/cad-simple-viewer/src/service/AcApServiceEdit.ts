@@ -1,6 +1,6 @@
 import { AcDbDatabase } from '@mlightcad/data-model'
 
-import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
+import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit.js'
 
 /** Default undo label for layer table edits. */
 export const LAYER_EDIT_LABEL = 'Layer'

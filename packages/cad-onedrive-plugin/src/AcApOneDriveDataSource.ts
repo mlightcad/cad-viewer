@@ -12,7 +12,7 @@ import {
 import {
   OneDriveClient,
   type OneDriveClientOptions
-} from './oneDriveClient'
+} from './oneDriveClient.js'
 
 /** Built-in OneDrive data source id. */
 export const ACAP_ONEDRIVE_DATA_SOURCE_ID = 'onedrive'

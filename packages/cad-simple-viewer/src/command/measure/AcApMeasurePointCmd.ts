@@ -1,15 +1,15 @@
 import { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 
-import { AcApContext } from '../../app'
-import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor'
-import { AcApI18n } from '../../i18n'
+import { AcApContext } from '../../app/index.js'
+import { AcEdPromptPointOptions, AcEdPromptStatus } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapGetCurrentMeasurementStyle,
   type AcApMeasurementStyle
-} from '../../util'
-import { AcTrView2d } from '../../view'
-import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
-import { AcApMeasurePointEntity } from './entity'
+} from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd.js'
+import { AcApMeasurePointEntity } from './entity/index.js'
 
 /**
  * Commit a coordinate measurement overlay (also used when importing a sidecar).

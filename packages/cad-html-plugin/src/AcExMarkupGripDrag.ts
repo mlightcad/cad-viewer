@@ -8,16 +8,16 @@
  * @packageDocumentation
  */
 
-import type { AcExMarkupPoint2d } from './AcExMarkupTypes'
+import type { AcExMarkupPoint2d } from './AcExMarkupTypes.js'
 import {
   acexHideMobileSnapLoupe,
   acexRefreshMobileSnapLoupe
-} from './AcExMobileSnapLoupe'
+} from './AcExMobileSnapLoupe.js'
 import {
   acexIsOverlayGrip,
   acexIsOverlayGripSelected,
   acexSetOverlayGripsDragging
-} from './AcExOverlayGrip'
+} from './AcExOverlayGrip.js'
 
 /** Pointer movement (CSS px, squared) before a drag starts. */
 const DRAG_THRESHOLD_PX = 4

@@ -1,9 +1,9 @@
 import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrRenderer } from '../renderer/AcTrRenderer'
-import { AcTrCamera } from './AcTrCamera'
-import { type AcTrCssRect, acTrCssTopLeftRectToGl } from './AcTrCssRect'
+import { AcTrRenderer } from '../renderer/AcTrRenderer.js'
+import { AcTrCamera } from './AcTrCamera.js'
+import { type AcTrCssRect, acTrCssTopLeftRectToGl } from './AcTrCssRect.js'
 
 /**
  * Screen-fixed overlay viewport: a CSS-pixel rectangle on the canvas that

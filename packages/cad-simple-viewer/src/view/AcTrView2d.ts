@@ -49,11 +49,21 @@ import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
-import { AcApDocManager, AcApSettingManager } from '../app'
-import { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
-import { AcApZoomCmd } from '../command/AcApZoomCmd'
-import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
-import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
+import { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions.js'
+import { AcApDocManager, AcApSettingManager } from '../app/index.js'
+import { AcApZoomCmd } from '../command/AcApZoomCmd.js'
+import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit.js'
+import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore.js'
+import {
+  ACGI_MODEL_SPACE_BACKGROUND,
+  isModelSpaceDatabase,
+  readLayoutBackgroundColor
+} from '../editor/global/AcEdUiColor.js'
+import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout.js'
+import {
+  type AcEdGripViewportCandidate,
+  acedPickViewportForModelExtents
+} from '../editor/grip/AcEdGripViewport.js'
 import {
   acedAttachMobileBoxGesture,
   AcEdBaseView,
@@ -78,75 +88,65 @@ import {
   AcEdViewportCoordinateMapper,
   eventBus,
   resolvePointerSelectionAction
-} from '../editor'
-import {
-  ACGI_MODEL_SPACE_BACKGROUND,
-  isModelSpaceDatabase,
-  readLayoutBackgroundColor
-} from '../editor/global/AcEdUiColor'
-import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
-import {
-  type AcEdGripViewportCandidate,
-  acedPickViewportForModelExtents
-} from '../editor/grip/AcEdGripViewport'
+} from '../editor/index.js'
 import {
   acedBlockReferenceIntersectsSelectionBox,
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
-} from '../editor/view/AcEdSelectionBoxIntersect'
-import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
-import { AcApUcsService } from '../service/AcApUcsService'
-import type { AcTrLazySpatialChildren } from '../spatialIndex'
-import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
-import { AcTrGeometryUtil } from '../util'
-import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
+} from '../editor/view/AcEdSelectionBoxIntersect.js'
+import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult.js'
+import { AcApUcsService } from '../service/AcApUcsService.js'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex.js'
+import type { AcTrLazySpatialChildren } from '../spatialIndex/index.js'
+import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit.js'
 import {
   acapResolveContentFrameBox,
   acapResolveLayoutFrameBox
-} from '../util/AcApLayoutViewFraming'
+} from '../util/AcApLayoutViewFraming.js'
 import {
   collectTextStyleFontNames,
   planTextStyleFontPreload
-} from '../util/AcApTextStyleFontPreload'
-import type { AcApCompareDisplayOptions } from './AcApCompareDisplay'
+} from '../util/AcApTextStyleFontPreload.js'
+import { AcTrGeometryUtil } from '../util/index.js'
+import type { AcApCompareDisplayOptions } from './AcApCompareDisplay.js'
 import {
   ACAP_READING_MODE_BACKGROUND,
   AcApReadingModeState
-} from './AcApReadingMode'
-import { AcApUcsIconOverlay } from './AcApUcsIconOverlay'
+} from './AcApReadingMode.js'
+import { AcApUcsIconOverlay } from './AcApUcsIconOverlay.js'
 import {
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
-} from './AcEdReviewOverlayPick'
-import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
+} from './AcEdReviewOverlayPick.js'
+import { AcEdViewKeyHandler } from './AcEdViewKeyHandler.js'
 import {
   absorbConvertQueue,
   adaptConvertSliceSize,
   createConvertPending,
   hasPendingActiveOwner
-} from './AcTrConvertQueue'
+} from './AcTrConvertQueue.js'
 import {
   shouldExtendBboxForDirectEntity,
   tryBuildDirectEntityMeta
-} from './AcTrDirectBatch'
-import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
+} from './AcTrDirectBatch.js'
+import { AcTrEntityDisplayController } from './AcTrEntityDisplayController.js'
 import {
   assertAcTrGroupWcsBboxesConsistent,
   unionGroupWcsChildBoxes
-} from './AcTrGroupWcsBboxAssert'
-import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
-import { computeIntelligentExtentsAsync } from './AcTrIntelligentExtents'
-import { AcTrLayer } from './AcTrLayer'
-import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
-import { AcTrLayout } from './AcTrLayout'
-import { AcTrLayoutView } from './AcTrLayoutView'
-import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
-import { sortPickResults } from './AcTrPickResultUtil'
-import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
-import { AcTrScene } from './AcTrScene'
-import type { AcTrViewSessionState } from './AcTrViewSessionState'
-import { AcTrWorkSlice } from './AcTrWorkSlice'
-import { shouldRegenDatabaseAfterFontLoad } from './fontLoadRegen'
+} from './AcTrGroupWcsBboxAssert.js'
+import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper.js'
+import { computeIntelligentExtentsAsync } from './AcTrIntelligentExtents.js'
+import { AcTrLayer } from './AcTrLayer.js'
+import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController.js'
+import { AcTrLayout } from './AcTrLayout.js'
+import { AcTrLayoutView } from './AcTrLayoutView.js'
+import { AcTrLayoutViewManager } from './AcTrLayoutViewManager.js'
+import { sortPickResults } from './AcTrPickResultUtil.js'
+import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController.js'
+import { AcTrScene } from './AcTrScene.js'
+import type { AcTrViewSessionState } from './AcTrViewSessionState.js'
+import { AcTrWorkSlice } from './AcTrWorkSlice.js'
+import { shouldRegenDatabaseAfterFontLoad } from './fontLoadRegen.js'
 
 /**
  * Options to customize view

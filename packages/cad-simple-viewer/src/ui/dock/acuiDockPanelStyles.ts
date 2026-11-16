@@ -1,4 +1,4 @@
-import { ML_UI_MOBILE_MAX_WIDTH } from '../../editor/global/AcEdUiLayout'
+import { ML_UI_MOBILE_MAX_WIDTH } from '../../editor/global/AcEdUiLayout.js'
 
 const STYLE_ID = 'ml-ui-dock-panel-styles'
 

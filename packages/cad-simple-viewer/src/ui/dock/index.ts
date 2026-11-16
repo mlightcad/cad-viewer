@@ -4,8 +4,8 @@ export {
   type AcUiDockPanelSide,
   type AcUiDockPanelTab,
   type AcUiDockPanelTranslate
-} from './AcUiDockPanel'
+} from './AcUiDockPanel.js'
 export {
   acuiEnsureDockPanelStyles,
   acuiRemoveDockPanelStylesIfUnused
-} from './acuiDockPanelStyles'
+} from './acuiDockPanelStyles.js'

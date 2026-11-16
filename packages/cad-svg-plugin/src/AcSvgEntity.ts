@@ -5,8 +5,8 @@ import {
   AcGiEntity
 } from '@mlightcad/data-model'
 
-import { isUsableSvgBox } from './AcSvgExtents'
-import { AcSvgMatrixUtil } from './AcSvgMatrixUtil'
+import { isUsableSvgBox } from './AcSvgExtents.js'
+import { AcSvgMatrixUtil } from './AcSvgMatrixUtil.js'
 
 /**
  * Represent the display object of one drawing entity.

@@ -12,15 +12,15 @@ import {
   acdbSvgParseTransform,
   acdbSvgTransformPoint,
   acdbSvgYFlipMatrix
-} from './svgMatrix'
-import { acdbSvgTessellatePath } from './svgPath'
+} from './svgMatrix.js'
+import { acdbSvgTessellatePath } from './svgPath.js'
 import type {
   AcDbSvgModel,
   AcDbSvgPoint,
   AcDbSvgPrimitive,
   AcDbSvgStyle,
   AcDbSvgViewBox
-} from './svgTypes'
+} from './svgTypes.js'
 
 /** Tags that produce geometry or are walked as containers. */
 const GEOMETRY_TAGS = new Set([

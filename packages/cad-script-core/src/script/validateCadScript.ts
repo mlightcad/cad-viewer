@@ -1,6 +1,6 @@
 import { parse } from 'acorn'
 
-import { CAD_SCRIPT_API_TREE } from './scriptApi'
+import { CAD_SCRIPT_API_TREE } from './scriptApi.js'
 
 /** Maximum accepted script source length, in characters. */
 export const MAX_SCRIPT_SOURCE_CHARS = 100_000

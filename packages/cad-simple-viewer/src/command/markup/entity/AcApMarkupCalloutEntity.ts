@@ -5,23 +5,23 @@ import {
   AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapBindOverlayCalloutGrips,
   acapDrawOverlayLeader,
   acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult,
-  acapPlaceOverlayHtml} from '../../overlay'
-import { runMarkupEdit } from '../AcApMarkupHistory'
-import { republishMarkup } from '../AcApMarkupRepublish'
-import { getMarkupStore } from '../AcApMarkupStore'
-import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit'
-import type { AcApMarkupPoint2d, AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
+  acapPlaceOverlayHtml} from '../../overlay/index.js'
+import { runMarkupEdit } from '../AcApMarkupHistory.js'
+import { republishMarkup } from '../AcApMarkupRepublish.js'
+import { getMarkupStore } from '../AcApMarkupStore.js'
+import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit.js'
+import type { AcApMarkupPoint2d, AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
 import {
   bindMarkupCenterMove,
   selectMarkupGroup
-} from './AcApMarkupEntityGrips'
+} from './AcApMarkupEntityGrips.js'
 
 /**
  * Standalone callout markup (leader + bubble).

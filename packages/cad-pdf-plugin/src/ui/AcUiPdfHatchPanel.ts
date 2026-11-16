@@ -11,9 +11,9 @@ import {
   PDF_HATCH_USER_KEY,
   type PdfHatchPatternKey,
   type PdfHatchRow
-} from '../AcApPdfHatchSession'
-import { acapPdfT } from '../acapPdfI18n'
-import { acapPdfHatchPatternLabel } from '../pdfHatchRecover'
+} from '../AcApPdfHatchSession.js'
+import { acapPdfT } from '../acapPdfI18n.js'
+import { acapPdfHatchPatternLabel } from '../pdfHatchRecover.js'
 
 const STYLE_ID = 'ml-pdfhatch-panel-styles'
 

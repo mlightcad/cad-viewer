@@ -6,15 +6,15 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrRenderer } from '../renderer/AcTrRenderer'
-import { applyAnnotationScalePass } from './AcTrAnnotationScale'
-import { AcTrBaseView } from './AcTrBaseView'
+import { AcTrRenderer } from '../renderer/AcTrRenderer.js'
+import { applyAnnotationScalePass } from './AcTrAnnotationScale.js'
+import { AcTrBaseView } from './AcTrBaseView.js'
 import {
   type AcTrCssRect,
   acTrCssRectToWcsBox,
   acTrCssTopLeftRectToGl,
   acTrIntersectCssRects
-} from './AcTrCssRect'
+} from './AcTrCssRect.js'
 
 /**
  * This class represents view to show viewport.

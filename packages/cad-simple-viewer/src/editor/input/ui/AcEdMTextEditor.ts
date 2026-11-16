@@ -17,9 +17,9 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import { AcApDocManager } from '../../../app'
-import { AcTrView2d } from '../../../view'
-import { acgiIsLightBackground } from '../../global/AcEdUiColor'
+import { AcApDocManager } from '../../../app/index.js'
+import { AcTrView2d } from '../../../view/index.js'
+import { acgiIsLightBackground } from '../../global/AcEdUiColor.js'
 
 function acGiAttachmentToMText(
   ap: AcGiMTextAttachmentPoint | undefined

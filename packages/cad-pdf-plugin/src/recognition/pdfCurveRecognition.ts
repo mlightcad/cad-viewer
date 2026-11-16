@@ -8,7 +8,7 @@
  * when every sample stays within tolerance of the recovered curve.
  */
 
-import type { PdfImportPoint, PdfImportSegment } from '../pdfVectorImport'
+import type { PdfImportPoint, PdfImportSegment } from '../pdfVectorImport.js'
 import {
   circleFrom3Points,
   cross,
@@ -26,7 +26,7 @@ import {
   signedSweep,
   sub,
   TWO_PI
-} from './pdfRecGeometry'
+} from './pdfRecGeometry.js'
 
 /** Angular slack (radians) when deciding an arc chain closes a full turn. */
 const FULL_TURN_TOLERANCE = 1e-3

@@ -9,10 +9,10 @@ import { MTextColor } from '@mlightcad/mtext-parser'
 import { ColorSettings } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrSubEntityTraitsUtil } from './AcTrEntityTraitsUtil'
-import { getSceneDrawableUserData } from './AcTrObjectUserData'
+import { getMaterialMetadata } from '../style/AcTrMaterialMetadata.js'
+import { AcTrStyleManager } from '../style/AcTrStyleManager.js'
+import { AcTrSubEntityTraitsUtil } from './AcTrEntityTraitsUtil.js'
+import { getSceneDrawableUserData } from './AcTrObjectUserData.js'
 
 export type AcTrMTextEntityTraits = Pick<AcGiSubEntityTraits, 'color' | 'layer'>
 

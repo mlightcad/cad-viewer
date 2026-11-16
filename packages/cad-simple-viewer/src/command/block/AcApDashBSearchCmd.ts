@@ -1,6 +1,6 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { type AcApContext, AcApDocManager } from '../../app'
+import { type AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -10,9 +10,9 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service/AcApEntitySelection'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/AcApEntitySelection.js'
 import {
   acapAllocateBlockName,
   acapConvertSmartBlock,
@@ -25,7 +25,7 @@ import {
   AcApSmartBlockSearch,
   type AcApSmartBlockSearchOptions,
   acapValidateNewBlockName
-} from '../../smartBlock'
+} from '../../smartBlock/index.js'
 
 /**
  * Formats `jig.bsearch.<key>` and substitutes `{name}` placeholders.

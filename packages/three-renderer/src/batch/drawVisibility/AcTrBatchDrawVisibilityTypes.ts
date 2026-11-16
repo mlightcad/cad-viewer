@@ -1,4 +1,4 @@
-import type { AcTrVertexBatchGeometryInfo } from '../AcTrBatchedGeometryInfo'
+import type { AcTrVertexBatchGeometryInfo } from '../AcTrBatchedGeometryInfo.js'
 
 /**
  * Per-slot metadata consumed by draw-visibility strategies when toggling

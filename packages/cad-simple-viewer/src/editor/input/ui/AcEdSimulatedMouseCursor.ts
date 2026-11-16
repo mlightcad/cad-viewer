@@ -5,7 +5,7 @@
  * across point prompts the same way as {@link acedRefreshMobileSnapLoupe}.
  */
 
-import type { AcEdBaseView } from '../../view'
+import type { AcEdBaseView } from '../../view/index.js'
 
 /** Crosshair arm length in CSS pixels (full size is 2× this). */
 const CROSS_ARM_PX = 9

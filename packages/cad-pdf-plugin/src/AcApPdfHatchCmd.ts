@@ -17,18 +17,18 @@ import {
   type AcDbObjectId
 } from '@mlightcad/data-model'
 
-import { AcApPdfHatchSession, type PdfHatchRow } from './AcApPdfHatchSession'
-import { acapPdfT } from './acapPdfI18n'
+import { AcApPdfHatchSession, type PdfHatchRow } from './AcApPdfHatchSession.js'
+import { acapPdfT } from './acapPdfI18n.js'
 import {
   acapPdfCreateRecoveredHatch,
   acapPdfHatchPatternLabel,
   acapPdfRecoverHatches,
   pdfEntitiesToHatchInput
-} from './pdfHatchRecover'
+} from './pdfHatchRecover.js'
 import {
   type AcUiPdfHatchAddResult,
   AcUiPdfHatchPanel
-} from './ui/AcUiPdfHatchPanel'
+} from './ui/AcUiPdfHatchPanel.js'
 
 /** Delay before an edit redraws the preview (ms). */
 const PREVIEW_DELAY = 120

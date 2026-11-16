@@ -1,10 +1,10 @@
-import { getActiveMarkupBag } from './AcApMarkupSession'
+import { getActiveMarkupBag } from './AcApMarkupSession.js'
 import type {
   AcApMarkupRecord,
   AcApMarkupSidecarFile,
   AcApMarkupStatus,
   AcApMarkupStoreListener
-} from './AcApMarkupTypes'
+} from './AcApMarkupTypes.js'
 
 /** HTML transient layer for committed markup overlays. */
 export const MARKUP_LAYER = 'markup'

@@ -1,6 +1,6 @@
 import { type AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
 
-import { AcUiLlmSettingsDialog } from '../ui/AcUiLlmSettingsDialog'
+import { AcUiLlmSettingsDialog } from '../ui/AcUiLlmSettingsDialog.js'
 
 /**
  * Opens the shared AI model settings dialog. The command name is

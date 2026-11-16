@@ -8,9 +8,9 @@ import {
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview'
-import { AcTrRenderer } from '../renderer/AcTrRenderer'
-import { AcTrCamera } from './AcTrCamera'
+import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview.js'
+import { AcTrRenderer } from '../renderer/AcTrRenderer.js'
+import { AcTrCamera } from './AcTrCamera.js'
 
 export interface AcTrBaseViewEventArgs {
   view: AcTrBaseView

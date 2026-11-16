@@ -1,8 +1,8 @@
 import type { AcGiFontMapping } from '@mlightcad/data-model'
 
-import type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
-import type { AcPdfColorMode } from './renderer/AcPdfStyle'
-import type { AcPdfGlyphProvider } from './text/AcPdfGlyphProvider'
+import type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager.js'
+import type { AcPdfColorMode } from './renderer/AcPdfStyle.js'
+import type { AcPdfGlyphProvider } from './text/AcPdfGlyphProvider.js'
 
 /**
  * Options for {@link exportDatabaseToPdf}.

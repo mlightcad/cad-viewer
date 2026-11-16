@@ -1,8 +1,8 @@
 import { AcGiImageStyle, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { AcSvgExportUtil } from './AcSvgExportUtil'
-import { AcSvgStyleContext } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { AcSvgExportUtil } from './AcSvgExportUtil.js'
+import { AcSvgStyleContext } from './AcSvgStyleUtil.js'
 
 /**
  * SVG image entity: embeds a raster image as a base64 `<image>` element.

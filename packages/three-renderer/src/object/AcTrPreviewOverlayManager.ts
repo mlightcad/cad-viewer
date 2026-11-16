@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { disposePreviewSubset } from '../batch/AcTrBatchedGroup'
-import { getEntityPreviewRootUserData } from '../util/AcTrObjectUserData'
+import { disposePreviewSubset } from '../batch/AcTrBatchedGroup.js'
+import { getEntityPreviewRootUserData } from '../util/AcTrObjectUserData.js'
 
 let previewHandleCounter = 0
 

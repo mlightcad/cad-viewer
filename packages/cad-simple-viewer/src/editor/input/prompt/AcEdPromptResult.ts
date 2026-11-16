@@ -1,4 +1,4 @@
-import { AcEdPromptStatus } from './AcEdPromptStatus'
+import { AcEdPromptStatus } from './AcEdPromptStatus.js'
 
 /**
  * Base class for a prompt result, similar to `Autodesk.AutoCAD.EditorInput.PromptResult`.

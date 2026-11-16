@@ -2,8 +2,8 @@ import {
   ML_UI_MOBILE_MAX_WIDTH,
   ML_UI_SESSION_PANEL_MAX_WIDTH,
   ML_UI_SESSION_PANEL_WIDTH
-} from '../editor/global/AcEdUiLayout'
-import { AcUiHelpPanel } from './AcUiHelpPanel'
+} from '../editor/global/AcEdUiLayout.js'
+import { AcUiHelpPanel } from './AcUiHelpPanel.js'
 
 /** Keyword / action chip on the mobile session panel. */
 export interface AcUiMobileSessionKeyword {

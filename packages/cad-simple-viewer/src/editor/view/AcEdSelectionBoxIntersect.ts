@@ -14,8 +14,8 @@ import {
 import {
   acedBlockReferenceInsertionMatrix,
   canonicalGsMark
-} from '../input/AcEdOsnapCenterMarks'
-import type { AcEdSpatialQueryResultItem } from './AcEdSpatialQueryResult'
+} from '../input/AcEdOsnapCenterMarks.js'
+import type { AcEdSpatialQueryResultItem } from './AcEdSpatialQueryResult.js'
 
 /**
  * Minimal line primitive shape used for crossing-selection refinement.

@@ -3,10 +3,10 @@ import { basename, extname } from 'node:path'
 
 import { AcDbDatabase, AcDbFileType } from '@mlightcad/data-model'
 
-import { convertDatabaseToPdf } from './convertDatabase'
-import type { AcPdfExporterOptions, AcPdfExportResult } from './exportOptions'
-import { ensureDwgParserRegistered } from './registerDwg'
-import { withWorkingDatabase } from './withWorkingDatabase'
+import { convertDatabaseToPdf } from './convertDatabase.js'
+import type { AcPdfExporterOptions, AcPdfExportResult } from './exportOptions.js'
+import { ensureDwgParserRegistered } from './registerDwg.js'
+import { withWorkingDatabase } from './withWorkingDatabase.js'
 
 /**
  * Reads a DXF/DWG from disk, converts it to PDF, and writes `outputPath`.

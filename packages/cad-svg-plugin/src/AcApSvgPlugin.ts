@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
-import { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd'
+import { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd.js'
 
 /**
  * SVG export plugin for cad-simple-viewer.

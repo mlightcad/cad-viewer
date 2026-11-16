@@ -5,8 +5,8 @@ import {
   type AcExHtmlI18n
 } from '@mlightcad/cad-html-core'
 
-import type { AcExMeasureController } from './AcExMeasurement'
-import type { AcExTrackingOptions } from './AcExMeasureTracking'
+import type { AcExMeasureController } from './AcExMeasurement.js'
+import type { AcExTrackingOptions } from './AcExMeasureTracking.js'
 
 export {
   ACEX_DEFAULT_POLAR_ANGLE,

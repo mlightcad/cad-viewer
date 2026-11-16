@@ -21,8 +21,8 @@ import {
   type AcPdfMTextStack,
   type AcPdfMTextStyle,
   parseMText
-} from './AcPdfMTextParser'
-import type { AcPdfRgb } from './AcPdfStyle'
+} from './AcPdfMTextParser.js'
+import type { AcPdfRgb } from './AcPdfStyle.js'
 
 /** Baseline-to-baseline distance of single-spaced text, in heights. */
 export const LINE_SPACING_RATIO = 5 / 3

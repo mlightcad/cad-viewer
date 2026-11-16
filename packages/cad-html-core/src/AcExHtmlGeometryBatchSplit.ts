@@ -8,9 +8,9 @@
 import {
   acexHtmlEstimateLineBatchBytes,
   acexHtmlEstimateMeshBatchBytes
-} from './AcExHtmlBatchBinaryCodec'
-import { ACEX_MAX_GEOMETRY_BATCH_BYTES } from './AcExHtmlPackageTypes'
-import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlBatchBinaryCodec.js'
+import { ACEX_MAX_GEOMETRY_BATCH_BYTES } from './AcExHtmlPackageTypes.js'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes.js'
 
 /** Fixed per-batch header allowance used when budgeting piece size. */
 const BATCH_HEADER_BYTES = 256

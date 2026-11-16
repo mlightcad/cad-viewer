@@ -1,22 +1,22 @@
-import { DRAWING_PREVIEW_LONG_SIDE_PX } from '../preview/types'
-import type { CadSession } from '../session/CadSession'
-import { requireDocument } from '../session/documentAccess'
+import { DRAWING_PREVIEW_LONG_SIDE_PX } from '../preview/types.js'
+import type { CadSession } from '../session/CadSession.js'
+import { requireDocument } from '../session/documentAccess.js'
 import type {
   ToolResult,
   ToolResultImage,
   ToolResultSavedFile
-} from '../tools/types'
+} from '../tools/types.js'
 import {
   type CadScriptEffects,
   type CadScriptLimits,
   createCadScriptHost,
   stringifyScriptValue
-} from './createCadScriptHost'
-import { instrumentCadScript } from './instrumentCadScript'
-import { fulfillDxfSaveRequests } from './saveDxf'
-import { fulfillHtmlSaveRequests } from './saveHtml'
-import { fulfillPdfSaveRequests } from './savePdf'
-import { validateCadScript } from './validateCadScript'
+} from './createCadScriptHost.js'
+import { instrumentCadScript } from './instrumentCadScript.js'
+import { fulfillDxfSaveRequests } from './saveDxf.js'
+import { fulfillHtmlSaveRequests } from './saveHtml.js'
+import { fulfillPdfSaveRequests } from './savePdf.js'
+import { validateCadScript } from './validateCadScript.js'
 
 /** Default cap on the JSON returned to the model. */
 export const MAX_SCRIPT_RESULT_CHARS = 65_536

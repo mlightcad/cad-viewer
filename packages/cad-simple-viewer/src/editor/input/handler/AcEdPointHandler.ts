@@ -1,8 +1,8 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 
-import { AcApUcsService } from '../../../service/AcApUcsService'
-import { AcEdPromptPointOptions } from '../prompt/AcEdPromptPointOptions'
-import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
+import { AcApUcsService } from '../../../service/AcApUcsService.js'
+import { AcEdPromptPointOptions } from '../prompt/AcEdPromptPointOptions.js'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler.js'
 
 const NUMERIC_TOKEN = /^-?(?:\d+\.?\d*|\.\d+)$/
 

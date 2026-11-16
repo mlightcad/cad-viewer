@@ -1,6 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -8,13 +8,13 @@ import {
   AcEdPromptSelectionOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapCreateGroup,
   AcApGroupCreateError,
   acapValidateGroupName
-} from '../../service/AcApGroup'
+} from '../../service/AcApGroup.js'
 
 /**
  * GROUP — create a named or unnamed group from selected objects.

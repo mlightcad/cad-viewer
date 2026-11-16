@@ -4,9 +4,9 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import type { AcApDocManager } from '../app/AcApDocManager'
-import { acapFindHitBox, type AcApFindLayoutHit } from './findDrawing'
-import { acapResolveFindBlockTableRecord } from './findText'
+import type { AcApDocManager } from '../app/AcApDocManager.js'
+import { acapFindHitBox, type AcApFindLayoutHit } from './findDrawing.js'
+import { acapResolveFindBlockTableRecord } from './findText.js'
 
 /** Options for {@link acapNavigateToFindHit}. */
 export interface AcApFindNavigateOptions {

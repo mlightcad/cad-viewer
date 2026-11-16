@@ -6,7 +6,7 @@ import {
 } from '@mlightcad/data-model'
 import { ColorSettings } from '@mlightcad/mtext-renderer'
 
-import { AcTrMTextColorUtil } from './AcTrMTextColorUtil'
+import { AcTrMTextColorUtil } from './AcTrMTextColorUtil.js'
 
 export class AcTrSubEntityTraitsUtil {
   static createDefaultTraits(): AcGiSubEntityTraits {

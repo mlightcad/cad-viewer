@@ -5,13 +5,13 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import {
   isComplexPatternElement,
   normalizeComplexPatternElement
-} from '../linetype/AcTrLineTypeWalker'
-import { AcTrLinePatternShaders } from './AcTrLinePatternShaders'
-import { AcTrMaterialManager } from './AcTrMaterialManager'
+} from '../linetype/AcTrLineTypeWalker.js'
+import { AcTrLinePatternShaders } from './AcTrLinePatternShaders.js'
+import { AcTrMaterialManager } from './AcTrMaterialManager.js'
 import {
   getMaterialMetadata,
   setMaterialMetadata
-} from './AcTrMaterialMetadata'
+} from './AcTrMaterialMetadata.js'
 
 export interface AcTrLineMaterialOptions {
   basicMaterialOnly?: boolean

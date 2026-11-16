@@ -1,7 +1,7 @@
 import {
   AC_TR_HTML_DEFAULT_LAYER,
   AC_TR_HTML_SELECTED_CLASS
-} from './AcTrHtmlElement'
+} from './AcTrHtmlElement.js'
 
 /** CSS class applied to viewport-aligned HTML canvas overlays. */
 export const AC_TR_HTML_CANVAS_CLASS = 'ml-html-canvas'

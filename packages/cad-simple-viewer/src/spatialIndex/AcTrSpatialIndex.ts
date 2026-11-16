@@ -1,6 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcEdSpatialQueryResultItem } from '../editor/view'
+import { AcEdSpatialQueryResultItem } from '../editor/view/index.js'
 
 export type AcTrSpatialIndexBBox = {
   minX: number

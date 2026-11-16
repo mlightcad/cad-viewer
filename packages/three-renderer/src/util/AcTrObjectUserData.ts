@@ -1,7 +1,7 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcTrMTextEntityTraits } from './AcTrMTextColorUtil'
+import type { AcTrMTextEntityTraits } from './AcTrMTextColorUtil.js'
 
 /**
  * Relative-to-eye flags stored on {@link THREE.Object3D.userData}.

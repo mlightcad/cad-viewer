@@ -9,8 +9,8 @@
 import {
   acexHtmlParsePackageManifest,
   acexHtmlResolvePackageManifestUrl
-} from './AcExHtmlPackageLoader'
-import type { AcExHtmlPackageManifest } from './AcExHtmlPackageTypes'
+} from './AcExHtmlPackageLoader.js'
+import type { AcExHtmlPackageManifest } from './AcExHtmlPackageTypes.js'
 
 /** Canonical package manifest file name next to `viewer.html`. */
 export const ACEX_DEFAULT_MANIFEST_FILE = 'drawing.acex.json'

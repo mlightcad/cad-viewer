@@ -5,16 +5,16 @@ import {
   acdbListAnnotationScales,
   acdbRemoveAnnotationScaleFromObject} from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../app'
+import { AcApContext, AcApDocManager } from '../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../editor'
-import { AcApI18n } from '../i18n'
-import { resolveSelectedIds } from '../service'
+} from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
+import { resolveSelectedIds } from '../service/index.js'
 
 /**
  * Adds or removes annotation scales on selected annotative objects

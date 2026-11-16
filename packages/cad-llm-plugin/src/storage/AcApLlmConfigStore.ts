@@ -7,8 +7,8 @@ import {
   acapLlmGuessModelVision,
   acapLlmIsBuiltinProviderId,
   type AcApLlmModelEntry
-} from './AcApLlmModelCatalog'
-import { decryptApiKey, encryptApiKey } from './apiKeyCrypto'
+} from './AcApLlmModelCatalog.js'
+import { decryptApiKey, encryptApiKey } from './apiKeyCrypto.js'
 
 /** Whether a provider ships with the plugin or was declared by the user. */
 export type AcApLlmProviderKind = 'builtin' | 'custom'

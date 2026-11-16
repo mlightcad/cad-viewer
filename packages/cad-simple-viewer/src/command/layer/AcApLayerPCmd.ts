@@ -1,7 +1,7 @@
-import { AcApContext } from '../../app'
-import { AcEdOpenMode } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
+import { AcApContext } from '../../app/index.js'
+import { AcEdOpenMode } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd.js'
 
 /**
  * AutoCAD-like `LAYERP` command.

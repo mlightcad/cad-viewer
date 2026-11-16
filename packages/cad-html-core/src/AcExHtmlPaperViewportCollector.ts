@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import { AcTrViewportView } from '@mlightcad/three-renderer'
 
-import type { AcExHtmlExtents, AcExHtmlViewportSnapshot } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlExtents, AcExHtmlViewportSnapshot } from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Collects user-created paper-space viewports for HTML export.

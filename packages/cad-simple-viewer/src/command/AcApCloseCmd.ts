@@ -1,5 +1,5 @@
-import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand } from '../editor'
+import { AcApContext, AcApDocManager } from '../app/index.js'
+import { AcEdCommand } from '../editor/index.js'
 
 /**
  * Closes the current drawing, or the last remaining drawing after which a

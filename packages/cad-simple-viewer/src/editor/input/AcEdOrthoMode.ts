@@ -6,7 +6,7 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { AcApUcsService } from '../../service/AcApUcsService'
+import { AcApUcsService } from '../../service/AcApUcsService.js'
 
 /**
  * Returns whether orthogonal cursor locking is enabled for the given database.

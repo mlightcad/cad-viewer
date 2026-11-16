@@ -5,7 +5,7 @@ export {
   type AcApDiffViewerOptions,
   type AcApDiffViewerSide,
   type AcApDiffViewMode
-} from './AcApDiffViewer'
+} from './AcApDiffViewer.js'
 export {
   acapBuildCompareChangeSets,
   acapChangeSetCloudRole,
@@ -24,6 +24,6 @@ export {
   type AcApDiffEntityHit,
   type AcApDiffFieldChange,
   type AcApDiffHitSide
-} from './compare'
-export { acapDiffViewerT, acapRegisterDiffViewerI18n } from './i18n'
-export { acapInjectDiffViewerStyles } from './injectDiffViewerStyles'
+} from './compare/index.js'
+export { acapDiffViewerT, acapRegisterDiffViewerI18n } from './i18n/index.js'
+export { acapInjectDiffViewerStyles } from './injectDiffViewerStyles.js'

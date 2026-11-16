@@ -5,22 +5,22 @@ import {
   hitTestMarkupShapeOutline,
   isAttachableShapeMarkup,
   markupGeometryBounds
-} from '../command/markup/AcApMarkupGeometry'
-import { getMarkupStore } from '../command/markup/AcApMarkupStore'
-import type { AcApMarkupRecord } from '../command/markup/AcApMarkupTypes'
-import { measurementGeometryBounds } from '../command/measure/AcApMeasurementGeometry'
+} from '../command/markup/AcApMarkupGeometry.js'
+import { getMarkupStore } from '../command/markup/AcApMarkupStore.js'
+import type { AcApMarkupRecord } from '../command/markup/AcApMarkupTypes.js'
+import { measurementGeometryBounds } from '../command/measure/AcApMeasurementGeometry.js'
 import {
   getMeasurementGeometry,
   isMeasurementVisible,
   MEASUREMENT_LAYER,
   pickMeasurementAt
-} from '../command/measure/AcApMeasurementStore'
-import type { AcEdSelectionAction, AcEdSelectionMode } from '../editor'
+} from '../command/measure/AcApMeasurementStore.js'
+import type { AcEdSelectionAction, AcEdSelectionMode } from '../editor/index.js'
 import {
   type AcTrSpatialIndexBBox,
   isSpatialBoxFullyInside
-} from '../spatialIndex/AcTrSpatialIndex'
-import type { AcTrView2d } from './AcTrView2d'
+} from '../spatialIndex/AcTrSpatialIndex.js'
+import type { AcTrView2d } from './AcTrView2d.js'
 
 /** Pixel radius used when clicking markup / measurement strokes. */
 export const REVIEW_OVERLAY_HIT_THRESHOLD_PX = 10

@@ -1,4 +1,4 @@
-import type { PdfTextLineCandidate } from './pdfGlyphClustering'
+import type { PdfTextLineCandidate } from './pdfGlyphClustering.js'
 
 /**
  * Font engine an exploded text line was drawn with:

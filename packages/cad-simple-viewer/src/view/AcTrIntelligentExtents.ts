@@ -4,9 +4,9 @@ import {
   type AcTrClusterBox,
   unionDominantCluster,
   unionDominantClusterAsync
-} from './AcTrExtentCluster'
-import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
-import { AcTrWorkSlice } from './AcTrWorkSlice'
+} from './AcTrExtentCluster.js'
+import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert.js'
+import { AcTrWorkSlice } from './AcTrWorkSlice.js'
 
 /**
  * One finite AABB used as a candidate for intelligent zoom-to-fit.

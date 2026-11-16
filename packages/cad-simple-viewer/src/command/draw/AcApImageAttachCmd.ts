@@ -6,7 +6,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -16,9 +16,9 @@ import {
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit.js'
 
 /** Accept list for raster image file pickers (AutoCAD IMAGEATTACH formats). */
 const IMAGE_FILE_ACCEPT = '.png,.jpg,.jpeg,.bmp,.gif,.tif,.tiff'

@@ -7,7 +7,7 @@ import {
   TAU
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -17,9 +17,9 @@ import {
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLineJig } from './AcApLineCmd'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLineJig } from './AcApLineCmd.js'
 
 const POSITIVE_NORMAL: AcGeVector3dLike = { x: 0, y: 0, z: 1 }
 

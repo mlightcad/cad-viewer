@@ -1,7 +1,7 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { ToolResultSavedFile } from '../tools/types'
-import { CAD_MCP_DXF_OUTBOX_KEY } from './scriptApi'
+import type { ToolResultSavedFile } from '../tools/types.js'
+import { CAD_MCP_DXF_OUTBOX_KEY } from './scriptApi.js'
 
 /** Options for `cad.file.saveDxf`. A string is treated as `path`. */
 export type CadScriptDxfSaveOptions =

@@ -1,5 +1,5 @@
-import { AcEdPromptStringOptions } from '../prompt/AcEdPromptStringOptions'
-import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
+import { AcEdPromptStringOptions } from '../prompt/AcEdPromptStringOptions.js'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler.js'
 
 /**
  * Validates string input according to {@link AcEdPromptStringOptions}.

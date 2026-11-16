@@ -6,25 +6,25 @@ import {
   log
 } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor'
-import { AcEdOpenMode } from '../editor/view'
-import { AcApEntityService } from '../service/AcApEntityService'
-import type { AcApLayerIsoSnapshot } from '../service/AcApLayerIsoState'
-import { AcApLayerService } from '../service/AcApLayerService'
-import type { AcApLayerStore } from '../service/AcApLayerStore'
-import { AcApLayerStore as AcApLayerStoreImpl } from '../service/AcApLayerStore'
+import { eventBus } from '../editor/index.js'
+import { AcEdOpenMode } from '../editor/view/index.js'
+import { AcApEntityService } from '../service/AcApEntityService.js'
+import type { AcApLayerIsoSnapshot } from '../service/AcApLayerIsoState.js'
+import { AcApLayerService } from '../service/AcApLayerService.js'
+import type { AcApLayerStore } from '../service/AcApLayerStore.js'
+import { AcApLayerStore as AcApLayerStoreImpl } from '../service/AcApLayerStore.js'
 import {
   acapRunServiceEdit,
   LAYER_EDIT_LABEL
-} from '../service/AcApServiceEdit'
+} from '../service/AcApServiceEdit.js'
 import type {
   AcApLayerIsolateResult,
   AcApLayerIsolationMode
-} from '../service/types'
-import { LAYER_LOCKED_FLAG } from '../service/types'
-import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType'
-import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
-import { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
+} from '../service/types.js'
+import { LAYER_LOCKED_FLAG } from '../service/types.js'
+import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType.js'
+import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState.js'
+import { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions.js'
 
 /** Sentinel stored in {@link AcApDocument.docTitle} for unsaved documents. */
 export const ACAP_UNTITLED_DOC_TITLE = 'Untitled'

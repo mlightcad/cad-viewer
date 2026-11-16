@@ -4,10 +4,10 @@ import {
   AcDbDatabase
 } from '@mlightcad/data-model'
 
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapPromptPastePoint, acapReadClipboard } from './AcApClipboardUtils'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapPromptPastePoint, acapReadClipboard } from './AcApClipboardUtils.js'
 
 /**
  * Returns an unused block name in AutoCAD's PASTEBLOCK form `A$C` followed by

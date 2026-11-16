@@ -1,7 +1,7 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import type { AcTrView2d } from '../../view'
-import { MARKUP_LAYER, MARKUP_LIVE_LAYER } from './AcApMarkupStore'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import type { AcTrView2d } from '../../view/index.js'
+import { MARKUP_LAYER, MARKUP_LIVE_LAYER } from './AcApMarkupStore.js'
 
 /** Session visibility for the markup HTML / canvas layer. */
 let markupVisible = true

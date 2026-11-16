@@ -6,7 +6,7 @@ import {
   FLOAT_TOL
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../app'
+import { AcApContext, AcApDocManager } from '../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -14,8 +14,8 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../editor'
-import { AcApI18n } from '../i18n'
+} from '../editor/index.js'
+import { AcApI18n } from '../i18n/index.js'
 
 /**
  * AutoCAD-style ZOOM command with keyword-driven branches in a single command.

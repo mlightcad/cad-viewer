@@ -13,15 +13,15 @@ import {
   PDF_SHX_FONT,
   PDF_SHX_TEXT_STYLE,
   PDF_TEXT_STYLE_PREFIX
-} from './pdfImportEntities'
-import type { PdfTextLineCandidate } from './recognition/pdfGlyphClustering'
-import type { PdfTextFontKind } from './recognition/pdfTextFontKind'
+} from './pdfImportEntities.js'
+import type { PdfTextLineCandidate } from './recognition/pdfGlyphClustering.js'
+import type { PdfTextFontKind } from './recognition/pdfTextFontKind.js'
 import {
   arePdfTextLinesAdjacent,
   mergePdfTextLines,
   type PdfTextMergeMeasure,
   type PdfTextMergeParagraph
-} from './recognition/pdfTextMerge'
+} from './recognition/pdfTextMerge.js'
 
 /** TrueType face suggested for recovered outline text. */
 export const PDF_MESH_FONT = 'simsun'

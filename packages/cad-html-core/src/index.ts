@@ -5,42 +5,42 @@
  */
 
 /** Binary reader/writer used by ACEC / ACEO codecs. */
-export * from './AcExHtmlBinaryIO'
+export * from './AcExHtmlBinaryIO.js'
 /** Snapshot schema types, version constant, and geometry batch shapes. */
-export * from './AcExHtmlSnapshotTypes'
+export * from './AcExHtmlSnapshotTypes.js'
 /** Gzip encode and decode for embedded snapshot payloads. */
-export * from './AcExHtmlSnapshotCompression'
+export * from './AcExHtmlSnapshotCompression.js'
 /** Compressed/base85 encode and decode for embedded snapshot payloads. */
-export * from './AcExHtmlSnapshotCodec'
+export * from './AcExHtmlSnapshotCodec.js'
 /** HTML-safe binary text encodings (base85 / legacy base64). */
-export * from './AcExHtmlBinaryText'
+export * from './AcExHtmlBinaryText.js'
 /** Binary snapshot serialization used by {@link acexHtmlEncodeSnapshot}. */
 export {
   acexHtmlDecodeSnapshotBinary,
   acexHtmlEncodeSnapshotBinary
-} from './AcExHtmlSnapshotBinaryCodec'
+} from './AcExHtmlSnapshotBinaryCodec.js'
 /** THREE.js scene traversal helpers that produce export batches. */
-export * from './AcExHtmlSceneBatchCollector'
+export * from './AcExHtmlSceneBatchCollector.js'
 /** Database metadata extraction for snapshot `meta` fields. */
-export * from './AcExHtmlViewerMetadata'
+export * from './AcExHtmlViewerMetadata.js'
 /**
  * Analytic OSNAP primitive types ({@link AcExHtmlOsnapPrimitive}, {@link AcExHtmlOsnapCatalog})
  * and mode definitions for the offline HTML viewer.
  */
-export * from './AcExHtmlOsnapPrimitiveTypes'
+export * from './AcExHtmlOsnapPrimitiveTypes.js'
 /**
  * Builds per-layout {@link AcExHtmlOsnapCatalog} from an open `AcDbDatabase`
  * (lines, curves, splines, nested blocks in WCS).
  */
-export { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder'
+export { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder.js'
 /** Maps snapshot primitives to `AcGe*` curves for OSNAP. */
-export * from './AcExHtmlOsnapPrimitiveToAcGe'
+export * from './AcExHtmlOsnapPrimitiveToAcGe.js'
 export {
   acexHtmlPackHtml,
   acexHtmlPackHtmlPackage,
   type AcExHtmlPackHtmlOptions,
   type AcExHtmlPackHtmlPackageOptions
-} from './AcExHtmlPackager'
+} from './AcExHtmlPackager.js'
 export {
   ACEX_DEFAULT_MANIFEST_FILE,
   ACEX_DEFAULT_MANIFEST_HREF,
@@ -61,7 +61,7 @@ export {
   acexHtmlResolveViewerManifestUrl,
   type AcExHtmlLocalFolderOpenSupport,
   type AcExHtmlManifestProbeResult
-} from './AcExHtmlPackageBootstrap'
+} from './AcExHtmlPackageBootstrap.js'
 export {
   type AcExHtmlExpiryDays,
   type AcExHtmlAccessManifest,
@@ -82,7 +82,7 @@ export {
   acexHtmlParseAccessManifest,
   acexHtmlProtectEncodedSnapshot,
   acexHtmlResolveExpiresAt
-} from './AcExHtmlAccess'
+} from './AcExHtmlAccess.js'
 export {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME_BASE64,
@@ -101,8 +101,8 @@ export {
   acexHtmlShouldEmbedChunks,
   type AcExHtmlEmbeddedPackageConfig,
   type AcExHtmlPackHtmlEmbeddedOptions
-} from './AcExHtmlEmbeddedPackage'
-export * from './AcExHtmlI18n'
+} from './AcExHtmlEmbeddedPackage.js'
+export * from './AcExHtmlI18n.js'
 
 export {
   ACEX_PACKAGE_VERSION,
@@ -119,7 +119,7 @@ export {
   type AcExHtmlPackageManifest,
   type AcExHtmlPackageFile,
   type AcExHtmlPackageFiles
-} from './AcExHtmlPackageTypes'
+} from './AcExHtmlPackageTypes.js'
 export {
   acexHtmlEncodeChunkBinary,
   acexHtmlDecodeChunkBinary,
@@ -128,7 +128,7 @@ export {
   acexHtmlDecodeChunkPayload,
   ACEC_CHUNK_MAGIC,
   type AcExHtmlGeometryChunk
-} from './AcExHtmlChunkBinaryCodec'
+} from './AcExHtmlChunkBinaryCodec.js'
 export {
   acexHtmlBuildPackage,
   acexHtmlBuildPackageAsync,
@@ -137,7 +137,7 @@ export {
   acexHtmlSplitLayoutIntoSlices,
   type AcExHtmlBuildPackageOptions,
   type AcExHtmlBuildPackageDataOptions
-} from './AcExHtmlPackageBuilder'
+} from './AcExHtmlPackageBuilder.js'
 export {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
   acexHtmlCreateOrderedBytePrefetcher,
@@ -153,7 +153,7 @@ export {
   type AcExHtmlOrderedPrefetchedItem,
   type AcExHtmlPackageLoadProgress,
   type AcExHtmlPackageLoaderOptions
-} from './AcExHtmlPackageLoader'
+} from './AcExHtmlPackageLoader.js'
 export {
   acexHtmlEncodeOsnapCatalogBinary,
   acexHtmlDecodeOsnapCatalogBinary,
@@ -164,8 +164,8 @@ export {
   acexHtmlEstimateOsnapPrimitiveBytes,
   ACEO_OSNAP_MAGIC,
   ACEO_OSNAP_VERSION
-} from './AcExHtmlOsnapCatalogCodec'
-export { acexHtmlZipPackageFiles, acexHtmlUnzipPackageFiles } from './AcExHtmlPackageZip'
+} from './AcExHtmlOsnapCatalogCodec.js'
+export { acexHtmlZipPackageFiles, acexHtmlUnzipPackageFiles } from './AcExHtmlPackageZip.js'
 export {
   ACEX_HTML_BACKGROUND_BLACK,
   ACEX_HTML_BACKGROUND_WHITE,
@@ -175,7 +175,7 @@ export {
   acexHtmlRemapSnapshotForegroundForBackground,
   acexHtmlResolveBackground,
   type AcExHtmlBackground
-} from './AcExHtmlBackground'
+} from './AcExHtmlBackground.js'
 
 export {
   acexHtmlBuildSnapshotFromExportScene,
@@ -187,8 +187,8 @@ export {
   type AcExHtmlExportLayoutInput,
   type AcExHtmlExportLayoutLayerGeometry,
   type AcExHtmlExportSceneInput
-} from './AcExHtmlSnapshotFromSceneData'
-export { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout'
+} from './AcExHtmlSnapshotFromSceneData.js'
+export { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout.js'
 
 export {
   ACEX_COORDINATE_BADGE_LIFT_EM,
@@ -197,7 +197,7 @@ export {
   acexHtmlBuildShellBody,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_MOBILE_MAX_WIDTH
-} from './AcExHtmlShell'
+} from './AcExHtmlShell.js'
 export {
   ACEX_DEFAULT_POLAR_ANGLE,
   ACEX_ORTHO_POLAR_ANGLE,
@@ -205,19 +205,19 @@ export {
   acexHtmlBuildLocaleStrip,
   acexHtmlBuildPolarAnglesPanel,
   acexHtmlBuildSnapStrip
-} from './AcExHtmlShellFragments'
+} from './AcExHtmlShellFragments.js'
 export {
   AcExHtmlIcons,
   acexHtmlDropdownItem,
   acexHtmlToolbarButton
-} from './AcExHtmlIcons'
-export * from './AcExHtmlDocsUrl'
-export * from './AcExHtmlLayerExtents'
-export { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView'
-export * from './AcExHtmlBatchBuffers'
-export * from './AcExHtmlBatchBinaryCodec'
-export * from './AcExHtmlGeometryBatchSplit'
-export * from './AcExHtmlExtentCluster'
-export * from './AcExHtmlMeshTextureExport'
-export * from './AcExHtmlPatternSnapshot'
-export { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector'
+} from './AcExHtmlIcons.js'
+export * from './AcExHtmlDocsUrl.js'
+export * from './AcExHtmlLayerExtents.js'
+export { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView.js'
+export * from './AcExHtmlBatchBuffers.js'
+export * from './AcExHtmlBatchBinaryCodec.js'
+export * from './AcExHtmlGeometryBatchSplit.js'
+export * from './AcExHtmlExtentCluster.js'
+export * from './AcExHtmlMeshTextureExport.js'
+export * from './AcExHtmlPatternSnapshot.js'
+export { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector.js'

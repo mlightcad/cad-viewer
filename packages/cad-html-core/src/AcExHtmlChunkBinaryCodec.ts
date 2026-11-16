@@ -3,19 +3,19 @@ import {
   acexHtmlReadMeshBatch,
   acexHtmlWriteLineBatch,
   acexHtmlWriteMeshBatch
-} from './AcExHtmlBatchBinaryCodec'
-import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
+} from './AcExHtmlBatchBinaryCodec.js'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO.js'
 import {
   acexHtmlCompressSnapshotBinary,
   acexHtmlCompressSnapshotBinaryAsync,
   acexHtmlDecompressSnapshotBinary,
   acexHtmlIsGzipPayload
-} from './AcExHtmlSnapshotCompression'
+} from './AcExHtmlSnapshotCompression.js'
 import {
   ACEX_SNAPSHOT_VERSION,
   type AcExHtmlLineBatch,
   type AcExHtmlMeshBatch
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 /** Magic for ACEC geometry chunks (`ACEC` little-endian). */
 export const ACEC_CHUNK_MAGIC = 0x43454341

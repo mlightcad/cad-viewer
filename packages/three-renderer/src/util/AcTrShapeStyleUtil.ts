@@ -5,7 +5,7 @@ import {
   ShxParserFont
 } from '@mlightcad/mtext-renderer'
 
-import type { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import type { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
 
 const SHX_SUFFIX = /\.(shx|ttf|otf|woff2?)$/i
 

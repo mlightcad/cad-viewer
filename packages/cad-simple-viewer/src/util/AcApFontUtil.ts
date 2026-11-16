@@ -7,8 +7,8 @@ import {
   ShxParserFont
 } from '@mlightcad/mtext-renderer'
 
-import { AcApDocManager } from '../app/AcApDocManager'
-import { acapMeasureTextWidth } from './AcApTextMeasure'
+import { AcApDocManager } from '../app/AcApDocManager.js'
+import { acapMeasureTextWidth } from './AcApTextMeasure.js'
 
 export type {
   FontInfo,

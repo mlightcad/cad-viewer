@@ -6,7 +6,7 @@ import {
   mmToPdfPoints,
   PDF_MAX_PAGE_SIZE,
   PDF_POINTS_PER_MM
-} from '../AcPdfUnits'
+} from '../AcPdfUnits.js'
 
 export const A4_WIDTH_PT = 297 * PDF_POINTS_PER_MM
 export const A4_HEIGHT_PT = 210 * PDF_POINTS_PER_MM

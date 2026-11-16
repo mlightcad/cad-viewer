@@ -4,10 +4,10 @@ import type {
   AcApDataSource,
   AcApDataSourceAuthState,
   AcApDataSourceFile
-} from './AcApDataSource'
-import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
+} from './AcApDataSource.js'
+import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds.js'
 
-export { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
+export { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds.js'
 
 /** File extensions accepted by the local data source. */
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg', '.svg'] as const

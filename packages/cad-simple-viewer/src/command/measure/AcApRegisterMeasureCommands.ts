@@ -1,18 +1,18 @@
-import type { AcApSystemCommandRegistrar } from '../AcApDrawStyleSession'
+import type { AcApSystemCommandRegistrar } from '../AcApDrawStyleSession.js'
 import {
   type AcApDrawStyleSessionInstallContext,
   acapInstallDrawStyleSessionAccessory
-} from '../AcApDrawStyleSession'
-import { AcApClearMeasurementsCmd } from './AcApClearMeasurementsCmd'
-import { AcApMeasureAngleCmd } from './AcApMeasureAngleCmd'
-import { AcApMeasureArcCmd } from './AcApMeasureArcCmd'
-import { AcApMeasureAreaCmd } from './AcApMeasureAreaCmd'
-import { AcApMeasureContinuousCmd } from './AcApMeasureContinuousCmd'
-import { AcApMeasureDistanceCmd } from './AcApMeasureDistanceCmd'
-import { AcApMeasurementExportCmd } from './AcApMeasurementImportExportCmd'
-import { AcApMeasurementImportCmd } from './AcApMeasurementImportExportCmd'
-import { AcApMeasurementVisibilityCmd } from './AcApMeasurementVisibilityCmd'
-import { AcApMeasurePointCmd } from './AcApMeasurePointCmd'
+} from '../AcApDrawStyleSession.js'
+import { AcApClearMeasurementsCmd } from './AcApClearMeasurementsCmd.js'
+import { AcApMeasureAngleCmd } from './AcApMeasureAngleCmd.js'
+import { AcApMeasureArcCmd } from './AcApMeasureArcCmd.js'
+import { AcApMeasureAreaCmd } from './AcApMeasureAreaCmd.js'
+import { AcApMeasureContinuousCmd } from './AcApMeasureContinuousCmd.js'
+import { AcApMeasureDistanceCmd } from './AcApMeasureDistanceCmd.js'
+import { AcApMeasurementExportCmd } from './AcApMeasurementImportExportCmd.js'
+import { AcApMeasurementImportCmd } from './AcApMeasurementImportExportCmd.js'
+import { AcApMeasurementVisibilityCmd } from './AcApMeasurementVisibilityCmd.js'
+import { AcApMeasurePointCmd } from './AcApMeasurePointCmd.js'
 
 /**
  * Registers measurement commands and installs the shared draw-style session

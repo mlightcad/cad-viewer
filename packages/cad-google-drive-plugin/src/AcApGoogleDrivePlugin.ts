@@ -9,8 +9,8 @@ import packageJson from '../package.json'
 import {
   ACAP_GOOGLE_DRIVE_DATA_SOURCE_ID,
   AcApGoogleDriveDataSource
-} from './AcApGoogleDriveDataSource'
-import type { GoogleDriveClientOptions } from './googleDriveClient'
+} from './AcApGoogleDriveDataSource.js'
+import type { GoogleDriveClientOptions } from './googleDriveClient.js'
 
 /** Options for {@link AcApGoogleDrivePlugin}. */
 export type AcApGoogleDrivePluginOptions = GoogleDriveClientOptions

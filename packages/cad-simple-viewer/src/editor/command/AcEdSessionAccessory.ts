@@ -6,8 +6,8 @@
  * Kept as a types-only module so the command layer does not import chrome DOM.
  */
 
-import type { AcEdBaseView } from '../view/AcEdBaseView'
-import type { AcEdCommand } from './AcEdCommand'
+import type { AcEdBaseView } from '../view/AcEdBaseView.js'
+import type { AcEdCommand } from './AcEdCommand.js'
 
 /** Desktop top-center slot vs mobile session panel. */
 export type AcEdSessionAccessorySlot = 'desktop' | 'mobile'

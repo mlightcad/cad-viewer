@@ -1,8 +1,8 @@
 import { AcDbEntity, AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../view/AcEdBaseView'
-import { AcEdBatchedPreview } from './AcEdBatchPreview'
-import { AcEdPreviewJig } from './AcEdPreviewJig'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
+import { AcEdBatchedPreview } from './AcEdBatchPreview.js'
+import { AcEdPreviewJig } from './AcEdPreviewJig.js'
 
 /**
  * One transient preview clone paired with its copy-array factor.

@@ -1,15 +1,15 @@
-import { acexHtmlToWcsCoord } from './AcExHtmlBatchBuffers'
+import { acexHtmlToWcsCoord } from './AcExHtmlBatchBuffers.js'
 import {
   type AcExHtmlClusterBox,
   acexHtmlUnionDominantCluster
-} from './AcExHtmlExtentCluster'
+} from './AcExHtmlExtentCluster.js'
 import type {
   AcExHtmlExtents,
   AcExHtmlLayoutSnapshot,
   AcExHtmlLineBatch,
   AcExHtmlMeshBatch,
   AcExHtmlSnapshot
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 /**
  * Mutable 2D extents accumulator used while scanning batch geometry.

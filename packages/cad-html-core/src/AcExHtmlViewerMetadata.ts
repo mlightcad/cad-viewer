@@ -10,7 +10,7 @@ import type {
   AcExHtmlExtents,
   AcExHtmlViewerGripAppearance,
   AcExHtmlViewerUnits
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 const DEFAULT_GRIP: AcExHtmlViewerGripAppearance = {
   size: 8,

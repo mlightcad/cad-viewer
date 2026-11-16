@@ -7,7 +7,7 @@
  * entities into strokes and turns candidates into `AcDbText`.
  */
 
-import { type PdfRecPoint } from './pdfRecGeometry'
+import { type PdfRecPoint } from './pdfRecGeometry.js'
 
 /** One stroke: a polyline sampled from a source entity. */
 export interface PdfTextStroke<Id = unknown> {

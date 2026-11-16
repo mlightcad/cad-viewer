@@ -5,7 +5,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -14,10 +14,10 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   scaleCopyDisplacement
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service'
-import { AcApCopyPreviewJig } from './AcApCopyPreviewJig'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/index.js'
+import { AcApCopyPreviewJig } from './AcApCopyPreviewJig.js'
 
 type CopyMode = 'Single' | 'Multiple'
 

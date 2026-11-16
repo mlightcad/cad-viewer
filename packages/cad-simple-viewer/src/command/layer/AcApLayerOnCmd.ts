@@ -1,8 +1,8 @@
-import { AcApContext } from '../../app'
-import { AcEdOpenMode } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLayerService } from '../../service'
-import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
+import { AcApContext } from '../../app/index.js'
+import { AcEdOpenMode } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLayerService } from '../../service/index.js'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd.js'
 
 /**
  * AutoCAD-like `LAYON` command.

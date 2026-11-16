@@ -9,7 +9,7 @@ import {
   AcGiMTextAttachmentPoint
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -23,9 +23,9 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcTrView2d } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   acapCreateMLeader,
   acapLayoutMLeader,
@@ -37,8 +37,8 @@ import {
   acapResolveMLeaderContentType,
   acapResolveMLeaderPlacement,
   acapResolveMLeaderStyle
-} from './AcApMLeaderCmdUtil'
-import { isInsertableBlockName } from './isInsertableBlockName'
+} from './AcApMLeaderCmdUtil.js'
+import { isInsertableBlockName } from './isInsertableBlockName.js'
 
 const I18N = 'jig.mleader'
 

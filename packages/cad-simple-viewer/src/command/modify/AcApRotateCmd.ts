@@ -5,21 +5,21 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service'
-import { createRotationMatrix } from '../../util/AcApGeTransform'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/index.js'
+import { createRotationMatrix } from '../../util/AcApGeTransform.js'
 import {
   AcApRotatePreviewJig,
   AcApRotateStaticJig
-} from './AcApRotatePreviewJig'
+} from './AcApRotatePreviewJig.js'
 
 /**
  * Command to rotate selected entities around a base point.

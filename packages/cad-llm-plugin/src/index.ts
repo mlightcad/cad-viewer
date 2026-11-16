@@ -8,24 +8,24 @@
  * @packageDocumentation
  */
 
-export * from './AcApLlmPlugin'
-export * from './AcApLlmTextRecognizer'
-export * from './command/AcApLlmSettingsCmd'
-export * from './constants'
+export * from './AcApLlmPlugin.js'
+export * from './AcApLlmTextRecognizer.js'
+export * from './command/AcApLlmSettingsCmd.js'
+export * from './constants.js'
 export {
   type AcApLlmLabelKey,
   type AcApLlmLabels,
   llmT,
   mergeLlmI18nIntoVueI18n,
   registerLlmI18n
-} from './i18n'
-export * from './model/AcApLlmModelFactory'
-export * from './model/AcApLlmModelListing'
-export * from './model/normalizeLlmBaseUrl'
-export * from './model/skipDataUrlDownload'
-export * from './storage/AcApLlmConfigStore'
-export * from './storage/AcApLlmModelCatalog'
-export * from './storage/settingsEquality'
-export * from './ui/AcApLlmModelChoices'
-export * from './ui/AcApLlmProviderLabels'
-export * from './ui/AcUiLlmSettingsDialog'
+} from './i18n/index.js'
+export * from './model/AcApLlmModelFactory.js'
+export * from './model/AcApLlmModelListing.js'
+export * from './model/normalizeLlmBaseUrl.js'
+export * from './model/skipDataUrlDownload.js'
+export * from './storage/AcApLlmConfigStore.js'
+export * from './storage/AcApLlmModelCatalog.js'
+export * from './storage/settingsEquality.js'
+export * from './ui/AcApLlmModelChoices.js'
+export * from './ui/AcApLlmProviderLabels.js'
+export * from './ui/AcUiLlmSettingsDialog.js'

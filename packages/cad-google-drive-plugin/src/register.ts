@@ -1,6 +1,6 @@
 import type { AcApPluginManager } from '@mlightcad/cad-simple-viewer'
 
-import type { AcApGoogleDrivePluginOptions } from './AcApGoogleDrivePlugin'
+import type { AcApGoogleDrivePluginOptions } from './AcApGoogleDrivePlugin.js'
 
 /** Eager plugin name for Google Drive data source. */
 export const GOOGLE_DRIVE_PLUGIN_NAME = 'GoogleDrivePlugin'

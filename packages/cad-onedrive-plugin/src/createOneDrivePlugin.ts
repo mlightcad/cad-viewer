@@ -1,7 +1,7 @@
 import {
   AcApOneDrivePlugin,
   type AcApOneDrivePluginOptions
-} from './AcApOneDrivePlugin'
+} from './AcApOneDrivePlugin.js'
 
 /**
  * Creates an OneDrive plugin instance.

@@ -10,8 +10,8 @@
 
 import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
 
-import type { AcExMeasureController } from './AcExMeasurement'
-import type { AcExMeasurementType } from './AcExMeasurementTypes'
+import type { AcExMeasureController } from './AcExMeasurement.js'
+import type { AcExMeasurementType } from './AcExMeasurementTypes.js'
 
 const TYPE_I18N: Record<AcExMeasurementType, string> = {
   distance: 'toolbar.measureDistance',

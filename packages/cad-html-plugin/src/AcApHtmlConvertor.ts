@@ -27,12 +27,12 @@ import {
   captureAcApHtmlViewState,
   resolveAcApHtmlExportOptions,
   resolveAcApHtmlPackageBuildOptions
-} from './AcApHtmlExportOptions'
+} from './AcApHtmlExportOptions.js'
 import {
   type AcApHtmlPluginOptions,
   resolveViewerRuntimeUrl
-} from './AcApHtmlPluginOptions'
-import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
+} from './AcApHtmlPluginOptions.js'
+import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder.js'
 
 function logExportTiming(label: string, ms: number) {
   console.log(`[chtml] ${label}: ${ms.toFixed(0)} ms`)

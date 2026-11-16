@@ -5,7 +5,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -16,14 +16,14 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit.js'
 import {
   AcApBlockInsertSession,
   type AcApBlockInsertSessionOptions
-} from './AcApBlockInsertSession'
-import { isInsertableBlockName } from './isInsertableBlockName'
+} from './AcApBlockInsertSession.js'
+import { isInsertableBlockName } from './isInsertableBlockName.js'
 
 /**
  * Preview jig for `-INSERT` — shows the block reference while the user picks

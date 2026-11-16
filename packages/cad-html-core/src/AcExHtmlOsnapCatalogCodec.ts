@@ -1,14 +1,14 @@
-import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO.js'
 import type {
   AcExHtmlOsnapCatalog,
   AcExHtmlOsnapPrimitive
-} from './AcExHtmlOsnapPrimitiveTypes'
+} from './AcExHtmlOsnapPrimitiveTypes.js'
 import {
   acexHtmlCompressSnapshotBinary,
   acexHtmlCompressSnapshotBinaryAsync,
   acexHtmlDecompressSnapshotBinary,
   acexHtmlIsGzipPayload
-} from './AcExHtmlSnapshotCompression'
+} from './AcExHtmlSnapshotCompression.js'
 
 /** Magic for ACEO osnap catalog payloads (`ACEO` little-endian). */
 export const ACEO_OSNAP_MAGIC = 0x4f454341

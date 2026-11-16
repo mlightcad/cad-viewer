@@ -5,31 +5,31 @@ import {
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
+import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout'
-import { AcApI18n } from '../../i18n'
-import { type AcTrView2d, pickAttachableShapeMarkupAt } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { type AcTrView2d, pickAttachableShapeMarkupAt } from '../../view/index.js'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
-} from '../overlay/AcApHtmlLivePreview'
-import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
-import { createMarkupMeta, promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
-import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
+} from '../overlay/AcApHtmlLivePreview.js'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil.js'
+import { createMarkupMeta, promptMarkupCapsuleText } from './AcApMarkupCmdUtil.js'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd.js'
 import {
   isAttachableShapeMarkup,
   markupShapeOutlineFromGeometry
-} from './AcApMarkupGeometry'
-import { attachCalloutToMarkup, commitMarkup } from './AcApMarkupPresenter'
-import { promptAttachedCallout } from './AcApMarkupShapeCallout'
-import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+} from './AcApMarkupGeometry.js'
+import { attachCalloutToMarkup, commitMarkup } from './AcApMarkupPresenter.js'
+import { promptAttachedCallout } from './AcApMarkupShapeCallout.js'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 import {
   defaultMarkupColor,
   defaultMarkupStyle,
@@ -37,7 +37,7 @@ import {
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   subscribeMarkupDrawStyle
-} from './AcApMarkupUtil'
+} from './AcApMarkupUtil.js'
 
 /**
  * Live preview while placing a callout text bubble:

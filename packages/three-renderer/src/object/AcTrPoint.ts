@@ -5,12 +5,12 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
-import { AcTrEntity } from './AcTrEntity'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
+import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import { getSceneDrawableUserData } from '../util/AcTrObjectUserData.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 const _vector3 = /*@__PURE__*/ new THREE.Vector3()
 

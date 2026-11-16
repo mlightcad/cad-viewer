@@ -2,10 +2,10 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModel } from 'ai'
 
-import type { AcApLlmSettings } from '../storage/AcApLlmConfigStore'
-import { ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess'
-import { acapLlmNormalizeBaseUrl } from './normalizeLlmBaseUrl'
-import { acapLlmCreateOpenAiCompatibleFetch } from './openAiCompatibleFetch'
+import type { AcApLlmSettings } from '../storage/AcApLlmConfigStore.js'
+import { ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess.js'
+import { acapLlmNormalizeBaseUrl } from './normalizeLlmBaseUrl.js'
+import { acapLlmCreateOpenAiCompatibleFetch } from './openAiCompatibleFetch.js'
 
 /**
  * Instantiates an AI SDK language model from resolved LLM settings.

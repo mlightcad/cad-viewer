@@ -1,5 +1,5 @@
-import type { AcEdUiLayoutKind } from '../../editor'
-import type { AcUiToolbarOptions } from './types'
+import type { AcEdUiLayoutKind } from '../../editor/index.js'
+import type { AcUiToolbarOptions } from './types.js'
 
 /** Pad default: hide select/pan; touch drag pans and long-press box-selects. */
 const PAD_DEFAULT_EXCLUDE_ITEMS = ['select', 'pan']

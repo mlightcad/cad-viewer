@@ -4,7 +4,7 @@ import {
   AcGePoint2d
 } from '@mlightcad/data-model'
 
-import type { CadSession, CadSessionView } from '../session/CadSession'
+import type { CadSession, CadSessionView } from '../session/CadSession.js'
 
 /**
  * Snapshot of the active drawing used by `cad.drawing` in the script host.

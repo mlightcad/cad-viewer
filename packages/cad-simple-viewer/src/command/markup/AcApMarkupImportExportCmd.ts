@@ -1,18 +1,18 @@
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { runMarkupEdit } from './AcApMarkupHistory'
-import { getMarkupPresenter } from './AcApMarkupPresenter'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { runMarkupEdit } from './AcApMarkupHistory.js'
+import { getMarkupPresenter } from './AcApMarkupPresenter.js'
 import {
   markupSidecarFileName,
   parseMarkupSidecar,
   stringifyMarkupSidecar
-} from './AcApMarkupSidecar'
-import { getMarkupStore } from './AcApMarkupStore'
+} from './AcApMarkupSidecar.js'
+import { getMarkupStore } from './AcApMarkupStore.js'
 
 function downloadText(filename: string, text: string): void {
   if (typeof document === 'undefined') return

@@ -5,14 +5,14 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
-import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
-import { AcApImportPdfCmd } from './AcApImportPdfCmd'
-import { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd'
-import { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
-import { AcApPdfDimCmd } from './AcApPdfDimCmd'
-import { AcApPdfHatchCmd } from './AcApPdfHatchCmd'
-import { AcApPdfScaleCmd } from './AcApPdfScaleCmd'
-import { AcApPdfTextCmd } from './AcApPdfTextCmd'
+import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd.js'
+import { AcApImportPdfCmd } from './AcApImportPdfCmd.js'
+import { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd.js'
+import { AcApPdfBlockCmd } from './AcApPdfBlockCmd.js'
+import { AcApPdfDimCmd } from './AcApPdfDimCmd.js'
+import { AcApPdfHatchCmd } from './AcApPdfHatchCmd.js'
+import { AcApPdfScaleCmd } from './AcApPdfScaleCmd.js'
+import { AcApPdfTextCmd } from './AcApPdfTextCmd.js'
 
 export interface AcApPdfPluginOptions {
   /**

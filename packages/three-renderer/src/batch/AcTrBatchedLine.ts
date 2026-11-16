@@ -1,14 +1,14 @@
 import * as THREE from 'three'
 
-import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData.js'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
   copyArrayContents,
   isBatchGeometryActive
-} from './AcTrBatchedGeometryInfo'
+} from './AcTrBatchedGeometryInfo.js'
 import {
   applyGeometryAt,
   assertReservedCapacity,
@@ -19,8 +19,8 @@ import {
   reserveGeometryId,
   resolveReservedCount,
   validateGeometry
-} from './AcTrBatchedMixin'
-import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
+} from './AcTrBatchedMixin.js'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility/index.js'
 
 /** Reusable scratch box for bounds queries. */
 const _box = /*@__PURE__*/ new THREE.Box3()

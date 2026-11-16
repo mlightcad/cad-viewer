@@ -1,4 +1,4 @@
-import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet.js'
 
 /**
  * World-space point used by {@link AcExConfirmedPointMarks}.

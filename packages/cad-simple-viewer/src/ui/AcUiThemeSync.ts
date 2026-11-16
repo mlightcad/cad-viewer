@@ -5,8 +5,8 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../app'
-import { acedApplyUiTheme, type AcEdUiTheme, isLightColorTheme } from '../editor'
+import { AcApDocManager } from '../app/index.js'
+import { acedApplyUiTheme, type AcEdUiTheme, isLightColorTheme } from '../editor/index.js'
 
 /**
  * Reads the UI theme from a host element's `data-ml-ui-theme` attribute.

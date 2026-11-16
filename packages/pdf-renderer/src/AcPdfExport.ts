@@ -8,23 +8,23 @@ import {
 } from '@mlightcad/data-model'
 import { PDFDocument, PDFImage } from 'pdf-lib'
 
-import type { AcPdfExportOptions } from './AcPdfExportOptions'
-import { createPdfFormRegistry } from './pdf/AcPdfContentWriter'
-import { AcPdfFontManager } from './pdf/AcPdfFontManager'
-import { AcPdfOcgManager } from './pdf/AcPdfOcgManager'
-import { AcPdfEntity } from './renderer/AcPdfEntity'
-import { AcPdfRenderer } from './renderer/AcPdfRenderer'
+import type { AcPdfExportOptions } from './AcPdfExportOptions.js'
+import { createPdfFormRegistry } from './pdf/AcPdfContentWriter.js'
+import { AcPdfFontManager } from './pdf/AcPdfFontManager.js'
+import { AcPdfOcgManager } from './pdf/AcPdfOcgManager.js'
+import { AcPdfEntity } from './renderer/AcPdfEntity.js'
+import { AcPdfRenderer } from './renderer/AcPdfRenderer.js'
 import {
   acPdfApplyLayerVisibility,
   acPdfCollectDatabaseLayerVisibility
-} from './viewport/AcPdfLayerVisibility'
+} from './viewport/AcPdfLayerVisibility.js'
 import {
   buildViewportModelContent,
   collectBlockRoots,
   collectModelSpaceRoots,
   isPaperSpaceBlock
-} from './viewport/AcPdfPaperSpaceExport'
-import { isDefaultPaperSpaceViewport } from './viewport/AcPdfPaperViewport'
+} from './viewport/AcPdfPaperSpaceExport.js'
+import { isDefaultPaperSpaceViewport } from './viewport/AcPdfPaperViewport.js'
 
 /**
  * Renders a drawing database to a vector PDF.

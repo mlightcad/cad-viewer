@@ -30,9 +30,9 @@ import {
 } from '@mlightcad/data-model'
 import { PDFDocument } from 'pdf-lib'
 
-import type { AcPdfExportOptions } from '../AcPdfExportOptions'
-import { shadingFromGradient } from '../hatch/AcPdfGradient'
-import { tessellateHatchPattern } from '../hatch/AcPdfHatchTessellator'
+import type { AcPdfExportOptions } from '../AcPdfExportOptions.js'
+import { shadingFromGradient } from '../hatch/AcPdfGradient.js'
+import { tessellateHatchPattern } from '../hatch/AcPdfHatchTessellator.js'
 import {
   type AcPdfLineWalkPlacement,
   isComplexLineType,
@@ -40,35 +40,35 @@ import {
   isComplexTextElement,
   resolveLinetypeEmbeddedText,
   walkLineType
-} from '../linetype/AcPdfLineTypeStroker'
-import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
-import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
-import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
-import { stripMtextCodes } from '../pdf/AcPdfMarkedContent'
+} from '../linetype/AcPdfLineTypeStroker.js'
+import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter.js'
+import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter.js'
+import type { AcPdfFontManager } from '../pdf/AcPdfFontManager.js'
+import { stripMtextCodes } from '../pdf/AcPdfMarkedContent.js'
 import {
   buildPointSymbol,
   POINT_CENTER_DOT_RATIO,
   resolvePointDisplayScale
-} from '../point/AcPdfPointSymbol'
+} from '../point/AcPdfPointSymbol.js'
 import type {
   AcPdfGlyphBox,
   AcPdfGlyphColorGroup,
   AcPdfGlyphColorSettings,
   AcPdfGlyphPrimitives,
   AcPdfGlyphProvider
-} from '../text/AcPdfGlyphProvider'
-import { AcPdfEntity } from './AcPdfEntity'
-import { AcPdfGroup } from './AcPdfGroup'
-import type { AcPdfColorMode, AcPdfOp, AcPdfPoint } from './AcPdfStyle'
-import { rgbFromPacked } from './AcPdfStyle'
-import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
+} from '../text/AcPdfGlyphProvider.js'
+import { AcPdfEntity } from './AcPdfEntity.js'
+import { AcPdfGroup } from './AcPdfGroup.js'
+import type { AcPdfColorMode, AcPdfOp, AcPdfPoint } from './AcPdfStyle.js'
+import { rgbFromPacked } from './AcPdfStyle.js'
+import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil.js'
 import {
   ASCENT_RATIO,
   DESCENT_RATIO,
   layoutMText,
   OVERLINE_OFFSET_RATIO,
   STRIKE_OFFSET_RATIO,
-  UNDERLINE_OFFSET_RATIO} from './AcPdfTextLayout'
+  UNDERLINE_OFFSET_RATIO} from './AcPdfTextLayout.js'
 
 const DEFAULT_POINT_RADIUS = 0.5
 

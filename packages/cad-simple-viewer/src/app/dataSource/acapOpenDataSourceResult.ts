@@ -1,7 +1,7 @@
-import { eventBus } from '../../editor/global/eventBus'
-import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
-import type { AcApOpenDatabaseOptions } from '../AcApOpenDatabaseOptions'
-import type { AcApDataSourceFile } from './AcApDataSource'
+import { eventBus } from '../../editor/global/eventBus.js'
+import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
+import type { AcApOpenDatabaseOptions } from '../AcApOpenDatabaseOptions.js'
+import type { AcApDataSourceFile } from './AcApDataSource.js'
 
 /**
  * Opens a file obtained from a data source via {@link AcApDocManager}.
@@ -16,7 +16,7 @@ export async function acapOpenDataSourceResult(
   file: AcApDataSourceFile,
   options?: AcApOpenDatabaseOptions
 ): Promise<void> {
-  const { AcApDocManager } = await import('../AcApDocManager')
+  const { AcApDocManager } = await import('../AcApDocManager.js')
   const dm = AcApDocManager.instance
   const openOptions: AcApOpenDatabaseOptions =
     options ?? (await dm.resolveOpenDocumentDefaults())

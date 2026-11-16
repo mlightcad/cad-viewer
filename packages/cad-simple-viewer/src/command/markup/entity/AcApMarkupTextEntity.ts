@@ -1,11 +1,11 @@
 import { AcTrHtmlBadge } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
-import type { AcApOverlayWorldDrawResult } from '../../overlay'
-import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
-import { bindMarkupCenterMove } from './AcApMarkupEntityGrips'
+import type { AcTrView2d } from '../../../view/index.js'
+import type { AcApOverlayWorldDrawResult } from '../../overlay/index.js'
+import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
+import { bindMarkupCenterMove } from './AcApMarkupEntityGrips.js'
 
 /**
  * Text note markup rendered as an {@link AcTrHtmlBadge}.

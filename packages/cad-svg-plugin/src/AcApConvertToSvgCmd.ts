@@ -1,6 +1,6 @@
 import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
 
-import { AcApSvgConvertor } from './AcApSvgConvertor'
+import { AcApSvgConvertor } from './AcApSvgConvertor.js'
 
 /**
  * Command for converting the current CAD drawing to SVG format.

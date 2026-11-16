@@ -1,9 +1,9 @@
 import { log } from '@mlightcad/data-model'
 
-import { AcApContext } from '../app/AcApContext'
-import { AcEdCommand } from '../editor/command/AcEdCommand'
-import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
-import { AcApPlugin } from './AcApPlugin'
+import { AcApContext } from '../app/AcApContext.js'
+import { AcEdCommand } from '../editor/command/AcEdCommand.js'
+import { AcEdCommandStack } from '../editor/command/AcEdCommandStack.js'
+import { AcApPlugin } from './AcApPlugin.js'
 
 /**
  * Example plugin demonstrating how to create and use plugins in cad-simple-viewer.
@@ -16,7 +16,7 @@ import { AcApPlugin } from './AcApPlugin'
  * @example
  * ```typescript
  * import { AcApDocManager } from '@mlightcad/cad-simple-viewer';
- * import { ExamplePlugin } from './AcApPluginExample';
+ * import { ExamplePlugin } from './AcApPluginExample.js';
  *
  * // Load the plugin
  * const plugin = new ExamplePlugin();

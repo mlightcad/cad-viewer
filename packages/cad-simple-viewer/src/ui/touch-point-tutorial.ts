@@ -5,8 +5,8 @@
  * offline HTML viewer (via {@link AcExHtmlSimpleViewerUi}).
  */
 
-import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
-import { AcUiDialog } from './AcUiDialog'
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { AcUiDialog } from './AcUiDialog.js'
 
 /** DOM id of tutorial-specific styles. */
 const STYLE_ID = 'ml-ui-touch-point-tutorial-styles'

@@ -1,4 +1,4 @@
-import type { AcPdfPoint } from '../renderer/AcPdfStyle'
+import type { AcPdfPoint } from '../renderer/AcPdfStyle.js'
 
 /**
  * Radius of the screen-style center mark, as a fraction of {@link resolvePointDisplayScale}.

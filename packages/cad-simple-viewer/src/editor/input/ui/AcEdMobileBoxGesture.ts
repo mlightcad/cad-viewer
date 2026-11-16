@@ -1,11 +1,11 @@
-import { acedClearDomSelection } from './AcEdCanvasTouchCalloutGuard'
+import { acedClearDomSelection } from './AcEdCanvasTouchCalloutGuard.js'
 import {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   acedArmTouchMouseGuard,
   acedShouldIgnoreCompatMouse,
   acedSinkFollowingClick,
   AcEdTouchPointSession
-} from './AcEdTouchPointSession'
+} from './AcEdTouchPointSession.js'
 
 /**
  * Host callbacks for {@link acedAttachMobileBoxGesture}.

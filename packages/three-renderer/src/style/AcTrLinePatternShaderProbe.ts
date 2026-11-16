@@ -1,7 +1,7 @@
 import { AcGiLineTypePatternElement } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrLinePatternShaders } from './AcTrLinePatternShaders'
+import { AcTrLinePatternShaders } from './AcTrLinePatternShaders.js'
 
 /**
  * Detects whether the active GPU/driver can render the custom line-pattern

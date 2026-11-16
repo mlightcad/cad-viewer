@@ -1,6 +1,6 @@
 import { AcDbGroup } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -9,8 +9,8 @@ import {
   AcEdPromptSelectionOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapCreateGroup,
   acapExplodeGroup,
@@ -18,7 +18,7 @@ import {
   AcApGroupCreateError,
   acapListGroups,
   acapValidateGroupName
-} from '../../service/AcApGroup'
+} from '../../service/AcApGroup.js'
 
 /**
  * -GROUP — command-line group manager (list/create/add/remove/explode/…).

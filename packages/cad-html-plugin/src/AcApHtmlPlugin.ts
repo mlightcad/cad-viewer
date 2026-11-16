@@ -5,8 +5,8 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
-import { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
-import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
+import { AcApExportHtmlCmd } from './AcApExportHtmlCmd.js'
+import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions.js'
 
 /**
  * HTML export plugin for cad-simple-viewer.

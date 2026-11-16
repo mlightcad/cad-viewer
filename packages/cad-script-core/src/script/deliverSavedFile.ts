@@ -1,5 +1,5 @@
-import type { ToolResultSavedFile } from '../tools/types'
-import { CAD_MCP_FILE_OUTBOX_KEY } from './scriptApi'
+import type { ToolResultSavedFile } from '../tools/types.js'
+import { CAD_MCP_FILE_OUTBOX_KEY } from './scriptApi.js'
 
 /** Payload stashed for the MCP Node host to write to disk. */
 export interface CadMcpFileOutboxItem {

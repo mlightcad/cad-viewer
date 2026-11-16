@@ -12,7 +12,7 @@ import type {
   AcExMarkupStatus,
   AcExMarkupStyle,
   AcExMarkupType
-} from './AcExMarkupTypes'
+} from './AcExMarkupTypes.js'
 
 /** Overlay line weight: hairline (1 CSS px, not zoom-scaled). */
 const ACEX_MARKUP_LINE_WEIGHT = 0

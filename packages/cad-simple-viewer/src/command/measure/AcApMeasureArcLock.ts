@@ -10,7 +10,7 @@ import {
   TAU
 } from '@mlightcad/data-model'
 
-import type { AcApMeasureCircleGeom } from './entity/AcApMeasureDrawUtil'
+import type { AcApMeasureCircleGeom } from './entity/AcApMeasureDrawUtil.js'
 
 /** Ignore polyline bulge values that are effectively a straight chord. */
 const BULGE_EPS = 1e-12

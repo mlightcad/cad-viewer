@@ -11,4 +11,4 @@ export {
   CAD_MCP_FILE_OUTBOX_KEY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE
-} from './script/scriptApi'
+} from './script/scriptApi.js'

@@ -2,12 +2,12 @@ import {
   ML_UI_MOBILE_MAX_WIDTH,
   ML_UI_SESSION_PANEL_MAX_WIDTH,
   ML_UI_SESSION_PANEL_WIDTH
-} from '../editor/global/AcEdUiLayout'
+} from '../editor/global/AcEdUiLayout.js'
 import {
   acedApplyUiTheme,
   type AcEdUiTheme,
   resolveUiTheme
-} from '../editor/global/AcEdUiTheme'
+} from '../editor/global/AcEdUiTheme.js'
 
 /**
  * Options for constructing a {@link AcUiDialog}.

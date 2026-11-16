@@ -12,11 +12,11 @@ import {
   acapPdfEnsureDimStyle,
   acapPdfNiceScale,
   PDF_DIM_STYLE
-} from './pdfDimensionConvert'
+} from './pdfDimensionConvert.js'
 import {
   type PdfDimensionCandidate,
   suggestPdfDimensionScale
-} from './recognition/pdfDimensionPattern'
+} from './recognition/pdfDimensionPattern.js'
 
 export { PDF_DIM_STYLE }
 

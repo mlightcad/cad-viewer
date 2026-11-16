@@ -1,19 +1,19 @@
 import {
   ACAP_DOCS_PATH_MAGNIFIER,
   acapDocsUrl
-} from '../../../app/AcApDocsUrl'
-import { AcApI18n } from '../../../i18n/AcApI18n'
+} from '../../../app/AcApDocsUrl.js'
+import { AcApI18n } from '../../../i18n/AcApI18n.js'
 import {
   type AcUiMobileSessionMetricTexts,
   AcUiMobileSessionPanel,
   type AcUiMobileSessionPanelLabels
-} from '../../../ui/AcUiMobileSessionPanel'
+} from '../../../ui/AcUiMobileSessionPanel.js'
 import {
   acedIsMobileUiLayout,
   acedSubscribeUiLayout
-} from '../../global/AcEdUiLayout'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
-import type { AcEdMobileSessionMetrics } from './AcEdMobileSessionMetrics'
+} from '../../global/AcEdUiLayout.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
+import type { AcEdMobileSessionMetrics } from './AcEdMobileSessionMetrics.js'
 
 /** Keyword chip shown on the mobile session panel. */
 export interface AcEdMobileKeywordChip {

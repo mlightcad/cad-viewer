@@ -1,8 +1,8 @@
-import { AcApFontUtil } from './AcApFontUtil'
+import { AcApFontUtil } from './AcApFontUtil.js'
 import {
   acapI18nTranslate,
   type AcApTranslateFn
-} from './AcApFormatUnsupportedEntitiesMessage'
+} from './AcApFormatUnsupportedEntitiesMessage.js'
 
 /**
  * Formats one missing font with its replacement name for notification text.

@@ -1,17 +1,17 @@
 import { AcDbEntity, AcGePoint3d, AcGeTol } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptDistanceOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { resolveSelectedEntities } from '../../service'
-import { createScaleMatrix } from '../../util/AcApGeTransform'
-import { AcApScalePreviewJig, AcApScaleStaticJig } from './AcApScalePreviewJig'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { resolveSelectedEntities } from '../../service/index.js'
+import { createScaleMatrix } from '../../util/AcApGeTransform.js'
+import { AcApScalePreviewJig, AcApScaleStaticJig } from './AcApScalePreviewJig.js'
 
 /**
  * Result of the SCALE factor prompts.

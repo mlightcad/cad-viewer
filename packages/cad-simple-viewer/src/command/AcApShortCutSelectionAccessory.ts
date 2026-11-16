@@ -7,28 +7,28 @@
 
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { AcApI18n } from '../i18n'
-import { AcUiAciColorDialog } from '../ui/AcUiAciColorDialog'
-import type { AcUiDrawStyleKind } from '../ui/AcUiDrawStyle'
-import type { AcUiShortCutToolbar } from '../ui/AcUiShortCutToolbar'
-import type { AcUiSimpleToolbarItem } from '../ui/AcUiSimpleToolbar'
+import { resolveUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { AcApI18n } from '../i18n/index.js'
+import { AcUiAciColorDialog } from '../ui/AcUiAciColorDialog.js'
+import type { AcUiDrawStyleKind } from '../ui/AcUiDrawStyle.js'
+import type { AcUiShortCutToolbar } from '../ui/AcUiShortCutToolbar.js'
+import type { AcUiSimpleToolbarItem } from '../ui/AcUiSimpleToolbar.js'
 import {
   acuiOpenTextHeightDialog,
   acuiResolveTextHeightDialogInitials,
   acuiResolveTextHeightPatch
-} from '../ui/AcUiTextHeightDialogHelpers'
-import { ICON_TEXT_HEIGHT } from '../ui/icons'
+} from '../ui/AcUiTextHeightDialogHelpers.js'
+import { ICON_TEXT_HEIGHT } from '../ui/icons.js'
 import {
   acapGetMeasurementCustomTextHeightWcs,
   acapGetMeasurementFontSize,
   acapGetMeasurementTextHeightMode,
   acapSetMeasurementDrawColor,
   acapSetMeasurementTextHeight
-} from '../util/AcApMeasurementUtil'
-import type { AcTrView2d } from '../view'
-import { applyMarkupStyleToSelection } from './markup/AcApMarkupPresenter'
-import { getMarkupStore } from './markup/AcApMarkupStore'
+} from '../util/AcApMeasurementUtil.js'
+import type { AcTrView2d } from '../view/index.js'
+import { applyMarkupStyleToSelection } from './markup/AcApMarkupPresenter.js'
+import { getMarkupStore } from './markup/AcApMarkupStore.js'
 import {
   cssToMarkupColor,
   getMarkupCustomTextHeightWcs,
@@ -37,13 +37,13 @@ import {
   markupColorToCss,
   setMarkupDrawColor,
   setMarkupTextHeight
-} from './markup/AcApMarkupUtil'
+} from './markup/AcApMarkupUtil.js'
 import {
   applyMeasurementStyleToSelection,
   getActiveMeasurementStyle,
   getMeasurementSnapshot,
   getSelectedMeasurementId
-} from './measure/AcApMeasurementStore'
+} from './measure/AcApMeasurementStore.js'
 
 function colorFromAci(index: number): AcCmColor {
   const color = new AcCmColor()

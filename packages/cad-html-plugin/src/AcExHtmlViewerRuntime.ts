@@ -67,52 +67,52 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import {
   AcExCommandSessionPanel,
   type AcExCommandSessionUiState
-} from './AcExCommandSessionPanel'
-import { acexCssTopLeftRectToGl, acexWcsBoxToCssRect } from './AcExCssRect'
+} from './AcExCommandSessionPanel.js'
+import { acexCssTopLeftRectToGl, acexWcsBoxToCssRect } from './AcExCssRect.js'
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
-} from './AcExHtmlAccessGate'
+} from './AcExHtmlAccessGate.js'
 import {
   acexHtmlIsPhoneLayout,
   setupAcExHtmlDrawerSheets
-} from './AcExHtmlDrawerSheet'
-import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
+} from './AcExHtmlDrawerSheet.js'
+import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi.js'
 import {
   type AcExHtmlMainToolbarController,
   setupAcExHtmlMainToolbar
-} from './AcExHtmlMainToolbar'
-import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
-import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
-import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
-import { promptAcExHtmlPackageSource } from './AcExHtmlPackageSourceGate'
-import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
-import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection'
-import { setupAcExHtmlShortCutToolbar } from './AcExHtmlShortCutToolbar'
+} from './AcExHtmlMainToolbar.js'
+import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel.js'
+import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings.js'
+import { setupAcExHtmlNavTools } from './AcExHtmlNavTools.js'
+import { promptAcExHtmlPackageSource } from './AcExHtmlPackageSourceGate.js'
+import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel.js'
+import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection.js'
+import { setupAcExHtmlShortCutToolbar } from './AcExHtmlShortCutToolbar.js'
 import {
   acedClearDomSelection,
   acedGuardCanvasTouchCallout
-} from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlSimpleViewerUi.js'
 import {
   type AcExIdlePointerHost,
   acexIdlePointerStrategy
-} from './AcExIdlePointerStrategy'
-import { AcExMarkupController } from './AcExMarkup'
-import { AcExMeasureController } from './AcExMeasurement'
+} from './AcExIdlePointerStrategy.js'
+import { AcExMarkupController } from './AcExMarkup.js'
+import { AcExMeasureController } from './AcExMeasurement.js'
 import {
   acexBindMobileSnapLoupe,
   acexHideMobileSnapLoupe,
   acexRefreshMobileSnapLoupe,
   acexSetMobileSnapLoupePreciseCapture
-} from './AcExMobileSnapLoupe'
+} from './AcExMobileSnapLoupe.js'
 import {
   type AcExCircleOrArcNearHit,
   AcExOsnapIndex,
   estimateOsnapRebuildWork
-} from './AcExOsnap'
-import { AcExOsnapMarker } from './AcExOsnapMarker'
+} from './AcExOsnap.js'
+import { AcExOsnapMarker } from './AcExOsnapMarker.js'
 import {
   computeOnscreenPaperViewportPass,
   computeViewportCamera,
@@ -121,31 +121,31 @@ import {
   paperPointToModel,
   snapshotHasPaperViewports,
   viewportPaperToModelScale
-} from './AcExPaperViewport'
-import { acexSelectionModeFromDrag } from './AcExSelectionBox'
-import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
-import { createAcExSessionHistory } from './AcExSessionHistory'
+} from './AcExPaperViewport.js'
+import { acexSelectionModeFromDrag } from './AcExSelectionBox.js'
+import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle.js'
+import { createAcExSessionHistory } from './AcExSessionHistory.js'
 import {
   acexHideSimulatedMouseCursor,
   acexRefreshSimulatedMouseCursor
-} from './AcExSimulatedMouseCursor'
+} from './AcExSimulatedMouseCursor.js'
 import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
   ACEX_SNAP_LOUPE_ZOOM,
   AcExSnapLoupe
-} from './AcExSnapLoupe'
+} from './AcExSnapLoupe.js'
 import {
   acexIsSimulatedMouseEnabled,
   type AcExTouchPickHudHost,
   acexTouchPickStrategy
-} from './AcExTouchPickStrategy'
+} from './AcExTouchPickStrategy.js'
 import {
   acexShouldIgnoreCompatMouse,
   acexSinkFollowingClick,
   AcExTouchPointSession
-} from './AcExTouchPointSession'
-import { acexMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
+} from './AcExTouchPointSession.js'
+import { acexMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial.js'
 import {
   acexHtmlWithAllLayerGroupsVisible,
   assignLayoutGeometryFrom,
@@ -156,7 +156,7 @@ import {
   releaseSnapshotBatchBuffers,
   releaseSnapshotOsnapCatalogs,
   removeSnapshotElement
-} from './AcExViewerMemory'
+} from './AcExViewerMemory.js'
 
 /** Matches {@link AcTrBaseView} orthographic half-height in world units. */
 const ACEX_CAMERA_FRUSTUM = 400

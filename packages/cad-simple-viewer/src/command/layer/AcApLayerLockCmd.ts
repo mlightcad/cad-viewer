@@ -1,14 +1,14 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLayerService } from '../../service'
-import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLayerService } from '../../service/index.js'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd.js'
 
 /**
  * AutoCAD-like `LAYLCK` command.

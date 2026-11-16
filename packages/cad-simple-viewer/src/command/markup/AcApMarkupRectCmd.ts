@@ -1,33 +1,33 @@
 import { AcCmColor, AcGePoint2dLike } from '@mlightcad/data-model'
 
-import { AcApContext } from '../../app'
+import { AcApContext } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import type { AcTrView2d } from '../../view'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   AcApHtmlLivePreview,
   acapLiveRectCorners,
   acapStrokeLivePolyline
-} from '../overlay/AcApHtmlLivePreview'
-import { createMarkupMeta } from './AcApMarkupCmdUtil'
-import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
-import { commitMarkup } from './AcApMarkupPresenter'
+} from '../overlay/AcApHtmlLivePreview.js'
+import { createMarkupMeta } from './AcApMarkupCmdUtil.js'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd.js'
+import { commitMarkup } from './AcApMarkupPresenter.js'
 import {
   promptAttachedCallout,
   promptShapeFirstCorner
-} from './AcApMarkupShapeCallout'
-import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+} from './AcApMarkupShapeCallout.js'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore.js'
+import type { AcApMarkupRecord } from './AcApMarkupTypes.js'
 import {
   defaultMarkupColor,
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
-} from './AcApMarkupUtil'
+} from './AcApMarkupUtil.js'
 
 class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
   private readonly _view: AcTrView2d

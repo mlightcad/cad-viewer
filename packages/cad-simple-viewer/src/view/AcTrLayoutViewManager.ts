@@ -1,5 +1,5 @@
-import { AcTrLayoutView } from './AcTrLayoutView'
-import { AcTrScene } from './AcTrScene'
+import { AcTrLayoutView } from './AcTrLayoutView.js'
+import { AcTrScene } from './AcTrScene.js'
 
 /**
  * Manages multiple layout views and coordinates active layout switching.

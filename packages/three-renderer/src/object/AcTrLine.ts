@@ -4,18 +4,18 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy.js'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
 import {
   asyncComplexLineTypeGlyphs,
   buildComplexLineTypeGeometry,
   hasPendingComplexLineTypeGlyphs,
   syncComplexLineTypeGlyphs
-} from '../linetype'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
-import { AcTrEntity } from './AcTrEntity'
-import { buildLineGeometry } from './AcTrLineGeometryBuilder'
+} from '../linetype/index.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util/index.js'
+import { AcTrEntity } from './AcTrEntity.js'
+import { buildLineGeometry } from './AcTrLineGeometryBuilder.js'
 
 export class AcTrLine extends AcTrEntity {
   public geometry: THREE.BufferGeometry | LineSegmentsGeometry

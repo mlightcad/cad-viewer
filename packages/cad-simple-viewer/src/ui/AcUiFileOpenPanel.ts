@@ -1,21 +1,21 @@
 import {
   acapBuildDataSourceMenu,
   type AcApDataSourceMenuItem
-} from '../app/dataSource/acapBuildDataSourceMenu'
-import type { AcApDataSource } from '../app/dataSource/AcApDataSource'
-import type { AcApDataSourceAccountProfile } from '../app/dataSource/AcApDataSource'
+} from '../app/dataSource/acapBuildDataSourceMenu.js'
+import type { AcApDataSource } from '../app/dataSource/AcApDataSource.js'
+import type { AcApDataSourceAccountProfile } from '../app/dataSource/AcApDataSource.js'
 import {
   ACAP_LOCAL_DATA_SOURCE_ID,
   ACAP_URL_DATA_SOURCE_ID
-} from '../app/dataSource/AcApDataSourceIds'
-import type { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager'
+} from '../app/dataSource/AcApDataSourceIds.js'
+import type { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager.js'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   type AcEdUiTheme,
   resolveUiTheme
-} from '../editor/global/AcEdUiTheme'
-import { AcApI18n } from '../i18n/AcApI18n'
+} from '../editor/global/AcEdUiTheme.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
 
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg', '.svg'] as const
 

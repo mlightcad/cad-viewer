@@ -5,8 +5,8 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcApDocManager } from '../../app/index.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 
 /**
  * Drag session for the group center grip: translates the group's member

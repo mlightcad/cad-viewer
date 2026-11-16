@@ -9,15 +9,15 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
-import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
+import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor/index.js'
+import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult.js'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex.js'
 import {
   AcTrHierarchicalSpatialIndex,
   type AcTrLazySpatialChildren
-} from '../spatialIndex'
-import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
-import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
-import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
+} from '../spatialIndex/index.js'
+import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert.js'
+import { AcTrLayer, AcTrLayerStats } from './AcTrLayer.js'
 
 /** Options for {@link AcTrLayout.createEntityPreviewRoot}. */
 export interface AcTrEntityPreviewRootOptions {

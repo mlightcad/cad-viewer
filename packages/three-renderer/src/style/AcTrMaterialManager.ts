@@ -8,14 +8,14 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrCommonUtil, AcTrMaterialUtil } from '../util'
+import { AcTrCommonUtil, AcTrMaterialUtil } from '../util/index.js'
 import {
   AcTrByLayerBindingFlags,
   getMaterialMetadata,
   hasByLayerBinding,
   setMaterialMetadata
-} from './AcTrMaterialMetadata'
-import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
+} from './AcTrMaterialMetadata.js'
+import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions.js'
 
 /**
  * Optional colour-provenance fields on sub-entity traits.

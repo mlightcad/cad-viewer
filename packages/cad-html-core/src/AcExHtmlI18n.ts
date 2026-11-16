@@ -1,5 +1,5 @@
-import { acexHtmlJaMessages } from './i18n/ja'
-import { acexHtmlKoMessages } from './i18n/ko'
+import { acexHtmlJaMessages } from './i18n/ja.js'
+import { acexHtmlKoMessages } from './i18n/ko.js'
 
 /** Supported locales in the offline HTML viewer. */
 export type AcExHtmlLocale = 'en' | 'zh' | 'ja' | 'ko' | 'cs' | 'tr' | 'ar'

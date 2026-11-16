@@ -7,18 +7,18 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert'
-import type { AcEdSelectionMode } from './AcEdBaseView'
+import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert.js'
+import type { AcEdSelectionMode } from './AcEdBaseView.js'
 import {
   acedBlockReferenceIntersectsSelectionBox,
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
-} from './AcEdSelectionBoxIntersect'
+} from './AcEdSelectionBoxIntersect.js'
 import {
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   isEffectiveSpatialQueryHit
-} from './AcEdSpatialQueryResult'
+} from './AcEdSpatialQueryResult.js'
 
 /**
  * Paper-space → model-space projection for one paper viewport.

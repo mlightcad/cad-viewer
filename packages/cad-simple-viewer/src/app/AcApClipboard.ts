@@ -6,7 +6,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
+import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase.js'
 
 /**
  * Drawing data held by the clipboard.

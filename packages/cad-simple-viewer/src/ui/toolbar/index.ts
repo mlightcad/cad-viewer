@@ -7,8 +7,8 @@
 
 export type {
   AcUiResolvedToolbarChrome
-} from './resolveToolbarChrome'
-export { acuiResolveToolbarChrome } from './resolveToolbarChrome'
+} from './resolveToolbarChrome.js'
+export { acuiResolveToolbarChrome } from './resolveToolbarChrome.js'
 export {
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemDisabled,
@@ -17,7 +17,7 @@ export {
   acuiResolveEffectiveToolbarItem,
   acuiResolveParentToolbarDisplay,
   acuiResolveSelectedChildItem
-} from './resolveToolbarItemState'
+} from './resolveToolbarItemState.js'
 export {
   acuiCopyDynamicToolbarChildren,
   acuiCreateToolbarSeparator,
@@ -31,7 +31,7 @@ export {
   acuiResolveToolbarChildrenUi,
   acuiToolbarItemsIncludeItem,
   acuiToolbarPreset
-} from './toolbarItemUtils'
+} from './toolbarItemUtils.js'
 export type {
   AcUiDefaultToolbarContext,
   AcUiSubToolbarOptions,
@@ -49,17 +49,17 @@ export type {
   AcUiToolbarPresetRef,
   AcUiToolbarSeparator,
   AcUiToolbarSize
-} from './types'
-export { AcUiDropdownMenu } from './AcUiDropdownMenu'
-export { AcUiSubToolbar } from './AcUiSubToolbar'
-export type { AcUiSubToolbarMountOptions } from './AcUiSubToolbar'
-export { AcUiToolbar } from './AcUiToolbar'
-export type { AcUiToolbarMountOptions } from './AcUiToolbar'
+} from './types.js'
+export { AcUiDropdownMenu } from './AcUiDropdownMenu.js'
+export { AcUiSubToolbar } from './AcUiSubToolbar.js'
+export type { AcUiSubToolbarMountOptions } from './AcUiSubToolbar.js'
+export { AcUiToolbar } from './AcUiToolbar.js'
+export type { AcUiToolbarMountOptions } from './AcUiToolbar.js'
 export {
   acuiEnsureToolbarStyles,
   acuiRemoveToolbarStylesIfUnused
-} from './AcUiToolbarStyles'
-export { acuiComputeWrapPackSlot } from './acuiWrapPackLayout'
+} from './AcUiToolbarStyles.js'
+export { acuiComputeWrapPackSlot } from './acuiWrapPackLayout.js'
 export {
   acuiCreateDefaultToolbarPresetMap,
   acuiCreateDefaultToolbarItems,
@@ -73,8 +73,8 @@ export {
   acuiResolveDockMountTarget,
   acuiResolveToolbarItems,
   acuiResolveToolbarMountTarget
-} from './simpleUiPresets'
+} from './simpleUiPresets.js'
 export type {
   AcUiToolbarLayoutPreset,
   AcUiToolbarLayoutSwitcherOptions
-} from './createToolbarLayoutSwitcher'
+} from './createToolbarLayoutSwitcher.js'

@@ -5,7 +5,7 @@ import {
   type AcExHtmlSnapshot,
   type AcExHtmlSnapshotVersion,
   type AcExHtmlViewportSnapshot
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 /** Current multi-file package / manifest protocol version. */
 export const ACEX_PACKAGE_VERSION = 1 as const

@@ -13,8 +13,8 @@ import {
   type AcApSmartBlockTemplate,
   acapSmartBlockTemplateCenter,
   acapSmartBlockVariableTexts
-} from './AcApSmartBlockSearch'
-import type { AcEdPoint2d } from './AcEdShapeMatcher'
+} from './AcApSmartBlockSearch.js'
+import type { AcEdPoint2d } from './AcEdShapeMatcher.js'
 
 /** View features the review session drives (an `AcEdBaseView` fits). */
 export interface AcApSmartBlockReviewView {

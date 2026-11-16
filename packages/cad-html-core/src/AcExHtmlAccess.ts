@@ -2,8 +2,8 @@ import {
   type AcExHtmlBinaryEncoding,
   acexHtmlBytesToText,
   acexHtmlTextToBytes
-} from './AcExHtmlBinaryText'
-import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCodec'
+} from './AcExHtmlBinaryText.js'
+import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCodec.js'
 
 /** Access-control manifest schema version embedded in exported HTML. */
 export const ACEX_HTML_ACCESS_VERSION = 1 as const

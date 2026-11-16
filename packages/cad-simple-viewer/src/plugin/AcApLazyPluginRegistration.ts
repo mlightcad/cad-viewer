@@ -1,4 +1,4 @@
-import { AcApPlugin } from './AcApPlugin'
+import { AcApPlugin } from './AcApPlugin.js'
 
 /**
  * Descriptor for a plugin that is registered up front but loaded only when triggered.

@@ -1,11 +1,11 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcTrView2d } from '../../view'
-import { registerMeasurementPublish } from './AcApMeasurementRepublish'
-import { getSelectedMeasurementId } from './AcApMeasurementStore'
-import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
-import { newMeasureOverlayId } from './entity/AcApMeasureEntity'
-import { createMeasureEntityFromRecord } from './entity/AcApMeasureEntityFactory'
+import type { AcTrView2d } from '../../view/index.js'
+import { registerMeasurementPublish } from './AcApMeasurementRepublish.js'
+import { getSelectedMeasurementId } from './AcApMeasurementStore.js'
+import type { AcApMeasurementRecord } from './AcApMeasurementTypes.js'
+import { newMeasureOverlayId } from './entity/AcApMeasureEntity.js'
+import { createMeasureEntityFromRecord } from './entity/AcApMeasureEntityFactory.js'
 
 function newImportedId(prefix: string): string {
   return newMeasureOverlayId(prefix)

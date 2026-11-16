@@ -1,7 +1,7 @@
-import { AcApMarkupHistory, AcApSessionUndo } from './AcApMarkupHistory'
-import { AcApMarkupPresenter } from './AcApMarkupPresenter'
-import { acapSetMarkupBagFactory } from './AcApMarkupSession'
-import { AcApMarkupStore } from './AcApMarkupStore'
+import { AcApMarkupHistory, AcApSessionUndo } from './AcApMarkupHistory.js'
+import { AcApMarkupPresenter } from './AcApMarkupPresenter.js'
+import { acapSetMarkupBagFactory } from './AcApMarkupSession.js'
+import { AcApMarkupStore } from './AcApMarkupStore.js'
 
 let installed = false
 

@@ -1,10 +1,10 @@
-import { AcApContext, AcApDocManager, hideObjects } from '../../app'
+import { AcApContext, AcApDocManager, hideObjects } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdPromptSelectionOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 /**
  * Command to temporarily suppress display of selected objects.

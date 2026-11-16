@@ -4,8 +4,8 @@
  * @packageDocumentation
  */
 
-export * from './AcSvgRenderer'
-export { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd'
-export { AcApSvgConvertor } from './AcApSvgConvertor'
-export { createSvgPlugin } from './createSvgPlugin'
-export { SVG_PLUGIN_NAME, SVG_PLUGIN_TRIGGERS } from './register'
+export * from './AcSvgRenderer.js'
+export { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd.js'
+export { AcApSvgConvertor } from './AcApSvgConvertor.js'
+export { createSvgPlugin } from './createSvgPlugin.js'
+export { SVG_PLUGIN_NAME, SVG_PLUGIN_TRIGGERS } from './register.js'

@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import type {
   AcTrBatchDrawVisibilityInfo,
   AcTrBatchDrawVisibilityMode
-} from './AcTrBatchDrawVisibilityTypes'
+} from './AcTrBatchDrawVisibilityTypes.js'
 
 /**
  * Strategy interface for collapsing and restoring one batched geometry slot.

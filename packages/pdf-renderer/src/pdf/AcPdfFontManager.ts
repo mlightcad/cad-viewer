@@ -12,7 +12,7 @@ import {
   PDFRef
 } from 'pdf-lib'
 
-import type { AcPdfOp } from '../renderer/AcPdfStyle'
+import type { AcPdfOp } from '../renderer/AcPdfStyle.js'
 
 export type AcPdfTextFontResolver = (
   fontName: string

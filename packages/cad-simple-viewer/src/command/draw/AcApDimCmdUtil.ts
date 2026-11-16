@@ -1,13 +1,13 @@
 import { AcDbDimension } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
+import { AcApDocManager } from '../../app/index.js'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 export type DimCommonKeyword = 'mtext' | 'text' | 'angle'
 
@@ -67,7 +67,7 @@ export {
   rebuildPreviewBlock,
   removePreviewBlock,
   type DimDefinitionPoints
-} from './AcApDimBlockUtil'
+} from './AcApDimBlockUtil.js'
 
 export function addDimKeyword(
   prompt: AcEdPromptPointOptions,

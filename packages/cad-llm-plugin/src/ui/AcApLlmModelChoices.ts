@@ -2,9 +2,9 @@ import {
   type AcApLlmConfig,
   acapLlmEffectiveModels,
   acapLlmFindProvider
-} from '../storage/AcApLlmConfigStore'
-import { acapLlmModelLabel } from '../storage/AcApLlmModelCatalog'
-import { acapLlmProviderLabel } from './AcApLlmProviderLabels'
+} from '../storage/AcApLlmConfigStore.js'
+import { acapLlmModelLabel } from '../storage/AcApLlmModelCatalog.js'
+import { acapLlmProviderLabel } from './AcApLlmProviderLabels.js'
 
 /** One selectable model in a model picker. */
 export interface AcApLlmModelChoice {

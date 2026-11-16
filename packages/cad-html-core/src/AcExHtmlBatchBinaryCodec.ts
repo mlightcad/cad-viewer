@@ -1,5 +1,5 @@
-import type { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
-import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
+import type { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO.js'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes.js'
 
 /** Optional line-batch feature flags (append-only; never renumber). */
 export const F_LINE_INDICES = 1

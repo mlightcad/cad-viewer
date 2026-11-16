@@ -1,7 +1,7 @@
 import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrMaterialManager } from './AcTrMaterialManager'
+import { AcTrMaterialManager } from './AcTrMaterialManager.js'
 
 export interface AcTrPointMaterialOptions {
   size?: number

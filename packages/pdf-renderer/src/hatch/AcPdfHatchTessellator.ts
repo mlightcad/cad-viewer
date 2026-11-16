@@ -1,4 +1,4 @@
-import type { AcPdfPoint } from '../renderer/AcPdfStyle'
+import type { AcPdfPoint } from '../renderer/AcPdfStyle.js'
 
 /** One AutoCAD hatch pattern definition line. */
 export interface AcPdfHatchPatternLine {

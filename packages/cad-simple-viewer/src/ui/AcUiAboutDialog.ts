@@ -3,9 +3,9 @@ import {
   MLIGHTCAD_DOCS_URL,
   MLIGHTCAD_REPO_URL,
   MLIGHTCAD_WEBSITE_URL
-} from '../app/AcApBrand'
-import { AcApI18n } from '../i18n'
-import { AcUiDialog } from './AcUiDialog'
+} from '../app/AcApBrand.js'
+import { AcApI18n } from '../i18n/index.js'
+import { AcUiDialog } from './AcUiDialog.js'
 
 /**
  * About dialog showing mlightcad branding and product links.

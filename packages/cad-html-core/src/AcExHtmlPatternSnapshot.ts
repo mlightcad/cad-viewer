@@ -8,11 +8,11 @@ import {
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers'
+import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers.js'
 import {
   acexHtmlCreateTextureFromExportedBytes,
   acexHtmlReleaseExportedTextureBytes
-} from './AcExHtmlMeshTextureExport'
+} from './AcExHtmlMeshTextureExport.js'
 import type {
   AcExHtmlGradientFill,
   AcExHtmlHatchPattern,
@@ -20,7 +20,7 @@ import type {
   AcExHtmlLineBatch,
   AcExHtmlLinePattern,
   AcExHtmlMeshBatch
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 /** Shared camera zoom uniform updated by the offline HTML viewer. */
 export const AcExHtmlCameraZoomUniform = { value: 1.0 }

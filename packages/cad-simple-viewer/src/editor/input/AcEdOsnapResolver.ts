@@ -17,12 +17,12 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApSettingManager } from '../../app/AcApSettingManager'
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcApSettingManager } from '../../app/AcApSettingManager.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 import {
   AcEdSpatialQueryResultItemEx,
   isEffectiveSpatialQueryHit
-} from '../view/AcEdSpatialQueryResult'
+} from '../view/AcEdSpatialQueryResult.js'
 import {
   type AcEdOsnapCenterMark,
   blockChildBoxHint,
@@ -30,10 +30,10 @@ import {
   collectCenterMarksFromEntity,
   mergeAcquiredCenterMarks,
   resolveBlockSubEntity
-} from './AcEdOsnapCenterMarks'
-import { AcEdMarkerType } from './marker/AcEdMarker'
+} from './AcEdOsnapCenterMarks.js'
+import { AcEdMarkerType } from './marker/AcEdMarker.js'
 
-export type { AcEdOsnapCenterMark } from './AcEdOsnapCenterMarks'
+export type { AcEdOsnapCenterMark } from './AcEdOsnapCenterMarks.js'
 
 export type AcEdOsnapPoint = AcGePoint3dLike & {
   type: AcDbOsnapMode

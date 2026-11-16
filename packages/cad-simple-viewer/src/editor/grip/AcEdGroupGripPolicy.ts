@@ -9,7 +9,7 @@ import {
   acapFindGroupsContaining,
   acapGetGroupDisplayMode,
   acapIsGroupSelectionEnabled
-} from '../../service/AcApGroup'
+} from '../../service/AcApGroup.js'
 
 /**
  * One fully covered selectable group within the current selection, used for

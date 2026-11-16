@@ -5,9 +5,9 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { scaleCopyDisplacement } from '../../editor/input/AcEdBatchPreview'
-import { AcEdSelectionTransformPreviewJig } from '../../editor/input/AcEdSelectionPreviewJig'
-import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
+import { scaleCopyDisplacement } from '../../editor/input/AcEdBatchPreview.js'
+import { AcEdSelectionTransformPreviewJig } from '../../editor/input/AcEdSelectionPreviewJig.js'
+import { AcEdBaseView } from '../../editor/view/AcEdBaseView.js'
 
 /**
  * COPY preview jig.

@@ -1,4 +1,4 @@
-import { AcEdPromptOptions } from './AcEdPromptOptions'
+import { AcEdPromptOptions } from './AcEdPromptOptions.js'
 
 /**
  * Options for prompting the user to enter a numerical value (integer, double, etc.),

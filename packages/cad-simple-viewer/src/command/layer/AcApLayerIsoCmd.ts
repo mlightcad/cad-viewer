@@ -1,15 +1,15 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdOpenMode,
   AcEdPromptKeywordOptions,
   AcEdPromptSelectionOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApLayerIsolationMode, AcApLayerService } from '../../service'
-import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApLayerIsolationMode, AcApLayerService } from '../../service/index.js'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd.js'
 
 /**
  * Top-level keywords accepted by the `LAYISO` selection prompt.

@@ -254,6 +254,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.31(typescript@5.9.3))
+      '@microsoft/api-extractor':
+        specifier: ^7.58.0
+        version: 7.58.0(@types/node@24.12.4)
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
         version: link:../cad-agent-core
@@ -9289,7 +9292,6 @@ snapshots:
       '@rushstack/node-core-library': 5.21.0(@types/node@24.12.4)
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@microsoft/api-extractor@7.58.0(@types/node@24.12.4)':
     dependencies:
@@ -9309,7 +9311,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@microsoft/tsdoc-config@0.18.1':
     dependencies:
@@ -9317,10 +9318,8 @@ snapshots:
       ajv: 8.18.0
       jju: 1.4.0
       resolve: 1.22.11
-    optional: true
 
-  '@microsoft/tsdoc@0.16.0':
-    optional: true
+  '@microsoft/tsdoc@0.16.0': {}
 
   '@mlightcad/common@1.15.30':
     dependencies:
@@ -9762,18 +9761,15 @@ snapshots:
       semver: 7.5.4
     optionalDependencies:
       '@types/node': 24.12.4
-    optional: true
 
   '@rushstack/problem-matcher@0.2.1(@types/node@24.12.4)':
     optionalDependencies:
       '@types/node': 24.12.4
-    optional: true
 
   '@rushstack/rig-package@0.7.2':
     dependencies:
       resolve: 1.22.11
       strip-json-comments: 3.1.1
-    optional: true
 
   '@rushstack/terminal@0.22.4(@types/node@24.12.4)':
     dependencies:
@@ -9782,7 +9778,6 @@ snapshots:
       supports-color: 8.1.1
     optionalDependencies:
       '@types/node': 24.12.4
-    optional: true
 
   '@rushstack/ts-command-line@5.3.4(@types/node@24.12.4)':
     dependencies:
@@ -9792,7 +9787,6 @@ snapshots:
       string-argv: 0.3.2
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@shikijs/core@2.5.0':
     dependencies:
@@ -9887,8 +9881,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@types/argparse@1.0.38':
-    optional: true
+  '@types/argparse@1.0.38': {}
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -10581,7 +10574,6 @@ snapshots:
   ajv-draft-04@1.0.0(ajv@8.18.0):
     optionalDependencies:
       ajv: 8.18.0
-    optional: true
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:
@@ -11382,8 +11374,7 @@ snapshots:
 
   diff@4.0.4: {}
 
-  diff@8.0.4:
-    optional: true
+  diff@8.0.4: {}
 
   dir-glob@3.0.1:
     dependencies:
@@ -12103,8 +12094,7 @@ snapshots:
       parent-module: 1.0.1
       resolve-from: 4.0.0
 
-  import-lazy@4.0.0:
-    optional: true
+  import-lazy@4.0.0: {}
 
   import-local@3.2.0:
     dependencies:
@@ -12581,8 +12571,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jju@1.4.0:
-    optional: true
+  jju@1.4.0: {}
 
   jose@6.2.13: {}
 
@@ -12750,8 +12739,7 @@ snapshots:
 
   lodash.startcase@4.4.0: {}
 
-  lodash@4.17.23:
-    optional: true
+  lodash@4.17.23: {}
 
   lodash@4.18.1: {}
 
@@ -12781,7 +12769,6 @@ snapshots:
   lru-cache@6.0.0:
     dependencies:
       yallist: 4.0.0
-    optional: true
 
   lunr@2.3.9: {}
 
@@ -12920,7 +12907,6 @@ snapshots:
   minimatch@10.2.3:
     dependencies:
       brace-expansion: 5.0.5
-    optional: true
 
   minimatch@10.2.5:
     dependencies:
@@ -13548,7 +13534,6 @@ snapshots:
   semver@7.5.4:
     dependencies:
       lru-cache: 6.0.0
-    optional: true
 
   semver@7.7.4: {}
 
@@ -14372,8 +14357,7 @@ snapshots:
 
   yallist@3.1.1: {}
 
-  yallist@4.0.0:
-    optional: true
+  yallist@4.0.0: {}
 
   yaml-eslint-parser@1.3.2:
     dependencies:

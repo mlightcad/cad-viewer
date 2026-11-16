@@ -7,19 +7,19 @@
 export {
   ACAP_GOOGLE_DRIVE_DATA_SOURCE_ID,
   AcApGoogleDriveDataSource
-} from './AcApGoogleDriveDataSource'
-export type { AcApGoogleDrivePluginOptions } from './AcApGoogleDrivePlugin'
-export { AcApGoogleDrivePlugin } from './AcApGoogleDrivePlugin'
-export { createGoogleDrivePlugin } from './createGoogleDrivePlugin'
+} from './AcApGoogleDriveDataSource.js'
+export type { AcApGoogleDrivePluginOptions } from './AcApGoogleDrivePlugin.js'
+export { AcApGoogleDrivePlugin } from './AcApGoogleDrivePlugin.js'
+export { createGoogleDrivePlugin } from './createGoogleDrivePlugin.js'
 export type {
   DriveAppAction,
   DriveFile,
   GoogleDriveClientOptions,
   UserInfo
-} from './googleDriveClient'
+} from './googleDriveClient.js'
 export {
   GoogleDriveClient,
   isGoogleDriveConfigured,
   isGoogleDrivePickerConfigured
-} from './googleDriveClient'
-export { GOOGLE_DRIVE_PLUGIN_NAME } from './register'
+} from './googleDriveClient.js'
+export { GOOGLE_DRIVE_PLUGIN_NAME } from './register.js'

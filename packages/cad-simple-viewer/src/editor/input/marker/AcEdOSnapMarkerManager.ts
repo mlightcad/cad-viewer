@@ -1,7 +1,7 @@
 import { AcGePoint2dLike } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../../view'
-import { AcEdMarker, AcEdMarkerType } from './AcEdMarker'
+import { AcEdBaseView } from '../../view/index.js'
+import { AcEdMarker, AcEdMarkerType } from './AcEdMarker.js'
 
 /**
  * Manages a stack of markers using a singleton pattern.

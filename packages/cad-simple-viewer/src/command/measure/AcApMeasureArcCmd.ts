@@ -15,18 +15,18 @@ import {
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
-} from '../../editor'
+} from '../../editor/index.js'
 import {
   blockChildBoxHint,
   resolveBlockSubEntity
-} from '../../editor/input/AcEdOsnapCenterMarks'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/input/AcEdOsnapCenterMarks.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapGetCurrentMeasurementStyle,
@@ -37,14 +37,14 @@ import {
   acapScreenArcLengthPx,
   formatMeasurementLength,
   MEASUREMENT_LINE_WEIGHT
-} from '../../util'
-import { AcTrView2d } from '../../view'
+} from '../../util/index.js'
+import { AcTrView2d } from '../../view/index.js'
 import {
   AcApHtmlLivePreview,
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
-} from '../overlay/AcApHtmlLivePreview'
-import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
+} from '../overlay/AcApHtmlLivePreview.js'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil.js'
 import {
   inwardLockAlignment,
   isBetterLockCandidate,
@@ -52,14 +52,14 @@ import {
   mapLockCurve,
   pointLiesOnCircle,
   sameCircleGeom
-} from './AcApMeasureArcLock'
-import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
-import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+} from './AcApMeasureArcLock.js'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd.js'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore.js'
 import {
   AcApMeasureArcEntity,
   type AcApMeasureCircleGeom,
   strokeMeasureArcOnContext
-} from './entity'
+} from './entity/index.js'
 
 type Point2 = { x: number; y: number }
 

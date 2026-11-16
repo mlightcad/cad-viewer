@@ -1,6 +1,6 @@
-import type { AcApContext } from '../app/AcApContext'
-import type { AcEdCorsorType } from '../editor/input/AcEdCursorManager'
-import type { AcEdViewMode } from '../editor/view/AcEdBaseView'
+import type { AcApContext } from '../app/AcApContext.js'
+import type { AcEdCorsorType } from '../editor/input/AcEdCursorManager.js'
+import type { AcEdViewMode } from '../editor/view/AcEdBaseView.js'
 
 /**
  * {@link AcEdViewMode.SELECTION}. Numeric so this module stays loadable in

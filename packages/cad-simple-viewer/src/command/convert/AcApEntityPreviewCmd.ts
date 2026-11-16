@@ -1,14 +1,14 @@
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptDoubleOptions,
   AcEdPromptSelectionOptions,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcTrView2d } from '../../view'
-import { AcApEntityPreviewConvertor } from './AcApEntityPreviewConvertor'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcTrView2d } from '../../view/index.js'
+import { AcApEntityPreviewConvertor } from './AcApEntityPreviewConvertor.js'
 
 const DEFAULT_LONG_SIDE_PX = 512
 

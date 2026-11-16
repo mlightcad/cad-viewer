@@ -19,8 +19,8 @@ import {
   TokenType
 } from '@mlightcad/mtext-parser'
 
-import type { AcPdfRgb } from './AcPdfStyle'
-import { rgbFromPacked } from './AcPdfStyle'
+import type { AcPdfRgb } from './AcPdfStyle.js'
+import { rgbFromPacked } from './AcPdfStyle.js'
 
 /**
  * Colour resolution context for inline `\C` / `\c` codes.

@@ -4,10 +4,10 @@ import {
   AcGiImageStyle} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { AcTrEntity } from './AcTrEntity'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 /**
  * RGBA image produced by a host decoder when `document` is unavailable.

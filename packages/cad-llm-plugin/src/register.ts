@@ -9,8 +9,8 @@ import {
   LLM_PLUGIN_NAME,
   LLM_PLUGIN_TRIGGERS,
   LLM_SERVICE_ID
-} from './constants'
-import { registerLlmI18n } from './i18n'
+} from './constants.js'
+import { registerLlmI18n } from './i18n/index.js'
 
 /** Loads the main bundle on first use. */
 const loadMain = () => import('@mlightcad/cad-llm-plugin')
@@ -66,10 +66,10 @@ export {
   LLM_PLUGIN_NAME,
   LLM_PLUGIN_TRIGGERS,
   LLM_SERVICE_ID
-} from './constants'
+} from './constants.js'
 export {
   type AcApLlmLabelKey,
   llmT,
   mergeLlmI18nIntoVueI18n,
   registerLlmI18n
-} from './i18n'
+} from './i18n/index.js'

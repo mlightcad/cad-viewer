@@ -20,8 +20,12 @@ import {
 import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
-import { isComplexLineType } from '../linetype'
+import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy.js'
+import { isComplexLineType } from '../linetype/index.js'
+import {
+  buildOffsetRingCenterline,
+  buildOffsetRingDirectGeometry
+} from '../object/AcTrLineGeometryBuilder.js'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -33,15 +37,11 @@ import {
   AcTrPoint,
   AcTrPolygon,
   AcTrShape
-} from '../object'
-import {
-  buildOffsetRingCenterline,
-  buildOffsetRingDirectGeometry
-} from '../object/AcTrLineGeometryBuilder'
-import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe'
-import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
-import { AcTrSubEntityTraitsUtil } from '../util'
-import { AcTrCamera } from '../viewport/AcTrCamera'
+} from '../object/index.js'
+import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe.js'
+import { AcTrMaterialManager } from '../style/AcTrMaterialManager.js'
+import { AcTrSubEntityTraitsUtil } from '../util/index.js'
+import { AcTrCamera } from '../viewport/AcTrCamera.js'
 import {
   AcTrLineVertexBuilder,
   captureCoalescedLine,
@@ -49,14 +49,14 @@ import {
   isAcTrCoalescedLineRef,
   isFatLineMaterial,
   mergeCoalescedBlockLines
-} from './AcTrBlockLineCoalesce'
+} from './AcTrBlockLineCoalesce.js'
 import {
   AcTrEntityPreview,
   type AcTrEntityPreviewOptions,
   type AcTrEntityPreviewResult
-} from './AcTrEntityPreview'
-import { AcTrMTextRenderer } from './AcTrMTextRenderer'
-import { AcTrRenderContext } from './AcTrRenderContext'
+} from './AcTrEntityPreview.js'
+import { AcTrMTextRenderer } from './AcTrMTextRenderer.js'
+import { AcTrRenderContext } from './AcTrRenderContext.js'
 
 /** Event payload when a mapped font cannot be resolved during rendering. */
 export interface AcTrFontNotFoundEventArgs {

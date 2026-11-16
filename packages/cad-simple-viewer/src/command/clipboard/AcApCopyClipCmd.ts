@@ -1,6 +1,6 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { acapCopySelectionToClipboard } from './AcApClipboardUtils'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { acapCopySelectionToClipboard } from './AcApClipboardUtils.js'
 
 /**
  * COPYCLIP (Ctrl+C): copies the selected objects to the clipboard.

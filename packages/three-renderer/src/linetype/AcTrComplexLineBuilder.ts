@@ -11,20 +11,20 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcTrEntity } from '../object/AcTrEntity'
-import { AcTrGlyphEntity } from '../object/AcTrGlyphEntity'
-import { AcTrMText } from '../object/AcTrMText'
-import { AcTrShape } from '../object/AcTrShape'
-import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
+import { AcTrEntity } from '../object/AcTrEntity.js'
+import { AcTrGlyphEntity } from '../object/AcTrGlyphEntity.js'
+import { AcTrMText } from '../object/AcTrMText.js'
+import { AcTrShape } from '../object/AcTrShape.js'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer.js'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util/index.js'
 import {
   AcTrLineWalkPlacement,
   isComplexLineType,
   isComplexShapeElement,
   isComplexTextElement,
   walkLineType
-} from './AcTrLineTypeWalker'
+} from './AcTrLineTypeWalker.js'
 
 const EMPTY_TEXT_STYLE: AcGiTextStyle = {
   name: '',

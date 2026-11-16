@@ -11,30 +11,30 @@ import {
   acapScaleMeasureOverlayPx,
   acapScreenSegmentLengthPx,
   formatMeasurementLength
-} from '../../../util'
-import type { AcTrView2d } from '../../../view'
+} from '../../../util/index.js'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   ACAP_OVERLAY_ARROW_SIZE_PX,
   acapBindOverlayPointerDrag,
   acapPlaceOverlayHtml,
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
-} from '../../overlay'
-import { runMeasurementEdit } from '../AcApMeasurementHistory'
-import { republishMeasurement } from '../AcApMeasurementRepublish'
+} from '../../overlay/index.js'
+import { runMeasurementEdit } from '../AcApMeasurementHistory.js'
+import { republishMeasurement } from '../AcApMeasurementRepublish.js'
 import {
   getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
-} from '../AcApMeasurementStore'
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
-import { drawMeasureSegmentOnCanvas } from './AcApMeasureDrawUtil'
+} from '../AcApMeasurementStore.js'
+import type { AcApMeasurementRecord } from '../AcApMeasurementTypes.js'
+import { drawMeasureSegmentOnCanvas } from './AcApMeasureDrawUtil.js'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult,
-  newMeasureOverlayId} from './AcApMeasureEntity'
-import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
+  newMeasureOverlayId} from './AcApMeasureEntity.js'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips.js'
 
 /**
  * Euclidean distance between two points in the XY plane (Z ignored).

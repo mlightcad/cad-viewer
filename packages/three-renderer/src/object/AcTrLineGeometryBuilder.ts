@@ -11,9 +11,9 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil } from '../util'
-import { AcTrPolygon } from './AcTrPolygon'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrBufferGeometryUtil } from '../util/index.js'
+import { AcTrPolygon } from './AcTrPolygon.js'
 
 /** Which batch container the built line geometry should append into. */
 export type AcTrLineGeometryKind = 'basic' | 'fat'

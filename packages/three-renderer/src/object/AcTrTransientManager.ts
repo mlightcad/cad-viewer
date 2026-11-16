@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
-import { AcTrEntity } from './AcTrEntity'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer.js'
+import { AcTrEntity } from './AcTrEntity.js'
 
 /**
  * Manages transient AcTrEntity objects in a dedicated THREE.Group.

@@ -1,4 +1,4 @@
-import type { AcEdMessageType } from '../editor/input/ui/AcEdMessageType'
+import type { AcEdMessageType } from '../editor/input/ui/AcEdMessageType.js'
 
 /**
  * Runtime services that commands need from the application layer.

@@ -4,13 +4,13 @@ import {
 } from '@mlightcad/cad-pdf-core'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcPdfExporterOptions } from './exportOptions'
+import type { AcPdfExporterOptions } from './exportOptions.js'
 import {
   createNodeTextFontResolver,
   preloadDrawingFonts,
   setupExportTextRendering
-} from './nodeFontLoader'
-import { withWorkingDatabase } from './withWorkingDatabase'
+} from './nodeFontLoader.js'
+import { withWorkingDatabase } from './withWorkingDatabase.js'
 
 /**
  * Applies {@link AcPdfExporterOptions.drawNoPlotLayers} for the duration of

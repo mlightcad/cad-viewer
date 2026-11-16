@@ -8,9 +8,9 @@
  * @packageDocumentation
  */
 
-import { AcApDocManager } from '../app/AcApDocManager'
-import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
-import type { AcUiToolbar } from '../ui/toolbar/AcUiToolbar'
+import { AcApDocManager } from '../app/AcApDocManager.js'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
+import type { AcUiToolbar } from '../ui/toolbar/AcUiToolbar.js'
 
 /**
  * Binds document activated / opening events to a main toolbar.

@@ -1,6 +1,6 @@
 import { parse } from 'acorn'
 
-import { wrapScript } from './validateCadScript'
+import { wrapScript } from './validateCadScript.js'
 
 const LOOP_TYPES = new Set([
   'WhileStatement',

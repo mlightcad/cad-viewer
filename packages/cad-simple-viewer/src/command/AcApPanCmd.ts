@@ -1,5 +1,5 @@
-import { AcApContext } from '../app'
-import { AcEdCommand, AcEdCorsorType, AcEdViewMode } from '../editor'
+import { AcApContext } from '../app/index.js'
+import { AcEdCommand, AcEdCorsorType, AcEdViewMode } from '../editor/index.js'
 
 /**
  * Command for enabling pan mode in the CAD viewer.

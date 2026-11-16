@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext.js'
+import { AcTrStyleManager } from '../style/AcTrStyleManager.js'
 
 /**
  * Base class for all drawable object

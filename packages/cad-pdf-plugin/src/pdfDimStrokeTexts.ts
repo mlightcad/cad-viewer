@@ -8,19 +8,19 @@
 
 import type { AcDbEntity } from '@mlightcad/data-model'
 
-import { pdfEntityToStroke } from './pdfEntityStrokes'
-import { recognizePdfDimStrokeText } from './recognition/pdfDimDigitRecognition'
+import { pdfEntityToStroke } from './pdfEntityStrokes.js'
+import { recognizePdfDimStrokeText } from './recognition/pdfDimDigitRecognition.js'
 import {
   parsePdfDimensionValue,
   type PdfDimInput,
   type PdfDimText,
   type PdfDimUnreadText
-} from './recognition/pdfDimensionPattern'
+} from './recognition/pdfDimensionPattern.js'
 import {
   clusterPdfTextStrokes,
   type PdfTextLineCandidate
-} from './recognition/pdfGlyphClustering'
-import type { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary'
+} from './recognition/pdfGlyphClustering.js'
+import type { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary.js'
 
 /**
  * Clusters curve entities into text line candidates (frames and long

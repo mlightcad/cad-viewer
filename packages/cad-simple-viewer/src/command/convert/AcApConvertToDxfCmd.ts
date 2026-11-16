@@ -1,7 +1,7 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApDxfConvertor } from './AcApDxfConvertor'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand } from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApDxfConvertor } from './AcApDxfConvertor.js'
 
 /**
  * Command for exporting the current CAD drawing to DXF format.

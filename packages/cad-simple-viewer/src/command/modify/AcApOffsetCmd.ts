@@ -6,7 +6,7 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -23,9 +23,9 @@ import {
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
-import { AcApEntityService } from '../../service'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
+import { AcApEntityService } from '../../service/index.js'
 
 /**
  * Union of prompt option types used across the OFFSET state machine.

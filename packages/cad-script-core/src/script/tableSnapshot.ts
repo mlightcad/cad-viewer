@@ -5,8 +5,8 @@ import {
   AcDbSymbolTableRecord
 } from '@mlightcad/data-model'
 
-import { type EntitySnapshot, toEntitySnapshot } from './entitySnapshot'
-import { readJsonFields } from './snapshotValue'
+import { type EntitySnapshot, toEntitySnapshot } from './entitySnapshot.js'
+import { readJsonFields } from './snapshotValue.js'
 
 /** One symbol-table record copied for a script. */
 export interface SymbolRecordSnapshot {

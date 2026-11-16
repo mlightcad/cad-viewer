@@ -8,7 +8,7 @@ import {
   DEFAULT_TOL
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -23,8 +23,8 @@ import {
   AcEdPromptStateStep,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 
 /**
  * Preview jig that renders an MLINE from confirmed points and the current cursor point.

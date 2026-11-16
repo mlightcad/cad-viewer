@@ -76,19 +76,19 @@ export {
   VERIFICATION_PREVIEW_LONG_SIDE_PX
 } from '@mlightcad/cad-script-core'
 
-export { exportDrawingHtml } from './export/exportDrawingHtml'
-export { exportDrawingPdf } from './export/exportDrawingPdf'
+export { exportDrawingHtml } from './export/exportDrawingHtml.js'
+export { exportDrawingPdf } from './export/exportDrawingPdf.js'
 
 // Viewer bindings.
 export {
   captureDrawingPreview,
   waitForDrawingSceneReady
-} from './preview/captureDrawingPreview'
-export { createDocManagerSession } from './session/createDocManagerSession'
-export { viewerRunEdit, withViewerDefaults } from './session/withViewerDefaults'
+} from './preview/captureDrawingPreview.js'
+export { createDocManagerSession } from './session/createDocManagerSession.js'
+export { viewerRunEdit, withViewerDefaults } from './session/withViewerDefaults.js'
 export {
   CadActionExecutor,
   createCadScriptHost,
   createCadToolCatalog,
   executeCadScript
-} from './tools/viewerBindings'
+} from './tools/viewerBindings.js'

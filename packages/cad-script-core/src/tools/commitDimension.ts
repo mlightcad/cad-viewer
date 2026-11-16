@@ -4,7 +4,7 @@ import {
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
-import type { Point2dInput } from './types'
+import type { Point2dInput } from './types.js'
 
 type DimWithBlock = AcDbDimension & {
   createDimBlock(

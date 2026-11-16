@@ -11,8 +11,8 @@ import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
-import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
+import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel.js'
+import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks.js'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPixelsPerWorldUnit,
@@ -23,13 +23,13 @@ import {
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
   acexSyncLiveOverlayTextHeight
-} from './AcExHtmlOverlayDom'
+} from './AcExHtmlOverlayDom.js'
 import {
   acexDrawMarkupArrowHead,
   acexExpandExtentsByClientRects,
   acexOverlayArrowSize
-} from './AcExMarkupGeometry'
-import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+} from './AcExMarkupGeometry.js'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag.js'
 import {
   acexAdaptiveMeasureBadgeFontSize,
   acexScaleMeasureOverlayPx,
@@ -37,7 +37,7 @@ import {
   acexScreenArcLengthPx,
   acexScreenAreaBadgeRefLengthPx,
   acexScreenSegmentLengthPx
-} from './AcExMeasureBadgeFont'
+} from './AcExMeasureBadgeFont.js'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
   ACEX_MEASUREMENT_LINE_WEIGHT,
@@ -45,27 +45,27 @@ import {
   acexMeasurementSidecarFileName,
   parseAcExMeasurementSidecar,
   stringifyAcExMeasurementSidecar
-} from './AcExMeasurementSidecar'
+} from './AcExMeasurementSidecar.js'
 import type {
   AcExMeasurementGeometry,
   AcExMeasurementRecord,
   AcExMeasurementSidecarFile,
   AcExMeasurementSidecarStyle,
   AcExMeasurementType
-} from './AcExMeasurementTypes'
+} from './AcExMeasurementTypes.js'
 import {
   type AcExMeasureQuantity,
   type AcExMeasureQuantityEntry,
   sumMeasureQuantities
-} from './AcExMeasureTotals'
+} from './AcExMeasureTotals.js'
 import {
   type AcExTrackingOptions,
   constrainToAcExTracking
-} from './AcExMeasureTracking'
-import type { AcExCircleOrArcNearHit, AcExHtmlOsnapPoint } from './AcExOsnap'
-import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
-import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
-import type { AcExSessionHistory } from './AcExSessionHistory'
+} from './AcExMeasureTracking.js'
+import type { AcExCircleOrArcNearHit, AcExHtmlOsnapPoint } from './AcExOsnap.js'
+import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip.js'
+import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox.js'
+import type { AcExSessionHistory } from './AcExSessionHistory.js'
 
 /**
  * THREE/WebGL color for measurement overlays (lines, preview rubber-band).

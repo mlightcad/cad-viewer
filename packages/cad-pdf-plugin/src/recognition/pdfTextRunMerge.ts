@@ -6,7 +6,7 @@
  * `AcDbText` leaves a line broken into fragments that are hard to edit.
  */
 
-import type { PdfImportedText } from '../pdfVectorImport'
+import type { PdfImportedText } from '../pdfVectorImport.js'
 
 /** Tuning for {@link mergePdfTextRuns}. */
 export interface PdfTextRunMergeOptions {

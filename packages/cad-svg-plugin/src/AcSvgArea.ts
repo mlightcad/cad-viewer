@@ -4,8 +4,8 @@ import {
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil.js'
 
 /**
  * SVG area entity: renders an `AcGeArea2d` as a filled `<path>` element.

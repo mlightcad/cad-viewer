@@ -1,3 +1,3 @@
-export * from './AcEdKeywordSession'
-export * from './AcEdInputSession'
-export * from './AcEdPromptInputSession'
+export * from './AcEdKeywordSession.js'
+export * from './AcEdInputSession.js'
+export * from './AcEdPromptInputSession.js'

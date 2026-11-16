@@ -1,6 +1,6 @@
 import { AcDbDatabase } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor/global/eventBus'
+import { eventBus } from '../editor/global/eventBus.js'
 
 /**
  * Notifies UI listeners that undo/redo availability may have changed.

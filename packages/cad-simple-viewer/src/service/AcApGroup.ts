@@ -6,7 +6,7 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { isEntityOnLockedLayer } from './AcApLockedLayer'
+import { isEntityOnLockedLayer } from './AcApLockedLayer.js'
 
 /** Max length of a named group (AutoCAD). */
 export const ACAP_GROUP_NAME_MAX_LENGTH = 31

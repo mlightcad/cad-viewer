@@ -1,4 +1,4 @@
-import type { llmEn } from './en'
+import type { llmEn } from './en.js'
 
 /** Czech strings for the AI model settings dialog. */
 export const llmCs = {

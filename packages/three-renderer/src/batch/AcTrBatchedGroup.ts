@@ -11,26 +11,20 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import {
   batchOriginOffsetDistance,
   canMergeIntoBatchOrigin
-} from '../draw/AcTrBatchDrawPolicy'
-import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
-import { AcTrEntity } from '../object'
-import { applyLineWeightDisplay } from '../style/AcTrLineMaterialManager'
+} from '../draw/AcTrBatchDrawPolicy.js'
+import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator.js'
+import { AcTrEntity } from '../object/index.js'
+import { applyLineWeightDisplay } from '../style/AcTrLineMaterialManager.js'
 import {
   followsLayerStyle,
   getMaterialMetadata,
   setMaterialMetadata
-} from '../style/AcTrMaterialMetadata'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import {
-  AcTrBufferGeometryUtil,
-  AcTrMaterialUtil,
-  AcTrMTextColorUtil,
-  AcTrSubEntityTraitsUtil
-} from '../util'
+} from '../style/AcTrMaterialMetadata.js'
+import { AcTrStyleManager } from '../style/AcTrStyleManager.js'
 import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
-} from '../util/AcTrMaterialUtil'
+} from '../util/AcTrMaterialUtil.js'
 import {
   type AcTrHighlightOverlayGroup,
   copyHighlightObjectFlags,
@@ -40,29 +34,35 @@ import {
   markHighlightOverlayGroup,
   patchDrawableMaterialFromCache,
   syncStyleMaterialIdFromMaterials
-} from '../util/AcTrObjectUserData'
+} from '../util/AcTrObjectUserData.js'
 import {
   isThreeLineSegments,
   isThreeLineSegments2,
   isThreeMesh,
   isThreePoints
-} from '../util/AcTrThreeObjectGuards'
-import { isObjectHierarchyVisible } from '../util/AcTrVisibility'
-import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
-import { AcTrBatchedLine } from './AcTrBatchedLine'
-import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
-import { AcTrBatchedMesh } from './AcTrBatchedMesh'
-import { AcTrBatchedPoint } from './AcTrBatchedPoint'
+} from '../util/AcTrThreeObjectGuards.js'
+import { isObjectHierarchyVisible } from '../util/AcTrVisibility.js'
+import {
+  AcTrBufferGeometryUtil,
+  AcTrMaterialUtil,
+  AcTrMTextColorUtil,
+  AcTrSubEntityTraitsUtil
+} from '../util/index.js'
+import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo.js'
+import { AcTrBatchedLine } from './AcTrBatchedLine.js'
+import { AcTrBatchedLine2 } from './AcTrBatchedLine2.js'
+import { AcTrBatchedMesh } from './AcTrBatchedMesh.js'
+import { AcTrBatchedPoint } from './AcTrBatchedPoint.js'
 import {
   AcTrSharedGeometryBatch,
   type AcTrSharedGeometryKind
-} from './AcTrSharedGeometryBatch'
-import type { AcTrBatchCompareRole } from './highlight'
+} from './AcTrSharedGeometryBatch.js'
+import type { AcTrBatchCompareRole } from './highlight/index.js'
 import {
   type AcTrBatchHighlightKind,
   type AcTrBatchHighlightState,
   installBatchHighlightRenderer
-} from './highlight'
+} from './highlight/index.js'
 
 /**
  * Allocates the next entity draw-order Z offset.

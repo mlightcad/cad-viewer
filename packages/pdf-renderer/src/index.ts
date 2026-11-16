@@ -4,19 +4,19 @@
  * @packageDocumentation
  */
 
-export { exportDatabaseToPdf } from './AcPdfExport'
-export type { AcPdfExportOptions } from './AcPdfExportOptions'
-export type { AcPdfColorMode } from './renderer/AcPdfStyle'
+export { exportDatabaseToPdf } from './AcPdfExport.js'
+export type { AcPdfExportOptions } from './AcPdfExportOptions.js'
+export type { AcPdfColorMode } from './renderer/AcPdfStyle.js'
 export {
   AcPdfFontManager,
   acPdfTrueTypeGlyfLooksHealthy
-} from './pdf/AcPdfFontManager'
-export type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
-export type { AcPdfFormRegistry } from './pdf/AcPdfContentWriter'
-export { AcPdfEntity } from './renderer/AcPdfEntity'
-export { AcPdfRenderer } from './renderer/AcPdfRenderer'
-export type { AcPdfStyleContext } from './renderer/AcPdfStyleUtil'
-export { AcPdfStyleUtil } from './renderer/AcPdfStyleUtil'
+} from './pdf/AcPdfFontManager.js'
+export type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager.js'
+export type { AcPdfFormRegistry } from './pdf/AcPdfContentWriter.js'
+export { AcPdfEntity } from './renderer/AcPdfEntity.js'
+export { AcPdfRenderer } from './renderer/AcPdfRenderer.js'
+export type { AcPdfStyleContext } from './renderer/AcPdfStyleUtil.js'
+export { AcPdfStyleUtil } from './renderer/AcPdfStyleUtil.js'
 export type {
   AcPdfGlyphBox,
   AcPdfGlyphColorGroup,
@@ -25,9 +25,9 @@ export type {
   AcPdfGlyphProvider,
   AcPdfMTextGlyphResult,
   AcPdfShapeGlyphResult
-} from './text/AcPdfGlyphProvider'
-export { tessellateHatchPattern } from './hatch/AcPdfHatchTessellator'
-export { shadingFromGradient } from './hatch/AcPdfGradient'
+} from './text/AcPdfGlyphProvider.js'
+export { tessellateHatchPattern } from './hatch/AcPdfHatchTessellator.js'
+export { shadingFromGradient } from './hatch/AcPdfGradient.js'
 export {
   COMPLEX_LTYPE_ABSOLUTE_ROTATION,
   COMPLEX_LTYPE_SHAPE,
@@ -40,14 +40,14 @@ export {
   resolveLinetypeEmbeddedText,
   uprightLinetypeAngle,
   walkLineType
-} from './linetype/AcPdfLineTypeStroker'
+} from './linetype/AcPdfLineTypeStroker.js'
 export type {
   AcPdfComplexPatternElement,
   AcPdfLineWalkPlacement,
   AcPdfLineWalkResult,
   AcPdfLineWalkShape
-} from './linetype/AcPdfLineTypeStroker'
-export { effectivePdfLayer } from './pdf/AcPdfEffectiveLayer'
+} from './linetype/AcPdfLineTypeStroker.js'
+export { effectivePdfLayer } from './pdf/AcPdfEffectiveLayer.js'
 export {
   clampPageSize,
   drawingUnitsToPdfPoints,
@@ -56,4 +56,4 @@ export {
   mmToPdfPoints,
   PDF_MAX_PAGE_SIZE,
   PDF_POINTS_PER_MM
-} from './AcPdfUnits'
+} from './AcPdfUnits.js'

@@ -6,8 +6,8 @@ import {
   distPointToRectOutlinePx,
   distPointToSegmentPx,
   pointInRectPx
-} from '../../util/AcApScreenHitTest'
-import type { AcApMarkupShapeOutline } from './AcApMarkupShapeCallout'
+} from '../../util/AcApScreenHitTest.js'
+import type { AcApMarkupShapeOutline } from './AcApMarkupShapeCallout.js'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupCircleGeometry,
@@ -15,7 +15,7 @@ import type {
   AcApMarkupGeometry,
   AcApMarkupPoint2d,
   AcApMarkupRectGeometry
-} from './AcApMarkupTypes'
+} from './AcApMarkupTypes.js'
 
 /** Extra hit slop for revision-cloud lobes around the AABB. */
 const CLOUD_HIT_EXTRA_PX = 8

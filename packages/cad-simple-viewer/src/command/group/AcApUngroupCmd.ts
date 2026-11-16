@@ -1,6 +1,6 @@
 import { AcDbGroup, AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app/index.js'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -8,15 +8,15 @@ import {
   AcEdPromptKeywordOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from '../../editor'
-import { AcApI18n } from '../../i18n'
+} from '../../editor/index.js'
+import { AcApI18n } from '../../i18n/index.js'
 import {
   acapExplodeAllGroups,
   acapExplodeGroup,
   acapFindGroupsContaining,
   acapFindGroupsContainingAny,
   acapGetGroupByName
-} from '../../service/AcApGroup'
+} from '../../service/AcApGroup.js'
 
 /**
  * UNGROUP — remove group definition(s); entities remain in the drawing.

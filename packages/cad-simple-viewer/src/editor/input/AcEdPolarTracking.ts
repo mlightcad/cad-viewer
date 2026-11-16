@@ -19,8 +19,8 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { AcApUcsService } from '../../service/AcApUcsService'
-import { constrainToOrtho, isOrthoModeEnabled } from './AcEdOrthoMode'
+import { AcApUcsService } from '../../service/AcApUcsService.js'
+import { constrainToOrtho, isOrthoModeEnabled } from './AcEdOrthoMode.js'
 
 /**
  * **POLARMODE** bit mask: polar tracking enabled (status bar “Polar Tracking”).

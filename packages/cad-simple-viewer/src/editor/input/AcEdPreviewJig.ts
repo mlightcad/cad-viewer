@@ -1,6 +1,6 @@
 import { AcDbEntity } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 
 /**
  * @class AcEdPreviewJig<T>

@@ -1,7 +1,7 @@
-import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
-import { AcEdPromptKeywordOptions } from '../prompt/AcEdPromptKeywordOptions'
-import { AcEdCommandLine } from '../ui/AcEdCommandLine'
-import { AcEdInputSession } from './AcEdInputSession'
+import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler.js'
+import { AcEdPromptKeywordOptions } from '../prompt/AcEdPromptKeywordOptions.js'
+import { AcEdCommandLine } from '../ui/AcEdCommandLine.js'
+import { AcEdInputSession } from './AcEdInputSession.js'
 
 /**
  * Resolution mode for mixed command-line prompt sessions.

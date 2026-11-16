@@ -12,14 +12,14 @@ import {
 import {
   acapPdfCreatePatternHatch,
   acapPdfShapeToLoop
-} from './pdfImportEntities'
-import type { PdfImportShapeItem } from './pdfImportShapes'
-import type { PdfRecognizedVertex } from './recognition/pdfCurveRecognition'
+} from './pdfImportEntities.js'
+import type { PdfImportShapeItem } from './pdfImportShapes.js'
+import type { PdfRecognizedVertex } from './recognition/pdfCurveRecognition.js'
 import {
   acapPdfRecognizeHatches,
   type PdfHatchRecognitionOptions,
   type PdfRecognizedHatch
-} from './recognition/pdfHatchRecognition'
+} from './recognition/pdfHatchRecognition.js'
 
 /**
  * Selected entities described for hatch recognition: one shape item per

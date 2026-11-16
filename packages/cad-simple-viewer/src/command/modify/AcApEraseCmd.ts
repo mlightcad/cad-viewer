@@ -1,6 +1,6 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand, AcEdOpenMode } from '../../editor'
-import { resolveSelectedIds } from '../../service'
+import { AcApContext } from '../../app/index.js'
+import { AcEdCommand, AcEdOpenMode } from '../../editor/index.js'
+import { resolveSelectedIds } from '../../service/index.js'
 
 /**
  * Command to delete selected objects from the drawing.

@@ -11,8 +11,8 @@
  * Pure data in, pure data out.
  */
 
-import type { PdfRecognizedShape } from './pdfCurveRecognition'
-import { cubicAt, type PdfRecPoint } from './pdfRecGeometry'
+import type { PdfRecognizedShape } from './pdfCurveRecognition.js'
+import { cubicAt, type PdfRecPoint } from './pdfRecGeometry.js'
 
 /** Tuning for {@link acapPdfFaceBoundary}. */
 export interface PdfFaceBoundaryOptions {

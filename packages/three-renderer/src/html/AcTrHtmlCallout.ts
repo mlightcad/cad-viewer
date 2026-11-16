@@ -1,7 +1,7 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
-import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement'
+import { acTrHtmlCssColor } from './AcTrHtmlColorUtil.js'
+import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement.js'
 
 /**
  * Options for a callout / leader text bubble.

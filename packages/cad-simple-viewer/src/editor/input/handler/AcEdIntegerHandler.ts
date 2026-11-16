@@ -1,5 +1,5 @@
-import { AcEdPromptIntegerOptions } from '../prompt/AcEdPromptIntegerOptions'
-import { AcEdNumericalHandler } from './AcEdNumericalHandler'
+import { AcEdPromptIntegerOptions } from '../prompt/AcEdPromptIntegerOptions.js'
+import { AcEdNumericalHandler } from './AcEdNumericalHandler.js'
 
 /**
  * Handles validation and parsing of integer user input.

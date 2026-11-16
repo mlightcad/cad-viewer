@@ -1,10 +1,10 @@
-import { AcApDocManager } from '../app'
-import { runMarkupEdit } from '../command/markup/AcApMarkupHistory'
-import { runMeasurementEdit } from '../command/measure/AcApMeasurementHistory'
-import { MEASUREMENT_LAYER } from '../command/measure/AcApMeasurementStore'
-import { acedIsSpaceActivatedTarget } from '../editor/input/ui/AcEdKeyboardUtil'
-import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor'
-import type { AcTrView2d } from './AcTrView2d'
+import { AcApDocManager } from '../app/index.js'
+import { runMarkupEdit } from '../command/markup/AcApMarkupHistory.js'
+import { runMeasurementEdit } from '../command/measure/AcApMeasurementHistory.js'
+import { MEASUREMENT_LAYER } from '../command/measure/AcApMeasurementStore.js'
+import { acedIsSpaceActivatedTarget } from '../editor/input/ui/AcEdKeyboardUtil.js'
+import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor.js'
+import type { AcTrView2d } from './AcTrView2d.js'
 
 /**
  * Document-level undo/redo shortcut resolved from a keyboard event.

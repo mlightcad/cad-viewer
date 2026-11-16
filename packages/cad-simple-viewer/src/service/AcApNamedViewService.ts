@@ -9,10 +9,10 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { isModelSpaceDatabase } from '../editor/global/AcEdUiColor'
-import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
-import { AcApLayerService } from './AcApLayerService'
-import { acapRunServiceEdit } from './AcApServiceEdit'
+import { isModelSpaceDatabase } from '../editor/global/AcEdUiColor.js'
+import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
+import { AcApLayerService } from './AcApLayerService.js'
+import { acapRunServiceEdit } from './AcApServiceEdit.js'
 
 /** XDATA AppId for named-view layer On/Off + Freeze/Thaw snapshots. */
 export const MLIGHT_VIEW_LAYER_SNAP_APPID = 'MLIGHT_VIEW_LAYER_SNAP'

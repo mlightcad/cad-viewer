@@ -5,8 +5,8 @@ import {
   type AcApPaletteNamedTabId,
   AcApPaletteService,
   AcApSettingManager
-} from '../app'
-import { acapBindToolbarDocState } from '../command/AcApToolbarDocBind'
+} from '../app/index.js'
+import { acapBindToolbarDocState } from '../command/AcApToolbarDocBind.js'
 import {
   AcApFindUiCmd,
   AcApLayerUiCmd,
@@ -14,45 +14,45 @@ import {
   AcApMeasurementPanelUiCmd,
   AcUiLayerDockController,
   AcUiLayerUiControllerHolder
-} from '../command/ui'
+} from '../command/ui/index.js'
 import {
   AcEdCommandStack,
   acedGetUiLayout,
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
   type AcEdUiTheme
-} from '../editor'
-import { AcApI18n, type AcApLocale } from '../i18n'
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../i18n/AcUiI18n'
-import { AcUiFindPaletteView } from './AcUiFindPaletteView'
-import { AcUiLayerListView } from './AcUiLayerListView'
-import { AcUiMeasurementPaletteView } from './AcUiMeasurementPaletteView'
-import { acuiNormalizeSimpleUiOptions } from './acuiNormalizeSimpleUiOptions'
-import { AcUiReviewPaletteView } from './AcUiReviewPaletteView'
+} from '../editor/index.js'
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../i18n/AcUiI18n.js'
+import { AcApI18n, type AcApLocale } from '../i18n/index.js'
+import { AcUiFindPaletteView } from './AcUiFindPaletteView.js'
+import { AcUiLayerListView } from './AcUiLayerListView.js'
+import { AcUiMeasurementPaletteView } from './AcUiMeasurementPaletteView.js'
+import { acuiNormalizeSimpleUiOptions } from './acuiNormalizeSimpleUiOptions.js'
+import { AcUiReviewPaletteView } from './AcUiReviewPaletteView.js'
 import {
   AcUiPluginLayoutMode,
   AcUiSimpleUiOptions,
   AcUiToolbarItemsInput
-} from './AcUiSimpleUiOptions'
-import { acuiRemoveUiStylesIfUnused } from './AcUiSimpleUiStyles'
-import { AcUiThemeSync } from './AcUiThemeSync'
-import { AcUiDockPanel, type AcUiDockPanelSide, type AcUiDockPanelTab } from './dock/AcUiDockPanel'
-import { acuiToolbarItemsIncludeItem } from './toolbar'
-import { AcUiToolbar } from './toolbar/AcUiToolbar'
+} from './AcUiSimpleUiOptions.js'
+import { acuiRemoveUiStylesIfUnused } from './AcUiSimpleUiStyles.js'
+import { AcUiThemeSync } from './AcUiThemeSync.js'
+import { AcUiDockPanel, type AcUiDockPanelSide, type AcUiDockPanelTab } from './dock/AcUiDockPanel.js'
+import { AcUiToolbar } from './toolbar/AcUiToolbar.js'
+import { acuiToolbarItemsIncludeItem } from './toolbar/index.js'
 import {
   acuiMergeToolbarOptionsForLayout,
   acuiPrependToolbarLayoutSwitcher,
   acuiResolveDockMountTarget,
   acuiResolveToolbarItems,
   acuiResolveToolbarMountTarget
-} from './toolbar/simpleUiPresets'
+} from './toolbar/simpleUiPresets.js'
 import type {
   AcUiToolbarItem,
   AcUiToolbarOptions,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
   AcUiToolbarSize
-} from './toolbar/types'
+} from './toolbar/types.js'
 
 const LAYERS_TAB_ID = 'layers'
 const REVIEW_TAB_ID = 'review'

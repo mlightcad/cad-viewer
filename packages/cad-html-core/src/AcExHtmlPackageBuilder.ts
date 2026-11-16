@@ -3,21 +3,21 @@ import { strToU8 } from 'fflate'
 import {
   acexHtmlEstimateLineBatchBytes,
   acexHtmlEstimateMeshBatchBytes
-} from './AcExHtmlBatchBinaryCodec'
+} from './AcExHtmlBatchBinaryCodec.js'
 import {
   acexHtmlEncodeChunkBinary,
   acexHtmlEncodeChunkGzip,
   acexHtmlEncodeChunkGzipAsync,
-  type AcExHtmlGeometryChunk} from './AcExHtmlChunkBinaryCodec'
-import { acexHtmlSplitLineBatch, acexHtmlSplitMeshBatch } from './AcExHtmlGeometryBatchSplit'
+  type AcExHtmlGeometryChunk} from './AcExHtmlChunkBinaryCodec.js'
+import { acexHtmlSplitLineBatch, acexHtmlSplitMeshBatch } from './AcExHtmlGeometryBatchSplit.js'
 import {
   acexHtmlEncodeOsnapCatalogBinary,
   acexHtmlEncodeOsnapCatalogGzip,
   acexHtmlEncodeOsnapCatalogGzipAsync,
   acexHtmlSplitOsnapPrimitives
-} from './AcExHtmlOsnapCatalogCodec'
-import { ACEX_DEFAULT_MANIFEST_FILE } from './AcExHtmlPackageBootstrap'
-import { acexHtmlPackHtmlPackage } from './AcExHtmlPackager'
+} from './AcExHtmlOsnapCatalogCodec.js'
+import { ACEX_DEFAULT_MANIFEST_FILE } from './AcExHtmlPackageBootstrap.js'
+import { acexHtmlPackHtmlPackage } from './AcExHtmlPackager.js'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
   ACEX_MAX_GEOMETRY_BATCH_BYTES,
@@ -28,13 +28,13 @@ import {
   type AcExHtmlPackageLayoutRef,
   type AcExHtmlPackageManifest,
   type AcExHtmlPackageOsnapChunkRef
-} from './AcExHtmlPackageTypes'
+} from './AcExHtmlPackageTypes.js'
 import type {
   AcExHtmlLayoutSnapshot,
   AcExHtmlLineBatch,
   AcExHtmlMeshBatch,
   AcExHtmlSnapshot
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 export interface AcExHtmlBuildPackageOptions {
   /** Inline viewer runtime IIFE source. */

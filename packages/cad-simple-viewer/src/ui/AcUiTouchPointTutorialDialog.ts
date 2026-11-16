@@ -1,12 +1,12 @@
-import { AcApSettingManager } from '../app/AcApSettingManager'
-import { acedIsMobileOrPadUi } from '../editor/global/AcEdUiLayout'
-import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../editor/input/ui/AcEdTouchPointTiming'
-import { AcApI18n } from '../i18n/AcApI18n'
+import { AcApSettingManager } from '../app/AcApSettingManager.js'
+import { acedIsMobileOrPadUi } from '../editor/global/AcEdUiLayout.js'
+import { resolveUiTheme } from '../editor/global/AcEdUiTheme.js'
+import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../editor/input/ui/AcEdTouchPointTiming.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
 import {
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial
-} from './touch-point-tutorial'
+} from './touch-point-tutorial.js'
 
 /**
  * Whether the mobile precise point-pick tutorial should be shown.
@@ -67,4 +67,4 @@ export {
   type AcUiTouchPointTutorialConfig,
   type AcUiTouchPointTutorialLabels,
   type AcUiTouchPointTutorialPrefs
-} from './touch-point-tutorial'
+} from './touch-point-tutorial.js'

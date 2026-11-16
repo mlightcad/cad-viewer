@@ -17,7 +17,7 @@
 export {
   getDrawingContext,
   type DrawingContextSnapshot
-} from './context/DrawingContextProvider'
+} from './context/DrawingContextProvider.js'
 export {
   type CadCapturePreviewOptions,
   type CaptureDrawingPreviewFailure,
@@ -26,25 +26,25 @@ export {
   type NormalizedCadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions,
   VERIFICATION_PREVIEW_LONG_SIDE_PX
-} from './preview/types'
+} from './preview/types.js'
 export {
   createCadMeasure,
   type CadMeasureApi,
   type MeasureCheck,
   type MeasureReport
-} from './script/createCadMeasure'
+} from './script/createCadMeasure.js'
 export {
   createCadScriptHost,
   type CadEditTransaction,
   type CadScriptEffects,
   type CadScriptLimits,
   type CadScriptPreviewRequest
-} from './script/createCadScriptHost'
+} from './script/createCadScriptHost.js'
 export {
   normalizeDxfSaveRequest,
   type CadScriptDxfSaveOptions,
   type CadScriptDxfSaveRequest
-} from './script/saveDxf'
+} from './script/saveDxf.js'
 export {
   fulfillHtmlSaveRequests,
   normalizeHtmlSaveRequest,
@@ -52,52 +52,52 @@ export {
   type CadScriptHtmlExportResult,
   type CadScriptHtmlSaveOptions,
   type CadScriptHtmlSaveRequest
-} from './script/saveHtml'
+} from './script/saveHtml.js'
 export {
   fulfillPdfSaveRequests,
   normalizePdfSaveRequest,
   type CadScriptPdfExportOptions,
   type CadScriptPdfSaveOptions,
   type CadScriptPdfSaveRequest
-} from './script/savePdf'
-export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot'
+} from './script/savePdf.js'
+export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot.js'
 export {
   executeCadScript,
   MAX_SCRIPT_RESULT_CHARS,
   type CadScriptRunOptions
-} from './script/executeCadScript'
-export { instrumentCadScript } from './script/instrumentCadScript'
+} from './script/executeCadScript.js'
+export { instrumentCadScript } from './script/instrumentCadScript.js'
 export {
   CAD_EDIT_TX_METHODS,
   CAD_MCP_DXF_OUTBOX_KEY,
   CAD_MCP_FILE_OUTBOX_KEY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE
-} from './script/scriptApi'
+} from './script/scriptApi.js'
 export {
   MAX_SCRIPT_SOURCE_CHARS,
   validateCadScript,
   type CadScriptValidation
-} from './script/validateCadScript'
+} from './script/validateCadScript.js'
 export {
   type CadSession,
   type CadSessionDocument,
   type CadSessionLayerInfo,
   CadSessionOpenMode,
   type CadSessionView
-} from './session/CadSession'
+} from './session/CadSession.js'
 export {
   createDatabaseSession,
   type CreateDatabaseSessionOptions
-} from './session/createDatabaseSession'
-export { requireDocument, requireView } from './session/documentAccess'
-export { isEntityOnLockedLayer } from './session/lockedLayer'
-export { runSessionEdit } from './session/runSessionEdit'
-export { CadActionExecutor } from './tools/CadActionExecutor'
+} from './session/createDatabaseSession.js'
+export { requireDocument, requireView } from './session/documentAccess.js'
+export { isEntityOnLockedLayer } from './session/lockedLayer.js'
+export { runSessionEdit } from './session/runSessionEdit.js'
+export { CadActionExecutor } from './tools/CadActionExecutor.js'
 export {
   createCadToolCatalog,
   type CadToolCatalogOptions
-} from './tools/createCadToolCatalog'
+} from './tools/createCadToolCatalog.js'
 export {
   type CadToolAccess,
   type CadToolDefinition,
@@ -105,4 +105,4 @@ export {
   type ToolResult,
   type ToolResultImage,
   type ToolResultSavedFile
-} from './tools/types'
+} from './tools/types.js'

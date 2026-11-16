@@ -1,11 +1,11 @@
 import type { AcDbOpenDatabaseErrorCode } from '@mlightcad/data-model'
 
-import type { AcEdEvents } from '../editor/global/eventBus'
-import { AcApI18n } from '../i18n/AcApI18n'
+import type { AcEdEvents } from '../editor/global/eventBus.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
 import {
   ACAP_DWG_PARSER_PRODUCT_URL,
   acapMarkdownLink
-} from './AcApMessageLink'
+} from './AcApMessageLink.js'
 
 export type AcApOpenFileErrorParams = AcEdEvents['failed-to-open-file']
 

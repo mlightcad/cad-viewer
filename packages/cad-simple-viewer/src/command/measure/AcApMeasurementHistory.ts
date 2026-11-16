@@ -1,17 +1,17 @@
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
-import type { AcEdBaseView } from '../../editor'
-import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
-import { resetMeasurementUnitOverride } from '../../util/AcApMeasurementUnits'
+import type { AcEdBaseView } from '../../editor/index.js'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit.js'
+import { resetMeasurementUnitOverride } from '../../util/AcApMeasurementUnits.js'
 import {
   acapCloneMeasurementStyle,
   type AcApMeasurementStyle
-} from '../../util/AcApMeasurementUtil'
-import type { AcTrView2d } from '../../view'
+} from '../../util/AcApMeasurementUtil.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   bindOverlayHistory,
   getSessionUndo
-} from '../markup/AcApMarkupHistory'
+} from '../markup/AcApMarkupHistory.js'
 import {
   applyMeasurementStyle,
   getMeasurementStyle,
@@ -19,7 +19,7 @@ import {
   resetMeasurementStyleState,
   resetMeasurementVisibility,
   restoreMeasurementGroupExtras
-} from './AcApMeasurementStore'
+} from './AcApMeasurementStore.js'
 
 /**
  * One undoable measurement overlay mutation.

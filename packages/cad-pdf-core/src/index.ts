@@ -11,7 +11,7 @@ export {
   type AcExPdfDatabaseExportOptions,
   acexPdfExportDatabase,
   type AcExPdfFitBox
-} from './AcExPdfDatabaseExport'
+} from './AcExPdfDatabaseExport.js'
 export {
   type AcExPdfColorMode,
   ACEXPDF_DEFAULT_EXPORT_OPTIONS,
@@ -19,5 +19,5 @@ export {
   type AcExPdfModelSpaceFit,
   acexPdfResolveExportOptions,
   type AcExPdfTextMode
-} from './AcExPdfExportOptions'
-export { acexPdfCreateGlyphProvider } from './AcExPdfGlyphProvider'
+} from './AcExPdfExportOptions.js'
+export { acexPdfCreateGlyphProvider } from './AcExPdfGlyphProvider.js'

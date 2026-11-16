@@ -7,7 +7,7 @@ import {
   AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapBindOverlayPointerDrag,
   acapDrawOverlayArrowHead,
@@ -16,13 +16,13 @@ import {
   acapPlaceOverlayHtml,
   acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth
-} from '../../overlay'
-import { runMarkupEdit } from '../AcApMarkupHistory'
-import { republishMarkup } from '../AcApMarkupRepublish'
-import { getMarkupStore } from '../AcApMarkupStore'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
-import { selectMarkupGroup } from './AcApMarkupEntityGrips'
+} from '../../overlay/index.js'
+import { runMarkupEdit } from '../AcApMarkupHistory.js'
+import { republishMarkup } from '../AcApMarkupRepublish.js'
+import { getMarkupStore } from '../AcApMarkupStore.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
+import { selectMarkupGroup } from './AcApMarkupEntityGrips.js'
 
 /**
  * Line or arrow markup with endpoint grips.

@@ -1,6 +1,6 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcEdPromptNumericalOptions } from './AcEdPromptNumericalOptions'
+import { AcEdPromptNumericalOptions } from './AcEdPromptNumericalOptions.js'
 
 /**
  * Options for prompting the user to input a distance, similar to

@@ -5,12 +5,12 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../../view'
-import { AcEdOsnapPoint, AcEdOsnapResolver } from '../AcEdOsnapResolver'
-import { constrainToTracking } from '../AcEdPolarTracking'
-import { AcEdMarkerManager } from '../marker'
-import { acedClearDomSelection } from './AcEdCanvasTouchCalloutGuard'
-import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
+import { AcEdBaseView } from '../../view/index.js'
+import { AcEdOsnapPoint, AcEdOsnapResolver } from '../AcEdOsnapResolver.js'
+import { constrainToTracking } from '../AcEdPolarTracking.js'
+import { AcEdMarkerManager } from '../marker/index.js'
+import { acedClearDomSelection } from './AcEdCanvasTouchCalloutGuard.js'
+import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes.js'
 import {
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
@@ -20,18 +20,18 @@ import {
   AcEdFloatingInputNoneCallback,
   AcEdFloatingInputOptions,
   AcEdFloatingInputValidationCallback
-} from './AcEdFloatingInputTypes'
-import { AcEdFloatingMessage } from './AcEdFloatingMessage'
-import { acedInteractionStrategy } from './AcEdInteractionStrategy'
-import { AcEdRubberBand } from './AcEdRubberBand'
+} from './AcEdFloatingInputTypes.js'
+import { AcEdFloatingMessage } from './AcEdFloatingMessage.js'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy.js'
+import { AcEdRubberBand } from './AcEdRubberBand.js'
 import {
   acedHideSimulatedMouseCursor,
   acedRefreshSimulatedMouseCursor
-} from './AcEdSimulatedMouseCursor'
+} from './AcEdSimulatedMouseCursor.js'
 import {
   type AcEdTouchPickHudHost,
   acedTouchPickStrategy
-} from './AcEdTouchPickStrategy'
+} from './AcEdTouchPickStrategy.js'
 import {
   acedArmTouchMouseGuard,
   acedIsGhostClientOrigin,
@@ -40,7 +40,7 @@ import {
   acedShouldIgnoreCompatMouse,
   acedSinkFollowingClick,
   AcEdTouchPointSession
-} from './AcEdTouchPointSession'
+} from './AcEdTouchPointSession.js'
 
 /**
  * A UI component providing a small floating input box used inside CAD editing

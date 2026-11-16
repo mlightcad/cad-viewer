@@ -1,6 +1,6 @@
-import type { AcEdCommand } from '../editor/command/AcEdCommand'
-import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
-import type { AcTrView2d } from '../view'
+import type { AcEdCommand } from '../editor/command/AcEdCommand.js'
+import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack.js'
+import type { AcTrView2d } from '../view/index.js'
 
 /**
  * Registers a built-in system command with resolved aliases.
@@ -26,4 +26,4 @@ export interface AcApDrawStyleSessionInstallContext {
 export {
   acapGetDrawStyleSessionAccessory,
   acapInstallDrawStyleSessionAccessory
-} from './AcApInstallDrawStyleSessionAccessory'
+} from './AcApInstallDrawStyleSessionAccessory.js'

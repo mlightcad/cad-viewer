@@ -1,13 +1,13 @@
 import { AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
-import type { AcTrView2d } from '../../../view'
+import type { AcTrView2d } from '../../../view/index.js'
 import {
   acapDrawOverlayHighlight,
   acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult
-} from '../../overlay'
-import type { AcApMarkupRecord } from '../AcApMarkupTypes'
-import { AcApMarkupEntity } from './AcApMarkupEntity'
+} from '../../overlay/index.js'
+import type { AcApMarkupRecord } from '../AcApMarkupTypes.js'
+import { AcApMarkupEntity } from './AcApMarkupEntity.js'
 
 /**
  * Highlight rectangle markup (canvas fill + invisible center hit target).

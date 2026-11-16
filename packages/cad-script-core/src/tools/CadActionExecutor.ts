@@ -30,21 +30,21 @@ import {
   HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
-import type { DrawingContextSnapshot } from '../context/DrawingContextProvider'
-import { getDrawingContext } from '../context/DrawingContextProvider'
-import type { CadSession } from '../session/CadSession'
-import { requireDocument, requireView } from '../session/documentAccess'
-import { getScriptEditDepth } from '../session/editDepth'
-import { runSessionEdit } from '../session/runSessionEdit'
+import type { DrawingContextSnapshot } from '../context/DrawingContextProvider.js'
+import { getDrawingContext } from '../context/DrawingContextProvider.js'
+import type { CadSession } from '../session/CadSession.js'
+import { requireDocument, requireView } from '../session/documentAccess.js'
+import { getScriptEditDepth } from '../session/editDepth.js'
+import { runSessionEdit } from '../session/runSessionEdit.js'
 import {
   applyDimStyle,
   commitDimBlock,
   inferLinearRotation,
   pointOnCircle
-} from './commitDimension'
-import type { Point2dInput, ToolResult } from './types'
+} from './commitDimension.js'
+import type { Point2dInput, ToolResult } from './types.js'
 
-export type { Point2dInput, ToolResult } from './types'
+export type { Point2dInput, ToolResult } from './types.js'
 
 /**
  * Converts a 2D tool input to a 3D point with the given Z elevation.

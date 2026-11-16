@@ -12,8 +12,8 @@ import {
   AcGePoint3dLike,
   AcGeTol} from '@mlightcad/data-model'
 
-import { isModelSpaceDatabase } from '../editor/global/AcEdUiColor'
-import { acapRunServiceEdit } from './AcApServiceEdit'
+import { isModelSpaceDatabase } from '../editor/global/AcEdUiColor.js'
+import { acapRunServiceEdit } from './AcApServiceEdit.js'
 
 /** Undo label for UCS table / viewport edits. */
 export const UCS_EDIT_LABEL = 'UCS'

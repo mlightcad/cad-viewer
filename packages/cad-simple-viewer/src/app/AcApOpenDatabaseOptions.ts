@@ -3,7 +3,7 @@ import {
   AcDbOpenDatabaseOptions
 } from '@mlightcad/data-model'
 
-import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
 
 /**
  * Controls how the view is framed immediately after a document opens.

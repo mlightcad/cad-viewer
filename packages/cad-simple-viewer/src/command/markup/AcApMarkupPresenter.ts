@@ -1,31 +1,31 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 
-import type { AcEdBaseView } from '../../editor'
-import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
-import type { AcTrView2d } from '../../view'
+import type { AcEdBaseView } from '../../editor/index.js'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit.js'
+import type { AcTrView2d } from '../../view/index.js'
 import {
   expandMarkupBoundsByClientRects,
   isAttachableShapeMarkup,
   markupGeometryBounds
-} from './AcApMarkupGeometry'
+} from './AcApMarkupGeometry.js'
 import {
   getMarkupHistory,
   getSessionUndo,
   runMarkupEdit
-} from './AcApMarkupHistory'
-import { registerMarkupPublish } from './AcApMarkupRepublish'
-import { getActiveMarkupBag } from './AcApMarkupSession'
+} from './AcApMarkupHistory.js'
+import { registerMarkupPublish } from './AcApMarkupRepublish.js'
+import { getActiveMarkupBag } from './AcApMarkupSession.js'
 import {
   getMarkupStore,
   MARKUP_LAYER,
   MARKUP_LIVE_LAYER
-} from './AcApMarkupStore'
+} from './AcApMarkupStore.js'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupRecord
-} from './AcApMarkupTypes'
-import { patchMarkupStyleWcs, withMarkupStyleWcs } from './AcApMarkupUtil'
-import { createMarkupEntityFromRecord } from './entity'
+} from './AcApMarkupTypes.js'
+import { patchMarkupStyleWcs, withMarkupStyleWcs } from './AcApMarkupUtil.js'
+import { createMarkupEntityFromRecord } from './entity/index.js'
 
 // Re-export shape builders for commands / jigs that imported them from here.
 export {
@@ -35,7 +35,7 @@ export {
   tessellateMarkupCloud,
   buildMarkupCloud,
   buildMarkupRect
-} from './AcApMarkupShapeBuilder'
+} from './AcApMarkupShapeBuilder.js'
 
 function asView2d(view: AcEdBaseView): AcTrView2d {
   return view as AcTrView2d

@@ -1,5 +1,5 @@
-import type { AcApDataSourceMenuItem } from './acapBuildDataSourceMenu'
-import type { AcApDataSource, AcApDataSourceFile } from './AcApDataSource'
+import type { AcApDataSourceMenuItem } from './acapBuildDataSourceMenu.js'
+import type { AcApDataSource, AcApDataSourceFile } from './AcApDataSource.js'
 
 /**
  * Runs a menu action against an already-resolved {@link AcApDataSource}.

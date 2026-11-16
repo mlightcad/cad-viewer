@@ -5,11 +5,11 @@ import {
 } from '@mlightcad/cad-html-core'
 import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-html-core'
 
-import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet.js'
 import {
   AcUiMobileSessionPanel,
   type AcUiMobileSessionPanelLabels
-} from './AcExHtmlSimpleViewerUi'
+} from './AcExHtmlSimpleViewerUi.js'
 
 /** Keyword / action chip on the offline HTML session panel. */
 export interface AcExCommandSessionChip {

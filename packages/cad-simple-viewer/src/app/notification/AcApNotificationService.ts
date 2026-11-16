@@ -1,11 +1,11 @@
 import {
   AcUiDefaultNotificationUi,
   type AcUiNotificationBellPlacement
-} from '../../ui/AcUiDefaultNotificationUi'
-import type { AcApDocManager } from '../AcApDocManager'
-import { AcApNotificationEventBridge } from './AcApNotificationEventBridge'
-import { AcApNotificationStore } from './AcApNotificationStore'
-import type { AcApNotificationCenter } from './AcApNotificationTypes'
+} from '../../ui/AcUiDefaultNotificationUi.js'
+import type { AcApDocManager } from '../AcApDocManager.js'
+import { AcApNotificationEventBridge } from './AcApNotificationEventBridge.js'
+import { AcApNotificationStore } from './AcApNotificationStore.js'
+import type { AcApNotificationCenter } from './AcApNotificationTypes.js'
 
 export type { AcUiNotificationBellPlacement }
 

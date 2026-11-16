@@ -4,9 +4,9 @@ import {
   AcGiTextStyle
 } from '@mlightcad/data-model'
 
-import { AcSvgEntity } from './AcSvgEntity'
-import { buildSvgMText } from './AcSvgMTextUtil'
-import { AcSvgStyleContext } from './AcSvgStyleUtil'
+import { AcSvgEntity } from './AcSvgEntity.js'
+import { buildSvgMText } from './AcSvgMTextUtil.js'
+import { AcSvgStyleContext } from './AcSvgStyleUtil.js'
 
 /**
  * SVG mtext entity rendered from parsed MTEXT tokens via {@link @mlightcad/mtext-parser}.

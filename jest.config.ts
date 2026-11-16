@@ -35,6 +35,8 @@ const config: Config = {
   ],
   testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/', '/__tests__/simple-ui/helpers/'],
   moduleNameMapper: {
+    // Published packages use Node-ESM `.js` specifiers; map them back to `.ts`.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^lodash-es$': 'lodash',
     '^@mlightcad/cad-pdf-core$':
       '<rootDir>/packages/cad-pdf-core/src/index.ts',

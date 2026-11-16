@@ -1,12 +1,12 @@
 import { strFromU8 } from 'fflate'
 
-import { acexHtmlReadLineBatch, acexHtmlReadMeshBatch, acexHtmlWriteLineBatch, acexHtmlWriteMeshBatch } from './AcExHtmlBatchBinaryCodec'
-import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
+import { acexHtmlReadLineBatch, acexHtmlReadMeshBatch, acexHtmlWriteLineBatch, acexHtmlWriteMeshBatch } from './AcExHtmlBatchBinaryCodec.js'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO.js'
 import {
   ACEO_OSNAP_MAGIC,
   acexHtmlDecodeOsnapCatalogBinary,
   acexHtmlEncodeOsnapCatalogBinary
-} from './AcExHtmlOsnapCatalogCodec'
+} from './AcExHtmlOsnapCatalogCodec.js'
 import {
   ACEX_SNAPSHOT_VERSION,
   type AcExHtmlExtents,
@@ -14,7 +14,7 @@ import {
   type AcExHtmlLineBatch,
   type AcExHtmlMeshBatch,
   type AcExHtmlSnapshot
-} from './AcExHtmlSnapshotTypes'
+} from './AcExHtmlSnapshotTypes.js'
 
 const MAGIC = 0x58454341 // 'ACEX' little-endian
 

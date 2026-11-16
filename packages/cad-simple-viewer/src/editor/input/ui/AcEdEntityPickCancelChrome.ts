@@ -8,9 +8,9 @@
  * @packageDocumentation
  */
 
-import { createIconElement, ICON_CLOSE } from '../../../ui/icons'
-import { ML_UI_Z_ENTITY_PICK_CANCEL } from '../../global/AcEdUiLayout'
-import { acedApplyUiTheme, resolveUiTheme } from '../../global/AcEdUiTheme'
+import { createIconElement, ICON_CLOSE } from '../../../ui/icons.js'
+import { ML_UI_Z_ENTITY_PICK_CANCEL } from '../../global/AcEdUiLayout.js'
+import { acedApplyUiTheme, resolveUiTheme } from '../../global/AcEdUiTheme.js'
 
 const STYLE_ID = 'ml-entity-pick-cancel-styles'
 

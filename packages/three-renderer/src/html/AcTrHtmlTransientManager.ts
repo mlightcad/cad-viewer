@@ -3,10 +3,10 @@ import * as THREE from 'three'
 import {
   AC_TR_HTML_CANVAS_CLASS,
   AcTrHtmlCanvasOverlay
-} from './AcTrHtmlCanvasOverlay'
-import { AC_TR_HTML_SELECTED_CLASS, AcTrHtmlElement } from './AcTrHtmlElement'
-import { acTrIsHtmlGrip } from './AcTrHtmlGrip'
-import { AcTrHtmlGroup } from './AcTrHtmlGroup'
+} from './AcTrHtmlCanvasOverlay.js'
+import { AC_TR_HTML_SELECTED_CLASS, AcTrHtmlElement } from './AcTrHtmlElement.js'
+import { acTrIsHtmlGrip } from './AcTrHtmlGrip.js'
+import { AcTrHtmlGroup } from './AcTrHtmlGroup.js'
 
 /** Scratch vector reused when decomposing CSS2D object matrices. */
 const _position = /*@__PURE__*/ new THREE.Vector3()

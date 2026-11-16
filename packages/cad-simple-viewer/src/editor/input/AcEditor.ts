@@ -1,14 +1,14 @@
 import { AcCmEventManager, AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../app'
-import { AcEdCommand } from '../command'
-import type { AcEdSessionAccessoryEventArgs } from '../command/AcEdSessionAccessory'
-import { AcEdBaseView } from '../view/AcEdBaseView'
-import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
-import { AcEdInputModifiers } from './AcEdInputModifiers'
-import { AcEdInputToggles } from './AcEdInputToggles'
-import { AcEdSelectionFilter } from './AcEdSelectionFilter'
-import { AcEdSelectionSet } from './AcEdSelectionSet'
+import { AcApDocManager } from '../../app/index.js'
+import type { AcEdSessionAccessoryEventArgs } from '../command/AcEdSessionAccessory.js'
+import { AcEdCommand } from '../command/index.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
+import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager.js'
+import { AcEdInputModifiers } from './AcEdInputModifiers.js'
+import { AcEdInputToggles } from './AcEdInputToggles.js'
+import { AcEdSelectionFilter } from './AcEdSelectionFilter.js'
+import { AcEdSelectionSet } from './AcEdSelectionSet.js'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
@@ -28,8 +28,8 @@ import {
   AcEdPromptSelectionResult,
   AcEdPromptStatus,
   AcEdPromptStringOptions
-} from './prompt'
-import { AcEdInputManager, AcEdMessageType } from './ui'
+} from './prompt/index.js'
+import { AcEdInputManager, AcEdMessageType } from './ui/index.js'
 
 /**
  * Event arguments for system variable related events.

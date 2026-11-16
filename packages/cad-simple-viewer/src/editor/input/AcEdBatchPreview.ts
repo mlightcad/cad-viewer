@@ -5,7 +5,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
 
 /**
  * Manages batched entity preview overlays for command jigs.

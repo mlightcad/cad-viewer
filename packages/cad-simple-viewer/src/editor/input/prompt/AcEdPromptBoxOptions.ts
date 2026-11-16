@@ -1,6 +1,6 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 
-import { AcEdPromptOptions } from './AcEdPromptOptions'
+import { AcEdPromptOptions } from './AcEdPromptOptions.js'
 
 /**
  * Represents prompt options for selecting a rectangular box (two corners).

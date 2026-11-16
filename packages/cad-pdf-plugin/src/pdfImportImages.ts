@@ -7,7 +7,7 @@
  * outside the image stay transparent.
  */
 
-import type { PdfImportedImage } from './pdfVectorImport'
+import type { PdfImportedImage } from './pdfVectorImport.js'
 
 /** Affine map `x' = a·x + c·y + e`, `y' = b·x + d·y + f`. */
 export type PdfImageAffine = PdfImportedImage['toCad']

@@ -12,8 +12,8 @@ import {
   ShxParserFont
 } from '@mlightcad/mtext-renderer'
 
-import { normalizeCadFontName } from './AcSvgFontMap'
-import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+import { normalizeCadFontName } from './AcSvgFontMap.js'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil.js'
 
 /**
  * Utilities for exporting AutoCAD SHAPE entities to SVG stroke geometry.
