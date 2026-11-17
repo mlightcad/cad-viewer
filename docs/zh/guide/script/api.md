@@ -377,6 +377,7 @@ return {
 | `cad.redraw.validate(spec, { profile? }?)` | 不绘图，仅检查字段、ID、单位、标定和约束 → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | 绘制 spec → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | 重新运行检查，并将尺寸 `value` 读数与已绘制尺寸的实测值比较 |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | 与附带的参考图片进行像素级比较：通过 spec 标定配准渲染后的图纸，返回 `redrawCompare`（结论、覆盖率、精确率、距离、`suggestedMove`、热点区域），并附带叠加图和差异图 |
 
 - 配置：`general`（默认）、`strict-dimensioned`、`hybrid`、`visual-trace`、`geometry-only`（跳过文字、尺寸标注、引线和表格文字）。
 - 每个数值的证据等级：`known`、`scaled`、`inferred`、`unreadable`。单位默认为 `unitless`，绝不默认毫米。
@@ -399,6 +400,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### 像素级比较
+
+`cad.redraw.compare` 会按参考图片（或 `views[].sourceRoi`）对应的 CAD 范围渲染图纸，通过标定（相似、仿射或单应变换）变换到图片坐标系，将两者细化为 1 像素中心线，再用距离变换相互测量。
+
+- `coverage`：参考图线条中在容差内有对应图形的比例（缺失图形会降低该值）。
+- `precision`：已绘制线条中在容差内有对应参考线的比例（多余或错位的图形会降低该值）。
+- `meanDistance*` / `p95Distance*`：参考线到图纸的距离，分别以参考图像素和 CAD 单位表示。
+- `verdict`：`aligned`、`offset`（平移即可修正大部分偏差，见 `suggestedMove`）、`incomplete`、`cluttered` 或 `mismatch`。
+- `hotspots`：差异最大的网格区域，以 `sourceRoi`（图片像素）和 `cadBox` 表示。
+
+叠加图以淡化的参考图为底，绿色为匹配线条，红色为缺失线条，蓝色为多余线条。比较需要渲染器和附带图片，因此在应用内智能体中可用；无界面会话会返回 `reason: 'no_raster_host'`。像素指标只是视觉证据，不能证明尺寸。
 
 ## cad.edit.transaction
 

@@ -18,6 +18,7 @@ import {
   acexRedrawRotationDeg,
   type RedrawPointTransform
 } from './calibration.js'
+import type { RedrawCompareOptions } from './compareRedraw.js'
 import {
   REDRAW_DIMENSION_TYPES,
   type RedrawCheckSpec,
@@ -167,6 +168,11 @@ export interface CadRedrawDeps {
   snapshot(id: string): EntitySnapshot | undefined
   /** Tick so long draws share the script budget. */
   tick(): void
+  /**
+   * Queues a pixel comparison fulfilled after the script returns. Omitted
+   * by hosts that cannot compare; `compare` then throws.
+   */
+  queueCompare?(spec: RedrawSpec, options?: RedrawCompareOptions): number
 }
 
 /** `cad.redraw` API exposed to scripts. */
@@ -181,6 +187,16 @@ export interface CadRedrawApi {
     idMap: Record<string, string>,
     options?: { profile?: RedrawProfile }
   ): RedrawInspectionResult
+  /**
+   * Queues a pixel comparison of the drawing against the attached reference
+   * image (registration through the spec calibration, overlay, difference
+   * image, edge metrics). Results arrive in the tool result's
+   * `redrawCompare` field after the script returns, with images attached.
+   */
+  compare(
+    spec: RedrawSpec,
+    options?: RedrawCompareOptions
+  ): { queued: true; index: number }
 }
 
 const DEFAULT_LAYER_BY_GROUP = {
@@ -586,6 +602,18 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
   return {
     validate(spec, options) {
       return acexRedrawValidateSpec(spec, options?.profile).result
+    },
+
+    compare(spec, options) {
+      if (!deps.queueCompare) {
+        throw new Error(
+          'cad.redraw.compare is not available in this session (no renderer / reference images)'
+        )
+      }
+      if (!spec || typeof spec !== 'object') {
+        throw new Error('cad.redraw.compare expects the redraw spec')
+      }
+      return { queued: true, index: deps.queueCompare(spec, options) }
     },
 
     inspect(spec, idMap, options) {

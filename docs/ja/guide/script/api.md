@@ -346,6 +346,7 @@ return {
 | `cad.redraw.validate(spec, { profile? }?)` | 作図せずにフィールド、ID、単位、校正、拘束を検査 → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec を作図 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | チェックを再実行し、寸法の `value` の読み取り値と作図した寸法の計測値を比較 |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | 添付した参照画像とのピクセル比較: spec の校正で作図結果を位置合わせし、`redrawCompare` (判定、カバー率、適合率、距離、`suggestedMove`、ホットスポット) とオーバーレイ画像・差分画像を返します |
 
 - プロファイル: `general` (既定)、`strict-dimensioned`、`hybrid`、`visual-trace`、`geometry-only` (文字、寸法、引出線、表の文字を省略)。
 - 値ごとの証拠: `known`、`scaled`、`inferred`、`unreadable`。単位の既定は `unitless` で、ミリメートルを前提にすることはありません。
@@ -368,6 +369,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### ピクセル比較
+
+`cad.redraw.compare` は参照画像 (または `views[].sourceRoi`) に対応する CAD 範囲で図面をレンダリングし、校正 (相似、アフィン、射影変換) で画像座標に変換して、両方を 1 ピクセルの中心線に細線化し、距離変換で互いに計測します。
+
+- `coverage`: 許容範囲内に作図がある参照線の割合 (図形の欠落で下がります)。
+- `precision`: 許容範囲内に参照線がある作図線の割合 (余分な図形や位置ずれで下がります)。
+- `meanDistance*` / `p95Distance*`: 参照線から作図までの距離 (参照画像のピクセルと CAD 単位)。
+- `verdict`: `aligned`、`offset` (平行移動でほぼ解消 — `suggestedMove` を参照)、`incomplete`、`cluttered`、`mismatch`。
+- `hotspots`: 差異が最も大きいグリッドセル (`sourceRoi` は画像ピクセル、`cadBox` は CAD 範囲)。
+
+オーバーレイは薄くした参照画像の上に、一致した線を緑、欠落した線を赤、余分な線を青で表示します。比較にはレンダラーと添付画像が必要なため、アプリ内エージェントで動作します。ヘッドレスセッションは `reason: 'no_raster_host'` を返します。ピクセル指標は視覚的な証拠であり、寸法を証明するものではありません。
 
 ## cad.edit.transaction
 

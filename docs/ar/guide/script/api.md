@@ -346,6 +346,7 @@ return {
 | `cad.redraw.validate(spec, { profile? }?)` | يتحقق من الحقول والمعرّفات والوحدات والمعايرة والقيود دون رسم ← `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | يرسم الـ spec ← `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | يعيد تشغيل الفحوصات ويقارن قراءات الأبعاد `value` بما تقيسه الأبعاد المرسومة |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | مقارنة على مستوى البكسل مع الصورة المرجعية المرفقة: يحاذي الرسم المعروض عبر معايرة الـ spec ويعيد `redrawCompare` (الحكم والتغطية والدقة والمسافات و`suggestedMove` ومناطق الاختلاف) مع صورتي التراكب والفرق |
 
 - ملفات التعريف: `general` (الافتراضي) و`strict-dimensioned` و`hybrid` و`visual-trace` و`geometry-only` (يتخطى النصوص والأبعاد وخطوط الإشارة ونصوص الجداول).
 - الدليل لكل قيمة: `known` أو `scaled` أو `inferred` أو `unreadable`. الوحدة الافتراضية `unitless`؛ ولا تُفترض المليمترات أبدًا.
@@ -368,6 +369,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### المقارنة على مستوى البكسل
+
+يعرض `cad.redraw.compare` الرسم ضمن نطاق CAD المقابل للصورة المرجعية (أو `views[].sourceRoi`)، ويحوّله إلى إطار الصورة عبر المعايرة (تشابه أو تحويل أفيني أو إسقاطي)، ويرقّق الاثنين إلى خطوط مركزية بعرض بكسل واحد، ثم يقيس كلًا منهما مقابل الآخر بتحويلات المسافة.
+
+- `coverage`: نسبة خطوط المرجع التي يوجد لها رسم ضمن التسامح (تنخفض عند نقص الهندسة).
+- `precision`: نسبة الخطوط المرسومة التي يوجد لها خط مرجعي ضمن التسامح (تنخفض عند وجود هندسة زائدة أو في غير موضعها).
+- `meanDistance*` / `p95Distance*`: بُعد خطوط المرجع عن الرسم بوحدات بكسل المرجع ووحدات CAD.
+- `verdict`: `aligned` أو `offset` (يُصلح الإزاحة معظم الفرق — انظر `suggestedMove`) أو `incomplete` أو `cluttered` أو `mismatch`.
+- `hotspots`: خلايا الشبكة الأكثر اختلافًا، بصيغة `sourceRoi` (بكسلات الصورة) و`cadBox`.
+
+يعرض التراكب الصورة المرجعية باهتة مع الخطوط المتطابقة بالأخضر والمفقودة بالأحمر والزائدة بالأزرق. تحتاج المقارنة إلى مُصيِّر وصورة مرفقة، لذا تعمل داخل الوكيل في التطبيق؛ وتعيد الجلسات بلا واجهة `reason: 'no_raster_host'`. مقاييس البكسل دليل بصري فقط ولا تثبت الأبعاد.
 
 ## cad.edit.transaction
 

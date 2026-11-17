@@ -76,7 +76,9 @@ export function createDatabaseSession(
     capturePreview: undefined,
     // Opt out of viewer exporters; PDF still uses the cad-pdf-core fallback.
     exportPdf: undefined,
-    exportHtml: undefined
+    exportHtml: undefined,
+    // No renderer or reference images: cad.redraw.compare reports no_raster_host.
+    redrawRaster: undefined
   }
 }
 

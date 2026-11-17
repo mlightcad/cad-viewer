@@ -1,5 +1,7 @@
 import type { ZodType } from 'zod'
 
+import type { RedrawCompareResult } from '../redraw/compareRedraw.js'
+
 /**
  * 2D point in WCS used by agent tool inputs and script snapshots.
  */
@@ -67,6 +69,12 @@ export interface ToolResult {
    * Summaries only — adapters must not echo file bodies to the model.
    */
   savedFiles?: ToolResultSavedFile[]
+  /**
+   * Pixel comparisons from `cad.redraw.compare`, in request order. Each
+   * successful comparison also appends an overlay and a difference PNG to
+   * {@link images}.
+   */
+  redrawCompare?: RedrawCompareResult[]
 }
 
 /**

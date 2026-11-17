@@ -1,4 +1,8 @@
 import { DRAWING_PREVIEW_LONG_SIDE_PX } from '../preview/types.js'
+import {
+  acexRunRedrawCompare,
+  type RedrawCompareResult
+} from '../redraw/compareRedraw.js'
 import type { CadSession } from '../session/CadSession.js'
 import { requireDocument } from '../session/documentAccess.js'
 import type {
@@ -120,6 +124,11 @@ export async function executeCadScript(
       effects,
       options.fulfillPreviews
     )
+    const compare = await fulfillCompareRequests(
+      session,
+      effects,
+      options.fulfillPreviews
+    )
     // File exports run after the script body. Failures are logged per request
     // so a successful edit is not reported as a failed script.
     const savedFiles = await fulfillQueuedFileSaves(session, effects)
@@ -132,7 +141,10 @@ export async function executeCadScript(
       log: effects.log,
       highlightedIds: effects.highlightedIds,
       ...(effects.createdIds.length ? { entityIds: effects.createdIds } : {}),
-      ...(images.length ? { images } : {}),
+      ...(images.length || compare.images.length
+        ? { images: [...images, ...compare.images] }
+        : {}),
+      ...(compare.results.length ? { redrawCompare: compare.results } : {}),
       ...(savedFiles.length ? { savedFiles } : {})
     }
   } catch (error) {
@@ -192,6 +204,62 @@ async function fulfillPreviewRequests(
     images.push({ mediaType: 'image/png', dataUrl: capture.dataUrl })
   }
   return images
+}
+
+/**
+ * Runs `cad.redraw.compare` requests after the script body (decode, render,
+ * and encode are async). Failures become `{ ok: false, reason }` results so
+ * the model can react instead of the whole script failing.
+ */
+async function fulfillCompareRequests(
+  session: CadSession,
+  effects: CadScriptEffects,
+  fulfillImages = true
+): Promise<{ results: RedrawCompareResult[]; images: ToolResultImage[] }> {
+  const requests = effects.compareRequests ?? []
+  if (!requests.length) return { results: [], images: [] }
+  const host = session.redrawRaster
+  if (!host) {
+    return {
+      results: requests.map(request => ({
+        ok: false,
+        reason: 'no_raster_host',
+        index: request.index,
+        advice: [
+          'This session cannot render or read reference images; compare visually with cad.view.capturePreview or rely on cad.redraw.inspect checks.'
+        ]
+      })),
+      images: []
+    }
+  }
+  const results: RedrawCompareResult[] = []
+  const images: ToolResultImage[] = []
+  for (const request of requests) {
+    try {
+      const outcome = await acexRunRedrawCompare(
+        {
+          ...request,
+          options: {
+            ...request.options,
+            images: fulfillImages && request.options.images !== false
+          }
+        },
+        host
+      )
+      results.push(outcome.result)
+      for (const image of outcome.images) {
+        images.push({ mediaType: 'image/png', dataUrl: image.dataUrl })
+      }
+    } catch (error) {
+      results.push({
+        ok: false,
+        reason: `compare_failed: ${error instanceof Error ? error.message : String(error)}`,
+        index: request.index,
+        advice: []
+      })
+    }
+  }
+  return { results, images }
 }
 
 async function fulfillQueuedFileSaves(

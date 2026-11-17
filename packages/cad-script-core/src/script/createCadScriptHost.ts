@@ -5,6 +5,7 @@ import {
   type CadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions
 } from '../preview/types.js'
+import type { RedrawCompareRequest } from '../redraw/compareRedraw.js'
 import { createCadRedraw } from '../redraw/createCadRedraw.js'
 import type { CadSession } from '../session/CadSession.js'
 import { requireDocument } from '../session/documentAccess.js'
@@ -83,6 +84,11 @@ export interface CadScriptEffects {
    * Fulfilled after the script returns; HTML/zip bytes are not part of this list.
    */
   htmlSaveRequests: CadScriptHtmlSaveRequest[]
+  /**
+   * Pixel comparisons queued by `cad.redraw.compare`.
+   * Fulfilled after the script returns (rendering is async).
+   */
+  compareRequests?: RedrawCompareRequest[]
 }
 
 /** Limits enforced by `cad.__tick` and snapshot queries. */
@@ -358,7 +364,18 @@ export function createCadScriptHost(
           .layerStore.getLayers()
           .map(layer => layer.name),
       snapshot: id => snapshotById(session, id),
-      tick: hostTick
+      tick: hostTick,
+      queueCompare: (spec, options) => {
+        const requests = (effects.compareRequests ??= [])
+        const index = requests.length
+        // Deep copy so later script mutations do not change the request.
+        requests.push({
+          spec: JSON.parse(JSON.stringify(spec)),
+          options: JSON.parse(JSON.stringify(options ?? {})),
+          index
+        })
+        return index
+      }
     }),
     Object.keys(CAD_SCRIPT_API_TREE.redraw)
   )

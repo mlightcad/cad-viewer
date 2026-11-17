@@ -49,6 +49,34 @@ export {
   type RedrawDrawResult,
   type RedrawInspectionResult
 } from './redraw/createCadRedraw.js'
+export {
+  acexRunRedrawCompare,
+  type RedrawCompareImage,
+  type RedrawCompareOptions,
+  type RedrawCompareRequest,
+  type RedrawCompareResult
+} from './redraw/compareRedraw.js'
+export {
+  acexCompareInk,
+  acexCreateRaster,
+  acexDistanceTransform,
+  acexDownscaleRaster,
+  acexExtractInk,
+  acexRenderDifference,
+  acexRenderOverlay,
+  acexThinInk,
+  acexWarpRenderedInk,
+  type CadRasterImage,
+  type CompareHotspot,
+  type CompareMetrics,
+  type InkCompareOptions,
+  type InkComparison,
+  type InkMask,
+  type InkOptions,
+  type PixelToCad,
+  type RenderedDrawing
+} from './redraw/pixelCompare.js'
+export type { CadRedrawRasterHost } from './redraw/rasterHost.js'
 export * from './redraw/types.js'
 export {
   acexRedrawStatus,

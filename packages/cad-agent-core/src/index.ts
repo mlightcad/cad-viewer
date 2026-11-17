@@ -85,6 +85,13 @@ export {
   captureDrawingPreview,
   waitForDrawingSceneReady
 } from './preview/captureDrawingPreview.js'
+export {
+  acapDecodeImageToRaster,
+  acapEncodeRasterPng,
+  acapSetRedrawReferenceImages,
+  type CadReferenceImageProvider,
+  createViewerRedrawRasterHost
+} from './preview/redrawRasterHost.js'
 export { createDocManagerSession } from './session/createDocManagerSession.js'
 export {
   viewerRunEdit,

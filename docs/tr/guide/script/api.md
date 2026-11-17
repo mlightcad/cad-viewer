@@ -348,6 +348,7 @@ Bir referans görüntüden (tarama, fotoğraf, ekran görüntüsü) kanıt takib
 | `cad.redraw.validate(spec, { profile? }?)` | Çizmeden alanları, kimlikleri, birimleri, kalibrasyonu ve kısıtları denetler → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | Spec'i çizer → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | Denetimleri yeniden çalıştırır ve ölçü `value` okumalarını çizilen ölçülerin ölçtüğü değerle karşılaştırır |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | Ekli referans görüntüyle piksel düzeyinde karşılaştırma: çizimi spec kalibrasyonuyla hizalar ve `redrawCompare` (karar, kapsama, kesinlik, mesafeler, `suggestedMove`, sorunlu bölgeler) ile bindirme ve fark görüntülerini döndürür |
 
 - Profiller: `general` (varsayılan), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only` (metin, ölçü, kılavuz çizgisi ve tablo metnini atlar).
 - Değer başına kanıt: `known`, `scaled`, `inferred`, `unreadable`. Birim varsayılanı `unitless`; milimetre asla varsayılmaz.
@@ -370,6 +371,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### Piksel karşılaştırması
+
+`cad.redraw.compare`, çizimi referansın (veya `views[].sourceRoi` bölgesinin) CAD alanında işler, kalibrasyonla (benzerlik, afin veya homografi) görüntü çerçevesine dönüştürür, ikisini de 1 piksellik merkez çizgilerine inceltir ve uzaklık dönüşümleriyle birbirine göre ölçer.
+
+- `coverage`: tolerans içinde çizilmiş geometrisi olan referans çizgilerinin oranı (eksik geometri bunu düşürür).
+- `precision`: tolerans içinde bir referans çizgisi olan çizilmiş çizgilerin oranı (fazla veya yanlış yerdeki geometri bunu düşürür).
+- `meanDistance*` / `p95Distance*`: referans çizgilerinin çizime uzaklığı (referans pikseli ve CAD birimi olarak).
+- `verdict`: `aligned`, `offset` (bir öteleme sorunun çoğunu çözer — bkz. `suggestedMove`), `incomplete`, `cluttered` veya `mismatch`.
+- `hotspots`: en çok uyuşmazlığın olduğu ızgara hücreleri; `sourceRoi` (görüntü pikseli) ve `cadBox` olarak.
+
+Bindirme, soluklaştırılmış referans üzerinde eşleşen çizgileri yeşil, eksik çizgileri kırmızı, fazla çizgileri mavi gösterir. Karşılaştırma bir işleyici ve ekli görüntü gerektirir, bu yüzden uygulama içi ajanda çalışır; arayüzsüz oturumlar `reason: 'no_raster_host'` döndürür. Piksel ölçümleri yalnızca görsel kanıttır ve ölçüleri kanıtlamaz.
 
 ## cad.edit.transaction
 

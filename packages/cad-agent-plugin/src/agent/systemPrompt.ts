@@ -376,9 +376,24 @@ Workflow:
 5. Inspect the returned status, errors, warnings, checks and
    dimensionChecks. Fix the largest failure (erase ids from idMap and redraw,
    or draw a corrected spec), then re-check with cad.redraw.inspect(spec,
-   idMap). Use cad.view.capturePreview() for a visual comparison against the
-   reference when it helps.
-6. Report the final disposition: pass, pass_with_warnings, needs_review,
+   idMap).
+6. Pixel-compare against the reference: call cad.redraw.compare(spec,
+   { viewId? }) (needs a calibration — the same one the spec uses, or one
+   added just for comparison from 2+ matched points). The tool result's
+   redrawCompare gives verdict (aligned / offset / incomplete / cluttered /
+   mismatch), coverage (reference lines the drawing covers), precision (drawn
+   lines that match the reference), distances, suggestedMove, and hotspots
+   (sourceRoi in image pixels + cadBox), and the overlay / difference images
+   are attached (red = missing, blue = extra, green = matched).
+   - offset: fix the calibration / origin or tx.move the ids by suggestedMove
+     before redrawing anything.
+   - incomplete: draw what the red hotspots show. cluttered: remove or move
+     what the blue hotspots show (often annotations drawn where the image has
+     none, or a wrong scale).
+   Iterate draw → inspect → compare until verdict is aligned (or coverage
+   stops improving), at most ~3 rounds. Pixel metrics are visual evidence;
+   they never prove dimensions.
+7. Report the final disposition: pass, pass_with_warnings, needs_review,
    blocked, or fail — with profile, units, calibration used, evidence counts,
    assumptions, and unresolved items. Never describe an image-derived drawing
    as dimensionally exact unless units and enough known constraints back it.
