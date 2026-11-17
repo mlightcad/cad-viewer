@@ -93,8 +93,10 @@ describe('acapPaddleOcrRecognizeTextBatch', () => {
       })
     ).resolves.toEqual([undefined, 'OK'])
     expect(create).toHaveBeenCalled()
-    const options = create.mock.calls[0][0]
-    expect(options.ortOptions.wasmPaths).toMatch(/\/vendor\/onnxruntime\/$/)
+    const options = create.mock.calls[0][0] as {
+      ortOptions?: { wasmPaths?: string }
+    }
+    expect(options.ortOptions?.wasmPaths).toMatch(/\/vendor\/onnxruntime\/$/)
   })
 
   it('reads a single image through the batch path', async () => {
