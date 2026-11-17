@@ -3,13 +3,18 @@ import { expect, type Locator, type Page } from '@playwright/test'
 /**
  * Resolves a ribbon command control by its stable item id.
  *
- * Large buttons expose `data-ribbon-button-id`; dropdowns (e.g. Recover Text)
- * only put the id on the item host as `data-item-id`.
+ * Large buttons expose `data-ribbon-button-id`. Dropdowns (e.g. Recover Text)
+ * only put the id on the item host as `data-item-id` with `type-dropdown`.
+ * Prefer the button so Playwright strict mode does not see both nodes.
  */
 export function ribbonCommand(page: Page, id: string): Locator {
   return page
     .locator(`[data-ribbon-button-id="${id}"]:visible`)
-    .or(page.locator(`.ml-ribbon-item-host[data-item-id="${id}"]:visible`))
+    .or(
+      page.locator(
+        `.ml-ribbon-item-host.type-dropdown[data-item-id="${id}"]:visible`
+      )
+    )
 }
 
 /**
@@ -22,11 +27,11 @@ export function ribbonCommand(page: Page, id: string): Locator {
  */
 export async function clickRibbonButton(page: Page, id: string) {
   const button = page.locator(`[data-ribbon-button-id="${id}"]:visible`)
-  const host = page.locator(
-    `.ml-ribbon-item-host[data-item-id="${id}"]:visible`
+  const dropdown = page.locator(
+    `.ml-ribbon-item-host.type-dropdown[data-item-id="${id}"]:visible`
   )
   await expect(async () => {
-    if ((await button.count()) === 0 && (await host.count()) === 0) {
+    if ((await button.count()) === 0 && (await dropdown.count()) === 0) {
       const overflow = page.locator(
         'button.ml-ribbon-overflow-trigger:visible'
       )
@@ -41,10 +46,10 @@ export async function clickRibbonButton(page: Page, id: string) {
     await button.click()
     return
   }
-  const dropdownIcon = host.locator('.ml-ribbon-dropdown__icon')
+  const dropdownIcon = dropdown.locator('.ml-ribbon-dropdown__icon')
   if ((await dropdownIcon.count()) > 0) {
     await dropdownIcon.click()
     return
   }
-  await host.click()
+  await dropdown.click()
 }

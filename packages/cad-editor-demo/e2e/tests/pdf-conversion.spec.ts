@@ -113,12 +113,16 @@ async function preselect(
 const ribbonButton = (page: Page, id: string) =>
   page
     .locator(`[data-ribbon-button-id="${id}"]:visible`)
-    .or(page.locator(`.ml-ribbon-item-host[data-item-id="${id}"]:visible`))
+    .or(
+      page.locator(
+        `.ml-ribbon-item-host.type-dropdown[data-item-id="${id}"]:visible`
+      )
+    )
 
 /** Starts PDFTEXT via the Recover Text ribbon control (dropdown → Auto). */
 async function clickPdfText(page: Page) {
   const host = page.locator(
-    '.ml-ribbon-item-host[data-item-id="cmd-pdftext"]:visible'
+    '.ml-ribbon-item-host.type-dropdown[data-item-id="cmd-pdftext"]:visible'
   )
   await expect(host).toBeVisible()
   // Icon click runs the default Auto action without opening the menu.
