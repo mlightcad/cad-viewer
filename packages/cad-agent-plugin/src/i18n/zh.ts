@@ -107,6 +107,9 @@ export const agentZh = {
   taskFromReferenceTitle: '根据参考图绘制',
   taskFromReferencePrompt:
     '我将附加一张参考图（草图、截图或平面图）。请仔细分析，并按正确比例重建二维 CAD 几何，分好图层，可见尺寸一并标注。仅在关键尺寸无法判断时再询问我。',
+  taskRedrawFromImageTitle: '将图片重绘为可编辑图纸',
+  taskRedrawFromImagePrompt:
+    '我将附加一张图纸图片（扫描件、照片或截图）。请使用 cad.redraw 将其重绘为可编辑的 CAD 图纸：选择重绘配置（除非图片缺少单位或比例，否则使用 general），根据可读尺寸对每个视图进行标定，并将每个数值标记为 known、scaled、inferred 或 unreadable。在标准图层上重绘几何图形、尺寸标注、文字、引线和表格。不要默认单位为毫米。最后给出状态（pass / pass_with_warnings / needs_review / blocked / fail）、所用标定以及尚未解决的假设。',
   taskDraftingReviewTitle: '制图质量审核',
   taskDraftingReviewPrompt:
     '审核当前图纸的制图质量：文字高度是否不一致、尺寸是否可能与几何不符、注释是否重叠、本应分层却在 0 层的图元、视图是否不完整等。按严重程度列出问题；除非我要求，否则只修复明确且安全的问题。',

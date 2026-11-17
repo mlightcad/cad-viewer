@@ -388,6 +388,37 @@ return {
 }
 ```
 
+## cad.redraw
+
+Evidence-tracked reconstruction of a drawing from a reference image (scan, photo, screenshot). The script builds a plain spec object; `cad.redraw` validates it, draws it in one undo group on standard layers (OBJECT, HIDDEN, CENTER, DIM, TEXT, TABLE, BORDER, CONSTRUCTION, ASSUMPTION), and inspects the result. The full spec reference is exported as `CAD_REDRAW_SPEC_SUMMARY` and embedded in the agent prompt.
+
+| Method | Description |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | Checks fields, ids, units, calibration, and constraints without drawing → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | Draws the spec → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | Re-runs checks and compares dimension `value` readings with what the drawn dimensions measure |
+
+- Profiles: `general` (default), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only` (skips text, dimensions, leaders, and table text).
+- Evidence per value: `known`, `scaled`, `inferred`, `unreadable`. Units default to `unitless`; millimeters are never assumed.
+- Entities use CAD coordinates by default. With `coords: 'source'` they are image pixels (top-left origin, y down) mapped by a calibration (`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`).
+- Status: `pass`, `pass_with_warnings`, `needs_review` (dimension or constraint conflicts), `blocked` (strict profile lacks evidence), `fail` (invalid spec; nothing is drawn).
+- Tables are drawn as lines and text, not as an AcDbTable.
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
 ## cad.edit.transaction
 
 Executes edit operations. All modifications are grouped as a single undo unit. The drawing must be in an editable state (not read-only mode).
@@ -416,7 +447,7 @@ Methods available within a transaction:
 | `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | New entity ID |
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | New entity ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | New entity ID |
-| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | New entity ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | New entity ID |
 | `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | points `{x,y}`                   | New entity ID |
 | `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | omit `rotationDeg` → H/V by placement | New entity ID |
 | `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | circle form or chord form        | New entity ID |
@@ -424,6 +455,7 @@ Methods available within a transaction:
 | `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3-point angle                    | New entity ID |
 | `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | arc length                       | New entity ID |
 | `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | X/Y ordinate                     | New entity ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | arrow at `points[0]` | Leader ID (annotation MTEXT id is also in created ids) |
 
 Use `drawDim*` for true dimension entities. Do not fake dimensions with lines, arrows, and text. Style defaults to the drawing `$DIMSTYLE`; pass `styleName` from `cad.tables.dimStyleTable` to override.
 

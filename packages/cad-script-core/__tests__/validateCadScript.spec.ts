@@ -43,6 +43,15 @@ describe('validateCadScript', () => {
     expect(result.usesEdit).toBe(true)
   })
 
+  test('marks cad.redraw.draw as a write but not validate/inspect', () => {
+    expect(validateCadScript('return cad.redraw.draw({ entities: [] })')).toEqual(
+      { ok: true, usesEdit: true }
+    )
+    expect(
+      validateCadScript('return cad.redraw.validate({ entities: [] })')
+    ).toEqual({ ok: true, usesEdit: false })
+  })
+
   test('accepts symbol tables and block definitions', () => {
     const result = validateCadScript(`
       const layers = cad.tables.layerTable.records.map(record => record.name)

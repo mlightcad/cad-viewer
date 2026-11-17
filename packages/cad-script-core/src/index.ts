@@ -34,6 +34,33 @@ export {
   type MeasureReport
 } from './script/createCadMeasure.js'
 export {
+  acexRedrawPoint,
+  acexRedrawResolveCalibration,
+  type RedrawPointTransform,
+  type RedrawResolvedCalibration
+} from './redraw/calibration.js'
+export {
+  type CadRedrawApi,
+  type CadRedrawDeps,
+  createCadRedraw,
+  REDRAW_DEFAULT_LAYERS,
+  type RedrawCheckResult,
+  type RedrawDrawOptions,
+  type RedrawDrawResult,
+  type RedrawInspectionResult
+} from './redraw/createCadRedraw.js'
+export * from './redraw/types.js'
+export {
+  acexRedrawStatus,
+  acexRedrawValidateSpec,
+  MAX_REDRAW_ENTITIES,
+  REDRAW_PROFILES,
+  REDRAW_UNITS,
+  type RedrawEvidenceSummary,
+  type RedrawValidationContext,
+  type RedrawValidationResult
+} from './redraw/validateRedrawSpec.js'
+export {
   createCadScriptHost,
   type CadEditTransaction,
   type CadScriptEffects,
@@ -60,7 +87,10 @@ export {
   type CadScriptPdfSaveOptions,
   type CadScriptPdfSaveRequest
 } from './script/savePdf.js'
-export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot.js'
+export {
+  toEntitySnapshot,
+  type EntitySnapshot
+} from './script/entitySnapshot.js'
 export {
   executeCadScript,
   MAX_SCRIPT_RESULT_CHARS,
@@ -71,6 +101,7 @@ export {
   CAD_EDIT_TX_METHODS,
   CAD_MCP_DXF_OUTBOX_KEY,
   CAD_MCP_FILE_OUTBOX_KEY,
+  CAD_REDRAW_SPEC_SUMMARY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE
 } from './script/scriptApi.js'

@@ -41,6 +41,7 @@ export {
   CAD_EDIT_TX_METHODS,
   CAD_MCP_DXF_OUTBOX_KEY,
   CAD_MCP_FILE_OUTBOX_KEY,
+  CAD_REDRAW_SPEC_SUMMARY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE,
   type CadCapturePreviewOptions,
@@ -85,7 +86,10 @@ export {
   waitForDrawingSceneReady
 } from './preview/captureDrawingPreview.js'
 export { createDocManagerSession } from './session/createDocManagerSession.js'
-export { viewerRunEdit, withViewerDefaults } from './session/withViewerDefaults.js'
+export {
+  viewerRunEdit,
+  withViewerDefaults
+} from './session/withViewerDefaults.js'
 export {
   CadActionExecutor,
   createCadScriptHost,

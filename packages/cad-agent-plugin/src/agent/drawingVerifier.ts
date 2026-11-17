@@ -28,10 +28,11 @@ Compare the current drawing screenshot against the user's request and any refere
 Focus on overall geometry, topology, proportions, and layout — not exact pixel alignment.
 
 Rules:
-- Ignore dimensions, dimension lines, and dimension text in reference images. The drawing tools cannot create dimensions, so do not require them in the output drawing.
-- Ignore missing annotations or labels unless the user explicitly asked for text entities.
+- When the user asked only for geometry (or did not ask for annotations), ignore dimensions, dimension lines, dimension text, and labels in reference images.
+- When the user asked for an annotated redraw (dimensions, text, leaders, tables), check that legible annotations are present and placed near the right features; do not require unreadable ones.
 - Pass when the drawing reasonably captures the requested shape and layout.
-- Fail only when important geometry is missing, wrong, or clearly misaligned.`
+- Fail only when important geometry (or requested annotation) is missing, wrong, or clearly misaligned.
+- Pixel similarity does not prove physical accuracy; judge topology, proportions, and placement.`
 
 export type DrawingVerificationResult = z.infer<typeof verificationSchema>
 

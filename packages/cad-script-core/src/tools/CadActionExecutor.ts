@@ -12,6 +12,8 @@ import {
   AcDbHatch,
   AcDbHatchPatternType,
   AcDbHatchStyle,
+  AcDbLeader,
+  AcDbLeaderAnnotationType,
   AcDbLine,
   AcDbMText,
   AcDbOrdinateDimension,
@@ -27,6 +29,7 @@ import {
   AcGePoint2d,
   AcGePoint3d,
   AcGeTol,
+  AcGiMTextAttachmentPoint,
   HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
@@ -101,8 +104,40 @@ function appendDimension(
 
 const POSITIVE_NORMAL = { x: 0, y: 0, z: 1 }
 
+/** Default MTEXT height when a draw input omits `height`. */
+const DEFAULT_TEXT_HEIGHT = 2.5
+
 function degToRad(degrees: number): number {
   return (degrees * Math.PI) / 180
+}
+
+/**
+ * Builds an MTEXT entity from script text input (not yet appended).
+ *
+ * `AcDbMText` stores its nominal height in `height`; a zero height renders as
+ * nothing, so an omitted or non-positive height falls back to the default.
+ */
+function createMText(input: {
+  position: Point2dInput
+  text: string
+  height?: number
+  rotationDeg?: number
+  width?: number
+}): AcDbMText {
+  const mtext = new AcDbMText()
+  mtext.location = toPoint3d(input.position)
+  mtext.contents = input.text
+  mtext.height =
+    typeof input.height === 'number' && input.height > 0
+      ? input.height
+      : DEFAULT_TEXT_HEIGHT
+  if (typeof input.rotationDeg === 'number' && input.rotationDeg !== 0) {
+    mtext.rotation = degToRad(input.rotationDeg)
+  }
+  if (typeof input.width === 'number' && input.width > 0) {
+    mtext.width = input.width
+  }
+  return mtext
 }
 
 /**
@@ -168,7 +203,8 @@ function resolveRadiusChord(input: {
     return {
       error: {
         success: false,
-        message: 'Radius requires center with chordPoint, or center+radius (> 0)',
+        message:
+          'Radius requires center with chordPoint, or center+radius (> 0)',
         error: 'invalid_radius_points'
       }
     }
@@ -395,11 +431,12 @@ export class CadActionExecutor {
       const entityIds: string[] = []
       runEdit(this.session, 'Agent: draw_arc', () => {
         const db = this.session.getDocument()!.database
+        // AcDbArc takes radians; the script API speaks degrees.
         const arc = new AcDbArc(
           toPoint3d(input.center),
           input.radius,
-          input.startAngleDeg,
-          input.endAngleDeg
+          degToRad(input.startAngleDeg),
+          degToRad(input.endAngleDeg)
         )
         applyLayer(arc, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(arc)
@@ -540,6 +577,8 @@ export class CadActionExecutor {
     position: Point2dInput
     text: string
     height?: number
+    rotationDeg?: number
+    width?: number
     layer?: string
   }): ToolResult {
     const accessError = requireDocument(this.session, true)
@@ -554,11 +593,7 @@ export class CadActionExecutor {
       const entityIds: string[] = []
       runEdit(this.session, 'Agent: draw_text', () => {
         const db = this.session.getDocument()!.database
-        const mtext = new AcDbMText()
-        mtext.location = toPoint3d(input.position)
-        mtext.contents = input.text
-        ;(mtext as AcDbMText & { textHeight: number }).textHeight =
-          input.height ?? 2.5
+        const mtext = createMText(input)
         applyLayer(mtext, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(mtext)
         entityIds.push(mtext.objectId)
@@ -956,22 +991,27 @@ export class CadActionExecutor {
     styleName?: string
     layer?: string
   }): ToolResult {
-    return this.createDimension('linear', 'Agent: draw_dim_linear', input, () => {
-      const dim = new AcDbRotatedDimension(
-        toPoint3d(input.xLine1Point),
-        toPoint3d(input.xLine2Point),
-        toPoint3d(input.dimLinePoint)
-      )
-      dim.rotation =
-        input.rotationDeg != null
-          ? degToRad(input.rotationDeg)
-          : inferLinearRotation(
-              input.xLine1Point,
-              input.xLine2Point,
-              input.dimLinePoint
-            )
-      return dim
-    })
+    return this.createDimension(
+      'linear',
+      'Agent: draw_dim_linear',
+      input,
+      () => {
+        const dim = new AcDbRotatedDimension(
+          toPoint3d(input.xLine1Point),
+          toPoint3d(input.xLine2Point),
+          toPoint3d(input.dimLinePoint)
+        )
+        dim.rotation =
+          input.rotationDeg != null
+            ? degToRad(input.rotationDeg)
+            : inferLinearRotation(
+                input.xLine1Point,
+                input.xLine2Point,
+                input.dimLinePoint
+              )
+        return dim
+      }
+    )
   }
 
   /**
@@ -1034,12 +1074,16 @@ export class CadActionExecutor {
     if ('error' in chord) {
       return chord.error
     }
-    return this.createDimension('radius', 'Agent: draw_dim_radius', input, () =>
-      new AcDbRadialDimension(
-        toPoint3d(input.center),
-        toPoint3d(chord.chordPoint),
-        Math.max(0, input.leaderLength ?? 0)
-      )
+    return this.createDimension(
+      'radius',
+      'Agent: draw_dim_radius',
+      input,
+      () =>
+        new AcDbRadialDimension(
+          toPoint3d(input.center),
+          toPoint3d(chord.chordPoint),
+          Math.max(0, input.leaderLength ?? 0)
+        )
     )
   }
 
@@ -1087,13 +1131,17 @@ export class CadActionExecutor {
     styleName?: string
     layer?: string
   }): ToolResult {
-    return this.createDimension('arc', 'Agent: draw_dim_arc', input, () =>
-      new AcDbArcDimension(
-        toPoint3d(input.center),
-        toPoint3d(input.xLine1Point),
-        toPoint3d(input.xLine2Point),
-        toPoint3d(input.arcPoint)
-      )
+    return this.createDimension(
+      'arc',
+      'Agent: draw_dim_arc',
+      input,
+      () =>
+        new AcDbArcDimension(
+          toPoint3d(input.center),
+          toPoint3d(input.xLine1Point),
+          toPoint3d(input.xLine2Point),
+          toPoint3d(input.arcPoint)
+        )
     )
   }
 
@@ -1134,6 +1182,106 @@ export class CadActionExecutor {
         return dim
       }
     )
+  }
+
+  /**
+   * Creates an AutoCAD LEADER (arrowhead at the first point) with an optional
+   * MTEXT annotation at the landing end.
+   *
+   * The leader follows the given dimension style (arrow size / block, hook gap).
+   * When `text` is set, an MTEXT is created at `textPosition` (default: just past
+   * the last vertex) and linked as the leader annotation so the hook line spans it.
+   *
+   * @param input - Leader vertices (arrow tip first), optional annotation and style.
+   * @returns {@link ToolResult} whose first id is the leader, followed by the
+   *   annotation MTEXT id when text was given.
+   */
+  drawLeader(input: {
+    points: Point2dInput[]
+    text?: string
+    textPosition?: Point2dInput
+    textHeight?: number
+    textLayer?: string
+    arrowHead?: boolean
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(this.session, true)
+    if (accessError) {
+      return accessError
+    }
+    if (!Array.isArray(input.points) || input.points.length < 2) {
+      return {
+        success: false,
+        message: 'Leader requires at least 2 points',
+        error: 'invalid_points'
+      }
+    }
+    const layerError =
+      validateLayer(this.session, input.layer) ??
+      validateLayer(this.session, input.textLayer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit(this.session, 'Agent: draw_leader', () => {
+        const db = this.session.getDocument()!.database
+        const leader = new AcDbLeader()
+        for (const point of input.points) {
+          leader.appendVertex(toPoint3d(point))
+        }
+        leader.hasArrowHead = input.arrowHead !== false
+        leader.dimensionStyle = input.styleName || db.dimstyle || ''
+        applyLayer(leader, input.layer)
+
+        let mtext: AcDbMText | undefined
+        const text = input.text?.trim() ? input.text : undefined
+        if (text) {
+          const last = input.points[input.points.length - 1]
+          const previous = input.points[input.points.length - 2]
+          // Text sits on the side the last segment points to, like QLEADER.
+          const toRight = last.x >= previous.x
+          const height =
+            typeof input.textHeight === 'number' && input.textHeight > 0
+              ? input.textHeight
+              : DEFAULT_TEXT_HEIGHT
+          const position = input.textPosition ?? {
+            x: last.x + (toRight ? height * 0.5 : -height * 0.5),
+            y: last.y
+          }
+          mtext = createMText({ position, text, height })
+          mtext.attachmentPoint = toRight
+            ? AcGiMTextAttachmentPoint.MiddleLeft
+            : AcGiMTextAttachmentPoint.MiddleRight
+          applyLayer(mtext, input.textLayer ?? input.layer)
+          leader.annoType = AcDbLeaderAnnotationType.MText
+          leader.textHeight = height
+          leader.hasHookLine = true
+          leader.isHookLineSameDirection = toRight
+        }
+
+        const modelSpace = db.tables.blockTable.modelSpace
+        modelSpace.appendEntity(leader)
+        entityIds.push(leader.objectId)
+        if (mtext) {
+          modelSpace.appendEntity(mtext)
+          leader.associatedAnnotation = mtext.objectId
+          entityIds.push(mtext.objectId)
+        }
+      })
+      return {
+        success: true,
+        message: 'Leader created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw leader',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
   }
 
   /**
@@ -1187,9 +1335,9 @@ export class CadActionExecutor {
     }
     try {
       const changed = runEdit(this.session, 'Agent: set_current_layer', () => {
-        return this.session.getDocument()!.layerService.setCurrentLayer(
-          layerName
-        )
+        return this.session
+          .getDocument()!
+          .layerService.setCurrentLayer(layerName)
       })
       return changed
         ? { success: true, message: `Current layer set to ${layerName}` }
@@ -1220,9 +1368,9 @@ export class CadActionExecutor {
     }
     try {
       const result = runEdit(this.session, 'Agent: create_layer', () => {
-        return this.session.getDocument()!.layerService.createLayers([
-          layerName
-        ])
+        return this.session
+          .getDocument()!
+          .layerService.createLayers([layerName])
       })
       if (result.created > 0) {
         return { success: true, message: `Layer created: ${layerName}` }
@@ -1269,10 +1417,9 @@ export class CadActionExecutor {
       const requestedIds = [...new Set(input.entityIds)]
       let erasedCount = 0
       runEdit(this.session, 'Agent: delete_entities', () => {
-        erasedCount =
-          this.session.getDocument()!.entityService.eraseEntities(
-            requestedIds
-          )
+        erasedCount = this.session
+          .getDocument()!
+          .entityService.eraseEntities(requestedIds)
       })
       if (erasedCount === 0) {
         return {

@@ -191,6 +191,8 @@ function checkMember(
   }
   if (chain.root !== 'cad') return undefined
   if (chain.parts[0] === 'edit') onEdit(true)
+  // cad.redraw.draw writes through its own transaction.
+  if (chain.parts[0] === 'redraw' && chain.parts[1] === 'draw') onEdit(true)
 
   let cursor: ApiNode | true = CAD_SCRIPT_API_TREE
   for (const part of chain.parts) {

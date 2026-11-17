@@ -112,6 +112,9 @@ export const agentJa = {
   taskFromReferenceTitle: '参照画像から作図',
   taskFromReferencePrompt:
     '参照画像 (スケッチ、スクリーンショット、または平面図) を添付します。注意深く分析し、意図された 2D CAD 図形を正しい比率、画層、および (読み取れる場合は) 寸法で再構築してください。重要な寸法があいまいな場合にのみ質問してください。',
+  taskRedrawFromImageTitle: '画像を編集可能な図面に再作図',
+  taskRedrawFromImagePrompt:
+    '図面の画像 (スキャン、写真、またはスクリーンショット) を添付します。cad.redraw を使って編集可能な CAD 図面として再作図してください。プロファイルを選び (画像に単位や尺度がない場合を除き general)、読み取れる寸法から各ビューを校正し、すべての値を known、scaled、inferred、unreadable のいずれかでタグ付けしてください。図形、寸法、文字、引出線、表を標準の画層に再現してください。ミリメートルを前提にしないでください。最後に状態 (pass / pass_with_warnings / needs_review / blocked / fail)、使用した校正、未解決の仮定を報告してください。',
   taskDraftingReviewTitle: '製図品質のレビュー',
   taskDraftingReviewPrompt:
     '開いている図面の製図品質の問題をレビューしてください: 文字の高さの不統一、図形と一致しない可能性のある寸法、重なっている注釈、別の画層に置くべき 0 画層上のオブジェクト、不完全なビュー。検出結果を重要度別に一覧にし、特に指示がない限り、明確で安全な問題のみを修正してください。',

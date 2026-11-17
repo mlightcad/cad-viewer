@@ -72,6 +72,11 @@ export const CAD_SCRIPT_API_TREE = {
     check: true,
     report: true
   },
+  redraw: {
+    validate: true,
+    draw: true,
+    inspect: true
+  },
   edit: {
     transaction: true
   },
@@ -102,6 +107,7 @@ export const CAD_EDIT_TX_METHODS = [
   'drawDimAngular',
   'drawDimArc',
   'drawDimOrdinate',
+  'drawLeader',
   'erase',
   'setLayer',
   'move',
@@ -202,17 +208,28 @@ return cad.measure.report([
   cad.measure.check('r', 10, cad.measure.radius(id)),
   cad.measure.check('pcd', 57, cad.measure.distance(o, c), 0.01)
 ])
+cad.redraw — evidence-tracked reconstruction from a reference image (spec format: the
+IMAGE REDRAW section of the agent prompt / CAD_REDRAW_SPEC_SUMMARY): validate(spec, {profile?}) -> { status, errors, warnings, evidence, calibrations };
+draw(spec, {profile?, omit?, offset?, allowBlocked?}) -> one undo group, returns
+{ status, drawn, idMap (spec id -> CAD id), entityCount, skipped, checks, dimensionChecks, errors, warnings };
+inspect(spec, idMap, {profile?}) -> re-run checks after manual fixes.
+status: pass | pass_with_warnings | needs_review | blocked | fail. draw refuses fail (and blocked
+unless allowBlocked).
 cad.log(...values)
 cad.edit.transaction(label, tx => { ... }) performs one undo group.
 tx draw methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, drawEllipse,
 drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText,
 drawDimAligned, drawDimLinear, drawDimDiameter, drawDimRadius, drawDimAngular,
-drawDimArc, drawDimOrdinate.
+drawDimArc, drawDimOrdinate, drawLeader.
 Common draw inputs (optional layer?): drawLine({start,end}), drawCircle({center,radius}),
 drawArc({center,radius,startAngleDeg,endAngleDeg}), drawRectangle({corner1,corner2}),
 drawPolyline({points,closed?}), drawEllipse({center,majorRadius,minorRadius,rotationDeg?}),
-drawHatch({boundary,patternName?}), drawPoint({position}), drawText({position,text,height?}),
-drawSpline({points,closed?}), drawRay/drawXline({start,through}).
+drawHatch({boundary,patternName?}), drawPoint({position}),
+drawText({position,text,height?,rotationDeg?,width?}),
+drawSpline({points,closed?}), drawRay/drawXline({start,through}),
+drawLeader({points,text?,textPosition?,textHeight?,textLayer?,arrowHead?,styleName?})
+  — arrow tip at points[0]; text becomes an MTEXT annotation at the landing end
+  (the MTEXT id is also in created ids; the call returns the leader id).
 tx edit methods: erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
 tx draw methods return the new entity id. Prefer one transaction for related geometry.
@@ -283,3 +300,53 @@ for (const [layer, count] of Object.entries(counts)) {
 const ids = cad.entities.where(e => e.layer === top).map(e => e.id)
 cad.selection.replace(ids)
 return { counts, highlightLayer: top, count: max }`
+
+/**
+ * Spec reference for `cad.redraw` (image → editable CAD with evidence tracking).
+ *
+ * Embedded by the CAD agent system prompt and offered to other hosts (MCP)
+ * alongside {@link CAD_SCRIPT_API_SUMMARY}.
+ */
+export const CAD_REDRAW_SPEC_SUMMARY = `cad.redraw spec (plain JS object built inside the script):
+{
+  profile: 'general' | 'strict-dimensioned' | 'hybrid' | 'visual-trace' | 'geometry-only',
+  units: 'unitless' | 'mm' | 'cm' | 'm' | 'in' | 'ft',   // unitless unless the image proves units
+  coords?: 'cad' | 'source',      // default for entities; 'source' = image pixels (top-left, y down)
+  views?: [{ id, sourceRoi?: [left, top, right, bottom], cadOrigin?: [x, y], calibration?: id }],
+  calibration?: [{ id, method: 'dimension-anchor' | 'similarity' | 'affine' | 'homography'
+                       | 'sheet-scale' | 'visual-only',
+                   sourcePoints?: [[px, py], ...], cadPoints?: [[x, y], ...],
+                   value?: number,   // dimension-anchor: real length between sourcePoints[0..1]
+                   scale?: number,   // CAD units per pixel (scale-only)
+                   evidence: 'known' | 'scaled' | 'inferred', sourceRefs?: [...] }],
+  constraints?: [{ id?, type: 'sum' | 'difference' | 'equality', terms: [n, ...], expected, tolerance? }],
+  layers?: [{ name, color?: ACI, linetype?: 'Continuous'|'HIDDEN'|'CENTER'|'DASHED'|'PHANTOM'|'DOT' }],
+  entities: [ /* see below */ ],
+  checks?: [{ name?, measure: 'length'|'radius'|'area'|'dimension'|'distance'|'angle',
+              entity?: specId, from?: specId|[x,y], to?: specId|[x,y], expected, tolerance? }],
+  validation?: { requiredLayers?, forbiddenEntityTypes?, constraintTolerance?, dimensionTolerance? },
+  textHeight?: number,       // default ≈ drawing span / 80
+  assumptions?: [string, ...]
+}
+Every entity may carry: id (stable, unique), viewId, coords, calibration, layer, color (ACI),
+linetype, evidence: 'known'|'scaled'|'inferred'|'unreadable', confidence (0–1), sourceRefs, notes.
+Points are [x, y] or {x, y}. Angles are degrees CCW from +X (CAD frame).
+  line { start, end }                polyline { points, closed? }
+  rectangle { corner1, corner2 } | { x, y, width, height }
+  circle { center, radius }          arc { center, radius, startAngle, endAngle }
+  ellipse { center, majorRadius, minorRadius, rotation? }    center_mark { center, size? }
+  text / mtext { position, text, height?, rotation?, width? }
+  leader { points (arrow tip first), text?, textPosition?, textHeight?, textLayer? }
+  linear_dimension { p1, p2, dimLine, rotation?, text?, value? }
+  aligned_dimension { p1, p2, dimLine, text?, value? }
+  radial_dimension / diameter_dimension { center, radius, angle?, leaderLength?, text?, value? }
+  angular_dimension { center, p1, p2, arcPoint, text?, value? }
+  table { origin (top-left), columnWidths, rowHeights, cells?: string[][], textHeight?, textLayer? }
+    — drawn as lines + text (not an AcDbTable).
+Default layers (created on demand): OBJECT, HIDDEN (HIDDEN lt), CENTER (CENTER lt), DIM, TEXT,
+TABLE, BORDER, CONSTRUCTION, ASSUMPTION. Without layer: geometry → OBJECT (inferred → ASSUMPTION),
+text → TEXT, dims/leaders → DIM, table → TABLE, center_mark → CENTER.
+Dimension value = the number read in the image; inspect compares it with what the drawn dimension
+measures and reports conflicts (needs_review) instead of hiding them. Unreadable text: '[UNREADABLE]'.
+geometry-only skips text, dimensions, leaders and table text. omit: ['text','dimensions','leaders',
+'tableText','tables','borders','center'].`

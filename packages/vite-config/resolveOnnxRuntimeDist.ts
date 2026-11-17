@@ -17,7 +17,10 @@ const ORT_WASM_MARKER = 'ort-wasm-simd-threaded.jsep.mjs'
 /**
  * @param fromDir - Absolute path of the demo package root (usually `__dirname`
  *   of its `vite.config.ts`).
- * @returns Absolute path to `onnxruntime-web/dist`, or `undefined` when missing.
+ * @returns Absolute path to `onnxruntime-web/dist` with forward slashes, or
+ *   `undefined` when missing. Callers build static-copy globs from it
+ *   (`${dir}/ort-wasm*`); a Windows `D:\...` path would make the glob engine
+ *   read the backslashes as escapes and match nothing.
  */
 export function resolveOnnxRuntimeDist(fromDir: string): string | undefined {
   const require = createRequire(resolve(fromDir, 'package.json'))
@@ -38,7 +41,9 @@ export function resolveOnnxRuntimeDist(fromDir: string): string | undefined {
   )
 
   for (const dir of candidates) {
-    if (existsSync(resolve(dir, ORT_WASM_MARKER))) return dir
+    if (existsSync(resolve(dir, ORT_WASM_MARKER))) {
+      return dir.replace(/\\/g, '/')
+    }
   }
   return undefined
 }

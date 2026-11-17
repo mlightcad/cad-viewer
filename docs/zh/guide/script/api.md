@@ -368,6 +368,37 @@ return {
 }
 ```
 
+## cad.redraw
+
+基于参考图片（扫描件、照片、截图）进行带证据追踪的图纸重建。脚本构建一个普通的 spec 对象；`cad.redraw` 负责校验，在一个撤销组内按标准图层（OBJECT、HIDDEN、CENTER、DIM、TEXT、TABLE、BORDER、CONSTRUCTION、ASSUMPTION）绘制，并检查结果。完整的 spec 说明以 `CAD_REDRAW_SPEC_SUMMARY` 导出，并已嵌入智能体提示词。
+
+| 方法 | 说明 |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | 不绘图，仅检查字段、ID、单位、标定和约束 → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | 绘制 spec → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | 重新运行检查，并将尺寸 `value` 读数与已绘制尺寸的实测值比较 |
+
+- 配置：`general`（默认）、`strict-dimensioned`、`hybrid`、`visual-trace`、`geometry-only`（跳过文字、尺寸标注、引线和表格文字）。
+- 每个数值的证据等级：`known`、`scaled`、`inferred`、`unreadable`。单位默认为 `unitless`，绝不默认毫米。
+- 实体默认使用 CAD 坐标。设置 `coords: 'source'` 时为图片像素坐标（左上角为原点，y 向下），通过标定（`dimension-anchor`、`similarity`、`affine`、`homography`、`sheet-scale`）映射。
+- 状态：`pass`、`pass_with_warnings`、`needs_review`（尺寸或约束冲突）、`blocked`（严格配置缺少证据）、`fail`（spec 无效，不绘制任何内容）。
+- 表格以直线和文字绘制，而不是 AcDbTable。
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
 ## cad.edit.transaction
 
 执行编辑操作，所有修改会作为一个撤销组。图纸必须处于可编辑状态（非只读模式）。
@@ -396,7 +427,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`                | 新实体 ID |
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`                | 新实体 ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`                | 新实体 ID |
-| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                     | 新实体 ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                     | 新实体 ID |
 | `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 点 `{x,y}`                            | 新实体 ID |
 | `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | 省略 `rotationDeg` 时按放置推断水平/垂直 | 新实体 ID |
 | `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 圆心+半径 或 弦点对                   | 新实体 ID |
@@ -404,6 +435,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 三点角度                              | 新实体 ID |
 | `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 弧长                                  | 新实体 ID |
 | `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 坐标标注                              | 新实体 ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | 箭头位于 `points[0]` | 引线 ID（注释多行文字 ID 也会计入新建 ID） |
 
 请使用 `drawDim*` 创建真正的标注实体，不要用直线、箭头和文字拼假标注。默认使用图纸当前 `$DIMSTYLE`；也可传入 `cad.tables.dimStyleTable` 中的 `styleName`。
 

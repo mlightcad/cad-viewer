@@ -111,6 +111,9 @@ export const agentKo = {
   taskFromReferenceTitle: '참조 이미지로 그리기',
   taskFromReferencePrompt:
     '참조 이미지(스케치, 스크린샷 또는 평면도)를 첨부하겠습니다. 이미지를 주의 깊게 분석한 다음, 의도된 2D CAD 형상을 올바른 비율과 도면층으로 재구성하고, 보이는 경우 치수도 추가해 주십시오. 중요한 크기가 모호한 경우에만 질문해 주십시오.',
+  taskRedrawFromImageTitle: '이미지를 편집 가능한 도면으로 다시 그리기',
+  taskRedrawFromImagePrompt:
+    '도면 이미지(스캔, 사진 또는 스크린샷)를 첨부하겠습니다. cad.redraw를 사용하여 편집 가능한 CAD 도면으로 다시 그려 주십시오. 프로파일을 선택하고(이미지에 단위나 축척이 없는 경우가 아니면 general), 읽을 수 있는 치수로 각 뷰를 보정한 뒤, 모든 값에 known, scaled, inferred, unreadable 중 하나를 표시해 주십시오. 형상, 치수, 문자, 지시선, 표를 표준 도면층에 재현해 주십시오. 밀리미터를 가정하지 마십시오. 마지막으로 상태(pass / pass_with_warnings / needs_review / blocked / fail), 사용한 보정, 해결되지 않은 가정을 알려 주십시오.',
   taskDraftingReviewTitle: '제도 품질 검토',
   taskDraftingReviewPrompt:
     '열려 있는 도면의 제도 품질 문제를 검토해 주십시오: 일관성 없는 문자 높이, 형상과 맞지 않을 수 있는 치수, 겹치는 주석, 다른 도면층에 있어야 할 0 도면층의 객체, 불완전한 뷰. 발견 사항을 심각도별로 나열하고, 별도로 요청하지 않는 한 명확하고 안전한 문제만 수정해 주십시오.',

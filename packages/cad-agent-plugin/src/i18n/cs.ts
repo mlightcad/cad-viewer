@@ -112,6 +112,9 @@ export const agentCs = {
   taskFromReferenceTitle: 'Kreslit podle reference',
   taskFromReferencePrompt:
     'Připojím referenční obrázek (skicu, snímek nebo plán). Pečlivě ho analyzuj a zrekonstruuj zamýšlenou 2D CAD geometrii se správnými proporcemi, hladinami a viditelnými kótami. Ptej se jen když je kritický rozměr nejasný.',
+  taskRedrawFromImageTitle: 'Překreslit obrázek do upravitelného výkresu',
+  taskRedrawFromImagePrompt:
+    'Připojím obrázek výkresu (sken, fotografii nebo snímek obrazovky). Překresli ho pomocí cad.redraw do upravitelného CAD výkresu: zvol profil (general, pokud obrázku nechybí jednotky nebo měřítko), kalibruj každý pohled podle čitelných kót a každou hodnotu označ jako known, scaled, inferred nebo unreadable. Geometrii, kóty, texty, odkazy a tabulky umísti do standardních hladin. Nepředpokládej milimetry. Nakonec uveď stav (pass / pass_with_warnings / needs_review / blocked / fail), použitou kalibraci a nevyřešené předpoklady.',
   taskDraftingReviewTitle: 'Kontrola kvality kreslení',
   taskDraftingReviewPrompt:
     'Zkontroluj otevřený výkres z hlediska kvality: nekonzistentní výšky textu, kóty které nemusí sedět s geometrií, překrývající se poznámky, entity na hladině 0, neúplné pohledy. Seřaď nálezy podle závažnosti; oprav jen jasné a bezpečné problémy, pokud nepožádám jinak.',
