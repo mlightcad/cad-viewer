@@ -66,9 +66,12 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
   const baseline = await entityTypeCounts(page)
 
   // Ribbon buttons take their tooltip as accessible name, so address them
-  // by their stable item id instead of the visible label.
+  // by their stable item id instead of the visible label. Dropdowns
+  // (Recover Text) only expose `data-item-id` on the item host.
   const ribbonButton = (id: string) =>
-    page.locator(`[data-ribbon-button-id="${id}"]:visible`)
+    page
+      .locator(`[data-ribbon-button-id="${id}"]:visible`)
+      .or(page.locator(`.ml-ribbon-item-host[data-item-id="${id}"]:visible`))
 
   // The agent button moved out of Home > Utilities.
   await page.getByRole('tab', { name: 'Home' }).click()
@@ -86,6 +89,8 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
     await expect(ribbonButton(id)).toBeVisible()
   }
   await expect(ribbonButton('cmd-pdfimport')).toContainText(/Import\s*PDF/)
+  // Recover Text is a dropdown; the host still shows the command label.
+  await expect(ribbonButton('cmd-pdftext')).toContainText(/Recover\s*Text/)
   // The tooltip names the dialog command, not the old `ipdf`.
   await expect(ribbonButton('cmd-pdfimport')).toHaveAttribute(
     'aria-label',
