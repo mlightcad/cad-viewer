@@ -52,8 +52,6 @@ import {
   type PdfJsImageLike
 } from './pdfImportImages.js'
 import { acapPdfBuildPageEntities } from './pdfImportPageEntities.js'
-import { acapPdfEmHeightToTextHeight } from './pdfTextHeight.js'
-import { acapPdfRemoveTextOutlineTwins } from './pdfTextStrokeCoverage.js'
 import {
   allocatePdfFallbackLayerName,
   collectPdfOcgLayers,
@@ -61,6 +59,8 @@ import {
   pdfOperatorListHasOptionalContent,
   type PdfOptionalContentConfigLike
 } from './pdfOptionalContent.js'
+import { acapPdfEmHeightToTextHeight } from './pdfTextHeight.js'
+import { acapPdfRemoveTextOutlineTwins } from './pdfTextStrokeCoverage.js'
 import {
   extractPdfImportSubpaths,
   type PdfImportedImage,
