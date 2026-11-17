@@ -140,7 +140,11 @@ async function answerString(page: Page, value: string) {
 }
 
 /** Opens a drawing in Write mode and imports a PDF fixture at the origin. */
-async function importPdf(page: Page, pdf: string) {
+async function importPdf(
+  page: Page,
+  pdf: string,
+  options: { recognizeDimensions?: boolean } = {}
+) {
   await page.goto('/')
   await uploadFixture(page, fixture('minimal-line.dxf'), {
     accessMode: 'Write'
@@ -157,6 +161,11 @@ async function importPdf(page: Page, pdf: string) {
   // Import PDF dialog: OK imports the first page at the origin.
   const dialog = page.locator('.ml-pdf-import-dialog')
   await expect(dialog).toBeVisible({ timeout: 20_000 })
+  if (options.recognizeDimensions !== undefined) {
+    await dialog
+      .locator('.ml-pdf-import-suboption input[type="checkbox"]')
+      .setChecked(options.recognizeDimensions)
+  }
   await dialog.locator('.ml-pdf-import-ok').click()
   await expect
     .poll(async () => Object.keys(await entityTypes(page)).length, {
@@ -261,9 +270,21 @@ test('pdfimport rebuilds repeated forms as blocks and pdfblock finds copies', as
   expect(Object.keys(counts)).toEqual(['BLOCKREFERENCE'])
 })
 
+test('pdfimport recognizes exploded dimensions by default', async ({
+  page
+}) => {
+  await importPdf(page, 'pdf-dimensions.pdf')
+  await expect
+    .poll(async () => (await entityTypes(page)).ROTATEDDIMENSION ?? 0, {
+      timeout: 20_000
+    })
+    .toBeGreaterThan(0)
+})
+
 /** Opens the dimensions fixture and runs PDFDIM over everything. */
 async function startPdfDim(page: Page) {
-  await importPdf(page, 'pdf-dimensions.pdf')
+  // Import leaves the dimensions exploded so PDFDIM has them to review.
+  await importPdf(page, 'pdf-dimensions.pdf', { recognizeDimensions: false })
   await preselect(page)
   await ribbonButton(page, 'cmd-pdfdim').click()
   await expect(page.locator('.ml-pdfdim-row')).toHaveCount(5, {
@@ -298,9 +319,7 @@ test('pdfdim changes nothing when the palette is cancelled', async ({
   await startPdfDim(page)
   const before = await entityTypes(page)
 
-  await page
-    .locator('.ml-pdfdim-buttons .ml-pdfdim-btn.is-secondary')
-    .click()
+  await page.locator('.ml-pdfdim-buttons .ml-pdfdim-btn.is-secondary').click()
   await expect(page.locator('.ml-pdfdim-panel')).toHaveCount(0)
 
   const after = await entityTypes(page)

@@ -181,19 +181,22 @@ test('honors DXF group code 60 for entities inside block definitions referenced 
 
   await page.goto('/')
   await loadCadViewer(page, invisibleInBlockFixturePath)
-  const blockVisibilities = await readBlockDefinitionVisibility(
-    page,
-    'INV_POLY_BLK'
-  )
-  expect(blockVisibilities).toEqual([false])
+  // The container shows before the drawing finishes loading on slow runners.
+  await expect
+    .poll(() => readBlockDefinitionVisibility(page, 'INV_POLY_BLK'), {
+      timeout: 30_000
+    })
+    .toEqual([false])
   const invisibleInsertPixels = await countNonBackgroundPixels(page)
   expect(invisibleInsertPixels - emptyPixels).toBeLessThan(200)
 
   await page.goto('/')
   await loadCadViewer(page, visibleInBlockFixturePath)
-  expect(await readBlockDefinitionVisibility(page, 'VIS_POLY_BLK')).toEqual([
-    true
-  ])
+  await expect
+    .poll(() => readBlockDefinitionVisibility(page, 'VIS_POLY_BLK'), {
+      timeout: 30_000
+    })
+    .toEqual([true])
   const visibleInsertPixels = await countNonBackgroundPixels(page)
   expect(visibleInsertPixels - emptyPixels).toBeGreaterThan(400)
   expect(invisibleInsertPixels).toBeLessThanOrEqual(emptyPixels + 250)
