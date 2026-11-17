@@ -18,6 +18,13 @@ const blobUrlByModel = new Map<string, string>()
 export const PADDLE_OCR_DET_MODEL = 'PP-OCRv5_mobile_det'
 export const PADDLE_OCR_REC_MODEL = 'PP-OCRv5_mobile_rec'
 
+/**
+ * Longest wait for one model CDN request. A hung Baidu BOS / Hugging Face
+ * fetch would otherwise block `pdftext` Auto forever before the review panel
+ * opens.
+ */
+export const PADDLE_OCR_FETCH_TIMEOUT_MS = 10_000
+
 export interface AcApPaddleOcrModelAsset {
   url: string
 }
@@ -102,12 +109,44 @@ async function fetchBytes(
   url: string,
   signal?: AbortSignal
 ): Promise<Uint8Array> {
-  throwIfAborted(signal)
-  const response = await fetch(url, { mode: 'cors', signal })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ${url}`)
+  const timeout = abortAfter(PADDLE_OCR_FETCH_TIMEOUT_MS, signal)
+  try {
+    throwIfAborted(timeout.signal)
+    const response = await fetch(url, {
+      mode: 'cors',
+      signal: timeout.signal
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${url}`)
+    }
+    return new Uint8Array(await response.arrayBuffer())
+  } finally {
+    timeout.dispose()
   }
-  return new Uint8Array(await response.arrayBuffer())
+}
+
+/**
+ * Aborts after `ms`, or sooner when `parent` aborts. `setTimeout` (not
+ * `AbortSignal.timeout`) so tests can drive the limit with fake timers.
+ */
+function abortAfter(
+  ms: number,
+  parent?: AbortSignal
+): { signal: AbortSignal; dispose: () => void } {
+  const controller = new AbortController()
+  const onParentAbort = () => controller.abort(parent?.reason)
+  if (parent?.aborted) onParentAbort()
+  else parent?.addEventListener('abort', onParentAbort, { once: true })
+  const timer = setTimeout(() => {
+    controller.abort(new DOMException('TimeoutError', 'TimeoutError'))
+  }, ms)
+  return {
+    signal: controller.signal,
+    dispose: () => {
+      clearTimeout(timer)
+      parent?.removeEventListener('abort', onParentAbort)
+    }
+  }
 }
 
 async function matchCache(key: string): Promise<Response | undefined> {
@@ -168,7 +207,13 @@ function ustarHeader(name: string, size: number): Uint8Array {
   write(108, '0000000\0', 8)
   write(116, '0000000\0', 8)
   write(124, `${size.toString(8).padStart(11, '0')}\0`, 12)
-  write(136, `${Math.floor(Date.now() / 1000).toString(8).padStart(11, '0')}\0`, 12)
+  write(
+    136,
+    `${Math.floor(Date.now() / 1000)
+      .toString(8)
+      .padStart(11, '0')}\0`,
+    12
+  )
   // Checksum field filled with spaces while summing.
   for (let i = 148; i < 156; i++) header[i] = 0x20
   header[156] = '0'.charCodeAt(0)

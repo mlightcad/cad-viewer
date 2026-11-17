@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
+import { blockPaddleOcrModelDownloads } from '../helpers/paddleOcr'
 
 const fixtures = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -31,6 +32,7 @@ test.beforeEach(async ({ page }) => {
       viewerModuleUrl = request.url()
     }
   })
+  await blockPaddleOcrModelDownloads(page)
 })
 
 async function modelSpaceIds(page: Page): Promise<string[]> {

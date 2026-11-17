@@ -2,6 +2,7 @@
  * Import-time recovery of exploded PDF text (SHX strokes / outlined fonts).
  *
  * Clear-cut lines become `AcDbText`; unread strokes stay for `pdftext`.
+ * Path strokes that duplicate already-imported PDF text runs are removed.
  */
 
 import {
@@ -10,12 +11,18 @@ import {
   AcApI18n,
   AcApTextRecognitionService
 } from '@mlightcad/cad-simple-viewer'
-import type { AcDbDatabase, AcDbEntity } from '@mlightcad/data-model'
+import {
+  type AcDbDatabase,
+  type AcDbEntity,
+  type AcDbMText,
+  AcDbText
+} from '@mlightcad/data-model'
 
 import { acapPdfT } from './acapPdfI18n.js'
 import {
   type AcApPdfExplodedTextMode,
-  acapPdfExplodedTextModeIsOcr} from './AcApPdfImportOptions.js'
+  acapPdfExplodedTextModeIsOcr
+} from './AcApPdfImportOptions.js'
 import {
   AcApPdfTextSession,
   type PdfTextMeasurer
@@ -25,6 +32,7 @@ import {
   acapPdfOcrErrorMessage,
   acapPdfRecognizeExplodedTextLines
 } from './pdfExplodedTextRecognition.js'
+import { acapPdfTextCoversStrokeLine } from './pdfTextStrokeCoverage.js'
 import type { PdfTextStroke } from './recognition/pdfGlyphClustering.js'
 import type { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary.js'
 import type { PdfRecPoint } from './recognition/pdfRecGeometry.js'
@@ -60,20 +68,25 @@ export interface AcApPdfRecognizeImportExplodedTextOptions {
  * readable stroke groups with `AcDbText`.
  *
  * Nobody reviews the result, so only lines the dictionary (and optionally
- * OCR) can read are converted. Unread strokes stay as imported.
+ * OCR) can read are converted. Unread strokes stay as imported, except when
+ * they sit under an already-imported PDF text run (searchable text + outline
+ * twin) — those strokes are dropped.
  *
  * @param db - Database receiving `PDF_SHX` / mesh text styles.
  * @param entities - Imported entities in paint order (not yet appended).
  * @param dictionary - Learned glyphs (`pdftext`).
  * @param options - Local vs OCR and notify hooks.
  * @param fillOutlines - Outlines of solid fills (filled outline-font glyphs).
+ * @param fillStrokeCompanions - Stroke entities kept for fill+stroke paints,
+ * keyed by the hatch they outline.
  */
 export async function acapPdfRecognizeImportExplodedText(
   db: AcDbDatabase,
   entities: AcDbEntity[],
   dictionary: PdfGlyphDictionary,
   options: AcApPdfRecognizeImportExplodedTextOptions,
-  fillOutlines?: Map<AcDbEntity, PdfRecPoint[][]>
+  fillOutlines?: Map<AcDbEntity, PdfRecPoint[][]>,
+  fillStrokeCompanions?: Map<AcDbEntity, AcDbEntity[]>
 ): Promise<AcApPdfImportExplodedText> {
   const strokes: PdfTextStroke<AcDbEntity>[] = []
   for (const entity of entities) {
@@ -126,8 +139,23 @@ export async function acapPdfRecognizeImportExplodedText(
     }
   })
 
-  const readable = recognized.filter(row => row.text.trim())
-  if (readable.length === 0) {
+  const existingTexts = entities.filter(
+    (entity): entity is AcDbText => entity instanceof AcDbText
+  )
+  const covered = new Set<AcDbEntity>()
+  let coveredLines = 0
+  const readable = recognized.filter(row => {
+    if (
+      existingTexts.some(text => acapPdfTextCoversStrokeLine(text, row.line))
+    ) {
+      coveredLines++
+      for (const stroke of row.line.strokes) covered.add(stroke.id)
+      return false
+    }
+    return !!row.text.trim()
+  })
+
+  if (readable.length === 0 && covered.size === 0) {
     return {
       entities,
       converted: 0,
@@ -136,34 +164,41 @@ export async function acapPdfRecognizeImportExplodedText(
     }
   }
 
-  const session = new AcApPdfTextSession({
-    db,
-    fontKind: styleFontKind,
-    rows: readable.map(row => ({
-      line: row.line,
-      kind: row.kind,
-      text: row.text,
-      source: row.source,
-      included: true
-    }))
-  })
+  const texts: Array<{
+    text: AcDbText | AcDbMText
+    row: (typeof readable)[number]
+  }> = []
+  if (readable.length > 0) {
+    const session = new AcApPdfTextSession({
+      db,
+      fontKind: styleFontKind,
+      fontScaleFactor: font => AcApFontUtil.getFontScaleFactor(font),
+      rows: readable.map(row => ({
+        line: row.line,
+        kind: row.kind,
+        text: row.text,
+        source: row.source,
+        included: true
+      }))
+    })
 
-  const fonts = session.syncStyles()
-  await loadFonts(fonts)
-  const measure = await prepareMeasure(fonts)
-  const texts = session.readyRows.map(row => {
-    const text = session.createEntity(row, measure)
-    const source = row.line.strokes[0]?.id
-    if (source) {
-      text.layer = source.layer
-      text.color = source.color.clone()
+    const fonts = session.syncStyles()
+    await loadFonts(fonts)
+    const measure = await prepareMeasure(fonts)
+    for (const row of session.readyRows) {
+      const text = session.createEntity(row, measure)
+      const source = row.line.strokes[0]?.id
+      if (source) {
+        text.layer = source.layer
+        text.color = source.color.clone()
+      }
+      texts.push({ text, row })
     }
-    return { text, row }
-  })
+  }
 
   const position = new Map<AcDbEntity, number>()
   entities.forEach((entity, i) => position.set(entity, i))
-  const consumed = new Set<AcDbEntity>()
+  const consumed = new Set<AcDbEntity>(covered)
   // Several lines may share the same earliest paint-order stroke (one solid
   // hatch holding multiple outline-font glyphs). Keep every text index.
   const firstOf = new Map<AcDbEntity, number[]>()
@@ -184,6 +219,13 @@ export async function acapPdfRecognizeImportExplodedText(
     else firstOf.set(first, [index])
   })
 
+  // Fill+stroke paints keep a hatch and an outline; recovery consumes the
+  // hatch via fillOutlines, so drop the paired outline too.
+  for (const [hatch, outlines] of fillStrokeCompanions ?? []) {
+    if (!consumed.has(hatch)) continue
+    for (const outline of outlines) consumed.add(outline)
+  }
+
   const next: AcDbEntity[] = []
   for (const entity of entities) {
     if (consumed.has(entity)) {
@@ -200,7 +242,7 @@ export async function acapPdfRecognizeImportExplodedText(
     entities: next,
     converted: texts.length,
     replaced: consumed.size,
-    unread: recognized.length - readable.length
+    unread: recognized.length - readable.length - coveredLines
   }
 }
 

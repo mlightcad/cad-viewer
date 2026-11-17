@@ -59,6 +59,8 @@ import {
   pdfOperatorListHasOptionalContent,
   type PdfOptionalContentConfigLike
 } from './pdfOptionalContent.js'
+import { acapPdfEmHeightToTextHeight } from './pdfTextHeight.js'
+import { acapPdfRemoveTextOutlineTwins } from './pdfTextStrokeCoverage.js'
 import {
   extractPdfImportSubpaths,
   type PdfImportedImage,
@@ -648,9 +650,23 @@ export class AcApPdfImportConvertor {
       const built = acapPdfBuildPageEntities(db, content, options, styleFor)
       const { textEntities, usedLayerNames, stats } = built
       let entities = built.entities
+      // Capital-A height is independent of width fitting (fitTextWidth may be off).
+      await applyImportedMeshTextHeights(db, textEntities)
       if (options.fitTextWidth) {
         await fitTextWidths(db, textEntities, options.scale)
       }
+
+      // Searchable PDF text often ships with stroked/filled glyph twins.
+      // Drop those outlines once the TEXT entities exist (independent of
+      // exploded-text OCR, which only sees remaining strokes). Also prunes
+      // fillOutlines so twin contours are not re-fed to dim/exploded passes.
+      const beforeTwins = entities.length
+      entities = acapPdfRemoveTextOutlineTwins(
+        entities,
+        built.fillOutlines,
+        built.fillStrokeCompanions
+      )
+      const twinStrokes = beforeTwins - entities.length
 
       // Exploded SHX / outline text becomes TEXT before dimensions, so dim
       // values can read real text as well as remaining strokes.
@@ -676,11 +692,15 @@ export class AcApPdfImportConvertor {
               )
             }
           },
-          built.fillOutlines
+          built.fillOutlines,
+          built.fillStrokeCompanions
         )
         entities = recovered.entities
         explodedTextCount = recovered.converted
         explodedTextStrokes = recovered.replaced
+      }
+      if (twinStrokes > 0) {
+        explodedTextStrokes += twinStrokes
       }
 
       // Exploded dimensions become dimension entities. Text widths are
@@ -765,6 +785,91 @@ const PDF_IMAGE_PREFIX = 'PDF_IMAGE_'
 
 /** How long to wait for PDF.js to deliver one decoded image. */
 const PDF_IMAGE_TIMEOUT_MS = 10000
+
+function importedTextFontsOf(
+  db: AcDbDatabase,
+  entity: AcDbText
+): { font: string; bigFont: string } {
+  const style = db.tables.textStyleTable.resolveAt(
+    entity.styleName || db.textstyle
+  )
+  return {
+    font: style?.textStyle.font ?? '',
+    bigFont: style?.textStyle.bigFont ?? ''
+  }
+}
+
+/**
+ * PDF `fontSize` is the em square; CAD TrueType height is capital-A. Convert
+ * mesh-style text before width fitting (and even when fitTextWidth is off).
+ */
+async function applyImportedMeshTextHeights(
+  db: AcDbDatabase,
+  texts: { entity: AcDbText; run: PdfImportedText }[]
+) {
+  const fontNames = new Set<string>()
+  for (const { entity } of texts) {
+    const { font, bigFont } = importedTextFontsOf(db, entity)
+    if (font) fontNames.add(font)
+    if (bigFont) fontNames.add(bigFont)
+  }
+  try {
+    await AcApFontUtil.prepareTextMeasurement([...fontNames])
+  } catch (err) {
+    // Catalog / already-loaded scale factors still apply when prepare fails.
+    log.warn('[PdfImport] Could not load fonts for text heights:', err)
+  }
+  for (const { entity } of texts) {
+    const { font } = importedTextFontsOf(db, entity)
+    const mesh =
+      (AcApFontUtil.getFontType(font) ??
+        AcApFontUtil.getCatalogFontType(font)) === 'mesh'
+    if (!mesh) continue
+    entity.height = acapPdfEmHeightToTextHeight(
+      entity.height,
+      AcApFontUtil.getFontScaleFactor(font)
+    )
+  }
+}
+
+/**
+ * Fits imported PDF text width factor to the PDF advance in the substitute
+ * font. Texts whose glyphs cannot be measured keep the PDF width factor.
+ * Call after {@link applyImportedMeshTextHeights} so height is capital-A.
+ */
+async function fitTextWidths(
+  db: AcDbDatabase,
+  texts: { entity: AcDbText; run: PdfImportedText }[],
+  scale: number
+) {
+  const fontNames = new Set<string>()
+  for (const { entity } of texts) {
+    const { font, bigFont } = importedTextFontsOf(db, entity)
+    if (font) fontNames.add(font)
+    if (bigFont) fontNames.add(bigFont)
+  }
+  try {
+    await AcApFontUtil.prepareTextMeasurement([...fontNames])
+  } catch (err) {
+    log.warn('[PdfImport] Could not load fonts to fit text widths:', err)
+    return
+  }
+  for (const { entity, run } of texts) {
+    if (run.width === undefined) continue
+    const { font, bigFont } = importedTextFontsOf(db, entity)
+    const natural = AcApFontUtil.measureTextWidth(
+      entity.textString,
+      font,
+      entity.height,
+      bigFont
+    )
+    entity.widthFactor = acapPdfFitWidthFactor(
+      entity.widthFactor,
+      run.width * scale,
+      natural
+    )
+  }
+}
 
 /**
  * Turns PDF image paints into raster images. Each image is redrawn upright
@@ -873,54 +978,6 @@ function uniqueImageFileName(db: AcDbDatabase) {
     index++
   }
   return `${PDF_IMAGE_PREFIX}${index}.png`
-}
-
-/**
- * Sets each text's width factor so it spans its PDF advance width in the
- * font the viewer will actually draw it with (usually a substitute for the
- * PDF font). Texts whose glyphs cannot be measured keep the PDF factor.
- */
-async function fitTextWidths(
-  db: AcDbDatabase,
-  texts: { entity: AcDbText; run: PdfImportedText }[],
-  scale: number
-) {
-  const styleTable = db.tables.textStyleTable
-  const fontsOf = (entity: AcDbText) => {
-    const style = styleTable.resolveAt(entity.styleName || db.textstyle)
-    return {
-      font: style?.textStyle.font ?? '',
-      bigFont: style?.textStyle.bigFont ?? ''
-    }
-  }
-  const fontNames = new Set<string>()
-  for (const { entity } of texts) {
-    const { font, bigFont } = fontsOf(entity)
-    if (font) fontNames.add(font)
-    if (bigFont) fontNames.add(bigFont)
-  }
-  try {
-    await AcApFontUtil.prepareTextMeasurement([...fontNames])
-  } catch (err) {
-    // Without fonts there is nothing to measure against; keep PDF factors.
-    log.warn('[PdfImport] Could not load fonts to fit text widths:', err)
-    return
-  }
-  for (const { entity, run } of texts) {
-    if (run.width === undefined) continue
-    const { font, bigFont } = fontsOf(entity)
-    const natural = AcApFontUtil.measureTextWidth(
-      entity.textString,
-      font,
-      entity.height,
-      bigFont
-    )
-    entity.widthFactor = acapPdfFitWidthFactor(
-      entity.widthFactor,
-      run.width * scale,
-      natural
-    )
-  }
 }
 
 /** Creates the CAD entity for a recognized shape. */

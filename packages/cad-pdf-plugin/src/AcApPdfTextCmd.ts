@@ -181,6 +181,7 @@ export class AcApPdfTextCmd extends AcEdCommand {
     const session = new AcApPdfTextSession<AcDbObjectId>({
       db: context.doc.database,
       fontKind: styleFontKind,
+      fontScaleFactor: font => AcApFontUtil.getFontScaleFactor(font),
       rows: recognized.map(row => ({
         line: row.line,
         kind: row.kind,

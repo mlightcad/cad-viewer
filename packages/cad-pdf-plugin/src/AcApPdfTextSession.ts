@@ -14,6 +14,7 @@ import {
   PDF_SHX_TEXT_STYLE,
   PDF_TEXT_STYLE_PREFIX
 } from './pdfImportEntities.js'
+import { acapPdfMeshInkHeightToTextHeight } from './pdfTextHeight.js'
 import type { PdfTextLineCandidate } from './recognition/pdfGlyphClustering.js'
 import type { PdfTextFontKind } from './recognition/pdfTextFontKind.js'
 import {
@@ -101,12 +102,20 @@ export type PdfTextMeasurer = (
   bigFont: string
 ) => number | undefined
 
+/**
+ * Capital-A scale of a TrueType face (`unitsPerEm / A.yMax`), or `1` when
+ * unknown / SHX. Used to map outline-font ink height to CAD text height.
+ */
+export type PdfTextFontScaleFactor = (font: string) => number
+
 /** Input of {@link AcApPdfTextSession}. */
 export interface AcApPdfTextSessionInput<Id> {
   db: AcDbDatabase
   rows: PdfTextRow<Id>[]
   /** Engine of a style font (catalog / loaded font lookup). */
   fontKind: PdfTextFontKindResolver
+  /** See {@link PdfTextFontScaleFactor}. Defaults to `1`. */
+  fontScaleFactor?: PdfTextFontScaleFactor
 }
 
 const KINDS: readonly PdfTextFontKind[] = ['shx', 'mesh']
@@ -122,6 +131,7 @@ export class AcApPdfTextSession<Id> {
   readonly rows: PdfTextRow<Id>[]
   private readonly db: AcDbDatabase
   private readonly fontKind: PdfTextFontKindResolver
+  private readonly fontScaleFactor: PdfTextFontScaleFactor
   /** Measures text for merging, once fonts are loaded (see setMeasurer). */
   private measurer?: PdfTextMeasurer
   private readonly choices = new Map<PdfTextFontKind, PdfTextStyleChoice>()
@@ -137,6 +147,7 @@ export class AcApPdfTextSession<Id> {
     this.db = input.db
     this.rows = input.rows
     this.fontKind = input.fontKind
+    this.fontScaleFactor = input.fontScaleFactor ?? (() => 1)
     for (const kind of KINDS) this.choices.set(kind, this.defaultChoice(kind))
   }
 
@@ -580,7 +591,7 @@ export class AcApPdfTextSession<Id> {
    */
   createText(row: PdfTextRow<Id>, measure?: PdfTextMeasurer): AcDbText {
     const choice = this.choices.get(row.kind)!
-    const height = row.line.height * choice.heightScale
+    const height = this.entityHeight(row, choice)
     const text = new AcDbText()
     text.textString = row.text.trim()
     text.styleName = choice.styleName
@@ -629,7 +640,7 @@ export class AcApPdfTextSession<Id> {
     measure?: PdfTextMeasurer
   ): AcDbMText {
     const choice = this.choices.get(row.kind)!
-    const height = row.line.height * choice.heightScale
+    const height = this.entityHeight(row, choice)
     const angle = row.line.rotation
     const last = merge.paragraphs[merge.paragraphs.length - 1]
     const minU = Math.min(...merge.paragraphs.map(item => item.minU))
@@ -711,6 +722,23 @@ export class AcApPdfTextSession<Id> {
   private originalRecord(name: string) {
     if (this.created.has(name)) return undefined
     return this.db.tables.textStyleTable.getAt(name)
+  }
+
+  /**
+   * CAD text height for a row: measured ink × heightScale, with mesh CJK
+   * ink converted from em-like outline size to capital-A height.
+   */
+  private entityHeight(
+    row: PdfTextRow<Id>,
+    choice: PdfTextStyleChoice
+  ): number {
+    const ink = row.line.height * choice.heightScale
+    if (row.kind !== 'mesh') return ink
+    return acapPdfMeshInkHeightToTextHeight(
+      ink,
+      row.text.trim(),
+      this.fontScaleFactor(choice.font)
+    )
   }
 }
 

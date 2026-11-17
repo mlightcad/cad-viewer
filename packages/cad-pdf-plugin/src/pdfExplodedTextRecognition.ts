@@ -68,7 +68,19 @@ export interface AcApPdfRecognizeExplodedTextOptions {
   recognizingMessage?: (count: number) => string
   /** Called once per recognizer failure (bad key, network, ...). */
   onOcrError?: (error: unknown) => void
+  /**
+   * Longest wait for the OCR batch, in milliseconds. After this, unread
+   * lines stay unread so the review panel can still open. `0` waits
+   * forever. Defaults to {@link PDF_OCR_BATCH_TIMEOUT_MS}.
+   */
+  timeoutMs?: number
 }
+
+/**
+ * Longest wait for exploded-text OCR. A hung local engine (model CDN /
+ * wasm worker) would otherwise keep `pdftext` from opening the palette.
+ */
+export const PDF_OCR_BATCH_TIMEOUT_MS = 8_000
 
 /**
  * Clusters strokes into text lines and fills what the dictionary (and
@@ -123,6 +135,7 @@ export async function acapPdfOcrExplodedTextLines<Id>(
     | 'withBusy'
     | 'recognizingMessage'
     | 'onOcrError'
+    | 'timeoutMs'
   > = {}
 ): Promise<number> {
   return recognizeUnreadLines(lines, texts, options)
@@ -138,6 +151,7 @@ async function recognizeUnreadLines<Id>(
     | 'withBusy'
     | 'recognizingMessage'
     | 'onOcrError'
+    | 'timeoutMs'
   >
 ): Promise<number> {
   if (options.recognizerId) {
@@ -163,19 +177,23 @@ async function recognizeUnreadLines<Id>(
   const message =
     options.recognizingMessage?.(images.length) ??
     `Recognizing ${images.length} text line(s)…`
+  const controller = new AbortController()
   const work = () =>
     AcApTextRecognitionService.recognizeBatch(
-      { images, locale },
+      { images, locale, signal: controller.signal },
       {
         onError: error => options.onOcrError?.(error),
-        ...(options.recognizerId
-          ? { recognizerId: options.recognizerId }
-          : {})
+        ...(options.recognizerId ? { recognizerId: options.recognizerId } : {})
       }
     )
-  const results = options.withBusy
-    ? await options.withBusy(work, message)
-    : await work()
+  const run = () =>
+    options.withBusy ? options.withBusy(work, message) : work()
+  const results = await raceOcrBatch(
+    run,
+    options.timeoutMs ?? PDF_OCR_BATCH_TIMEOUT_MS,
+    controller,
+    images.length
+  )
 
   let recognized = 0
   pending.forEach((lineIndex, i) => {
@@ -184,6 +202,37 @@ async function recognizeUnreadLines<Id>(
     recognized++
   })
   return recognized
+}
+
+/**
+ * Resolves unread placeholders when OCR does not finish in `timeoutMs`.
+ * `0` waits forever. Aborts the in-flight request so a hung engine can
+ * stop; `Promise.race` still wins if the engine ignores abort.
+ */
+async function raceOcrBatch(
+  work: () => Promise<Array<string | undefined>>,
+  timeoutMs: number,
+  controller: AbortController,
+  imageCount: number
+): Promise<Array<string | undefined>> {
+  const unread = (): Array<string | undefined> =>
+    Array.from({ length: imageCount }, () => undefined)
+  if (!(timeoutMs > 0)) return work()
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<Array<string | undefined>>(resolve => {
+    timer = setTimeout(() => {
+      controller.abort()
+      resolve(unread())
+    }, timeoutMs)
+  })
+  try {
+    return await Promise.race([work(), timeout])
+  } catch {
+    return unread()
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /**
@@ -209,7 +258,9 @@ export function acapPdfRenderTextLineImage(
     const dy = y - line.position.y
     return { u: dx * c + dy * s, v: -dx * s + dy * c }
   }
-  const ink = line.strokes.filter(stroke => !isUnderlineStroke(stroke, local, line))
+  const ink = line.strokes.filter(
+    stroke => !isUnderlineStroke(stroke, local, line)
+  )
   if (ink.length === 0) return undefined
   let minV = 0
   let maxV = line.height
