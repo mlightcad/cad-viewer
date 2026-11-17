@@ -78,7 +78,7 @@ Každý napsaný tvar znaku se zapamatuje v prohlížeči, takže pomůže i u d
 
 1. Vyberte oblast s kótami. Text hodnoty může být TEXT, nebo stále rozložené tahy (před `pdftext`): číslice a CAD symboly se čtou vestavěnou šablonou lokálně, bez LLM. Pokud tahy nelze přečíst, lineární kóty použijí naměřenou délku.
 2. Rozpoznají se:
-   - **Lineární kóty**: v libovolném úhlu, se šipkami uvnitř i vně, s architektonickými značkami i řetězové kóty.
+   - **Lineární kóty**: v libovolném úhlu, se šipkami uvnitř i vně, s architektonickými značkami i řetězové kóty. Obnoví se i kóty označené místo hodnoty symbolem (`a`, `e mini`): textový popisek se stane textem kóty, popisek nakreslený čarami zůstane tak, jak je.
    - **Kóty poloměru a průměru**: šipka dotýkající se kružnice s textem `R…` nebo `Ø…`.
    - **Úhlové kóty**: oblouk se šipkou na každém konci.
 3. Panel **Obnovit kóty** se otevře v paletě a místo tahů ukáže náhled kót. Během otevření můžete posouvat a zoomovat.

@@ -177,6 +177,8 @@ export interface AcApPdfDimStyleMetrics {
   dimlfac: number
   dimdec: number
   dimtad: 1
+  /** Text moved off home drags the dimension line along (no leader). */
+  dimtmove: 0
   dimsah: 0
   dimblk: string
   dimblk1: string
@@ -239,6 +241,7 @@ export function acapPdfDimStyleMetrics(
     dimlfac: scale,
     dimdec: decimalsOf(candidates.map(c => c.text.text)),
     dimtad: 1,
+    dimtmove: 0,
     dimsah: 0,
     ...(ticks
       ? { dimblk: '_ArchTick', dimblk1: '', dimblk2: '' }
@@ -271,6 +274,7 @@ export function acapPdfDimStyleOverrides(
     { code: 144, value: metrics.dimlfac },
     { code: 271, value: metrics.dimdec },
     { code: 77, value: metrics.dimtad },
+    { code: 279, value: metrics.dimtmove },
     { code: 173, value: metrics.dimsah }
   ]
 }
@@ -414,6 +418,16 @@ export function acapPdfCreateDimensions<Id>(
         )
         dimension.isUsingDefaultTextPosition = false
       }
+      // Text drawn beyond the extension lines: with DIMTMOVE 0 the dim
+      // block runs the dimension line out under it, as in the PDF.
+      if (isLinear(prepared) && prepared.textPosition) {
+        dimension.textPosition = new AcGePoint3d(
+          prepared.textPosition.x,
+          prepared.textPosition.y,
+          0
+        )
+        dimension.isUsingDefaultTextPosition = false
+      }
       // Bake geometry with the override style (*DimOverride), then retarget
       // the entity to the permanent style name for the drawing.
       applyCurrentDimStyle(dimension, db)
@@ -431,7 +445,11 @@ export function acapPdfCreateDimensions<Id>(
           Math.max(expected * 0.005, 0.5 * 10 ** -decimals)
       // A stand-in text (unread strokes) is the paper length; the
       // dimension's own measurement × DIMLFAC is the better value.
-      if ((!agrees || !plain) && !prepared.measuredText) {
+      if (isLinear(prepared) && prepared.labelKept) {
+        // The label strokes stay in the drawing; a single space suppresses
+        // the dimension's own text (AutoCAD convention).
+        dimension.dimensionText = ' '
+      } else if ((!agrees || !plain) && !prepared.measuredText) {
         dimension.dimensionText = prepared.text.text
       }
       const layer = layerOf?.(prepared)
@@ -451,6 +469,22 @@ export function acapPdfCreateDimensions<Id>(
           prepared.rotation,
           prepared.arrowsOut
         )
+      }
+      if (
+        isLinear(prepared) &&
+        prepared.outsideTails &&
+        prepared.outsideTails.length > 0 &&
+        dimension.dimBlockId
+      ) {
+        appendDimLines(db, dimension.dimBlockId, prepared.outsideTails)
+      }
+      if (
+        (prepared.kind === 'radius' || prepared.kind === 'diameter') &&
+        prepared.outsideLines &&
+        prepared.outsideLines.length > 0 &&
+        dimension.dimBlockId
+      ) {
+        appendDimLines(db, dimension.dimBlockId, prepared.outsideLines)
       }
       if (append) db.tables.blockTable.modelSpace.appendEntity(dimension)
       created.push(dimension)
@@ -473,6 +507,57 @@ export function acapPdfDisposeDimensionPreviews(
     const blockName = dimension.dimBlockId
     if (blockName) disposeDimBlock(db, blockName)
     dimension.dimBlockId = null
+  }
+}
+
+/**
+ * Adds dimension-line pieces the source drew but createDimBlock leaves out
+ * (tails past outside arrows, a radial leader out to its text). Pieces the
+ * block already draws are skipped. They copy the block's own dimension line
+ * (layer `0`, DIMCLRD colour).
+ */
+function appendDimLines(
+  db: AcDbDatabase,
+  blockName: string,
+  pieces: Array<{
+    from: { x: number; y: number }
+    to: { x: number; y: number }
+  }>
+) {
+  const block = db.tables.blockTable.getAt(blockName)
+  if (!block) return
+  const lines = [...block.newIterator()].filter(
+    (e): e is AcDbLine => e instanceof AcDbLine
+  )
+  const dimLine = lines[0]
+  // Block lines are built from the same points; allow for float noise only.
+  const tol =
+    1e-6 *
+    Math.max(
+      1,
+      ...pieces.map(p => Math.max(Math.abs(p.from.x), Math.abs(p.from.y)))
+    )
+  const onLine = (p: { x: number; y: number }, l: AcDbLine) => {
+    const ax = l.startPoint.x
+    const ay = l.startPoint.y
+    const dx = l.endPoint.x - ax
+    const dy = l.endPoint.y - ay
+    const len2 = dx * dx + dy * dy
+    const t =
+      len2 > 0
+        ? Math.max(0, Math.min(1, ((p.x - ax) * dx + (p.y - ay) * dy) / len2))
+        : 0
+    return Math.hypot(p.x - (ax + t * dx), p.y - (ay + t * dy)) <= tol
+  }
+  for (const { from, to } of pieces) {
+    if (lines.some(l => onLine(from, l) && onLine(to, l))) continue
+    const tail = new AcDbLine(
+      new AcGePoint3d(from.x, from.y, 0),
+      new AcGePoint3d(to.x, to.y, 0)
+    )
+    tail.layer = dimLine?.layer ?? '0'
+    if (dimLine) tail.color = dimLine.color.clone()
+    block.appendEntity(tail)
   }
 }
 

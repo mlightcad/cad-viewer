@@ -12,7 +12,10 @@ import {
 
 import { AcApPdfDimSession } from '../src/AcApPdfDimSession'
 import { PDF_DIM_STYLE } from '../src/pdfDimensionConvert'
-import type { PdfDimensionCandidate } from '../src/recognition/pdfDimensionPattern'
+import type {
+  PdfDimensionCandidate,
+  PdfLinearDimension
+} from '../src/recognition/pdfDimensionPattern'
 
 function linear(text: string, measured = 55): PdfDimensionCandidate<string> {
   return {
@@ -65,6 +68,35 @@ describe('AcApPdfDimSession', () => {
     session.setIncluded(session.rows[0], false)
     session.setText(session.rows[1], '  ')
     expect(session.candidatesForApply()).toHaveLength(0)
+  })
+
+  it('applies a kept symbolic label as is, or the label typed for it', () => {
+    const kept = (): PdfLinearDimension<string> => ({
+      ...(linear(' ', 4) as PdfLinearDimension<string>),
+      text: {
+        id: 'label',
+        text: ' ',
+        center: { x: 20, y: 1 },
+        height: 2.5,
+        extraIds: ['stroke']
+      },
+      labelKept: true,
+      consumed: ['a0', 'a1', 'dim', 'ext0', 'ext1']
+    })
+    const session = new AcApPdfDimSession({
+      db: dbWithStyles(),
+      candidates: [kept(), kept()]
+    })
+    expect(session.readyRows).toHaveLength(2)
+    session.setText(session.rows[1], 'e mini')
+    const [asIs, typed] = session.candidatesForApply()
+    expect(asIs.text.text).toBe(' ')
+    expect(asIs.kind === 'linear' && asIs.labelKept).toBe(true)
+    expect(asIs.consumed).not.toContain('label')
+    // The typed label replaces the strokes it was read from.
+    expect(typed.text.text).toBe('e mini')
+    expect(typed.kind === 'linear' && typed.labelKept).toBe(false)
+    expect(typed.consumed).toEqual(expect.arrayContaining(['label', 'stroke']))
   })
 
   it('lets the user pick an existing style or create a new one', () => {

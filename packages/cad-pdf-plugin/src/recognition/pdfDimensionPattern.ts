@@ -164,6 +164,25 @@ export interface PdfLinearDimension<Id = unknown> extends PdfDimCommon<Id> {
   terminator?: 'closed' | 'open' | 'tick' | 'dot' | 'none'
   /** Extension line ids found at each end (may be shared with neighbours). */
   extensionIds?: [Id | undefined, Id | undefined]
+  /**
+   * Where the text sits when the drawing placed it beyond the extension
+   * lines, with the dimension line running out to it. Unset for text at its
+   * home position.
+   */
+  textPosition?: PdfRecPoint
+  /**
+   * True when the label is a symbol (`a`, `e mini`) drawn as strokes that
+   * could not be read. The strokes stay as drawn and the dimension shows no
+   * text of its own ({@link text} is a single space, which suppresses it).
+   */
+  labelKept?: boolean
+  /**
+   * Dimension line drawn past outside arrows (from a tip, away from the
+   * span). The dim block only draws the line between the arrows, so these
+   * are added back; the side running out to {@link textPosition} is not
+   * listed (the block draws that run).
+   */
+  outsideTails?: Array<{ from: PdfRecPoint; to: PdfRecPoint }>
 }
 
 /** A recognized radius or diameter dimension. */
@@ -179,6 +198,13 @@ export interface PdfRadialDimension<Id = unknown> extends PdfDimCommon<Id> {
   measured: number
   /** True when the leader had a jog (large-radius dimension). */
   jogged?: boolean
+  /**
+   * Straight dimension-line pieces the source drew along the radius line
+   * (the leader out to the text, the stub behind an outside far arrow).
+   * They are consumed with the dimension, so the dim block draws any of
+   * them it does not draw itself.
+   */
+  outsideLines?: Array<{ from: PdfRecPoint; to: PdfRecPoint }>
 }
 
 /** A recognized angular dimension (three-point form). */
@@ -668,6 +694,9 @@ function extensionAt<Id>(
       origin: PdfRecPoint
       beyond: number
       reach: number
+      through: boolean
+      /** Duplicate extension pieces lying within the chosen one. */
+      covered: PdfDimSegment<Id>[]
     }
   | undefined {
   const n = dir
@@ -682,8 +711,13 @@ function extensionAt<Id>(
         proximity: number
         reach: number
         rank: number
+        through: boolean
+        lo: number
+        hi: number
       }
     | undefined
+  // Extension pieces ending at the tip, as intervals along `n`.
+  const pieces: { segment: PdfDimSegment<Id>; lo: number; hi: number }[] = []
   for (const s of ctx.segGrid.near(tip, maxTipGap + ctx.tol * 2)) {
     // Pieces of one polyline share an id; the dimension line's own pieces
     // are excluded by object so an extension drawn in the same path counts.
@@ -705,26 +739,46 @@ function extensionAt<Id>(
     let nearT: number
     let farT: number
     let rank: number
+    let through = false
     if (tipNear0 || tipNear1) {
       const nearIs0 = tipNear0 && (!tipNear1 || d0 <= d1)
       nearT = nearIs0 ? t0 : t1
       farT = nearIs0 ? t1 : t0
       origin = nearIs0 ? s.p1 : s.p0
-      rank = Math.abs(farT) >= minReach ? 0 : 2
+      // Extension lines reach the dimension line. One that does outranks
+      // a line stopping short of it (an object edge ending near the tip,
+      // which the dimension must not take); a long one beats a short one.
+      // A piece reaching less than half an arrow past the tip is only the
+      // DIMEXE overhang left after de-duplication: last resort.
+      const reachesLine =
+        Math.min(t0, t1) <= ctx.tol * 2 && Math.max(t0, t1) >= -ctx.tol * 2
+      const farReach = Math.abs(farT)
+      rank =
+        reachesLine && farReach < arrowSize * 0.5
+          ? 5
+          : (reachesLine ? 0 : 2) + (farReach >= minReach ? 0 : 1)
     } else {
+      // Both ends far from the tip: an object edge the extension line is
+      // drawn over (or was merged into). It confirms the extension, and
+      // its text-side end is the best origin guess, but the edge itself
+      // must survive: it is never consumed.
       const on0 = Math.sign(t0) === textSide
       const on1 = Math.sign(t1) === textSide
       if (!on0 && !on1) continue
       const use0 = on0 && (!on1 || d0 >= d1)
-      origin = use0 ? s.p0 : s.p1
       farT = use0 ? t0 : t1
       nearT = use0 ? t1 : t0
-      rank = 1
+      origin = use0 ? s.p0 : s.p1
+      rank = 4
+      through = true
     }
     const reach = Math.abs(farT)
     if (!(reach > ctx.tol)) continue
+    const lo = Math.min(t0, t1)
+    const hi = Math.max(t0, t1)
+    if (!through) pieces.push({ segment: s, lo, hi })
     const over =
-      Math.sign(nearT) !== Math.sign(farT) && Math.sign(nearT) !== 0
+      !through && Math.sign(nearT) !== Math.sign(farT) && Math.sign(nearT) !== 0
         ? Math.min(Math.abs(nearT), maxTipGap)
         : 0
     const proximity = Math.abs(nearT)
@@ -743,11 +797,37 @@ function extensionAt<Id>(
         beyond: over,
         proximity,
         reach,
-        rank
+        rank,
+        through,
+        lo,
+        hi
       }
     }
   }
-  return best
+  if (!best) return undefined
+  // Chained or baseline dimensions often draw their extension lines over
+  // each other (origins a hair apart). Pieces the chosen extension covers
+  // would be left behind as stray lines.
+  const chosen = best
+  const covered = chosen.through
+    ? []
+    : pieces
+        .filter(
+          p =>
+            p.segment !== chosen.segment &&
+            p.lo >= chosen.lo - ctx.tol * 2 &&
+            p.hi <= chosen.hi + ctx.tol * 2
+        )
+        .map(p => p.segment)
+  return {
+    id: chosen.id,
+    segment: chosen.segment,
+    origin: chosen.origin,
+    beyond: chosen.beyond,
+    reach: chosen.reach,
+    through: chosen.through,
+    covered
+  }
 }
 
 /** Linear dimensions anchored on a pair of opposed terminators. */
@@ -791,8 +871,7 @@ function linearFromTerminators<Id>(
       } else if (b.kind !== 'dot') {
         continue
       }
-      const h = linearHypothesis(ctx, a, b, length, u)
-      if (h) out.push(h)
+      out.push(...linearHypotheses(ctx, a, b, length, u))
     }
   }
   return out
@@ -841,6 +920,26 @@ function axisNeighbours<Id>(
 }
 
 /** Builds the hypothesis for a terminator pair (shared by arrows/ticks). */
+function linearHypotheses<Id>(
+  ctx: Context<Id>,
+  a: PdfDimTerminator<Id>,
+  b: PdfDimTerminator<Id>,
+  length: number,
+  u: PdfRecPoint,
+  knownLine?: PdfDimSegment<Id>
+): Hypothesis<Id>[] {
+  const valued = linearHypothesis(ctx, a, b, length, u, knownLine)
+  const out = valued.hypothesis ? [valued.hypothesis] : []
+  // A real value text nearby belongs to the valued reading; a label variant
+  // would only hide it.
+  if (!valued.realValue) {
+    const labelled = labelledLinearHypothesis(ctx, a, b, length, u, knownLine)
+    if (labelled) out.push(labelled)
+  }
+  return out
+}
+
+/** Linear hypothesis read from a value text. */
 function linearHypothesis<Id>(
   ctx: Context<Id>,
   a: PdfDimTerminator<Id>,
@@ -848,7 +947,7 @@ function linearHypothesis<Id>(
   length: number,
   u: PdfRecPoint,
   knownLine?: PdfDimSegment<Id>
-): Hypothesis<Id> | undefined {
+): { hypothesis?: Hypothesis<Id>; realValue: boolean } {
   const n = { x: -u.y, y: u.x }
   const mid = pdfDimLerp(a.tip, b.tip, 0.5)
   const accept = (t: {
@@ -876,7 +975,18 @@ function linearHypothesis<Id>(
     accept,
     length
   )
-  if (!pick) return undefined
+  if (!pick) return { realValue: false }
+  // Real PDF text that disagrees was written that way on purpose (a
+  // reference or not-to-scale value); only stroke OCR may be overruled.
+  const fromStrokes = (pick.text.extraIds?.length ?? 0) > 0 || pick.unread
+  const realValue = !fromStrokes
+  // Unread text stands in for a value only on a span the drawing would
+  // label with a number: wider than the terminators that bound it. A short
+  // span between two arrows labelled with letters ("a", "e mini") is a
+  // symbolic size, which the measured length would wrongly replace; the
+  // labelled variant keeps such a label instead.
+  const minSpan = Math.max(a.size, b.size) * 3
+  if (pick.unread && length < minSpan) return { realValue }
   const text = pick.unread
     ? pick.text
     : reconcileLinearDimText(pick.text, length)
@@ -930,6 +1040,8 @@ function linearHypothesis<Id>(
     text.height
   )
   const extensions = [e1, e2].filter(e => e !== undefined)
+  // Object edges the extension lines are drawn over stay in the drawing.
+  const owned = extensions.filter(e => !e.through)
   evidence.add('extension', extensions.length)
   evidence.add(
     'extensionBeyond',
@@ -947,20 +1059,22 @@ function linearHypothesis<Id>(
     Math.abs(cross(pdfDimUnit(sub(xLine2, xLine1)), u)) <= ctx.sinTol
   const kind: 'linear' | 'aligned' =
     !axis && originsParallel ? 'aligned' : 'linear'
-  const exclusive = [...a.ids, ...b.ids, ...pdfDimTextIds(text), ...line.ids]
+  // Text placed beyond an extension line with the dimension line running
+  // out under it: keep it there and take that run with the dimension.
+  const span = line.segments.filter(s => line.ids.includes(s.id))
+  const outside = outsideText(ctx, a, b, length, u, text, span)
+  const exclusive = [
+    ...a.ids,
+    ...b.ids,
+    ...pdfDimTextIds(text),
+    ...line.ids,
+    ...(outside?.ids ?? [])
+  ]
   const value = unread ? undefined : parsePdfDimensionValue(text.text)
-  // Unread text stands in for a value only on a span the drawing would
-  // label with a number: wider than the terminators that bound it. A short
-  // span between two arrows labelled with letters ("a", "e mini") is a
-  // symbolic size, which the measured length would wrongly replace.
-  const minSpan = Math.max(a.size, b.size) * 3
-  // Real PDF text that disagrees was written that way on purpose (a
-  // reference or not-to-scale value); only stroke OCR may be overruled.
-  const fromStrokes = (pick.text.extraIds?.length ?? 0) > 0 || pick.unread
   const strongEnough =
     (!unread || (extensions.length === 2 && hasLine && length >= minSpan)) &&
     (!misread || fromStrokes)
-  return {
+  const hypothesis: Hypothesis<Id> = {
     exclusive,
     evidence,
     value,
@@ -973,10 +1087,11 @@ function linearHypothesis<Id>(
     claims: [
       ...line.segments.filter(s => line.ids.includes(s.id)),
       ...(arrowsOut ? line.segments : []),
-      ...extensions.map(e => e!.segment)
+      ...owned.flatMap(e => [e.segment, ...e.covered]),
+      ...(outside?.segments ?? [])
     ],
     build: () => {
-      const extIds = extensions.map(e => e!.id)
+      const extIds = owned.flatMap(e => [e.id, ...e.covered.map(c => c.id)])
       // Outside arrows own their tails; inside arrows leave neighbours'
       // pieces alone.
       const tailIds = arrowsOut ? line.tails : []
@@ -1001,6 +1116,10 @@ function linearHypothesis<Id>(
                 ? 'dot'
                 : 'closed',
         extensionIds: [e1?.id, e2?.id],
+        textPosition: outside ? text.center : undefined,
+        outsideTails: arrowsOut
+          ? outsideTails(ctx, a, b, length, u, line, outside && text.center)
+          : undefined,
         measuredText: unread,
         consumed: [...exclusive, ...extIds, ...tailIds],
         score: 0,
@@ -1008,6 +1127,321 @@ function linearHypothesis<Id>(
       }
     }
   }
+  return { hypothesis, realValue }
+}
+
+/**
+ * Collinear runs leaving the ends of a dimension line: the dimension line
+ * continued past an arrow out to text placed beyond the extension lines.
+ * `beforeReach` / `afterReach` are how far they reach past `a` / `b`.
+ */
+function dimLineRuns<Id>(
+  ctx: Context<Id>,
+  a: PdfDimTerminator<Id>,
+  b: PdfDimTerminator<Id>,
+  length: number,
+  u: PdfRecPoint,
+  own: PdfDimSegment<Id>[]
+): {
+  before: PdfDimSegment<Id>[]
+  after: PdfDimSegment<Id>[]
+  beforeReach: number
+  afterReach: number
+} {
+  const n = { x: -u.y, y: u.x }
+  const reach = Math.max(ctx.refSize * 30, length * 3)
+  const p0 = { x: a.tip.x - u.x * reach, y: a.tip.y - u.y * reach }
+  const p1 = { x: b.tip.x + u.x * reach, y: b.tip.y + u.y * reach }
+  const out = {
+    before: [] as PdfDimSegment<Id>[],
+    after: [] as PdfDimSegment<Id>[],
+    beforeReach: 0,
+    afterReach: 0
+  }
+  const slack = ctx.tol * 4
+  for (const s of ctx.segGrid.query(pdfDimSegmentBox(p0, p1, ctx.tol * 2))) {
+    if (ctx.terminatorIds.has(s.id) || own.includes(s)) continue
+    const r0 = sub(s.p0, a.tip)
+    const r1 = sub(s.p1, a.tip)
+    if (
+      Math.abs(dot(r0, n)) > ctx.tol * 2 ||
+      Math.abs(dot(r1, n)) > ctx.tol * 2
+    ) {
+      continue
+    }
+    const lo = Math.min(dot(r0, u), dot(r1, u))
+    const hi = Math.max(dot(r0, u), dot(r1, u))
+    // Starts at the tip, or at the back of an outside arrow.
+    if (lo >= length - slack && lo <= length + b.size + slack && hi > lo) {
+      out.after.push(s)
+      out.afterReach = Math.max(out.afterReach, hi - length)
+    } else if (hi <= slack && hi >= -a.size - slack && lo < hi) {
+      out.before.push(s)
+      out.beforeReach = Math.max(out.beforeReach, -lo)
+    }
+  }
+  return out
+}
+
+/**
+ * Extents of the dimension line drawn past outside arrows, skipping the
+ * side that runs out to `textPosition`.
+ */
+function outsideTails<Id>(
+  ctx: Context<Id>,
+  a: PdfDimTerminator<Id>,
+  b: PdfDimTerminator<Id>,
+  length: number,
+  u: PdfRecPoint,
+  line: { ids: Id[]; tails: Id[]; segments: PdfDimSegment<Id>[] },
+  textPosition?: PdfRecPoint
+): Array<{ from: PdfRecPoint; to: PdfRecPoint }> {
+  const slack = ctx.tol * 4
+  let before = 0
+  let after = 0
+  for (const s of line.segments) {
+    if (!line.tails.includes(s.id) || line.ids.includes(s.id)) continue
+    const t0 = dot(sub(s.p0, a.tip), u)
+    const t1 = dot(sub(s.p1, a.tip), u)
+    const lo = Math.min(t0, t1)
+    const hi = Math.max(t0, t1)
+    if (hi <= slack) before = Math.max(before, -lo)
+    else if (lo >= length - slack) after = Math.max(after, hi - length)
+  }
+  const textAt = textPosition ? dot(sub(textPosition, a.tip), u) : undefined
+  const out: Array<{ from: PdfRecPoint; to: PdfRecPoint }> = []
+  if (before > slack && !(textAt !== undefined && textAt < 0)) {
+    out.push({
+      from: a.tip,
+      to: { x: a.tip.x - u.x * before, y: a.tip.y - u.y * before }
+    })
+  }
+  if (after > slack && !(textAt !== undefined && textAt > length)) {
+    out.push({
+      from: b.tip,
+      to: { x: b.tip.x + u.x * after, y: b.tip.y + u.y * after }
+    })
+  }
+  return out
+}
+
+/**
+ * The run of dimension line out to `text` when the text sits beyond `a` or
+ * `b` on the dimension line's extension (AutoCAD DIMTMOVE 0).
+ */
+function outsideText<Id>(
+  ctx: Context<Id>,
+  a: PdfDimTerminator<Id>,
+  b: PdfDimTerminator<Id>,
+  length: number,
+  u: PdfRecPoint,
+  text: { center: PdfRecPoint; height: number },
+  own: PdfDimSegment<Id>[]
+): { ids: Id[]; segments: PdfDimSegment<Id>[] } | undefined {
+  const along = dot(sub(text.center, a.tip), u)
+  if (along >= -ctx.tol && along <= length + ctx.tol) return undefined
+  const pad = text.height * 2
+  const runs = dimLineRuns(ctx, a, b, length, u, own)
+  const after = along > length
+  const segments = after ? runs.after : runs.before
+  const reach = after ? runs.afterReach : runs.beforeReach
+  const past = after ? along - length : -along
+  // The run must lead to the text, not stop short of it or run far past.
+  if (segments.length === 0 || past > reach + pad || reach > past + pad * 4) {
+    return undefined
+  }
+  return { ids: segments.map(s => s.id), segments }
+}
+
+/** Longest symbolic label read as a dimension text. */
+const MAX_LABEL_LENGTH = 24
+
+/**
+ * A dimension labelled with a symbol instead of a value ("a", "e mini",
+ * "E maxi" in a weld detail). Such labels are usually stroke text the digit
+ * reader cannot read, and the span is often shorter than its arrows, so the
+ * value path rejects them. Complete geometry (both terminators, the
+ * dimension line and both extension lines) makes the dimension certain; the
+ * label is kept: real text becomes the text override, unread strokes stay
+ * as drawn and the dimension text is suppressed.
+ */
+function labelledLinearHypothesis<Id>(
+  ctx: Context<Id>,
+  a: PdfDimTerminator<Id>,
+  b: PdfDimTerminator<Id>,
+  length: number,
+  u: PdfRecPoint,
+  knownLine?: PdfDimSegment<Id>
+): Hypothesis<Id> | undefined {
+  if (a.kind === 'dot' || b.kind === 'dot') return undefined
+  const n = { x: -u.y, y: u.x }
+  const tail = Math.max(a.size, b.size) * 4
+  const line = dimLinePieces(ctx, a.tip, b.tip, tail)
+  if (knownLine && !line.segments.includes(knownLine)) {
+    line.ids.push(knownLine.id)
+    line.segments.push(knownLine)
+  }
+  const arrowsOut = a.direction !== undefined && dot(a.direction, u) > 0
+  const hasLine = line.ids.length > 0 || (arrowsOut && line.tails.length > 0)
+  if (!hasLine) return undefined
+  // Arrow tails count as runs: the label may sit just past one.
+  const runs = dimLineRuns(
+    ctx,
+    a,
+    b,
+    length,
+    u,
+    line.segments.filter(s => line.ids.includes(s.id))
+  )
+  const before = Math.max(runs.beforeReach, a.size)
+  const after = Math.max(runs.afterReach, b.size)
+  const accept = (t: {
+    center: PdfRecPoint
+    height: number
+    text?: string
+    extraIds?: Id[]
+  }) => {
+    const strokes = (t.extraIds?.length ?? 0) > 0
+    if (t.text !== undefined && !strokes && !isSymbolicLabel(t.text)) {
+      return false
+    }
+    const rel = sub(t.center, a.tip)
+    const along = dot(rel, u)
+    const across = Math.abs(dot(rel, n))
+    return (
+      across <= t.height * 2.5 &&
+      along >= -before - t.height * 3 &&
+      along <= length + after + t.height * 3
+    )
+  }
+  // Look from where the label usually sits: the end of a run out of the
+  // span, else the middle.
+  const near =
+    runs.afterReach > 0 && runs.afterReach >= runs.beforeReach
+      ? { x: b.tip.x + u.x * after, y: b.tip.y + u.y * after }
+      : runs.beforeReach > 0
+        ? { x: a.tip.x - u.x * before, y: a.tip.y - u.y * before }
+        : pdfDimLerp(a.tip, b.tip, 0.5)
+  const pick = findText(
+    ctx,
+    near,
+    Math.max(length + before + after, ctx.refSize * 6),
+    accept,
+    length
+  )
+  if (!pick) return undefined
+  const kept = pick.unread || (pick.text.extraIds?.length ?? 0) > 0
+  const labelIds = pdfDimTextIds(pick.text)
+  const textSide = Math.sign(dot(sub(pick.text.center, a.tip), n)) || 1
+  const consumedSet = {
+    ids: new Set<Id>([...a.ids, ...b.ids, ...labelIds]),
+    segments: new Set(line.segments)
+  }
+  const e1 = extensionAt(ctx, a.tip, n, consumedSet, textSide, a.size, 0)
+  const e2 = extensionAt(ctx, b.tip, n, consumedSet, textSide, b.size, 0)
+  if (!e1 || !e2) return undefined
+  const owned = [e1, e2].filter(e => !e.through)
+  const evidence = new PdfDimEvidence()
+  evidence.add('terminator', 2)
+  evidence.add('dimLine')
+  evidence.add('extension', 2)
+  evidence.add('extensionBeyond', [e1, e2].filter(e => e.beyond > 0).length)
+  evidence.add('unreadText')
+  // The run out to the label belongs to the dimension.
+  const along = dot(sub(pick.text.center, a.tip), u)
+  const outside =
+    along > length ? runs.after : along < 0 ? runs.before : undefined
+  const runIds = outside?.map(s => s.id) ?? []
+  const runEnd =
+    along > length
+      ? {
+          x: b.tip.x + u.x * runs.afterReach,
+          y: b.tip.y + u.y * runs.afterReach
+        }
+      : {
+          x: a.tip.x - u.x * runs.beforeReach,
+          y: a.tip.y - u.y * runs.beforeReach
+        }
+  // Kept strokes need no text room: end the dimension line where the
+  // drawing did. A real label sits where it was drawn.
+  const textPosition =
+    outside && outside.length > 0
+      ? kept
+        ? runEnd
+        : pick.text.center
+      : undefined
+  const text: PdfDimText<Id> = kept ? { ...pick.text, text: ' ' } : pick.text
+  const exclusive = [...a.ids, ...b.ids, ...labelIds, ...line.ids, ...runIds]
+  const rotation = pdfDimLineAngle(u)
+  const axis =
+    Math.abs(Math.sin(2 * rotation)) < Math.sin((0.5 * Math.PI) / 180)
+  // As for valued dimensions: aligned measures origin to origin, so only
+  // origins in line with the dimension line make one.
+  const originsParallel =
+    dist(e1.origin, e2.origin) > ctx.tol &&
+    Math.abs(cross(pdfDimUnit(sub(e2.origin, e1.origin)), u)) <= ctx.sinTol
+  const kind: 'linear' | 'aligned' =
+    !axis && originsParallel ? 'aligned' : 'linear'
+  return {
+    exclusive,
+    evidence,
+    measured: length,
+    unread: true,
+    arrowSize: a.kind === 'tick' ? 0 : a.size,
+    textHeight: pick.text.height,
+    strongEnough: true,
+    span: length,
+    claims: [
+      ...line.segments.filter(s => line.ids.includes(s.id)),
+      ...(arrowsOut ? line.segments : []),
+      ...owned.flatMap(e => [e.segment, ...e.covered]),
+      ...(outside ?? [])
+    ],
+    build: () => ({
+      kind,
+      xLine1: e1.origin,
+      xLine2: e2.origin,
+      dimLinePoint: a.tip,
+      rotation,
+      measured: length,
+      text,
+      arrowSize: a.size,
+      extensionBeyond: Math.max(e1.beyond, e2.beyond),
+      ticks: a.kind === 'tick',
+      arrowsOut,
+      terminator:
+        a.kind === 'tick' ? 'tick' : a.kind === 'open' ? 'open' : 'closed',
+      extensionIds: [e1.id, e2.id],
+      textPosition,
+      outsideTails: arrowsOut
+        ? outsideTails(ctx, a, b, length, u, line, textPosition)
+        : undefined,
+      labelKept: kept,
+      consumed: [
+        ...a.ids,
+        ...b.ids,
+        ...line.ids,
+        ...runIds,
+        ...(arrowsOut ? line.tails : []),
+        ...owned.flatMap(e => [e.id, ...e.covered.map(c => c.id)]),
+        ...(kept ? [] : labelIds)
+      ],
+      score: 0,
+      evidence: []
+    })
+  }
+}
+
+/** Whether `text` reads as a symbolic size label ("a", "e mini"). */
+function isSymbolicLabel(text: string): boolean {
+  const trimmed = text.trim()
+  return (
+    trimmed.length > 0 &&
+    trimmed.length <= MAX_LABEL_LENGTH &&
+    !/[\r\n]/.test(trimmed) &&
+    /[A-Za-zÀ-ʯͰ-ӿ一-鿿]/.test(trimmed) &&
+    parsePdfDimensionValue(trimmed) === undefined
+  )
 }
 
 /** Tick dimensions: two ticks on one dimension line. */
@@ -1034,15 +1468,16 @@ function linearFromTicks<Id>(
         }
         const length = dist(a.tip, b.tip)
         if (length <= ctx.tol * 4) continue
-        const h = linearHypothesis(
-          ctx,
-          a,
-          b,
-          length,
-          pdfDimUnit(sub(b.tip, a.tip)),
-          line
+        out.push(
+          ...linearHypotheses(
+            ctx,
+            a,
+            b,
+            length,
+            pdfDimUnit(sub(b.tip, a.tip)),
+            line
+          )
         )
-        if (h) out.push(h)
       }
     }
   }
@@ -1267,11 +1702,17 @@ function radial<Id>(
             )
           : undefined
       if (farArrow) evidence.add('terminator')
+      // An outside far arrow (pointing in at the circle) trails a short
+      // stub of dimension line behind its base.
+      const farTail = farArrow
+        ? arrowTail(ctx, farArrow, farArrow.size * 4)
+        : []
       const exclusive = [
         ...arrow.ids,
         ...(farArrow?.ids ?? []),
         ...pdfDimTextIds(text),
-        ...leaders.ids
+        ...leaders.ids,
+        ...farTail.map(s => s.id)
       ]
       const measured = kind === 'diameter' ? curve.radius * 2 : curve.radius
       out.push({
@@ -1283,7 +1724,7 @@ function radial<Id>(
         textHeight: text.height,
         strongEnough: !!prefixed,
         ownScale: !!prefixed,
-        claims: leaders.segments,
+        claims: [...leaders.segments, ...farTail],
         span: measured,
         build: () => ({
           kind: kind!,
@@ -1295,12 +1736,55 @@ function radial<Id>(
           text,
           arrowSize: arrow.size,
           jogged: leaders.jogged,
+          outsideLines: [...leaders.segments, ...farTail]
+            .filter(s => {
+              const su = pdfDimUnit(sub(s.p1, s.p0))
+              return (
+                Math.abs(cross(su, ru)) <= ctx.sinTol &&
+                Math.abs(cross(ru, sub(s.p0, curve.center))) <= ctx.tol * 2
+              )
+            })
+            .map(s => ({ from: s.p0, to: s.p1 })),
+
           consumed: exclusive,
           score: 0,
           evidence: []
         })
       })
     }
+  }
+  return out
+}
+
+/**
+ * Dimension-line stub behind an arrow's base, running away from the tip
+ * (no longer than `maxLength`).
+ */
+function arrowTail<Id>(
+  ctx: Context<Id>,
+  arrow: PdfDimTerminator<Id>,
+  maxLength: number
+): PdfDimSegment<Id>[] {
+  const dir = arrow.direction
+  if (!dir) return []
+  const base = {
+    x: arrow.tip.x - dir.x * arrow.size,
+    y: arrow.tip.y - dir.y * arrow.size
+  }
+  const out: PdfDimSegment<Id>[] = []
+  for (const s of ctx.segGrid.near(base, ctx.tol * 2)) {
+    if (ctx.terminatorIds.has(s.id)) continue
+    const near0 = dist(s.p0, base) <= ctx.tol * 2
+    const near1 = dist(s.p1, base) <= ctx.tol * 2
+    if (!near0 && !near1) continue
+    const far = near0 ? s.p1 : s.p0
+    const run = sub(far, base)
+    const length = Math.hypot(run.x, run.y)
+    if (length > maxLength + ctx.tol) continue
+    // Behind the base: opposite to the arrow's direction.
+    if (Math.abs(cross(pdfDimUnit(run), dir)) > ctx.sinTol) continue
+    if (dot(run, dir) >= 0) continue
+    out.push(s)
   }
   return out
 }

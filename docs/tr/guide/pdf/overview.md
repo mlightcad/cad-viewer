@@ -78,7 +78,7 @@ Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yaz
 
 1. Ölçülerin bulunduğu alanı seçin. Değer metni TEXT olabilir veya hâlâ patlatılmış çizgiler (`pdftext` öncesi) olabilir: rakamlar ve CAD sembolleri yerleşik şablonla yerel okunur, LLM kullanılmaz. Çizgiler okunamazsa doğrusal ölçüler ölçülen uzunluğu değer olarak kullanır.
 2. Şunlar tanınır:
-   - **Doğrusal ölçüler**: her açıda, içte veya dışta oklarla, mimari işaretlerle ve zincir ölçüler.
+   - **Doğrusal ölçüler**: her açıda, içte veya dışta oklarla, mimari işaretlerle ve zincir ölçüler. Değer yerine bir simgeyle (`a`, `e mini`) etiketlenmiş ölçüler de kurtarılır: metin etiketi ölçü metni olur, hâlâ çizgi olarak çizilmiş etiket olduğu gibi kalır.
    - **Yarıçap ve çap ölçüleri**: bir daireye değen ok ve `R…` veya `Ø…` metni.
    - **Açısal ölçüler**: iki ucunda ok bulunan bir yay.
 3. **Ölçüleri Kurtar** paneli palette açılır ve çizgilerin yerine ölçü önizlemesi gösterilir. Panel açıkken kaydırıp yakınlaştırabilirsiniz.
