@@ -5,6 +5,7 @@ import {
   type CadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions
 } from '../preview/types.js'
+import { createCadRedraw } from '../redraw/createCadRedraw.js'
 import type { CadSession } from '../session/CadSession.js'
 import { requireDocument } from '../session/documentAccess.js'
 import { runInsideScriptEdit } from '../session/editDepth.js'
@@ -348,6 +349,20 @@ export function createCadScriptHost(
 
   const measure = createCadMeasure(id => snapshotById(session, id))
 
+  const redraw = seal(
+    createCadRedraw({
+      getDatabase: () => requireDocumentRecord(session).database,
+      transaction: (label, fn) => edit.transaction(label, fn),
+      layerNames: () =>
+        requireDocumentRecord(session)
+          .layerStore.getLayers()
+          .map(layer => layer.name),
+      snapshot: id => snapshotById(session, id),
+      tick: hostTick
+    }),
+    Object.keys(CAD_SCRIPT_API_TREE.redraw)
+  )
+
   const file = {
     /**
      * Queues a DXF export of the current drawing.
@@ -457,6 +472,7 @@ export function createCadScriptHost(
     view,
     file,
     measure,
+    redraw,
     edit,
     log(...values: unknown[]): void {
       effects.log.push(values.map(formatLogValue).join(' '))
@@ -534,6 +550,8 @@ export interface CadEditTransaction {
     position: Point2dInput
     text: string
     height?: number
+    rotationDeg?: number
+    width?: number
     layer?: string
   }): string
   drawDimAligned(input: {
@@ -601,6 +619,20 @@ export interface CadEditTransaction {
     styleName?: string
     layer?: string
   }): string
+  /**
+   * Draws a LEADER (arrow at `points[0]`) with an optional MTEXT annotation.
+   * Returns the leader id; the annotation id is also added to created ids.
+   */
+  drawLeader(input: {
+    points: Point2dInput[]
+    text?: string
+    textPosition?: Point2dInput
+    textHeight?: number
+    textLayer?: string
+    arrowHead?: boolean
+    styleName?: string
+    layer?: string
+  }): string
   erase(ids: string[]): number
   setLayer(ids: string[], layer: string): void
   move(ids: string[], dx: number, dy: number): number
@@ -618,6 +650,7 @@ function createTransaction(
     if (!result.success || !result.entityIds?.length) {
       throw new Error(result.error ?? result.message)
     }
+    // Some draws create companions (a leader's MTEXT); track them all.
     effects.createdIds.push(...result.entityIds)
     return result.entityIds[0]
   }
@@ -642,6 +675,7 @@ function createTransaction(
     drawDimAngular: input => created(executor.drawDimAngular(input)),
     drawDimArc: input => created(executor.drawDimArc(input)),
     drawDimOrdinate: input => created(executor.drawDimOrdinate(input)),
+    drawLeader: input => created(executor.drawLeader(input)),
     erase(ids) {
       return session.getDocument()!.entityService.eraseEntities(ids)
     },

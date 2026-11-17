@@ -26,6 +26,7 @@ import {
   MAX_VERIFICATION_ATTEMPTS,
   verifyDrawing
 } from './drawingVerifier'
+import { appendImageRedrawHint } from './imageRedrawHint'
 import { normalizeInlineFileData } from './normalizeInlineFileData'
 import { buildCadAgentSystemPrompt } from './systemPrompt'
 import {
@@ -126,13 +127,15 @@ async function streamAgentRound(options: {
     systemPrompt,
     onContextUsage
   } = options
-  const modelMessages = normalizeInlineFileData(
-    await convertToModelMessages(workingMessages, {
-      tools: agent.tools,
-      // Incomplete tool calls (e.g. input-streaming cut off) must not poison the
-      // next round's prompt — especially after a huge script arg failed mid-stream.
-      ignoreIncompleteToolCalls: true
-    })
+  const modelMessages = appendImageRedrawHint(
+    normalizeInlineFileData(
+      await convertToModelMessages(workingMessages, {
+        tools: agent.tools,
+        // Incomplete tool calls (e.g. input-streaming cut off) must not poison the
+        // next round's prompt — especially after a huge script arg failed mid-stream.
+        ignoreIncompleteToolCalls: true
+      })
+    )
   )
   const tools = toolDefsForContextUsage(agent.tools)
   const reportContextUsage = (

@@ -113,6 +113,9 @@ export const agentEn = {
   taskFromReferenceTitle: 'Draw from reference image',
   taskFromReferencePrompt:
     'I will attach a reference image (sketch, screenshot, or plan). Analyze it carefully, then reconstruct the intended 2D CAD geometry with correct proportions, layers, and dimensions where visible. Ask only if a critical size is ambiguous.',
+  taskRedrawFromImageTitle: 'Redraw image as editable CAD',
+  taskRedrawFromImagePrompt:
+    'I will attach an image of a drawing (scan, photo, or screenshot). Redraw it as editable CAD with cad.redraw: choose a profile (general unless the image lacks units or scale), calibrate each view from readable dimensions, and tag every value as known, scaled, inferred, or unreadable. Reproduce geometry, dimensions, text, leaders, and tables on standard layers. Do not assume millimeters. Finish with the status (pass / pass_with_warnings / needs_review / blocked / fail), the calibration used, and any unresolved assumptions.',
   taskDraftingReviewTitle: 'Drafting quality review',
   taskDraftingReviewPrompt:
     'Review the open drawing for drafting quality issues: inconsistent text heights, dimensions that may not match geometry, overlapping annotations, entities on layer 0 that should be elsewhere, and incomplete views. List findings by severity; fix only clear, safe issues unless I ask otherwise.',

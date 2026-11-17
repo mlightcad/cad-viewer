@@ -24,6 +24,7 @@ export type AgentTaskId =
   | 'drawDimensionedRect'
   | 'createTitleBlock'
   | 'fromReference'
+  | 'redrawFromImage'
   | 'draftingReview'
   | 'layerStandards'
 
@@ -117,6 +118,12 @@ export const AGENT_TASKS: readonly AgentTaskDef[] = [
     category: 'create',
     titleKey: 'taskFromReferenceTitle',
     promptKey: 'taskFromReferencePrompt'
+  },
+  {
+    id: 'redrawFromImage',
+    category: 'create',
+    titleKey: 'taskRedrawFromImageTitle',
+    promptKey: 'taskRedrawFromImagePrompt'
   },
   {
     id: 'draftingReview',

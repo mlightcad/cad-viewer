@@ -1,4 +1,7 @@
-import { CAD_SCRIPT_API_SUMMARY } from '@mlightcad/cad-script-core/script-api'
+import {
+  CAD_REDRAW_SPEC_SUMMARY,
+  CAD_SCRIPT_API_SUMMARY
+} from '@mlightcad/cad-script-core/script-api'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
@@ -140,7 +143,8 @@ export function registerCadMcpTools(
   register(
     'execute_cad_script',
     {
-      description: CAD_SCRIPT_API_SUMMARY,
+      // MCP clients get no agent prompt, so the redraw spec rides along here.
+      description: `${CAD_SCRIPT_API_SUMMARY}\n\n${CAD_REDRAW_SPEC_SUMMARY}`,
       inputSchema: executeCadScriptInputSchema
     },
     async input => {

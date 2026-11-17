@@ -54,6 +54,7 @@ type TypeName =
   | 'view'
   | 'file'
   | 'measure'
+  | 'redraw'
   | 'edit'
   | 'entity'
   | 'entityArray'
@@ -101,6 +102,7 @@ const TYPE_LABEL: Record<TypeName, string> = {
   view: 'View',
   file: 'File',
   measure: 'Measure',
+  redraw: 'Redraw',
   edit: 'Edit',
   entity: 'Entity',
   entityArray: 'Entity[]',
@@ -149,7 +151,7 @@ function identifierCompletions(
       label: 'cad',
       type: 'namespace',
       detail: 'script host',
-      info: 'The only argument. Drawing, entities, tables, blocks, selection, view, measure, edit, and log.',
+      info: 'The only argument. Drawing, entities, tables, blocks, selection, view, measure, redraw, edit, and log.',
       boost: 2
     })
   }
@@ -303,6 +305,8 @@ function membersOf(type: TypeName): MemberSpec[] {
       return FILE_MEMBERS
     case 'measure':
       return MEASURE_MEMBERS
+    case 'redraw':
+      return REDRAW_MEMBERS
     case 'edit':
       return EDIT_MEMBERS
     case 'entity':
@@ -967,6 +971,13 @@ const CAD_MEMBERS: MemberSpec[] = [
     'namespace'
   ),
   prop(
+    'redraw',
+    'Redraw',
+    'Validate, draw, and inspect an evidence-tracked image redraw spec.',
+    'redraw',
+    'namespace'
+  ),
+  prop(
     'edit',
     'Edit',
     'Change the drawing inside one undo group.',
@@ -1240,6 +1251,30 @@ const MEASURE_MEMBERS: MemberSpec[] = [
   )
 ]
 
+const REDRAW_MEMBERS: MemberSpec[] = [
+  method(
+    'validate',
+    '(spec, { profile? }?) => { status, errors, warnings, evidence, calibrations }',
+    'Checks a redraw spec without drawing: fields, ids, units, calibration, constraints.',
+    'unknown',
+    'validate(${spec})'
+  ),
+  method(
+    'draw',
+    '(spec, { profile?, omit?, offset?, allowBlocked? }?) => { status, idMap, checks, ... }',
+    'Draws a validated spec in one undo group on standard layers.',
+    'unknown',
+    'draw(${spec})'
+  ),
+  method(
+    'inspect',
+    '(spec, idMap, { profile? }?) => { status, checks, dimensionChecks, ... }',
+    'Re-runs checks and dimension comparisons on drawn entities.',
+    'unknown',
+    'inspect(${spec}, ${idMap})'
+  )
+]
+
 const EDIT_MEMBERS: MemberSpec[] = [
   method(
     'transaction',
@@ -1490,10 +1525,17 @@ const TX_DOCS: Record<string, MemberSpec> = {
   ),
   drawText: method(
     'drawText',
-    '({ position, text, height?, layer? }) => id',
+    '({ position, text, height?, rotationDeg?, width?, layer? }) => id',
     'Draws text and returns the new entity id.',
     'string',
     'drawText({ position: { x: ${x}, y: ${y} }, text: ${text}, height: ${height} })'
+  ),
+  drawLeader: method(
+    'drawLeader',
+    '({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? }) => id',
+    'Draws a leader with the arrow at points[0] and optional text; returns the leader id.',
+    'string',
+    'drawLeader({ points: [{ x: ${x1}, y: ${y1} }, { x: ${x2}, y: ${y2} }], text: ${text} })'
   ),
   erase: method(
     'erase',

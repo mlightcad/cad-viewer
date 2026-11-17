@@ -337,6 +337,38 @@ return {
 }
 ```
 
+## cad.redraw
+
+参照画像 (スキャン、写真、スクリーンショット) から証拠を追跡しながら図面を再構築します。スクリプトは通常の spec オブジェクトを組み立て、`cad.redraw` がそれを検証し、1 つの元に戻すグループ内で標準の画層 (OBJECT、HIDDEN、CENTER、DIM、TEXT、TABLE、BORDER、CONSTRUCTION、ASSUMPTION) に作図して結果を検査します。spec の完全なリファレンスは `CAD_REDRAW_SPEC_SUMMARY` としてエクスポートされ、エージェントのプロンプトに組み込まれています。
+
+| メソッド | 説明 |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | 作図せずにフィールド、ID、単位、校正、拘束を検査 → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec を作図 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | チェックを再実行し、寸法の `value` の読み取り値と作図した寸法の計測値を比較 |
+
+- プロファイル: `general` (既定)、`strict-dimensioned`、`hybrid`、`visual-trace`、`geometry-only` (文字、寸法、引出線、表の文字を省略)。
+- 値ごとの証拠: `known`、`scaled`、`inferred`、`unreadable`。単位の既定は `unitless` で、ミリメートルを前提にすることはありません。
+- 図形は既定で CAD 座標を使います。`coords: 'source'` の場合は画像のピクセル座標 (左上が原点、y は下向き) で、校正 (`dimension-anchor`、`similarity`、`affine`、`homography`、`sheet-scale`) により変換されます。
+- 状態: `pass`、`pass_with_warnings`、`needs_review` (寸法または拘束の矛盾)、`blocked` (厳密プロファイルで証拠不足)、`fail` (spec が無効で何も作図されません)。
+- 表は AcDbTable ではなく線分と文字で作図されます。
+- 作図時に `units` から `INSUNITS` を設定し、文字と寸法文字には CJK 対応の `REDRAW_TEXT` スタイル (`simsun` + `hztxt.shx`) を使います。作成できない寸法は線分と文字 (半径/直径は引出線) で作図して警告を出し、`fallbacks` にその数を記録します。
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
 ## cad.edit.transaction
 
 編集操作を実行し、すべての変更が 1 つのアンドゥグループになります。図面は編集可能な状態（読み取り専用モードでない）である必要があります。
@@ -365,7 +397,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | 新しいエンティティ ID |
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 新しいエンティティ ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 新しいエンティティ ID |
-| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | 新しいエンティティ ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | 新しいエンティティ ID |
 | `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 点 `{x,y}`                       | 新しいエンティティ ID |
 | `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 省略時は配置から水平/垂直 | 新しいエンティティ ID |
 | `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 中心+半径 または弦点                 | 新しいエンティティ ID |
@@ -373,6 +405,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3 点角度                         | 新しいエンティティ ID |
 | `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 弧長                             | 新しいエンティティ ID |
 | `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 座標寸法                         | 新しいエンティティ ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | 矢印は `points[0]` | 引出線 ID (注釈のマルチテキスト ID も作成 ID に含まれます) |
 
 寸法は `drawDim*` で作成してください。線・矢印・文字で寸法を模倣しないでください。既定は図面の `$DIMSTYLE` で、上書きする場合は `cad.tables.dimStyleTable` の `styleName` を渡します。
 

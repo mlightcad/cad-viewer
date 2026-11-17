@@ -337,6 +337,38 @@ return {
 }
 ```
 
+## cad.redraw
+
+إعادة بناء رسم من صورة مرجعية (مسح ضوئي أو صورة فوتوغرافية أو لقطة شاشة) مع تتبّع الأدلة. يبني السكربت كائن spec عاديًا؛ ويتحقق `cad.redraw` منه ويرسمه ضمن مجموعة تراجع واحدة على الطبقات القياسية (OBJECT وHIDDEN وCENTER وDIM وTEXT وTABLE وBORDER وCONSTRUCTION وASSUMPTION) ثم يفحص النتيجة. يُصدَّر المرجع الكامل للـ spec باسم `CAD_REDRAW_SPEC_SUMMARY` وهو مضمّن في موجّه الوكيل.
+
+| الطريقة | الوصف |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | يتحقق من الحقول والمعرّفات والوحدات والمعايرة والقيود دون رسم ← `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | يرسم الـ spec ← `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | يعيد تشغيل الفحوصات ويقارن قراءات الأبعاد `value` بما تقيسه الأبعاد المرسومة |
+
+- ملفات التعريف: `general` (الافتراضي) و`strict-dimensioned` و`hybrid` و`visual-trace` و`geometry-only` (يتخطى النصوص والأبعاد وخطوط الإشارة ونصوص الجداول).
+- الدليل لكل قيمة: `known` أو `scaled` أو `inferred` أو `unreadable`. الوحدة الافتراضية `unitless`؛ ولا تُفترض المليمترات أبدًا.
+- تستخدم الكيانات إحداثيات CAD افتراضيًا. ومع `coords: 'source'` تكون بكسلات الصورة (الأصل أعلى اليسار، وy للأسفل) وتُحوَّل بمعايرة (`dimension-anchor` أو `similarity` أو `affine` أو `homography` أو `sheet-scale`).
+- الحالة: `pass` و`pass_with_warnings` و`needs_review` (تعارض في الأبعاد أو القيود) و`blocked` (نقص الأدلة في ملف التعريف الصارم) و`fail` (spec غير صالح؛ لا يُرسم شيء).
+- تُرسم الجداول كخطوط ونصوص، وليس كـ AcDbTable.
+- يضبط الرسم `INSUNITS` وفقًا لـ `units`، ويستخدم للنصوص ونصوص الأبعاد النمط `REDRAW_TEXT` الداعم للغات CJK (`simsun` + `hztxt.shx`)، ويرسم البُعد الذي يتعذر إنشاؤه كخطوط ونص (ونصف القطر/القطر كخط إشارة) مع تحذير؛ ويعدّها `fallbacks`.
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
 ## cad.edit.transaction
 
 تنفّذ عمليات التحرير، وتُعامل جميع التعديلات كمجموعة تراجع واحدة. يجب أن يكون الرسم في حالة قابلة للتحرير (وليس في وضع القراءة فقط).
@@ -365,7 +397,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | معرّف الكيان الجديد |
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | معرّف الكيان الجديد |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | معرّف الكيان الجديد |
-| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | معرّف الكيان الجديد |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | معرّف الكيان الجديد |
 | `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | نقاط `{x,y}`                     | معرّف الكيان الجديد |
 | `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | بدون `rotationDeg` → أفقي/عمودي حسب الموضع | معرّف الكيان الجديد |
 | `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | مركز+نصف قطر أو وتر              | معرّف الكيان الجديد |
@@ -373,6 +405,7 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | زاوية بثلاث نقاط                 | معرّف الكيان الجديد |
 | `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | طول قوس                          | معرّف الكيان الجديد |
 | `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | بُعد إحداثي                      | معرّف الكيان الجديد |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | السهم عند `points[0]` | معرّف خط الإشارة (معرّف نص التعليق المتعدد الأسطر ضمن المعرّفات المنشأة أيضًا) |
 
 استخدم `drawDim*` لأبعاد حقيقية. لا تقلّد الأبعاد بخطوط وأسهم ونص. الافتراضي هو `$DIMSTYLE` للرسم؛ مرّر `styleName` من `cad.tables.dimStyleTable` للتجاوز.
 

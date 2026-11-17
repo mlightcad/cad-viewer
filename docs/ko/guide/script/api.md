@@ -337,6 +337,38 @@ return {
 }
 ```
 
+## cad.redraw
+
+참조 이미지(스캔, 사진, 스크린샷)에서 근거를 추적하며 도면을 재구성합니다. 스크립트는 일반 spec 객체를 만들고, `cad.redraw`는 이를 검증한 뒤 하나의 실행 취소 그룹 안에서 표준 도면층(OBJECT, HIDDEN, CENTER, DIM, TEXT, TABLE, BORDER, CONSTRUCTION, ASSUMPTION)에 그리고 결과를 검사합니다. 전체 spec 참조는 `CAD_REDRAW_SPEC_SUMMARY`로 내보내지며 에이전트 프롬프트에 포함되어 있습니다.
+
+| 메서드 | 설명 |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | 그리지 않고 필드, ID, 단위, 보정, 구속 조건을 검사 → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec을 그림 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | 검사를 다시 실행하고 치수 `value` 판독값을 그려진 치수의 측정값과 비교 |
+
+- 프로파일: `general`(기본값), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only`(문자, 치수, 지시선, 표 문자 생략).
+- 값별 근거: `known`, `scaled`, `inferred`, `unreadable`. 단위의 기본값은 `unitless`이며 밀리미터를 가정하지 않습니다.
+- 객체는 기본적으로 CAD 좌표를 사용합니다. `coords: 'source'`이면 이미지 픽셀 좌표(왼쪽 위 원점, y 아래 방향)이며 보정(`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`)으로 변환됩니다.
+- 상태: `pass`, `pass_with_warnings`, `needs_review`(치수 또는 구속 조건 충돌), `blocked`(엄격 프로파일의 근거 부족), `fail`(잘못된 spec, 아무것도 그리지 않음).
+- 표는 AcDbTable이 아니라 선과 문자로 그려집니다.
+- 그릴 때 `units`에 따라 `INSUNITS`를 설정하고, 문자와 치수 문자에는 CJK를 지원하는 `REDRAW_TEXT` 스타일(`simsun` + `hztxt.shx`)을 사용합니다. 만들 수 없는 치수는 선과 문자(반지름/지름은 지시선)로 그리고 경고를 표시하며, `fallbacks`에 그 개수를 기록합니다.
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
 ## cad.edit.transaction
 
 편집 작업을 실행하며, 모든 수정 사항은 하나의 실행 취소 그룹으로 처리됩니다. 도면은 편집 가능한 상태여야 합니다(읽기 전용 모드가 아님).
@@ -365,7 +397,7 @@ cad.edit.transaction('일괄 수정', tx => {
 | `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | 새 엔티티 ID |
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 새 엔티티 ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 새 엔티티 ID |
-| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | 새 엔티티 ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | 새 엔티티 ID |
 | `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 점 `{x,y}`                       | 새 엔티티 ID |
 | `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 생략 시 배치로 수평/수직 | 새 엔티티 ID |
 | `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 중심+반지름 또는 현 점               | 새 엔티티 ID |
@@ -373,6 +405,7 @@ cad.edit.transaction('일괄 수정', tx => {
 | `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3점 각도                         | 새 엔티티 ID |
 | `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 호 길이                          | 새 엔티티 ID |
 | `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 좌표 치수                        | 새 엔티티 ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | 화살표는 `points[0]` | 지시선 ID (주석 여러 줄 문자 ID도 생성 ID에 포함) |
 
 치수는 `drawDim*`로 만드세요. 선·화살표·문자로 치수를 흉내 내지 마세요. 기본값은 도면 `$DIMSTYLE`이며, 재정의할 때는 `cad.tables.dimStyleTable`의 `styleName`을 넘깁니다.
 
