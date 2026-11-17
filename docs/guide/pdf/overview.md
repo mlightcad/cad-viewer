@@ -27,13 +27,14 @@ The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` 
    - **Keep PDF appearance**: keeps the PDF exactly as it looks. Every path becomes a line or a polyline (curves are flattened) and every text run its own text; nothing is merged, de-duplicated or turned into blocks. Use it when recovery changes how a page looks.
 5. Click **OK**. The dialog remembers the location, scale and mode for the next `pdfimport`.
 
-`-pdfimport` imports without the dialog: after the file picker it asks for the page (multi-page files only), then the insertion point with **Scale** and **Mode** options on the command line. Enter accepts the origin.
+`-pdfimport` imports without the dialog: after the file picker it asks for the page (multi-page files only), then the insertion point with **Scale**, **Mode** and (in Recover) **Text** options on the command line. Enter accepts the origin.
 
 In **Recover drawing** mode, the following is rebuilt automatically:
 
 - **Curves**: Bézier circles, arcs and ellipses become circles, arcs and ellipses. Outlines mixing lines and arcs become polylines with arc segments. Arcs that the producer already broke into short lines are refitted. Free-form curves become splines.
 - **Blocks**: content drawn several times from the same PDF form becomes one block (`PDF_FORM_n`) with a reference per copy, including rotated and mirrored ones.
 - **Styles**: stroke widths become line weights, dashed lines get a `PDF_DASH_*` linetype, and text gets a `PDF_<font>` text style. Fragmented text runs of one line are joined.
+- **Exploded text**: SHX / outline stroke text that the glyph dictionary (and optionally the host OCR service registered in `AcApTextRecognitionService`) can read becomes text objects. Choose **Off**, **Local dictionary** or **OCR service** in the import dialog; unread strokes stay for `pdftext`. Recognition always clusters strokes and, for OCR, re-rasterizes each line at a fixed text height — the whole page is never sent as one image.
 - **Clean-up**: exact duplicate outlines are dropped.
 
 Filled areas (coloured panels, filled logos and text outlines) import as solid hatches in their fill colour, drawn in the same order as on the page. Integrations can set the `fillHatches` option to `false` to import them as outlines only.

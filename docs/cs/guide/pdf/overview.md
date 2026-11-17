@@ -27,13 +27,14 @@ Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `
    - **Zachovat vzhled PDF**: zachová PDF přesně tak, jak vypadá. Každá cesta se stane úsečkou nebo křivkou (oblouky se rozloží) a každý textový úsek samostatným textem; nic se neslučuje, neodstraňují se duplicity ani nevznikají bloky. Použijte, když obnova změní vzhled stránky.
 5. Klikněte na **OK**. Umístění, měřítko a režim se zapamatují pro příští `pdfimport`.
 
-`-pdfimport` importuje bez dialogu: po výběru souboru se na příkazovém řádku zeptá na stránku (jen u vícestránkových souborů) a poté na bod vložení s možnostmi **Měřítko** a **Režim**. Enter přijme počátek.
+`-pdfimport` importuje bez dialogu: po výběru souboru se na příkazovém řádku zeptá na stránku (jen u vícestránkových souborů) a poté na bod vložení s možnostmi **Měřítko**, **Režim** a (v režimu Obnovit) **Text**. Enter přijme počátek.
 
 V režimu **Obnovit výkres** se automaticky obnoví:
 
 - **Křivky**: Bézierovy kružnice, oblouky a elipsy se stanou kružnicemi, oblouky a elipsami. Obrysy kombinující úsečky a oblouky se stanou křivkami s obloukovými segmenty. Oblouky, které tvůrce PDF už rozdělil na krátké úsečky, se znovu proloží. Volné křivky se stanou spliny.
 - **Bloky**: obsah nakreslený několikrát ze stejného formuláře PDF se stane jedním blokem (`PDF_FORM_n`) s referencí pro každou kopii, včetně otočených a zrcadlených.
 - **Styly**: šířky tahů se stanou tloušťkami čar, přerušované čáry dostanou typ čáry `PDF_DASH_*` a text dostane textový styl `PDF_<písmo>`. Rozdělené úseky textu na jednom řádku se spojí.
+- **Rozložený text**: SHX / obrysový text ze tahů, který dokáže přečíst slovník znaků (a volitelně OCR registrované v `AcApTextRecognitionService`), se stane textovými objekty. V dialogu zvolte **Vypnuto**, **Místní slovník znaků** nebo **Služba OCR**; nepřečtené tahy zůstanou pro `pdftext`. Rozpoznávání vždy seskupí tahy do řádků a u OCR každý řádek znovu vyrastrovat při pevné výšce textu — celá stránka se nikdy neposílá jako jeden obrázek.
 - **Úklid**: přesně duplicitní obrysy se odstraní.
 
 Vyplněné oblasti (barevné plochy, vyplněná loga a obrysy textu) se importují jako plné šrafy v barvě výplně, ve stejném pořadí vykreslení jako na stránce. Integrace mohou nastavit volbu `fillHatches` na `false` a importovat je jen jako obrysy.

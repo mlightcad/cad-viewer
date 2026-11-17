@@ -1988,11 +1988,16 @@ export default {
   },
   pdfimport: {
     pageNumber: 'Zadejte číslo stránky (1-{count})',
-    insertionPoint: 'Určete bod vložení (měřítko {scale}, režim {mode}) nebo',
+    insertionPoint:
+      'Určete bod vložení (měřítko {scale}, režim {mode}, text {text}) nebo',
     modePrompt: 'Vyberte způsob importu',
     modeRecover: 'obnovit výkres',
     modeVisual: 'zachovat vzhled PDF',
     scaleFactor: 'Zadejte měřítko',
+    textPrompt: 'Vyberte rozpoznávání rozloženého textu',
+    textOff: 'vypnuto',
+    textLocal: 'místní slovník znaků',
+    textOcr: 'služba OCR',
     keywords: {
       scale: {
         display: 'Měřítko(S)',
@@ -2004,6 +2009,11 @@ export default {
         local: 'Režim',
         global: 'Mode'
       },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
       recover: {
         display: 'Obnovit(R)',
         local: 'Obnovit',
@@ -2013,6 +2023,21 @@ export default {
         display: 'Vzhled(V)',
         local: 'Vzhled',
         global: 'Visual'
+      },
+      off: {
+        display: 'Vypnuto(O)',
+        local: 'Vypnuto',
+        global: 'Off'
+      },
+      local: {
+        display: 'Místní(L)',
+        local: 'Místní',
+        global: 'Local'
+      },
+      ocr: {
+        display: 'Ocr(C)',
+        local: 'Ocr',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: 'Zadejte bod vložení',
@@ -2044,6 +2069,12 @@ export default {
         'Importuje cesty a text přesně tak, jak jsou nakresleny v PDF',
       recognizeDimensions: 'Rozpoznat kóty',
       recognizeDimensionsHint: 'Převede rozložené kóty zpět na objekty kót',
+      recognizeExplodedText: 'Rozpoznat rozložený text',
+      recognizeExplodedTextHint:
+        'Převede SHX / obrysový text ze tahů zpět na textové objekty (místní slovník nebo OCR)',
+      recognizeExplodedTextOff: 'Vypnuto',
+      recognizeExplodedTextLocal: 'Místní slovník znaků',
+      recognizeExplodedTextOcr: 'Služba OCR',
       ok: 'OK',
       cancel: 'Storno'
     }

@@ -33,6 +33,7 @@ export {
   acapPdfSetImportResourceUrls
 } from './AcApPdfImportResources.js'
 export {
+  type AcApPdfExplodedTextMode,
   type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
@@ -55,6 +56,20 @@ export {
   type AcApPdfImportDimensions,
   acapPdfRecognizeImportDimensions
 } from './pdfImportDimensions.js'
+export {
+  type AcApPdfExplodedTextLine,
+  type AcApPdfRecognizeExplodedTextOptions,
+  acapPdfOcrErrorMessage,
+  acapPdfOcrExplodedTextLines,
+  acapPdfRecognizeExplodedTextLines,
+  acapPdfRenderTextLineImage,
+  PDF_OCR_IMAGE_TEXT_HEIGHT
+} from './pdfExplodedTextRecognition.js'
+export {
+  type AcApPdfImportExplodedText,
+  type AcApPdfRecognizeImportExplodedTextOptions,
+  acapPdfRecognizeImportExplodedText
+} from './pdfImportExplodedText.js'
 export {
   acapPdfApplyColor,
   acapPdfBuildPageEntities,
@@ -98,11 +113,14 @@ export {
 } from './recognition/pdfCurveRecognition.js'
 export {
   clusterPdfTextStrokes,
+  clusterPdfTextStrokesMultiScale,
   estimatePdfTextHeight,
+  isImplausiblePdfTextLine,
   type PdfTextClusterOptions,
   type PdfTextClusterResult,
   type PdfTextGlyph,
   type PdfTextLineCandidate,
+  type PdfTextMultiScaleOptions,
   type PdfTextStroke
 } from './recognition/pdfGlyphClustering.js'
 export {

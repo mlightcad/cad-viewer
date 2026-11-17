@@ -101,6 +101,8 @@ const SAME_AS_ENGLISH: Partial<Record<Locale, Set<string>>> = {
     'MText',
     'Spline',
     'Spline(S)',
+    'Ocr',
+    'Ocr(C)',
     'Delta  \\U+0394',
     'Ohm  \\U+2126',
     'Omega  \\U+03A9',
@@ -129,6 +131,8 @@ const SAME_AS_ENGLISH: Partial<Record<Locale, Set<string>>> = {
     'Reference(R)',
     'Symbol:',
     'Text(T)',
+    'Ocr',
+    'Ocr(C)',
     'Instance {index}/{count} ({state})'
   ])
 }

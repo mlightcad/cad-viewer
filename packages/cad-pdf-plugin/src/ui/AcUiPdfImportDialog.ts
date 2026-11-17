@@ -1,7 +1,10 @@
 import { AcUiDialog } from '@mlightcad/cad-simple-viewer'
 
 import { acapPdfT } from '../acapPdfI18n.js'
-import type { AcApPdfImportMode } from '../AcApPdfImportOptions.js'
+import type {
+  AcApPdfExplodedTextMode,
+  AcApPdfImportMode
+} from '../AcApPdfImportOptions.js'
 import { PDF_PT_TO_MM } from '../pdfVectorImport.js'
 
 const STYLE_ID = 'ml-pdf-import-dialog-styles'
@@ -53,6 +56,11 @@ export interface AcUiPdfImportDialogValues {
   insertionPoint: { x: number; y: number }
   /** Rebuild exploded dimensions (recover mode only). */
   recognizeDimensions: boolean
+  /**
+   * Recover exploded text strokes (recover mode only).
+   * `false` / `'local'` / `'ocr'`.
+   */
+  recognizeExplodedText: AcApPdfExplodedTextMode
 }
 
 /** Options for {@link AcUiPdfImportDialog.open}. */
@@ -109,6 +117,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
   private readonly scaleInput: HTMLInputElement
   private readonly modeInputs: Record<AcApPdfImportMode, HTMLInputElement>
   private readonly dimensionsInput: HTMLInputElement
+  private readonly explodedTextSelect: HTMLSelectElement
   private readonly okButton: HTMLButtonElement
 
   private constructor(options: AcUiPdfImportDialogOptions) {
@@ -130,7 +139,10 @@ export class AcUiPdfImportDialog extends AcUiDialog {
         initial.scale !== undefined && initial.scale > 0 ? initial.scale : 1,
       specifyOnScreen: initial.specifyOnScreen ?? false,
       insertionPoint: initial.insertionPoint ?? { x: 0, y: 0 },
-      recognizeDimensions: initial.recognizeDimensions ?? true
+      recognizeDimensions: initial.recognizeDimensions ?? true,
+      recognizeExplodedText: normalizeExplodedTextMode(
+        initial.recognizeExplodedText
+      )
     }
 
     // File name + Browse.
@@ -200,7 +212,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       recover: radio(radioName, this.values.mode === 'recover'),
       visual: radio(radioName, this.values.mode === 'visual')
     }
-    // Dimension recovery belongs to the recover mode.
+    // Dimension / exploded-text recovery belong to the recover mode.
     this.dimensionsInput = h('input')
     this.dimensionsInput.type = 'checkbox'
     this.dimensionsInput.checked = this.values.recognizeDimensions
@@ -210,12 +222,34 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       this.dimensionsInput,
       h('span', undefined, t('recognizeDimensions'))
     )
+    this.explodedTextSelect = h('select', 'ml-pdf-import-input')
+    this.explodedTextSelect.title = t('recognizeExplodedTextHint')
+    for (const [value, label] of [
+      ['off', t('recognizeExplodedTextOff')],
+      ['local', t('recognizeExplodedTextLocal')],
+      ['ocr', t('recognizeExplodedTextOcr')]
+    ] as const) {
+      const option = h('option')
+      option.value = value
+      option.textContent = label
+      this.explodedTextSelect.append(option)
+    }
+    this.explodedTextSelect.value = explodedTextSelectValue(
+      this.values.recognizeExplodedText
+    )
+    const explodedText = h('label', 'ml-pdf-import-field ml-pdf-import-suboption')
+    explodedText.title = t('recognizeExplodedTextHint')
+    explodedText.append(
+      h('span', 'ml-pdf-import-label', t('recognizeExplodedText')),
+      this.explodedTextSelect
+    )
     for (const input of Object.values(this.modeInputs)) {
       input.addEventListener('change', () => this.updateState())
     }
     mode.append(
       radioOption(this.modeInputs.recover, t('modeRecover'), t('recoverHint')),
       dimensions,
+      explodedText,
       radioOption(this.modeInputs.visual, t('modeVisual'), t('visualHint'))
     )
 
@@ -481,7 +515,9 @@ export class AcUiPdfImportDialog extends AcUiDialog {
     this.yInput.classList.toggle('is-invalid', !yValid)
     this.scaleInput.setAttribute('aria-invalid', String(!scaleValid))
     this.okButton.disabled = !(scaleValid && xValid && yValid)
-    this.dimensionsInput.disabled = this.modeInputs.visual.checked
+    const visual = this.modeInputs.visual.checked
+    this.dimensionsInput.disabled = visual
+    this.explodedTextSelect.disabled = visual
   }
 
   private confirm() {
@@ -493,6 +529,9 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       pageNumber: this.values.pageNumber,
       mode: this.modeInputs.visual.checked ? 'visual' : 'recover',
       recognizeDimensions: this.dimensionsInput.checked,
+      recognizeExplodedText: parseExplodedTextSelect(
+        this.explodedTextSelect.value
+      ),
       scale: parseNumber(this.scaleInput.value, true) ?? 1,
       specifyOnScreen: onScreen,
       insertionPoint: onScreen
@@ -504,6 +543,22 @@ export class AcUiPdfImportDialog extends AcUiDialog {
     }
     this.close()
   }
+}
+
+function normalizeExplodedTextMode(
+  value: AcApPdfExplodedTextMode | undefined
+): AcApPdfExplodedTextMode {
+  if (value === false || value === 'local' || value === 'ocr') return value
+  return 'local'
+}
+
+function explodedTextSelectValue(mode: AcApPdfExplodedTextMode): string {
+  return mode === false ? 'off' : mode
+}
+
+function parseExplodedTextSelect(value: string): AcApPdfExplodedTextMode {
+  if (value === 'local' || value === 'ocr') return value
+  return false
 }
 
 let nextId = 0
@@ -808,7 +863,8 @@ function ensureStyles() {
 .ml-pdf-import-dialog .ml-pdf-import-suboption {
   margin-left: 22px;
 }
-.ml-pdf-import-dialog .ml-pdf-import-check:has(input:disabled) {
+.ml-pdf-import-dialog .ml-pdf-import-check:has(input:disabled),
+.ml-pdf-import-dialog .ml-pdf-import-field:has(select:disabled) {
   opacity: 0.5;
   cursor: default;
 }

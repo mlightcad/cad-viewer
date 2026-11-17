@@ -16,6 +16,16 @@ import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecogniti
 export type AcApPdfImportMode = 'recover' | 'visual'
 
 /**
+ * How `pdfimport` recovers exploded text (SHX line text / outlined fonts).
+ *
+ * - `false` — leave strokes as imported; use `pdftext` later.
+ * - `'local'` — glyph dictionary only (no OCR / LLM).
+ * - `'ocr'` — dictionary first, then {@link AcApTextRecognitionService} for
+ *   unread lines (whatever recognizer the host registered).
+ */
+export type AcApPdfExplodedTextMode = false | 'local' | 'ocr'
+
+/**
  * Options for {@link AcApPdfImportConvertor.convert}.
  *
  * Every field is optional. Omitted fields fall back to the defaults of the
@@ -26,8 +36,8 @@ export interface AcApPdfImportOptions {
   /**
    * Import mode; it sets the defaults of the reconstruction fields below
    * (`visual` turns off `recognizeCurves`, `removeDuplicates`,
-   * `mergeTextRuns`, `formBlocks`, `textStyles`, `recognizeHatches` and
-   * `recognizeDimensions`). Explicit fields still
+   * `mergeTextRuns`, `formBlocks`, `textStyles`, `recognizeHatches`,
+   * `recognizeDimensions` and `recognizeExplodedText`). Explicit fields still
    * win. Default `'recover'`.
    */
   mode?: AcApPdfImportMode
@@ -98,6 +108,15 @@ export interface AcApPdfImportOptions {
   /** Tuning for dimension recognition. */
   dimensionRecognition?: Omit<PdfDimensionOptions, 'profile' | 'debug'>
   /**
+   * Turn exploded text strokes (SHX line text, outlined fonts) into
+   * `AcDbText` when they can be read. `'local'` uses the glyph dictionary
+   * only; `'ocr'` also calls the host's
+   * {@link AcApTextRecognitionService} recognizer for unread lines.
+   * Unread strokes stay as imported for `pdftext`. Default `'local'` in
+   * `recover` mode, `false` in `visual` mode.
+   */
+  recognizeExplodedText?: AcApPdfExplodedTextMode
+  /**
    * Give imported text a `PDF_<font family>` text style using the PDF font's
    * family. Default `true`.
    */
@@ -158,6 +177,14 @@ export function resolveAcApPdfImportOptions(
     hatchRecognition: options?.hatchRecognition,
     recognizeDimensions: options?.recognizeDimensions ?? recover,
     dimensionRecognition: options?.dimensionRecognition,
+    recognizeExplodedText:
+      options?.recognizeExplodedText === false ||
+      options?.recognizeExplodedText === 'local' ||
+      options?.recognizeExplodedText === 'ocr'
+        ? options.recognizeExplodedText
+        : recover
+          ? 'local'
+          : false,
     textStyles: options?.textStyles ?? recover,
     fitTextWidth: options?.fitTextWidth ?? true,
     images: options?.images ?? true

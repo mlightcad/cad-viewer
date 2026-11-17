@@ -1,6 +1,8 @@
 import {
   clusterPdfTextStrokes,
+  clusterPdfTextStrokesMultiScale,
   estimatePdfTextHeight,
+  isImplausiblePdfTextLine,
   type PdfTextStroke
 } from '../src/recognition/pdfGlyphClustering'
 import { PdfGlyphDictionary } from '../src/recognition/pdfGlyphDictionary'
@@ -164,6 +166,51 @@ describe('clusterPdfTextStrokes', () => {
     expect(lines.map(line => line.glyphs.length)).toEqual([7, 3])
     expect(lines[0].height).toBeCloseTo(1, 6)
     expect(lines[0].rotation).toBeCloseTo(0, 6)
+  })
+
+  it('multi-scale recovers titles rejected when attachLongStrokes is off', () => {
+    // Whole-page import disables attachLongStrokes so body-height estimation
+    // does not pull dimension lines into text. Titles then look like frames
+    // in the first pass and must be clustered again at their own height.
+    const title = write('LOT', { x: 0, y: 20 }, 4)
+    const body = [10, 8, 6, 4].flatMap(y => write('THE HELL', { x: 0, y }, 1))
+    const strokes = [...title, ...body]
+    const single = clusterPdfTextStrokes(strokes, { attachLongStrokes: false })
+    expect(single.rejected).toEqual(expect.arrayContaining(title))
+    expect(single.lines.every(line => line.height < 2)).toBe(true)
+
+    const multi = clusterPdfTextStrokesMultiScale(strokes, {
+      attachLongStrokes: false
+    })
+    const titleLine = multi.lines.find(line => line.height > 3)
+    expect(titleLine).toBeDefined()
+    expect(titleLine!.glyphs.length).toBe(3)
+    expect(titleLine!.strokes).toEqual(expect.arrayContaining(title))
+  })
+
+  it('multi-scale peels mega-lines glued by dense detail', () => {
+    // A dense hatch-like cloud used to survive as one absurd “text line”
+    // with thousands of strokes. Refine must peel it so OCR never sees it.
+    const noise: PdfTextStroke<number>[] = []
+    for (let i = 0; i < 1500; i++) {
+      const x = 50 + (i % 50) * 0.45
+      const y = 40 + Math.floor(i / 50) * 0.45
+      noise.push({
+        id: 10000 + i,
+        points: [
+          { x, y },
+          { x: x + 0.3, y: y + 0.25 }
+        ]
+      })
+    }
+    const body = [10, 8, 6, 4].flatMap(y => write('THE HELL', { x: 0, y }, 1))
+    const multi = clusterPdfTextStrokesMultiScale([...noise, ...body], {
+      attachLongStrokes: false
+    })
+    expect(multi.lines.every(line => !isImplausiblePdfTextLine(line))).toBe(
+      true
+    )
+    expect(multi.lines.some(line => line.glyphs.length >= 7)).toBe(true)
   })
 
   it('keeps the long strokes of a title taller than the body text', () => {

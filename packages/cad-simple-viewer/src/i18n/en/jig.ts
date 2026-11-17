@@ -1951,11 +1951,16 @@ export default {
   },
   pdfimport: {
     pageNumber: 'Enter page number (1-{count})',
-    insertionPoint: 'Specify insertion point (scale {scale}, mode {mode}) or',
+    insertionPoint:
+      'Specify insertion point (scale {scale}, mode {mode}, text {text}) or',
     modePrompt: 'Select import mode',
     modeRecover: 'recover drawing',
     modeVisual: 'keep PDF appearance',
     scaleFactor: 'Enter scale factor',
+    textPrompt: 'Select exploded text recognition',
+    textOff: 'off',
+    textLocal: 'local dictionary',
+    textOcr: 'OCR service',
     keywords: {
       scale: {
         display: 'Scale(S)',
@@ -1967,6 +1972,11 @@ export default {
         local: 'Mode',
         global: 'Mode'
       },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
       recover: {
         display: 'Recover(R)',
         local: 'Recover',
@@ -1976,6 +1986,21 @@ export default {
         display: 'Visual(V)',
         local: 'Visual',
         global: 'Visual'
+      },
+      off: {
+        display: 'Off(O)',
+        local: 'Off',
+        global: 'Off'
+      },
+      local: {
+        display: 'Local(L)',
+        local: 'Local',
+        global: 'Local'
+      },
+      ocr: {
+        display: 'Ocr(C)',
+        local: 'Ocr',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: 'Specify insertion point',
@@ -2005,6 +2030,12 @@ export default {
       recognizeDimensions: 'Recognize dimensions',
       recognizeDimensionsHint:
         'Turn exploded dimensions into dimension objects',
+      recognizeExplodedText: 'Recognize exploded text',
+      recognizeExplodedTextHint:
+        'Turn SHX / outline stroke text into text objects (local dictionary or OCR)',
+      recognizeExplodedTextOff: 'Off',
+      recognizeExplodedTextLocal: 'Local dictionary',
+      recognizeExplodedTextOcr: 'OCR service',
       ok: 'OK',
       cancel: 'Cancel'
     }

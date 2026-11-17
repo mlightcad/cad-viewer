@@ -1918,11 +1918,16 @@ export default {
   },
   pdfimport: {
     pageNumber: '输入页码 (1-{count})',
-    insertionPoint: '指定插入点（比例 {scale}，模式 {mode}）或',
+    insertionPoint:
+      '指定插入点（比例 {scale}，模式 {mode}，文字 {text}）或',
     modePrompt: '选择导入方式',
     modeRecover: '复原图纸',
     modeVisual: '保留 PDF 视觉效果',
     scaleFactor: '输入比例因子',
+    textPrompt: '选择打散文字识别方式',
+    textOff: '关闭',
+    textLocal: '本地字形词典',
+    textOcr: 'OCR 服务',
     keywords: {
       scale: {
         display: '比例(S)',
@@ -1934,6 +1939,11 @@ export default {
         local: '模式',
         global: 'Mode'
       },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
       recover: {
         display: '复原(R)',
         local: '复原',
@@ -1943,6 +1953,21 @@ export default {
         display: '视觉(V)',
         local: '视觉',
         global: 'Visual'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      local: {
+        display: '本地(L)',
+        local: '本地',
+        global: 'Local'
+      },
+      ocr: {
+        display: '识别(C)',
+        local: '识别',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: '指定插入点',
@@ -1972,6 +1997,12 @@ export default {
       visualHint: '按 PDF 中的原样输入路径和文字',
       recognizeDimensions: '识别标注',
       recognizeDimensionsHint: '将分解的标注还原为标注对象',
+      recognizeExplodedText: '识别打散文字',
+      recognizeExplodedTextHint:
+        '将 SHX / 轮廓笔画文字还原为文字对象（本地词典或 OCR）',
+      recognizeExplodedTextOff: '关闭',
+      recognizeExplodedTextLocal: '本地字形词典',
+      recognizeExplodedTextOcr: 'OCR 服务',
       ok: '确定',
       cancel: '取消'
     }

@@ -27,6 +27,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 
 import { acapPdfT } from './acapPdfI18n.js'
 import {
+  type AcApPdfExplodedTextMode,
   type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
@@ -41,6 +42,7 @@ import {
   acapPdfFitWidthFactor,
   acapPdfFontFamily
 } from './pdfImportEntities.js'
+import { acapPdfRecognizeImportExplodedText } from './pdfImportExplodedText.js'
 import {
   acapPdfRasterizeImage,
   type PdfJsImageLike
@@ -96,6 +98,9 @@ function pdfDocumentParams(data: ArrayBuffer) {
 /** Mode last picked at the `-pdfimport` prompt; reused as the next default. */
 let lastImportMode: AcApPdfImportMode = 'recover'
 
+/** Exploded-text mode last picked at the `-pdfimport` prompt. */
+let lastImportExplodedText: AcApPdfExplodedTextMode = 'local'
+
 /** i18n key of the prompt label for `mode`. */
 function importModeLabelKey(mode: AcApPdfImportMode) {
   return mode === 'visual'
@@ -103,10 +108,17 @@ function importModeLabelKey(mode: AcApPdfImportMode) {
     : 'jig.pdfimport.modeRecover'
 }
 
+/** i18n key of the prompt label for exploded-text recognition. */
+function importTextLabelKey(mode: AcApPdfExplodedTextMode) {
+  if (mode === 'ocr') return 'jig.pdfimport.textOcr'
+  if (mode === 'local') return 'jig.pdfimport.textLocal'
+  return 'jig.pdfimport.textOff'
+}
+
 /** Adds the `jig.pdfimport.keywords.<name>` keyword to `keywords`. */
 function addPdfImportKeyword(
   keywords: AcEdKeywordCollection,
-  name: 'scale' | 'mode' | 'recover' | 'visual'
+  name: 'scale' | 'mode' | 'text' | 'recover' | 'visual' | 'off' | 'local' | 'ocr'
 ): AcEdKeyword {
   const base = `jig.pdfimport.keywords.${name}`
   return keywords.add(
@@ -219,7 +231,10 @@ export class AcApPdfImportConvertor {
           scale: values.scale,
           insertionPoint,
           ...(values.mode === 'recover'
-            ? { recognizeDimensions: values.recognizeDimensions }
+            ? {
+                recognizeDimensions: values.recognizeDimensions,
+                recognizeExplodedText: values.recognizeExplodedText
+              }
             : {})
         })
       )
@@ -387,16 +402,22 @@ export class AcApPdfImportConvertor {
 
     let scale = 1
     let mode = lastImportMode
+    let explodedText =
+      mode === 'visual' ? (false as AcApPdfExplodedTextMode) : lastImportExplodedText
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
         acapPdfT('jig.pdfimport.insertionPoint', {
           scale: String(scale),
-          mode: AcApI18n.t(importModeLabelKey(mode))
+          mode: AcApI18n.t(importModeLabelKey(mode)),
+          text: AcApI18n.t(importTextLabelKey(explodedText))
         })
       )
       pointPrompt.allowNone = true
       addPdfImportKeyword(pointPrompt.keywords, 'scale')
       addPdfImportKeyword(pointPrompt.keywords, 'mode')
+      if (mode === 'recover') {
+        addPdfImportKeyword(pointPrompt.keywords, 'text')
+      }
       const result = await editor.getPoint(pointPrompt)
       if (result.status === AcEdPromptStatus.OK && result.value) {
         options.insertionPoint = { x: result.value.x, y: result.value.y }
@@ -409,6 +430,14 @@ export class AcApPdfImportConvertor {
         const picked = await this.promptImportMode(mode)
         if (!picked) return undefined
         mode = picked
+        if (mode === 'visual') explodedText = false
+        else if (explodedText === false) explodedText = lastImportExplodedText || 'local'
+        continue
+      }
+      if (result.stringResult === 'Text') {
+        const picked = await this.promptExplodedTextMode(explodedText)
+        if (picked === undefined) return undefined
+        explodedText = picked
         continue
       }
       if (result.stringResult === 'Scale') {
@@ -430,8 +459,41 @@ export class AcApPdfImportConvertor {
     }
     options.scale = scale
     options.mode = mode
+    if (mode === 'recover') options.recognizeExplodedText = explodedText
     lastImportMode = mode
+    if (explodedText !== false) lastImportExplodedText = explodedText
     return options
+  }
+
+  /**
+   * Asks for exploded-text recognition; Enter keeps `current`.
+   *
+   * @returns The chosen mode, or `undefined` when the user cancels.
+   */
+  private async promptExplodedTextMode(
+    current: AcApPdfExplodedTextMode
+  ): Promise<AcApPdfExplodedTextMode | undefined> {
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.pdfimport.textPrompt')
+    )
+    prompt.allowNone = true
+    const off = addPdfImportKeyword(prompt.keywords, 'off')
+    const local = addPdfImportKeyword(prompt.keywords, 'local')
+    const ocr = addPdfImportKeyword(prompt.keywords, 'ocr')
+    prompt.keywords.default =
+      current === 'ocr' ? ocr : current === false ? off : local
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.None) return current
+    if (
+      result.status !== AcEdPromptStatus.OK &&
+      result.status !== AcEdPromptStatus.Keyword
+    ) {
+      return undefined
+    }
+    if (result.stringResult === 'Off') return false
+    if (result.stringResult === 'Local') return 'local'
+    if (result.stringResult === 'Ocr') return 'ocr'
+    return current
   }
 
   /**
@@ -549,6 +611,37 @@ export class AcApPdfImportConvertor {
         await fitTextWidths(db, textEntities, options.scale)
       }
 
+      // Exploded SHX / outline text becomes TEXT before dimensions, so dim
+      // values can read real text as well as remaining strokes.
+      let explodedTextCount = 0
+      let explodedTextStrokes = 0
+      if (options.recognizeExplodedText) {
+        const recovered = await acapPdfRecognizeImportExplodedText(
+          db,
+          entities,
+          AcApPdfTextCmd.glyphDictionary,
+          {
+            mode: options.recognizeExplodedText,
+            onOcrUnavailable: () => {
+              AcApDocManager.instance.editor.showMessage(
+                AcApI18n.t('jig.pdftext.ocrNotConfigured'),
+                'warning'
+              )
+            },
+            onOcrError: message => {
+              AcApDocManager.instance.editor.showMessage(
+                acapPdfT('jig.pdftext.ocrFailed', { message }),
+                'error'
+              )
+            }
+          },
+          built.fillOutlines
+        )
+        entities = recovered.entities
+        explodedTextCount = recovered.converted
+        explodedTextStrokes = recovered.replaced
+      }
+
       // Exploded dimensions become dimension entities. Text widths are
       // fitted first so value texts have their final extents.
       let dimensionCount = 0
@@ -613,7 +706,8 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${ordered.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.shapes.line} lines, ${stats.shapes.polyline} polylines, ${stats.shapes.circle} circles, ` +
           `${stats.shapes.arc} arcs, ${stats.shapes.ellipse} ellipses, ${stats.shapes.spline} splines, ` +
-          `mode ${options.mode}, ${stats.texts} texts, ${imageEntities.length} images, ${stats.hatches} hatches, ` +
+          `mode ${options.mode}, ${stats.texts} texts, ${explodedTextCount} exploded texts ` +
+          `(${explodedTextStrokes} strokes), ${imageEntities.length} images, ${stats.hatches} hatches, ` +
           `${stats.patternHatches} pattern hatches (${stats.patternHatchStrokes} strokes), ${stats.blocks} blocks ` +
           `(${stats.references} references), ${dimensionCount} dimensions (${dimensionStrokes} shapes); ` +
           `${stats.shapes.duplicates} duplicates skipped.`

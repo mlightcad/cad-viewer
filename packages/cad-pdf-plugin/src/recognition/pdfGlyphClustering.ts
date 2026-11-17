@@ -920,10 +920,327 @@ export function clusterPdfTextStrokes<Id>(
     buildLine(row.items, row.angle, textHeight, glyphGap)
   )
   // Reading order: top to bottom, then left to right.
+  sortPdfTextLines(lines)
+  return { lines, rejected: stillRejected, textHeight }
+}
+
+/** Tuning for {@link clusterPdfTextStrokesMultiScale}. */
+export interface PdfTextMultiScaleOptions extends PdfTextClusterOptions {
+  /**
+   * Most clustering passes over leftover (larger) strokes. Default `4`.
+   * Each pass re-estimates height on what the previous pass rejected, so a
+   * page with body text and taller titles recovers both; frames eventually
+   * stop the loop.
+   */
+  maxPasses?: number
+}
+
+/**
+ * Clusters strokes at several size scales.
+ *
+ * A single {@link clusterPdfTextStrokes} pass estimates one text height from
+ * the whole selection. On a full PDF page the body text sets that height and
+ * taller titles / labels are rejected as frames (especially when
+ * `attachLongStrokes` is off for whole-page import). This re-clusters the
+ * rejected strokes with their own height until little remains or the next
+ * scale looks like drawing frames rather than text.
+ *
+ * After the size passes, implausible “mega-lines” (thousands of strokes glued
+ * by proximity to nearby linework) are split by spatial tiles and by bands
+ * above underlines — the usual pattern for SHX section labels — so OCR sees
+ * clean letter strokes instead of a whole detail region.
+ */
+export function clusterPdfTextStrokesMultiScale<Id>(
+  strokes: PdfTextStroke<Id>[],
+  options: PdfTextMultiScaleOptions = {}
+): PdfTextClusterResult<Id> {
+  const maxPasses = Math.max(1, Math.floor(options.maxPasses ?? 4))
+  const { maxPasses: _ignored, ...clusterOptions } = options
+  const lines: PdfTextLineCandidate<Id>[] = []
+  let pending = strokes
+  let rejected: PdfTextStroke<Id>[] = strokes
+  let lastHeight = 0
+  let textHeight = 0
+
+  for (let pass = 0; pass < maxPasses && pending.length > 0; pass++) {
+    const result = clusterPdfTextStrokes(pending, clusterOptions)
+    if (!(result.textHeight > 0)) {
+      rejected = result.rejected
+      break
+    }
+    // Next scale is many times larger and barely forms lines: leftover is
+    // frames / leaders, not another text size.
+    if (
+      lastHeight > 0 &&
+      result.textHeight > lastHeight * 4 &&
+      result.lines.length <= 2
+    ) {
+      rejected = pending
+      break
+    }
+    if (pass === 0) textHeight = result.textHeight
+    lines.push(...result.lines)
+    rejected = result.rejected
+    if (result.rejected.length === 0) break
+    if (result.rejected.length >= pending.length * 0.95) break
+    // Another pass only helps when leftovers look larger than this pass's
+    // text (titles rejected as frames). Otherwise stop — remaining strokes
+    // are noise at the same scale.
+    const nextHeight = estimatePdfTextHeight(result.rejected)
+    if (!(nextHeight > result.textHeight * 1.4)) break
+    lastHeight = result.textHeight
+    pending = result.rejected
+  }
+
+  const refined = refineImplausiblePdfTextLines(lines, rejected, clusterOptions)
+  sortPdfTextLines(refined.lines)
+  return {
+    lines: refined.lines,
+    rejected: refined.rejected,
+    textHeight
+  }
+}
+
+/**
+ * A line that is almost certainly not a single text string: zero height, or
+ * so many strokes that nearby linework was glued into the phrase.
+ *
+ * Thresholds match what whole-page import produces on dense CAD PDFs: a
+ * real SHX title has a handful of strokes per glyph, while a glued detail
+ * region has hundreds.
+ */
+export function isImplausiblePdfTextLine(line: PdfTextLineCandidate): boolean {
+  if (!(line.height > 0.5)) return true
+  if (line.strokes.length >= 400) return true
+  const perGlyph = line.strokes.length / Math.max(1, line.glyphs.length)
+  if (line.strokes.length >= 120 && perGlyph > 25) return true
+  // Extremely wide relative to height — usually a chain of glued linework.
+  if (line.height > 0 && line.width / line.height > 35) return true
+  return false
+}
+
+/**
+ * How “clean” a line is for OCR: more glyphs per stroke is better (SHX still
+ * has several segments per character; mega-lines have hundreds).
+ */
+function pdfTextLineCleanliness(line: PdfTextLineCandidate): number {
+  return line.glyphs.length / Math.max(1, line.strokes.length)
+}
+
+/**
+ * Peels mega-lines, re-clusters their strokes in spatial tiles, and recovers
+ * underlined labels from free strokes.
+ */
+function refineImplausiblePdfTextLines<Id>(
+  lines: PdfTextLineCandidate<Id>[],
+  rejected: PdfTextStroke<Id>[],
+  options: PdfTextClusterOptions
+): { lines: PdfTextLineCandidate<Id>[]; rejected: PdfTextStroke<Id>[] } {
+  const kept: PdfTextLineCandidate<Id>[] = []
+  const megaStrokes: PdfTextStroke<Id>[] = []
+  for (const line of lines) {
+    if (isImplausiblePdfTextLine(line)) megaStrokes.push(...line.strokes)
+    else kept.push(line)
+  }
+
+  const leftover: PdfTextStroke<Id>[] = [...rejected]
+  if (megaStrokes.length > 0) {
+    // ~40 world units matched dense CAD pages: larger tiles leave the whole
+    // detail region glued; smaller ones shatter real titles.
+    const est = estimatePdfTextHeight(megaStrokes) || options.textHeight || 5
+    const tileSize = Math.max(30, Math.min(48, est * 10))
+    const tiled = clusterPdfTextStrokesInTiles(megaStrokes, tileSize, options)
+    for (const line of tiled.lines) {
+      if (isImplausiblePdfTextLine(line)) leftover.push(...line.strokes)
+      else kept.push(line)
+    }
+    leftover.push(...tiled.rejected)
+  }
+
+  const claimed = new Set(kept.flatMap(line => line.strokes))
+  const free = [
+    ...leftover.filter(stroke => !claimed.has(stroke)),
+    ...megaStrokes.filter(stroke => !claimed.has(stroke))
+  ]
+  // Prefer underline-local lines over any overlapping noisy survivors.
+  const fromUnderlines = recoverPdfTextLinesNearUnderlines(free, options)
+  for (const line of fromUnderlines) {
+    mergePdfTextLineCandidate(kept, line)
+  }
+
+  const keptStrokes = new Set(kept.flatMap(line => line.strokes))
+  const stillRejected = free.filter(stroke => !keptStrokes.has(stroke))
+  return { lines: kept, rejected: stillRejected }
+}
+
+/**
+ * Clusters strokes separately in each spatial tile so a dense detail region
+ * cannot glue distant labels into one mega-line.
+ */
+function clusterPdfTextStrokesInTiles<Id>(
+  strokes: PdfTextStroke<Id>[],
+  tileSize: number,
+  options: PdfTextClusterOptions
+): PdfTextClusterResult<Id> {
+  const tiles = new Map<string, PdfTextStroke<Id>[]>()
+  for (const stroke of strokes) {
+    const box = strokeBox(stroke)
+    const cx = (box.minX + box.maxX) / 2
+    const cy = (box.minY + box.maxY) / 2
+    const key = `${Math.floor(cx / tileSize)},${Math.floor(cy / tileSize)}`
+    const group = tiles.get(key)
+    if (group) group.push(stroke)
+    else tiles.set(key, [stroke])
+  }
+
+  const lines: PdfTextLineCandidate<Id>[] = []
+  const rejected: PdfTextStroke<Id>[] = []
+  let textHeight = 0
+  for (const group of tiles.values()) {
+    if (group.length < 3) {
+      rejected.push(...group)
+      continue
+    }
+    const result = clusterPdfTextStrokes(group, {
+      ...options,
+      attachLongStrokes: false
+    })
+    if (result.textHeight > textHeight) textHeight = result.textHeight
+    lines.push(...result.lines)
+    rejected.push(...result.rejected)
+  }
+  return { lines, rejected, textHeight }
+}
+
+/**
+ * Recovers text sitting on underlines (common for SHX section / view labels)
+ * by clustering only the strokes in a band above each underline.
+ */
+function recoverPdfTextLinesNearUnderlines<Id>(
+  strokes: PdfTextStroke<Id>[],
+  options: PdfTextClusterOptions
+): PdfTextLineCandidate<Id>[] {
+  const underlines = strokes.filter(isPdfTextUnderlineStroke)
+  if (underlines.length === 0) return []
+
+  const used = new Set<PdfTextStroke<Id>>()
+  const recovered: PdfTextLineCandidate<Id>[] = []
+  // Longer underlines first — they mark full labels.
+  underlines.sort((a, b) => underlineLength(b) - underlineLength(a))
+
+  for (const underline of underlines) {
+    if (used.has(underline)) continue
+    const box = strokeBox(underline)
+    const length = Math.max(box.maxX - box.minX, box.maxY - box.minY)
+    if (length < 8) continue
+    // Title height is a fraction of underline length; keep the band tight so
+    // nearby hatch / detail above the label is not pulled in.
+    const guessHeight = Math.min(28, Math.max(5, length * 0.22))
+    const band = guessHeight * 1.35
+    const pad = length * 0.12
+    const near = strokes.filter(stroke => {
+      if (used.has(stroke) || stroke === underline) return false
+      const b = strokeBox(stroke)
+      const cx = (b.minX + b.maxX) / 2
+      const cy = (b.minY + b.maxY) / 2
+      const strokeH = b.maxY - b.minY
+      const strokeW = b.maxX - b.minX
+      // Drop tall frames / leaders that dwarf the guessed glyph height.
+      if (Math.max(strokeH, strokeW) > guessHeight * 3) return false
+      return (
+        cx >= box.minX - pad &&
+        cx <= box.maxX + pad &&
+        cy >= box.minY - 1 &&
+        cy <= box.maxY + band
+      )
+    })
+    if (near.length < 4) continue
+
+    const local = clusterPdfTextStrokes(near, {
+      ...options,
+      textHeight: guessHeight,
+      attachLongStrokes: false
+    })
+    for (const line of local.lines) {
+      if (isImplausiblePdfTextLine(line)) continue
+      if (line.glyphs.length < 2 || line.height < 3) continue
+      if (line.width < line.height * 0.8) continue
+      recovered.push(line)
+      for (const stroke of line.strokes) used.add(stroke)
+    }
+    used.add(underline)
+  }
+  return recovered
+}
+
+/** World-space underline: long, flat stroke. */
+function isPdfTextUnderlineStroke(stroke: PdfTextStroke): boolean {
+  const box = strokeBox(stroke)
+  const w = box.maxX - box.minX
+  const h = box.maxY - box.minY
+  const length = Math.max(w, h)
+  const thickness = Math.min(w, h)
+  return length > 8 && thickness < 1.5 && length / Math.max(thickness, 1e-6) > 10
+}
+
+function underlineLength(stroke: PdfTextStroke): number {
+  const box = strokeBox(stroke)
+  return Math.max(box.maxX - box.minX, box.maxY - box.minY)
+}
+
+/**
+ * Adds `line` unless a cleaner existing line already covers the same strokes
+ * or nearly the same box; replaces a worse overlapping line.
+ */
+function mergePdfTextLineCandidate<Id>(
+  lines: PdfTextLineCandidate<Id>[],
+  line: PdfTextLineCandidate<Id>
+) {
+  const strokeSet = new Set(line.strokes)
+  for (let i = 0; i < lines.length; i++) {
+    const other = lines[i]
+    const shared = other.strokes.filter(stroke => strokeSet.has(stroke)).length
+    const overlap =
+      shared / Math.max(1, Math.min(other.strokes.length, line.strokes.length))
+    const boxOverlap = pdfTextLineBoxesOverlap(other, line)
+    if (overlap < 0.25 && !boxOverlap) continue
+    if (pdfTextLineCleanliness(line) > pdfTextLineCleanliness(other) * 1.15) {
+      lines[i] = line
+    }
+    return
+  }
+  lines.push(line)
+}
+
+function pdfTextLineBoxesOverlap(
+  a: PdfTextLineCandidate,
+  b: PdfTextLineCandidate
+): boolean {
+  const a0 = a.position
+  const b0 = b.position
+  // Rough axis-aligned boxes from position / width / height.
+  const aMinX = a0.x
+  const aMaxX = a0.x + Math.abs(Math.cos(a.rotation)) * a.width + a.height
+  const aMinY = a0.y - a.height
+  const aMaxY = a0.y + a.height
+  const bMinX = b0.x
+  const bMaxX = b0.x + Math.abs(Math.cos(b.rotation)) * b.width + b.height
+  const bMinY = b0.y - b.height
+  const bMaxY = b0.y + b.height
+  const ix = Math.min(aMaxX, bMaxX) - Math.max(aMinX, bMinX)
+  const iy = Math.min(aMaxY, bMaxY) - Math.max(aMinY, bMinY)
+  if (ix <= 0 || iy <= 0) return false
+  const area = ix * iy
+  const aArea = Math.max(1e-6, (aMaxX - aMinX) * (aMaxY - aMinY))
+  const bArea = Math.max(1e-6, (bMaxX - bMinX) * (bMaxY - bMinY))
+  return area > 0.4 * Math.min(aArea, bArea)
+}
+
+/** Reading order: top to bottom, then left to right. */
+function sortPdfTextLines(lines: PdfTextLineCandidate[]) {
   lines.sort((a, b) => {
     const dy = b.position.y - a.position.y
     if (Math.abs(dy) > Math.min(a.height, b.height) * 0.5) return dy
     return a.position.x - b.position.x
   })
-  return { lines, rejected: stillRejected, textHeight }
 }
