@@ -59,6 +59,11 @@ export interface AcApPdfPageEntities {
    * printed as outlines) from these.
    */
   fillOutlines: Map<AcDbEntity, PdfRecPoint[][]>
+  /**
+   * Stroke outline entities kept for fill+stroke paints, keyed by the
+   * hatch they outline. Text recovery drops these when it consumes the hatch.
+   */
+  fillStrokeCompanions: Map<AcDbEntity, AcDbEntity[]>
   /** Counts for the import log. */
   stats: {
     shapes: PdfImportShapeStats
@@ -149,6 +154,8 @@ export function acapPdfBuildPageEntities(
 
   const entities: AcDbEntity[] = []
   const fillOutlines = new Map<AcDbEntity, PdfRecPoint[][]>()
+  const fillStrokeCompanions = new Map<AcDbEntity, AcDbEntity[]>()
+  const hatchByPaintGroup = new Map<number, AcDbEntity>()
   let hatchCount = 0
   let patternHatchCount = 0
   for (const paint of orderPdfImportPaints(items, options.fillHatches)) {
@@ -166,7 +173,21 @@ export function acapPdfBuildPageEntities(
         continue
       }
       const entity = createEntity(paint.item)
-      if (entity) entities.push(entity)
+      if (!entity) continue
+      entities.push(entity)
+      const item = paint.item
+      if (
+        item.filled &&
+        item.stroked &&
+        item.paintGroup !== undefined
+      ) {
+        const hatch = hatchByPaintGroup.get(item.paintGroup)
+        if (hatch) {
+          const list = fillStrokeCompanions.get(hatch)
+          if (list) list.push(entity)
+          else fillStrokeCompanions.set(hatch, [entity])
+        }
+      }
       continue
     }
     // One solid hatch per fill paint; extra loops are holes (even-odd).
@@ -191,6 +212,9 @@ export function acapPdfBuildPageEntities(
     }
     acapPdfApplyColor(hatch, first.fillColor ?? first.color)
     entities.push(hatch)
+    if (first.paintGroup !== undefined) {
+      hatchByPaintGroup.set(first.paintGroup, hatch)
+    }
     fillOutlines.set(
       hatch,
       group
@@ -257,6 +281,7 @@ export function acapPdfBuildPageEntities(
     textEntities,
     usedLayerNames,
     fillOutlines,
+    fillStrokeCompanions,
     stats: {
       shapes: stats,
       texts: texts.length,

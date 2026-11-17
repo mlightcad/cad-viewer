@@ -43,6 +43,17 @@ export class AcApFontUtil {
   }
 
   /**
+   * @inheritdoc FontManager.getFontScaleFactor
+   *
+   * TrueType faces map CAD text height to capital-A height (`unitsPerEm /
+   * A.yMax`), so CJK ideographs draw larger than the nominal height. SHX
+   * faces usually return `1`.
+   */
+  static getFontScaleFactor(fontName: string): number {
+    return FontManager.instance.getFontScaleFactor(fontName) || 1
+  }
+
+  /**
    * Font name used at render time when the requested font is missing.
    *
    * Checks user {@link FontManager.setFontMapping | font mapping} first, then falls

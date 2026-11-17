@@ -193,6 +193,20 @@ describe('AcApPdfTextSession', () => {
     expect(session.createText(target, measure).widthFactor).toBeCloseTo(0.8)
   })
 
+  it('maps mesh CJK ink height through the capital-A scale factor', () => {
+    const db = new AcDbDatabase()
+    const target = row('mesh', '受控文件')
+    target.line.height = 14
+    const session = new AcApPdfTextSession({
+      db,
+      fontKind,
+      fontScaleFactor: () => 1.4,
+      rows: [target]
+    })
+    expect(session.createText(target).height).toBeCloseTo(10)
+    expect(session.createText(row('mesh', 'AB')).height).toBeCloseTo(2)
+  })
+
   it('tracks typed lines, skipped lines and fills unread ones', () => {
     const db = new AcDbDatabase()
     const session = new AcApPdfTextSession({

@@ -10,6 +10,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
       ['txt', 'gbcbig'].includes(name.toLowerCase()) ? 'shx' : undefined,
     getCatalogFontType: (name: string) =>
       ['txt', 'gbcbig'].includes(name.toLowerCase()) ? 'shx' : undefined,
+    getFontScaleFactor: () => 1,
     getReplacementFontName: (name: string) => name,
     findFontInfoByName: () => ({}),
     isFontLoaded: () => true,
@@ -209,5 +210,106 @@ describe('acapPdfRecognizeImportExplodedText', () => {
       (entity): entity is AcDbText => entity instanceof AcDbText
     )
     expect(texts.map(text => text.textString).sort()).toEqual(['AB', 'CD'])
+  })
+
+  test('drops outline strokes that sit under an already-imported PDF text', async () => {
+    const db = new AcDbDatabase()
+    const outline = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(1, 0, 0)
+    )
+    const native = new AcDbText()
+    native.textString = '受控文件'
+    native.position = new AcGePoint3d(0, 0, 0)
+    native.height = 3
+    native.rotation = 0
+    native.widthFactor = 1
+
+    recognizeExploded.mockImplementation(async (strokes: Array<{ id: unknown }>) => [
+      {
+        line: {
+          strokes: [strokes[0]],
+          glyphs: [],
+          position: { x: 0, y: 0 },
+          height: 3,
+          width: 12,
+          rotation: 0
+        },
+        kind: 'mesh',
+        text: '',
+        source: 'unread'
+      }
+    ])
+
+    const recovered = await acapPdfRecognizeImportExplodedText(
+      db,
+      [outline, native],
+      new PdfGlyphDictionary(),
+      { mode: 'local' }
+    )
+
+    expect(recovered.converted).toBe(0)
+    expect(recovered.replaced).toBe(1)
+    expect(recovered.entities).toEqual([native])
+    expect(recovered.entities).not.toContain(outline)
+  })
+
+  test('also drops fill+stroke companion outlines when the hatch becomes text', async () => {
+    const db = new AcDbDatabase()
+    const hatch = new AcDbHatch()
+    hatch.layer = 'TEXT'
+    hatch.color = new AcCmColor()
+    const outline = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(1, 1, 0)
+    )
+    outline.layer = 'TEXT'
+    outline.color = new AcCmColor()
+
+    recognizeExploded.mockImplementation(async () => [
+      {
+        line: {
+          strokes: [{ id: hatch, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }],
+          glyphs: [],
+          position: { x: 0, y: 0 },
+          height: 3,
+          width: 4,
+          rotation: 0
+        },
+        kind: 'mesh',
+        text: 'OK',
+        source: 'dictionary'
+      }
+    ])
+
+    const recovered = await acapPdfRecognizeImportExplodedText(
+      db,
+      [hatch, outline],
+      new PdfGlyphDictionary(),
+      { mode: 'local' },
+      new Map([
+        [
+          hatch,
+          [
+            [
+              { x: 0, y: 0 },
+              { x: 1, y: 0 },
+              { x: 1, y: 1 }
+            ]
+          ]
+        ]
+      ]),
+      new Map([[hatch, [outline]]])
+    )
+
+    expect(recovered.converted).toBe(1)
+    expect(recovered.entities).not.toContain(hatch)
+    expect(recovered.entities).not.toContain(outline)
+    expect(
+      recovered.entities.some(
+        (entity): entity is AcDbText =>
+          entity instanceof AcDbText && entity.textString === 'OK'
+      )
+    ).toBe(true)
   })
 })

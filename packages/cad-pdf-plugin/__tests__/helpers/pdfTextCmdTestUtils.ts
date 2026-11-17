@@ -32,6 +32,7 @@ export function viewerMock() {
           : name.toLowerCase() === 'txt'
             ? 'shx'
             : undefined,
+      getFontScaleFactor: () => 1.4,
       getReplacementFontName: (name: string) => name,
       findFontInfoByName: () => ({}),
       isFontLoaded: () => false,
