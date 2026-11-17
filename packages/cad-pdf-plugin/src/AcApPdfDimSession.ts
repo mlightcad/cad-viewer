@@ -15,6 +15,7 @@ import {
 } from './pdfDimensionConvert.js'
 import {
   type PdfDimensionCandidate,
+  pdfDimTextIds,
   suggestPdfDimensionScale
 } from './recognition/pdfDimensionPattern.js'
 
@@ -71,7 +72,9 @@ export class AcApPdfDimSession<Id> {
 
   /** Rows created on Apply. */
   get readyRows(): PdfDimRow<Id>[] {
-    return this.rows.filter(row => row.included && row.text.trim().length > 0)
+    return this.rows.filter(
+      row => row.included && (row.text.trim().length > 0 || keptLabel(row))
+    )
   }
 
   get styleName(): string {
@@ -169,6 +172,9 @@ export class AcApPdfDimSession<Id> {
   /** Candidates ready to convert, with the edited text applied. */
   candidatesForApply(): PdfDimensionCandidate<Id>[] {
     return this.readyRows.map(row => {
+      if (keptLabel(row) && row.text.trim().length === 0) {
+        return row.candidate
+      }
       const text = row.text.trim()
       const candidate: PdfDimensionCandidate<Id> = {
         ...row.candidate,
@@ -176,6 +182,17 @@ export class AcApPdfDimSession<Id> {
       }
       // A value the user typed is real text, no longer a stand-in.
       if (text !== row.candidate.text.text) candidate.measuredText = false
+      // A label typed for kept label strokes replaces those strokes.
+      if (
+        (candidate.kind === 'linear' || candidate.kind === 'aligned') &&
+        candidate.labelKept
+      ) {
+        candidate.labelKept = false
+        candidate.consumed = [
+          ...candidate.consumed,
+          ...pdfDimTextIds(candidate.text)
+        ]
+      }
       return candidate
     })
   }
@@ -249,4 +266,16 @@ export class AcApPdfDimSession<Id> {
     if (base) writeDimStyleFields(style, readDimStyleFields(base))
     table.add(style)
   }
+}
+
+/**
+ * A symbolic label kept as drawn strokes: the row has no text of its own and
+ * still converts (the dimension text stays suppressed).
+ */
+function keptLabel<Id>(row: PdfDimRow<Id>): boolean {
+  const candidate = row.candidate
+  return (
+    (candidate.kind === 'linear' || candidate.kind === 'aligned') &&
+    candidate.labelKept === true
+  )
 }

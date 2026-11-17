@@ -78,7 +78,7 @@ Every character shape you type is remembered in the browser, so drawings that us
 
 1. Select the area with the dimensions. Value text may be TEXT, or still exploded strokes (before `pdftext`): digits and CAD symbols are read with a built-in template matcher — no LLM. If strokes still cannot be read, linear dimensions fall back to the measured length.
 2. These are recognized:
-   - **Linear**: any angle, arrows inside or outside, architectural ticks, and chained dimensions.
+   - **Linear**: any angle, arrows inside or outside, architectural ticks, and chained dimensions. A dimension labelled with a symbol instead of a value (`a`, `e mini`) is recovered too: a text label becomes the dimension text, a label still drawn as strokes stays as drawn.
    - **Radius and diameter**: an arrow touching a circle, with an `R…` or `Ø…` text.
    - **Angular**: an arc with an arrow at each end.
 3. The **Recover Dimensions** panel opens in the palette, with dimensions previewed in place of their strokes. You can pan and zoom while it is open.
