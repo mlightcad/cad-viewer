@@ -66,6 +66,7 @@ export {
   acapPdfOcrExplodedTextLines,
   acapPdfRecognizeExplodedTextLines,
   acapPdfRenderTextLineImage,
+  PDF_OCR_BATCH_TIMEOUT_MS,
   PDF_OCR_IMAGE_TEXT_HEIGHT
 } from './pdfExplodedTextRecognition.js'
 export {

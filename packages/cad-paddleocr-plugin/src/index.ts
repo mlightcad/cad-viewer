@@ -19,6 +19,7 @@ export {
   acapPaddleOcrResolveModelAssets,
   buildUstar,
   PADDLE_OCR_DET_MODEL,
+  PADDLE_OCR_FETCH_TIMEOUT_MS,
   PADDLE_OCR_REC_MODEL,
   type AcApPaddleOcrModelAsset
 } from './AcApPaddleOcrModelAssets.js'

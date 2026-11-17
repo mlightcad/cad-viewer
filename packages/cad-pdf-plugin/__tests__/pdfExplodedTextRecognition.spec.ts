@@ -149,4 +149,45 @@ describe('acapPdfRecognizeExplodedTextLines', () => {
     expect(recognizeBatch).not.toHaveBeenCalled()
     expect(result[0].source).toBe('unread')
   })
+
+  test('ocr mode times out a hung recognizer and leaves lines unread', async () => {
+    const createElement = jest.fn(() => ({
+      width: 0,
+      height: 0,
+      getContext: () => ({
+        fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 0,
+        lineCap: '',
+        lineJoin: '',
+        fillRect: jest.fn(),
+        beginPath: jest.fn(),
+        moveTo: jest.fn(),
+        lineTo: jest.fn(),
+        stroke: jest.fn()
+      }),
+      toDataURL: () => 'data:image/png;base64,xx'
+    }))
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { createElement }
+    })
+    recognizeBatch.mockImplementation(() => new Promise(() => {}))
+    jest.useFakeTimers()
+    try {
+      const pending = acapPdfRecognizeExplodedTextLines(strokes('unknown'), {
+        dictionary: dictionary({}),
+        mode: 'ocr',
+        timeoutMs: 50
+      })
+      await jest.advanceTimersByTimeAsync(51)
+      const result = await pending
+      expect(result[0].source).toBe('unread')
+      expect(result[0].text).toBe('')
+    } finally {
+      jest.useRealTimers()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (globalThis as any).document
+    }
+  })
 })
