@@ -354,6 +354,7 @@ Bir referans görüntüden (tarama, fotoğraf, ekran görüntüsü) kanıt takib
 - Nesneler varsayılan olarak CAD koordinatlarını kullanır. `coords: 'source'` ile görüntü pikselleridir (sol üst başlangıç, y aşağı) ve bir kalibrasyonla (`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`) dönüştürülür.
 - Durum: `pass`, `pass_with_warnings`, `needs_review` (ölçü veya kısıt çakışması), `blocked` (katı profilde kanıt eksik), `fail` (geçersiz spec; hiçbir şey çizilmez).
 - Tablolar AcDbTable olarak değil, çizgi ve metin olarak çizilir.
+- Çizim, `units` değerinden `INSUNITS` ayarlar; metin ve ölçü metni CJK destekli `REDRAW_TEXT` stilini (`simsun` + `hztxt.shx`) kullanır. Oluşturulamayan bir ölçü uyarıyla birlikte çizgi ve metin olarak (yarıçap/çap için kılavuz çizgisi) çizilir; `fallbacks` bunları sayar.
 
 ```javascript
 const r = cad.redraw.draw({

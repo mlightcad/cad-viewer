@@ -211,7 +211,8 @@ return cad.measure.report([
 cad.redraw — evidence-tracked reconstruction from a reference image (spec format: the
 IMAGE REDRAW section of the agent prompt / CAD_REDRAW_SPEC_SUMMARY): validate(spec, {profile?}) -> { status, errors, warnings, evidence, calibrations };
 draw(spec, {profile?, omit?, offset?, allowBlocked?}) -> one undo group, returns
-{ status, drawn, idMap (spec id -> CAD id), entityCount, skipped, checks, dimensionChecks, errors, warnings };
+{ status, drawn, idMap (spec id -> CAD id), entityCount, skipped, checks, dimensionChecks, errors, warnings,
+  unitsApplied, textStyle, fallbacks };
 inspect(spec, idMap, {profile?}) -> re-run checks after manual fixes.
 status: pass | pass_with_warnings | needs_review | blocked | fail. draw refuses fail (and blocked
 unless allowBlocked).
@@ -346,6 +347,9 @@ Points are [x, y] or {x, y}. Angles are degrees CCW from +X (CAD frame).
 Default layers (created on demand): OBJECT, HIDDEN (HIDDEN lt), CENTER (CENTER lt), DIM, TEXT,
 TABLE, BORDER, CONSTRUCTION, ASSUMPTION. Without layer: geometry → OBJECT (inferred → ASSUMPTION),
 text → TEXT, dims/leaders → DIM, table → TABLE, center_mark → CENTER.
+draw sets INSUNITS from units, puts text and dimension text on the CJK-capable REDRAW_TEXT style
+(simsun + hztxt.shx), and draws a dimension the engine rejects as lines + text (radius/diameter
+as a leader) with a warning — fallbacks counts them.
 Dimension value = the number read in the image; inspect compares it with what the drawn dimension
 measures and reports conflicts (needs_review) instead of hiding them. Unreadable text: '[UNREADABLE]'.
 geometry-only skips text, dimensions, leaders and table text. omit: ['text','dimensions','leaders',

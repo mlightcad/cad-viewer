@@ -17,7 +17,9 @@ dimensions, leaders, text, and line-drawn tables, and `cad.redraw.inspect`
 compares readable dimension values with the drawn geometry. Results carry a
 `pass` / `pass_with_warnings` / `needs_review` / `blocked` / `fail` status.
 Image pixel coordinates can be mapped through dimension-anchor, similarity,
-affine, or homography calibrations.
+affine, or homography calibrations. Drawing sets `INSUNITS` from the spec
+units, uses a CJK-capable `REDRAW_TEXT` style for text and dimension text, and
+falls back to lines + text (or a leader) when a dimension cannot be created.
 
 Also add `tx.drawLeader` (LEADER with an associated MTEXT annotation),
 `rotationDeg` / `width` on `tx.drawText`, and fix two drawing bugs: `drawText`

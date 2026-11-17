@@ -352,6 +352,7 @@ return {
 - 図形は既定で CAD 座標を使います。`coords: 'source'` の場合は画像のピクセル座標 (左上が原点、y は下向き) で、校正 (`dimension-anchor`、`similarity`、`affine`、`homography`、`sheet-scale`) により変換されます。
 - 状態: `pass`、`pass_with_warnings`、`needs_review` (寸法または拘束の矛盾)、`blocked` (厳密プロファイルで証拠不足)、`fail` (spec が無効で何も作図されません)。
 - 表は AcDbTable ではなく線分と文字で作図されます。
+- 作図時に `units` から `INSUNITS` を設定し、文字と寸法文字には CJK 対応の `REDRAW_TEXT` スタイル (`simsun` + `hztxt.shx`) を使います。作成できない寸法は線分と文字 (半径/直径は引出線) で作図して警告を出し、`fallbacks` にその数を記録します。
 
 ```javascript
 const r = cad.redraw.draw({

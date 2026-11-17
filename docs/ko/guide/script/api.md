@@ -352,6 +352,7 @@ return {
 - 객체는 기본적으로 CAD 좌표를 사용합니다. `coords: 'source'`이면 이미지 픽셀 좌표(왼쪽 위 원점, y 아래 방향)이며 보정(`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`)으로 변환됩니다.
 - 상태: `pass`, `pass_with_warnings`, `needs_review`(치수 또는 구속 조건 충돌), `blocked`(엄격 프로파일의 근거 부족), `fail`(잘못된 spec, 아무것도 그리지 않음).
 - 표는 AcDbTable이 아니라 선과 문자로 그려집니다.
+- 그릴 때 `units`에 따라 `INSUNITS`를 설정하고, 문자와 치수 문자에는 CJK를 지원하는 `REDRAW_TEXT` 스타일(`simsun` + `hztxt.shx`)을 사용합니다. 만들 수 없는 치수는 선과 문자(반지름/지름은 지시선)로 그리고 경고를 표시하며, `fallbacks`에 그 개수를 기록합니다.
 
 ```javascript
 const r = cad.redraw.draw({

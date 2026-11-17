@@ -3,6 +3,10 @@ import { AcDbDatabase, AcDbLeader, AcDbMText } from '@mlightcad/data-model'
 import {
   acexRedrawResolveCalibration,
   acexRedrawValidateSpec,
+  CAD_EDIT_TX_METHODS,
+  type CadEditTransaction,
+  createCadRedraw,
+  createCadScriptHost,
   createDatabaseSession,
   executeCadScript,
   type RedrawSpec
@@ -290,7 +294,105 @@ describe('cad.redraw.draw', () => {
     `)
     expect(result.data).toEqual({ status: 'pass', dim: [[true, 90]], area: true })
   })
+
+  test('writes spec units to INSUNITS and uses a CJK text style', async () => {
+    const { result, db } = await run(`
+      const r = cad.redraw.draw({
+        units: 'mm',
+        entities: [
+          { id: 'n', type: 'text', position: [0, 0], text: '技术要求' },
+          { id: 'w', type: 'aligned_dimension', p1: [0, 0], p2: [50, 0], dimLine: [25, -8] }
+        ]
+      })
+      return { unitsApplied: r.unitsApplied, textStyle: r.textStyle, dimStyle: r.dimStyle }
+    `)
+    const data = result.data as {
+      unitsApplied: boolean
+      textStyle: string
+      dimStyle: string
+    }
+    expect(data.textStyle).toBe('REDRAW_TEXT')
+    expect(db.insunits).toBe(4)
+    const style = db.tables.textStyleTable.getAt('REDRAW_TEXT')
+    expect(style?.bigFontFileName).toBe('hztxt.shx')
+    const note = modelEntities(db).find(
+      (e): e is AcDbMText => e instanceof AcDbMText && e.contents === '技术要求'
+    )
+    expect(note?.styleName).toBe('REDRAW_TEXT')
+    expect(db.tables.dimStyleTable.getAt(data.dimStyle)?.dimtxsty).toBe(
+      'REDRAW_TEXT'
+    )
+
+    // Undo restores the previous units together with the geometry.
+    const before = new AcDbDatabase().insunits
+    expect(db.transactionManager.undo()).toBe(true)
+    expect(db.insunits).toBe(before)
+  })
 })
+
+describe('cad.redraw.draw dimension fallback', () => {
+  test('draws lines + text (or a leader) when a dimension cannot be created', () => {
+    const db = new AcDbDatabase()
+    const session = createDatabaseSession(db)
+    const created: string[] = []
+    const fail = () => {
+      throw new Error('engine_failure')
+    }
+    const host = createCadScriptHost(session, {
+      log: [],
+      highlightedIds: [],
+      createdIds: created,
+      previewRequests: [],
+      dxfSaveRequests: [],
+      pdfSaveRequests: [],
+      htmlSaveRequests: []
+    })
+    const redraw = createCadRedraw({
+      getDatabase: () => db,
+      transaction: (label, fn) =>
+        host.edit.transaction(label, tx =>
+          fn({
+            ...pickTx(tx),
+            drawDimAligned: fail,
+            drawDimLinear: fail,
+            drawDimRadius: fail,
+            drawDimDiameter: fail,
+            drawDimAngular: fail
+          })
+        ),
+      layerNames: () => [...db.tables.layerTable.newIterator()].map(l => l.name),
+      snapshot: id => host.entities.byId(id),
+      tick: () => undefined
+    })
+
+    const r = redraw.draw({
+      entities: [
+        { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [40, 0], dimLine: [20, -5], value: 40 },
+        { id: 'r', type: 'radial_dimension', center: [0, 20], radius: 5, value: 5 }
+      ]
+    })
+
+    expect(r.drawn).toBe(true)
+    expect(r.fallbacks).toEqual({ linear_dimension: 1, radial_dimension: 1 })
+    expect(r.status).toBe('pass_with_warnings')
+    const types = modelEntities(db).map(e => e.type).sort()
+    expect(types).toEqual(['Leader', 'Line', 'MText', 'MText'])
+    const labels = modelEntities(db)
+      .filter((e): e is AcDbMText => e instanceof AcDbMText)
+      .map(e => e.contents)
+      .sort()
+    expect(labels).toEqual(['40', 'R5'])
+  })
+})
+
+/** Copies the sealed transaction's methods onto a plain object. */
+function pickTx(tx: CadEditTransaction): CadEditTransaction {
+  const copy = {} as Record<string, unknown>
+  for (const name of CAD_EDIT_TX_METHODS) {
+    copy[name] = (tx as unknown as Record<string, unknown>)[name]
+  }
+  return copy as unknown as CadEditTransaction
+}
 
 describe('redraw spec checks and constraints', () => {
   test('rejects malformed checks before drawing', () => {

@@ -403,6 +403,7 @@ Evidence-tracked reconstruction of a drawing from a reference image (scan, photo
 - Entities use CAD coordinates by default. With `coords: 'source'` they are image pixels (top-left origin, y down) mapped by a calibration (`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`).
 - Status: `pass`, `pass_with_warnings`, `needs_review` (dimension or constraint conflicts), `blocked` (strict profile lacks evidence), `fail` (invalid spec; nothing is drawn).
 - Tables are drawn as lines and text, not as an AcDbTable.
+- Drawing sets `INSUNITS` from `units`, puts text and dimension text on the CJK-capable `REDRAW_TEXT` style (`simsun` + `hztxt.shx`), and draws a dimension that cannot be created as lines and text (radius/diameter as a leader) with a warning; `fallbacks` counts them.
 
 ```javascript
 const r = cad.redraw.draw({

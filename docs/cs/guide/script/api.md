@@ -352,6 +352,7 @@ Rekonstrukce výkresu z referenčního obrázku (sken, fotografie, snímek obraz
 - Entity standardně používají souřadnice CAD. S `coords: 'source'` jde o pixely obrázku (počátek vlevo nahoře, y dolů) převedené kalibrací (`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`).
 - Stav: `pass`, `pass_with_warnings`, `needs_review` (rozpor kót nebo vazeb), `blocked` (přísnému profilu chybí důkazy), `fail` (neplatný spec; nic se nevykreslí).
 - Tabulky se kreslí jako čáry a text, ne jako AcDbTable.
+- Kreslení nastaví `INSUNITS` podle `units`, texty a texty kót používají styl `REDRAW_TEXT` s podporou CJK (`simsun` + `hztxt.shx`) a kótu, kterou nelze vytvořit, nakreslí s varováním jako čáry a text (poloměr/průměr jako odkaz); `fallbacks` je počítá.
 
 ```javascript
 const r = cad.redraw.draw({

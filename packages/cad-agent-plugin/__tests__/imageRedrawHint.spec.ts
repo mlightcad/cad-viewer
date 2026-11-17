@@ -14,7 +14,7 @@ describe('appendImageRedrawHint', () => {
     ]
     const result = appendImageRedrawHint(messages)
     const content = result[0].content as Array<{ type: string; text?: string }>
-    expect(content.at(-1)).toEqual({ type: 'text', text: IMAGE_REDRAW_HINT })
+    expect(content[content.length - 1]).toEqual({ type: 'text', text: IMAGE_REDRAW_HINT })
     // Input stays untouched (the UI transcript must not show the hint).
     expect((messages[0].content as unknown[]).length).toBe(2)
   })

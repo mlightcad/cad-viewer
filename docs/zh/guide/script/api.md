@@ -383,6 +383,7 @@ return {
 - 实体默认使用 CAD 坐标。设置 `coords: 'source'` 时为图片像素坐标（左上角为原点，y 向下），通过标定（`dimension-anchor`、`similarity`、`affine`、`homography`、`sheet-scale`）映射。
 - 状态：`pass`、`pass_with_warnings`、`needs_review`（尺寸或约束冲突）、`blocked`（严格配置缺少证据）、`fail`（spec 无效，不绘制任何内容）。
 - 表格以直线和文字绘制，而不是 AcDbTable。
+- 绘制时会按 `units` 设置 `INSUNITS`，文字和尺寸文字使用支持中日韩文字的 `REDRAW_TEXT` 样式（`simsun` + `hztxt.shx`）；无法创建的尺寸标注会改为直线加文字绘制（半径/直径改为引线）并给出警告，`fallbacks` 记录其数量。
 
 ```javascript
 const r = cad.redraw.draw({

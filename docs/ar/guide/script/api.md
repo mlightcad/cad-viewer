@@ -352,6 +352,7 @@ return {
 - تستخدم الكيانات إحداثيات CAD افتراضيًا. ومع `coords: 'source'` تكون بكسلات الصورة (الأصل أعلى اليسار، وy للأسفل) وتُحوَّل بمعايرة (`dimension-anchor` أو `similarity` أو `affine` أو `homography` أو `sheet-scale`).
 - الحالة: `pass` و`pass_with_warnings` و`needs_review` (تعارض في الأبعاد أو القيود) و`blocked` (نقص الأدلة في ملف التعريف الصارم) و`fail` (spec غير صالح؛ لا يُرسم شيء).
 - تُرسم الجداول كخطوط ونصوص، وليس كـ AcDbTable.
+- يضبط الرسم `INSUNITS` وفقًا لـ `units`، ويستخدم للنصوص ونصوص الأبعاد النمط `REDRAW_TEXT` الداعم للغات CJK (`simsun` + `hztxt.shx`)، ويرسم البُعد الذي يتعذر إنشاؤه كخطوط ونص (ونصف القطر/القطر كخط إشارة) مع تحذير؛ ويعدّها `fallbacks`.
 
 ```javascript
 const r = cad.redraw.draw({

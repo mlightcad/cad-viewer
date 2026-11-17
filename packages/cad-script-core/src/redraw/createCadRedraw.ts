@@ -4,7 +4,9 @@ import {
   type AcDbDatabase,
   AcDbDimStyleTableRecord,
   type AcDbLeader,
-  AcDbLinetypeTableRecord
+  AcDbLinetypeTableRecord,
+  AcDbMText,
+  AcDbTextStyleTableRecord
 } from '@mlightcad/data-model'
 
 import { createCadMeasure } from '../script/createCadMeasure.js'
@@ -69,6 +71,29 @@ const LINETYPE_PATTERNS: Record<
   DOT: { description: 'Dot . . . .', dashes: [0, -6.35] }
 }
 
+/** INSUNITS codes for spec units (`unitless` → 0). */
+const INSUNITS_BY_UNIT: Record<string, number> = {
+  unitless: 0,
+  in: 1,
+  ft: 2,
+  mm: 4,
+  cm: 5,
+  m: 6
+}
+
+/**
+ * Text style used by redraw text, leaders, tables, and dimensions.
+ *
+ * `simsun` + `hztxt.shx` renders CJK in this viewer (its default fallback
+ * chain) and in AutoCAD, so redrawn Chinese / Japanese / Korean notes do not
+ * turn into "?" boxes under a Latin-only STANDARD style.
+ */
+export const REDRAW_TEXT_STYLE = {
+  name: 'REDRAW_TEXT',
+  font: 'simsun',
+  bigFont: 'hztxt.shx'
+} as const
+
 /** Options for `cad.redraw.draw`. */
 export interface RedrawDrawOptions {
   /** Replaces `spec.profile`. */
@@ -119,6 +144,12 @@ export interface RedrawDrawResult extends Omit<
   layersCreated: string[]
   textHeight: number
   dimStyle?: string
+  /** CJK-capable text style applied to redraw text and dimensions. */
+  textStyle?: string
+  /** True when INSUNITS was changed to match `spec.units`. */
+  unitsApplied: boolean
+  /** Dimension entities drawn as lines + text because creation failed. */
+  fallbacks: Record<string, number>
   checks: RedrawCheckResult[]
   dimensionChecks: RedrawCheckResult[]
   assumptions: string[]
@@ -312,16 +343,50 @@ function ensureLinetype(
 }
 
 /**
- * Creates (or reuses) a dimension style scaled so dimension text matches
- * `textHeight`. Existing user styles are never modified.
+ * Creates (or reuses) the CJK-capable {@link REDRAW_TEXT_STYLE}. An existing
+ * record of that name is kept as the user left it.
  */
-function ensureDimStyle(db: AcDbDatabase, textHeight: number): string {
+function ensureTextStyle(db: AcDbDatabase): string {
+  const { name, font, bigFont } = REDRAW_TEXT_STYLE
+  if (!db.tables.textStyleTable.has(name)) {
+    db.tables.textStyleTable.add(
+      new AcDbTextStyleTableRecord({
+        name,
+        standardFlag: 0,
+        fixedTextHeight: 0,
+        widthFactor: 1,
+        obliqueAngle: 0,
+        textGenerationFlag: 0,
+        lastHeight: 2.5,
+        font,
+        bigFont,
+        extendedFont: font
+      })
+    )
+  }
+  return name
+}
+
+/**
+ * Creates (or reuses) a dimension style scaled so dimension text matches
+ * `textHeight`, using `textStyle` for its text. Existing user styles are
+ * never modified.
+ */
+function ensureDimStyle(
+  db: AcDbDatabase,
+  textHeight: number,
+  textStyle: string
+): string {
   const base = AcDbDimStyleTableRecord.DEFAULT_DIM_VALUES.dimtxt || 2.5
   const scale = textHeight / base
   const name = `REDRAW_${Number(scale.toPrecision(4))}`
   if (!db.tables.dimStyleTable.has(name)) {
     db.tables.dimStyleTable.add(
-      new AcDbDimStyleTableRecord({ name, dimscale: scale })
+      new AcDbDimStyleTableRecord({
+        name,
+        dimscale: scale,
+        dimtxsty: textStyle
+      })
     )
   }
   return name
@@ -540,6 +605,8 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
         skipped: {},
         layersCreated: [],
         textHeight: 0,
+        unitsApplied: false,
+        fallbacks: {},
         checks: [],
         dimensionChecks: [],
         assumptions: Array.isArray(spec?.assumptions) ? spec.assumptions : []
@@ -625,6 +692,9 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
       }
 
       let dimStyle: string | undefined
+      let textStyle: string | undefined
+      let unitsApplied = false
+      const fallbacks: Record<string, number> = {}
 
       deps.transaction('Image redraw', tx => {
         const db = deps.getDatabase()
@@ -655,12 +725,83 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
           return name
         }
 
+        // Units follow the spec so the saved drawing reports them (INSUNITS).
+        const insunits = INSUNITS_BY_UNIT[validation.units]
+        if (insunits !== undefined && db.insunits !== insunits) {
+          db.insunits = insunits
+          unitsApplied = true
+        }
+
+        const needsText = prepared.some(
+          ({ type, layer }) =>
+            (type === 'text' ||
+              type === 'mtext' ||
+              type === 'leader' ||
+              type === 'table' ||
+              REDRAW_DIMENSION_TYPES.has(type)) &&
+            !isOmitted(type, layer, groups)
+        )
+        if (needsText) textStyle = ensureTextStyle(db)
+
         const needsDimStyle = prepared.some(
           ({ type, layer }) =>
             (REDRAW_DIMENSION_TYPES.has(type) || type === 'leader') &&
             !isOmitted(type, layer, groups)
         )
-        if (needsDimStyle) dimStyle = ensureDimStyle(db, textHeight)
+        if (needsDimStyle) {
+          dimStyle = ensureDimStyle(db, textHeight, textStyle ?? '')
+        }
+
+        /**
+         * Draws a dimension; when the dimension engine rejects the input
+         * (degenerate points, style issues) it falls back to plain linework
+         * plus a label so one bad annotation does not abort the whole redraw.
+         */
+        const drawDimension = (
+          entity: RedrawEntitySpec,
+          type: RedrawEntityType,
+          layer: string,
+          draw: () => string,
+          fallback: () => string[]
+        ): string[] => {
+          try {
+            return [draw()]
+          } catch (error) {
+            fallbacks[type] = (fallbacks[type] ?? 0) + 1
+            warnings.push({
+              level: 'warning',
+              path: `entities.${entity.id ?? type}`,
+              message: `${type} could not be created (${
+                error instanceof Error ? error.message : String(error)
+              }); drawn as lines and text on ${layer} instead`
+            })
+            return fallback()
+          }
+        }
+
+        /** Label for a fallback dimension: explicit text, else the value. */
+        const dimLabel = (entity: RedrawEntitySpec, prefix = ''): string =>
+          typeof entity.text === 'string' && entity.text
+            ? entity.text
+            : typeof entity.value === 'number'
+              ? `${prefix}${entity.value}`
+              : '?'
+
+        const lineWithLabel = (
+          a: Point2dInput,
+          b: Point2dInput,
+          label: string,
+          layer: string
+        ): string[] => [
+          tx.drawLine({ start: a, end: b, layer }),
+          tx.drawText({
+            position: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + textHeight },
+            text: label,
+            height: textHeight,
+            rotationDeg: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+            layer
+          })
+        ]
 
         for (const {
           entity,
@@ -812,38 +953,50 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
               break
             }
             case 'linear_dimension':
+            case 'aligned_dimension': {
+              const p1 = P('p1')
+              const p2 = P('p2')
+              const dimLine = P('dimLine')
               ids.push(
-                tx.drawDimLinear({
-                  xLine1Point: P('p1'),
-                  xLine2Point: P('p2'),
-                  dimLinePoint: P('dimLine'),
-                  ...(typeof entity.rotation === 'number'
-                    ? { rotationDeg: mapper.angle(entity.rotation) }
-                    : {}),
-                  ...(text ? { text } : {}),
-                  styleName: dimStyle,
-                  layer
-                })
+                ...drawDimension(
+                  entity,
+                  type,
+                  layer,
+                  () =>
+                    type === 'linear_dimension'
+                      ? tx.drawDimLinear({
+                          xLine1Point: p1,
+                          xLine2Point: p2,
+                          dimLinePoint: dimLine,
+                          ...(typeof entity.rotation === 'number'
+                            ? { rotationDeg: mapper.angle(entity.rotation) }
+                            : {}),
+                          ...(text ? { text } : {}),
+                          styleName: dimStyle,
+                          layer
+                        })
+                      : tx.drawDimAligned({
+                          xLine1Point: p1,
+                          xLine2Point: p2,
+                          dimLinePoint: dimLine,
+                          ...(text ? { text } : {}),
+                          styleName: dimStyle,
+                          layer
+                        }),
+                  () => lineWithLabel(p1, p2, dimLabel(entity), layer)
+                )
               )
               break
-            case 'aligned_dimension':
-              ids.push(
-                tx.drawDimAligned({
-                  xLine1Point: P('p1'),
-                  xLine2Point: P('p2'),
-                  dimLinePoint: P('dimLine'),
-                  ...(text ? { text } : {}),
-                  styleName: dimStyle,
-                  layer
-                })
-              )
-              break
+            }
             case 'radial_dimension':
             case 'diameter_dimension': {
+              const center = P('center')
+              const radius = mapper.length(entity.radius as number)
+              const angleDeg = mapper.angle(num(entity.angle, 45))
               const input = {
-                center: P('center'),
-                radius: mapper.length(entity.radius as number),
-                angleDeg: mapper.angle(num(entity.angle, 45)),
+                center,
+                radius,
+                angleDeg,
                 ...(typeof entity.leaderLength === 'number'
                   ? { leaderLength: mapper.length(entity.leaderLength) }
                   : {}),
@@ -852,25 +1005,82 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
                 layer
               }
               ids.push(
-                type === 'radial_dimension'
-                  ? tx.drawDimRadius(input)
-                  : tx.drawDimDiameter(input)
+                ...drawDimension(
+                  entity,
+                  type,
+                  layer,
+                  () =>
+                    type === 'radial_dimension'
+                      ? tx.drawDimRadius(input)
+                      : tx.drawDimDiameter(input),
+                  () => {
+                    // Like the original skill: a failed radius becomes a leader.
+                    const rad = (angleDeg * Math.PI) / 180
+                    const tip = {
+                      x: center.x + Math.cos(rad) * radius,
+                      y: center.y + Math.sin(rad) * radius
+                    }
+                    const out = radius * 0.5 + textHeight * 2
+                    const elbow = {
+                      x: tip.x + Math.cos(rad) * out,
+                      y: tip.y + Math.sin(rad) * out
+                    }
+                    const landing = {
+                      x: elbow.x + (Math.cos(rad) >= 0 ? 1 : -1) * textHeight * 2,
+                      y: elbow.y
+                    }
+                    const leaderId = tx.drawLeader({
+                      points: [tip, elbow, landing],
+                      text: dimLabel(
+                        entity,
+                        type === 'radial_dimension' ? 'R' : '%%c'
+                      ),
+                      textHeight,
+                      layer
+                    })
+                    const annotation = (
+                      db.openObjectForRead(leaderId) as AcDbLeader | undefined
+                    )?.associatedAnnotation
+                    return annotation ? [leaderId, annotation] : [leaderId]
+                  }
+                )
               )
               break
             }
-            case 'angular_dimension':
+            case 'angular_dimension': {
+              const center = P('center')
+              const p1 = P('p1')
+              const p2 = P('p2')
+              const arcPoint = P('arcPoint')
               ids.push(
-                tx.drawDimAngular({
-                  center: P('center'),
-                  xLine1Point: P('p1'),
-                  xLine2Point: P('p2'),
-                  arcPoint: P('arcPoint'),
-                  ...(text ? { text } : {}),
-                  styleName: dimStyle,
-                  layer
-                })
+                ...drawDimension(
+                  entity,
+                  type,
+                  layer,
+                  () =>
+                    tx.drawDimAngular({
+                      center,
+                      xLine1Point: p1,
+                      xLine2Point: p2,
+                      arcPoint,
+                      ...(text ? { text } : {}),
+                      styleName: dimStyle,
+                      layer
+                    }),
+                  () => [
+                    tx.drawLine({ start: center, end: p1, layer }),
+                    tx.drawLine({ start: center, end: p2, layer }),
+                    tx.drawText({
+                      position: arcPoint,
+                      text: dimLabel(entity).replace(/^(\d+(\.\d+)?)$/, '$1°'),
+                      height: textHeight,
+                      layer
+                    })
+                  ]
+                )
               )
               break
+            }
             case 'table': {
               const origin = P('origin')
               const widths = (entity.columnWidths as number[]).map(w =>
@@ -971,9 +1181,20 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
               ? true
               : !!layerLinetype && layerLinetype.toUpperCase() !== 'CONTINUOUS'
           for (const id of ids) {
-            if (typeof entity.color !== 'number' && !linetype && !dashed) break
+            const isText =
+              textStyle !== undefined &&
+              db.openObjectForRead(id) instanceof AcDbMText
+            if (
+              typeof entity.color !== 'number' &&
+              !linetype &&
+              !dashed &&
+              !isText
+            ) {
+              continue
+            }
             const target = db.openEntityForWrite(id)
             if (!target) continue
+            if (isText) (target as AcDbMText).styleName = textStyle!
             if (typeof entity.color === 'number') {
               target.color = new AcCmColor(AcCmColorMethod.ByACI, entity.color)
             }
@@ -1005,6 +1226,9 @@ export function createCadRedraw(deps: CadRedrawDeps): CadRedrawApi {
         layersCreated,
         textHeight,
         ...(dimStyle ? { dimStyle } : {}),
+        ...(textStyle ? { textStyle } : {}),
+        unitsApplied,
+        fallbacks,
         checks: inspection.checks,
         dimensionChecks: inspection.dimensionChecks,
         assumptions: Array.isArray(spec.assumptions) ? spec.assumptions : []
