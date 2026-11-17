@@ -1970,6 +1970,8 @@ export default {
       recoverHint: '重建圆、圆弧、曲线、文字、填充和块',
       modeVisual: '保留 PDF 视觉效果',
       visualHint: '按 PDF 中的原样输入路径和文字',
+      recognizeDimensions: '识别标注',
+      recognizeDimensionsHint: '将分解的标注还原为标注对象',
       ok: '确定',
       cancel: '取消'
     }
@@ -2000,6 +2002,9 @@ export default {
       kindRadius: '半径',
       kindDiameter: '直径',
       kindAngular: '角度',
+      kindAligned: '对齐',
+      kindArcLength: '弧长',
+      kindOrdinate: '坐标',
       textTip: '标注文字（替代）',
       measured: '测量值 {value}',
       hideStrokes: '隐藏原始线条',

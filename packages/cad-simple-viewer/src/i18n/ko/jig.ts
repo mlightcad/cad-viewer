@@ -2035,6 +2035,8 @@ export default {
       recoverHint: '원, 호, 곡선, 문자, 해치 및 블록을 재구성합니다',
       modeVisual: 'PDF 모양 유지',
       visualHint: 'PDF에 그려진 그대로 경로와 문자를 가져옵니다',
+      recognizeDimensions: '치수 인식',
+      recognizeDimensionsHint: '분해된 치수를 치수 객체로 되돌립니다',
       ok: '확인',
       cancel: '취소'
     }
@@ -2066,6 +2068,9 @@ export default {
       kindRadius: '반지름',
       kindDiameter: '지름',
       kindAngular: '각도',
+      kindAligned: '정렬',
+      kindArcLength: '호 길이',
+      kindOrdinate: '세로좌표',
       textTip: '치수 문자(재정의)',
       measured: '측정값 {value}',
       hideStrokes: '원본 선 숨기기',

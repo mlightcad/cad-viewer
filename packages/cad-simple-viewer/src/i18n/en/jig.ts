@@ -2002,6 +2002,9 @@ export default {
       recoverHint: 'Rebuild circles, arcs, curves, text, hatches and blocks',
       modeVisual: 'Keep PDF appearance',
       visualHint: 'Import paths and text exactly as drawn in the PDF',
+      recognizeDimensions: 'Recognize dimensions',
+      recognizeDimensionsHint:
+        'Turn exploded dimensions into dimension objects',
       ok: 'OK',
       cancel: 'Cancel'
     }
@@ -2033,6 +2036,9 @@ export default {
       kindRadius: 'Radius',
       kindDiameter: 'Diameter',
       kindAngular: 'Angular',
+      kindAligned: 'Aligned',
+      kindArcLength: 'Arc length',
+      kindOrdinate: 'Ordinate',
       textTip: 'Dimension text (override)',
       measured: 'Measured {value}',
       hideStrokes: 'Hide original strokes',

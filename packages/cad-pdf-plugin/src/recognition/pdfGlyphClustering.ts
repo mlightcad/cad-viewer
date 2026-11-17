@@ -13,6 +13,11 @@ import { type PdfRecPoint } from './pdfRecGeometry.js'
 export interface PdfTextStroke<Id = unknown> {
   id: Id
   points: PdfRecPoint[]
+  /**
+   * True when the points outline a filled area (a glyph contour of an
+   * outline font painted as a fill) rather than a pen stroke.
+   */
+  filled?: boolean
 }
 
 /** One character box inside a text line, in line-local coordinates. */
@@ -51,6 +56,19 @@ export interface PdfTextClusterOptions {
   wordGap?: number
   /** Gap separating two glyphs along a line, as a fraction of height. Default 0.04. */
   glyphGap?: number
+  /**
+   * Attach strokes too long for the estimated height back to lines whose
+   * band they lie in (titles taller than body text). Turn off when the
+   * strokes include linework crossing text, such as dimension lines on a
+   * whole page. Default `true`.
+   */
+  attachLongStrokes?: boolean
+  /**
+   * Read every phrase along this baseline direction (radians) instead of
+   * judging it from the strokes. Dimension text runs along its dimension
+   * line, so callers that know the candidate directions read each one.
+   */
+  angle?: number
 }
 
 /** Result of {@link clusterPdfTextStrokes}. */
@@ -842,15 +860,18 @@ export function clusterPdfTextStrokes<Id>(
   // Phrases too small or too ambiguous to tell (one glyph, `Q1`, or a title
   // whose long strokes are attached only later) borrow the dominant
   // direction of the clear ones.
+  const forced = options.angle
   const judged = phrases.map(phrase =>
+    forced !== undefined ||
     boxSize(strokeBox({ id: 0, points: phrase.flatMap(s => s.points) })) <
-    textHeight * 2
+      textHeight * 2
       ? undefined
       : bestPhraseAngle(phrase, textHeight, wordGap, glyphGap)
   )
   const known = judged.flatMap(result => (result?.clear ? [result.angle] : []))
   const dominant = known.length > 0 ? median(known) : undefined
   const angles = phrases.map((phrase, i) => {
+    if (forced !== undefined) return normalizeTextAngle(forced)
     const result = judged[i]
     if (result?.clear) return result.angle
     return (
@@ -877,7 +898,8 @@ export function clusterPdfTextStrokes<Id>(
   // Bands grow as strokes join, so repeat until nothing changes.
   const bands = merged.map(row => lineBand(row.items))
   let stillRejected = rejected
-  for (let changed = true; changed && stillRejected.length > 0; ) {
+  const attach = options.attachLongStrokes !== false
+  for (let changed = attach; changed && stillRejected.length > 0; ) {
     changed = false
     stillRejected = stillRejected.filter(stroke => {
       const size = rejectedSize.get(stroke) ?? 0

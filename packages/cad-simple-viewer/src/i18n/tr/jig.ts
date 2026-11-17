@@ -2154,6 +2154,9 @@ export default {
         'Daireleri, yayları, eğrileri, metni, taramaları ve blokları yeniden oluşturur',
       modeVisual: 'PDF görünümünü koru',
       visualHint: 'Yolları ve metni PDF’te çizildiği gibi içe aktarır',
+      recognizeDimensions: 'Ölçüleri tanı',
+      recognizeDimensionsHint:
+        'Patlatılmış ölçüleri ölçü nesnelerine dönüştürür',
       ok: 'Tamam',
       cancel: 'İptal'
     }
@@ -2185,6 +2188,9 @@ export default {
       kindRadius: 'Yarıçap',
       kindDiameter: 'Çap',
       kindAngular: 'Açısal',
+      kindAligned: 'Hizalı',
+      kindArcLength: 'Yay uzunluğu',
+      kindOrdinate: 'Koordinat',
       textTip: 'Ölçü metni (geçersiz kılma)',
       measured: 'Ölçülen {value}',
       hideStrokes: 'Orijinal çizgileri gizle',

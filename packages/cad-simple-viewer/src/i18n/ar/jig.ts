@@ -2145,6 +2145,8 @@ export default {
         'إعادة بناء الدوائر والأقواس والمنحنيات والنصوص والتهشيرات والكتل',
       modeVisual: 'الحفاظ على مظهر PDF',
       visualHint: 'استيراد المسارات والنصوص كما رُسمت في PDF تمامًا',
+      recognizeDimensions: 'التعرّف على الأبعاد',
+      recognizeDimensionsHint: 'تحويل الأبعاد المفكّكة إلى كائنات أبعاد',
       ok: 'موافق',
       cancel: 'إلغاء'
     }
@@ -2175,6 +2177,9 @@ export default {
       kindRadius: 'نصف القطر',
       kindDiameter: 'القطر',
       kindAngular: 'زاوي',
+      kindAligned: 'محاذٍ',
+      kindArcLength: 'طول القوس',
+      kindOrdinate: 'إحداثي',
       textTip: 'نص البُعد (تجاوز)',
       measured: 'المقاس {value}',
       hideStrokes: 'إخفاء الخطوط الأصلية',

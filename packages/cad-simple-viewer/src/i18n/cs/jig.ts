@@ -2042,6 +2042,8 @@ export default {
       modeVisual: 'Zachovat vzhled PDF',
       visualHint:
         'Importuje cesty a text přesně tak, jak jsou nakresleny v PDF',
+      recognizeDimensions: 'Rozpoznat kóty',
+      recognizeDimensionsHint: 'Převede rozložené kóty zpět na objekty kót',
       ok: 'OK',
       cancel: 'Storno'
     }
@@ -2073,6 +2075,9 @@ export default {
       kindRadius: 'Poloměr',
       kindDiameter: 'Průměr',
       kindAngular: 'Úhlová',
+      kindAligned: 'Zarovnaná',
+      kindArcLength: 'Délka oblouku',
+      kindOrdinate: 'Souřadnicová',
       textTip: 'Text kóty (přepsání)',
       measured: 'Naměřeno {value}',
       hideStrokes: 'Skrýt původní čáry',

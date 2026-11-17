@@ -51,6 +51,8 @@ export interface AcUiPdfImportDialogValues {
   specifyOnScreen: boolean
   /** Insertion point used when {@link specifyOnScreen} is off. */
   insertionPoint: { x: number; y: number }
+  /** Rebuild exploded dimensions (recover mode only). */
+  recognizeDimensions: boolean
 }
 
 /** Options for {@link AcUiPdfImportDialog.open}. */
@@ -106,6 +108,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
   private readonly yInput: HTMLInputElement
   private readonly scaleInput: HTMLInputElement
   private readonly modeInputs: Record<AcApPdfImportMode, HTMLInputElement>
+  private readonly dimensionsInput: HTMLInputElement
   private readonly okButton: HTMLButtonElement
 
   private constructor(options: AcUiPdfImportDialogOptions) {
@@ -126,7 +129,8 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       scale:
         initial.scale !== undefined && initial.scale > 0 ? initial.scale : 1,
       specifyOnScreen: initial.specifyOnScreen ?? false,
-      insertionPoint: initial.insertionPoint ?? { x: 0, y: 0 }
+      insertionPoint: initial.insertionPoint ?? { x: 0, y: 0 },
+      recognizeDimensions: initial.recognizeDimensions ?? true
     }
 
     // File name + Browse.
@@ -196,8 +200,22 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       recover: radio(radioName, this.values.mode === 'recover'),
       visual: radio(radioName, this.values.mode === 'visual')
     }
+    // Dimension recovery belongs to the recover mode.
+    this.dimensionsInput = h('input')
+    this.dimensionsInput.type = 'checkbox'
+    this.dimensionsInput.checked = this.values.recognizeDimensions
+    const dimensions = h('label', 'ml-pdf-import-check ml-pdf-import-suboption')
+    dimensions.title = t('recognizeDimensionsHint')
+    dimensions.append(
+      this.dimensionsInput,
+      h('span', undefined, t('recognizeDimensions'))
+    )
+    for (const input of Object.values(this.modeInputs)) {
+      input.addEventListener('change', () => this.updateState())
+    }
     mode.append(
       radioOption(this.modeInputs.recover, t('modeRecover'), t('recoverHint')),
+      dimensions,
       radioOption(this.modeInputs.visual, t('modeVisual'), t('visualHint'))
     )
 
@@ -463,6 +481,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
     this.yInput.classList.toggle('is-invalid', !yValid)
     this.scaleInput.setAttribute('aria-invalid', String(!scaleValid))
     this.okButton.disabled = !(scaleValid && xValid && yValid)
+    this.dimensionsInput.disabled = this.modeInputs.visual.checked
   }
 
   private confirm() {
@@ -473,6 +492,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       source: this.source,
       pageNumber: this.values.pageNumber,
       mode: this.modeInputs.visual.checked ? 'visual' : 'recover',
+      recognizeDimensions: this.dimensionsInput.checked,
       scale: parseNumber(this.scaleInput.value, true) ?? 1,
       specifyOnScreen: onScreen,
       insertionPoint: onScreen
@@ -784,6 +804,13 @@ function ensureStyles() {
 .ml-pdf-import-dialog .ml-pdf-import-check input,
 .ml-pdf-import-dialog .ml-pdf-import-radio input {
   margin: 1px 0 0;
+}
+.ml-pdf-import-dialog .ml-pdf-import-suboption {
+  margin-left: 22px;
+}
+.ml-pdf-import-dialog .ml-pdf-import-check:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
 }
 .ml-pdf-import-dialog .ml-pdf-import-radio-text {
   display: flex;
