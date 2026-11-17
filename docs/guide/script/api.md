@@ -397,6 +397,7 @@ Evidence-tracked reconstruction of a drawing from a reference image (scan, photo
 | `cad.redraw.validate(spec, { profile? }?)` | Checks fields, ids, units, calibration, and constraints without drawing → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | Draws the spec → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | Re-runs checks and compares dimension `value` readings with what the drawn dimensions measure |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | Pixel comparison with the attached reference image: registers the rendered drawing through the spec calibration and returns `redrawCompare` (verdict, coverage, precision, distances, `suggestedMove`, hotspots) plus overlay and difference images |
 
 - Profiles: `general` (default), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only` (skips text, dimensions, leaders, and table text).
 - Evidence per value: `known`, `scaled`, `inferred`, `unreadable`. Units default to `unitless`; millimeters are never assumed.
@@ -419,6 +420,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### Pixel comparison
+
+`cad.redraw.compare` renders the drawing over the CAD footprint of the reference (or of `views[].sourceRoi`), warps it into the image frame through the calibration (similarity, affine, or homography), thins both to 1-pixel centerlines, and measures them against each other with distance transforms.
+
+- `coverage`: share of reference lines with drawn geometry within tolerance (missing geometry lowers it).
+- `precision`: share of drawn lines with a reference line within tolerance (extra or misplaced geometry lowers it).
+- `meanDistance*` / `p95Distance*`: how far reference lines are from the drawing, in reference pixels and CAD units.
+- `verdict`: `aligned`, `offset` (a translation fixes most of it — see `suggestedMove`), `incomplete`, `cluttered`, or `mismatch`.
+- `hotspots`: the grid cells with the most disagreement, as `sourceRoi` (image pixels) and `cadBox`.
+
+The overlay shows the faded reference with matched lines in green, missing lines in red, and extra lines in blue. Comparison needs a renderer and an attached image, so it works in the in-app agent; headless sessions return `reason: 'no_raster_host'`. Pixel metrics are visual evidence only and never prove dimensions.
 
 ## cad.edit.transaction
 

@@ -62,6 +62,9 @@ function toCadToolModelOutput(output: unknown, attachPreviewImages: boolean) {
   }
 
   const summary = toolResultWithoutImages(result)
+  const compareImages = (result.redrawCompare ?? []).filter(
+    entry => entry.ok
+  ).length
   const content: Array<
     | { type: 'text'; text: string }
     | { type: 'media'; data: string; mediaType: string }
@@ -71,7 +74,10 @@ function toCadToolModelOutput(output: unknown, attachPreviewImages: boolean) {
       text: JSON.stringify({
         ...summary,
         imageCount: result.images.length,
-        note: 'Screenshot(s) attached as media parts for visual review.'
+        note:
+          compareImages > 0
+            ? 'Images attached as media parts: capturePreview screenshots first, then for each successful cad.redraw.compare an overlay (reference faded, green = matched, red = missing, blue = extra) and a difference image (red = missing, blue = extra).'
+            : 'Screenshot(s) attached as media parts for visual review.'
       })
     }
   ]

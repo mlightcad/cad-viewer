@@ -346,6 +346,7 @@ Rekonstrukce výkresu z referenčního obrázku (sken, fotografie, snímek obraz
 | `cad.redraw.validate(spec, { profile? }?)` | Bez kreslení ověří pole, ID, jednotky, kalibraci a vazby → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | Vykreslí spec → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | Znovu spustí kontroly a porovná odečtené hodnoty kót `value` s tím, co nakreslené kóty měří |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | Porovnání po pixelech s připojeným referenčním obrázkem: zarovná vykreslený výkres podle kalibrace ze spec a vrátí `redrawCompare` (verdikt, pokrytí, přesnost, vzdálenosti, `suggestedMove`, problémová místa) a obrázky překryvu a rozdílu |
 
 - Profily: `general` (výchozí), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only` (vynechá texty, kóty, odkazy a text tabulek).
 - Důkaz pro každou hodnotu: `known`, `scaled`, `inferred`, `unreadable`. Výchozí jednotky jsou `unitless`; milimetry se nikdy nepředpokládají.
@@ -368,6 +369,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### Porovnání po pixelech
+
+`cad.redraw.compare` vykreslí výkres v rozsahu CAD odpovídajícím referenci (nebo `views[].sourceRoi`), převede ho kalibrací (podobnost, afinní nebo homografie) do souřadnic obrázku, obojí ztenčí na 1pixelové osy a změří je proti sobě pomocí vzdálenostních transformací.
+
+- `coverage`: podíl referenčních čar, u kterých je v toleranci nakreslená geometrie (chybějící geometrie ho snižuje).
+- `precision`: podíl nakreslených čar, u kterých je v toleranci referenční čára (nadbytečná nebo posunutá geometrie ho snižuje).
+- `meanDistance*` / `p95Distance*`: vzdálenost referenčních čar od výkresu v pixelech reference a v jednotkách CAD.
+- `verdict`: `aligned`, `offset` (většinu vyřeší posun — viz `suggestedMove`), `incomplete`, `cluttered` nebo `mismatch`.
+- `hotspots`: buňky mřížky s největším nesouladem jako `sourceRoi` (pixely obrázku) a `cadBox`.
+
+Překryv ukazuje zesvětlenou referenci se shodnými čarami zeleně, chybějícími červeně a nadbytečnými modře. Porovnání potřebuje vykreslovač a připojený obrázek, takže funguje v agentovi v aplikaci; relace bez rozhraní vrací `reason: 'no_raster_host'`. Pixelové metriky jsou jen vizuálním důkazem a rozměry neprokazují.
 
 ## cad.edit.transaction
 

@@ -1,3 +1,4 @@
+import { acapSetRedrawReferenceImages } from '@mlightcad/cad-agent-core'
 import {
   acapLlmCreateModel,
   type AcApLlmSettings,
@@ -235,6 +236,10 @@ export function createAgentChatTransport(
         messages,
         tools: agent.tools
       })
+      // cad.redraw.compare reads the images attached in this conversation.
+      const { referenceImages: attached } =
+        extractConversationContext(validatedMessages)
+      acapSetRedrawReferenceImages(() => attached)
 
       return new ReadableStream<InferUIMessageChunk<UIMessage>>({
         async start(controller) {

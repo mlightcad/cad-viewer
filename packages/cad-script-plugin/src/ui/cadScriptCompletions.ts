@@ -1272,6 +1272,13 @@ const REDRAW_MEMBERS: MemberSpec[] = [
     'Re-runs checks and dimension comparisons on drawn entities.',
     'unknown',
     'inspect(${spec}, ${idMap})'
+  ),
+  method(
+    'compare',
+    '(spec, { referenceIndex?, calibration?, viewId?, tolerancePx? }?) => { queued, index }',
+    'Pixel-compares the drawing with the attached reference image; results arrive in redrawCompare with overlay and difference images.',
+    'unknown',
+    'compare(${spec})'
   )
 ]
 

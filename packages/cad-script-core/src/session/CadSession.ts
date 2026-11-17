@@ -9,6 +9,7 @@ import type {
   CadCapturePreviewOptions,
   CaptureDrawingPreviewResult
 } from '../preview/types.js'
+import type { CadRedrawRasterHost } from '../redraw/rasterHost.js'
 import type {
   CadScriptHtmlExportOptions,
   CadScriptHtmlExportResult
@@ -195,4 +196,11 @@ export interface CadSession {
   exportHtml?(
     options: CadScriptHtmlExportOptions
   ): Promise<CadScriptHtmlExportResult>
+  /**
+   * Decode / render / encode services for `cad.redraw.compare` (pixel
+   * comparison against the user's reference image). Sessions without a
+   * renderer or without reference images leave this out; compare requests
+   * then report `no_raster_host`.
+   */
+  redrawRaster?: CadRedrawRasterHost
 }

@@ -14,6 +14,7 @@ describe('buildCadAgentSystemPrompt', () => {
       expect(prompt).toContain('IMAGE REDRAW (EVIDENCE-TRACKED)')
       expect(prompt).toContain('<<redraw spec>>')
       expect(prompt).toContain('cad.redraw.draw(spec)')
+      expect(prompt).toContain('cad.redraw.compare(spec')
       expect(prompt).not.toContain('{{AGENT_MODE_POLICY}}')
     }
   )

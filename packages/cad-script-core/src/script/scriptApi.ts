@@ -75,7 +75,8 @@ export const CAD_SCRIPT_API_TREE = {
   redraw: {
     validate: true,
     draw: true,
-    inspect: true
+    inspect: true,
+    compare: true
   },
   edit: {
     transaction: true
@@ -214,6 +215,14 @@ draw(spec, {profile?, omit?, offset?, allowBlocked?}) -> one undo group, returns
 { status, drawn, idMap (spec id -> CAD id), entityCount, skipped, checks, dimensionChecks, errors, warnings,
   unitsApplied, textStyle, fallbacks };
 inspect(spec, idMap, {profile?}) -> re-run checks after manual fixes.
+compare(spec, {referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images?}) -> queues a
+pixel comparison with the attached reference image (registered through the spec calibration).
+Returns { queued, index }; the tool result's redrawCompare[index] has { ok, reason?, verdict
+(aligned|offset|incomplete|cluttered|mismatch), metrics { coverage, precision, f1, meanDistancePx,
+p95DistancePx, tolerancePx, toleranceCad, meanDistanceCad, p95DistanceCad }, suggestedMove?,
+shiftedCoverage?, hotspots [{ sourceRoi, cadBox, missing, extra }], advice }, and an overlay +
+difference PNG are attached (red missing, blue extra, green matched). Needs a renderer and a
+reference image (in-app agent); otherwise reason no_raster_host / no_reference_image.
 status: pass | pass_with_warnings | needs_review | blocked | fail. draw refuses fail (and blocked
 unless allowBlocked).
 cad.log(...values)

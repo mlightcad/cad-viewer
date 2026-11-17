@@ -346,6 +346,7 @@ return {
 | `cad.redraw.validate(spec, { profile? }?)` | 그리지 않고 필드, ID, 단위, 보정, 구속 조건을 검사 → `{ status, errors, warnings, evidence, calibrations }` |
 | `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec을 그림 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
 | `cad.redraw.inspect(spec, idMap, { profile? }?)` | 검사를 다시 실행하고 치수 `value` 판독값을 그려진 치수의 측정값과 비교 |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | 첨부한 참조 이미지와 픽셀 단위 비교: spec 보정으로 그린 도면을 정합하고 `redrawCompare`(판정, 커버리지, 정밀도, 거리, `suggestedMove`, 핫스팟)와 오버레이·차이 이미지를 반환 |
 
 - 프로파일: `general`(기본값), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only`(문자, 치수, 지시선, 표 문자 생략).
 - 값별 근거: `known`, `scaled`, `inferred`, `unreadable`. 단위의 기본값은 `unitless`이며 밀리미터를 가정하지 않습니다.
@@ -368,6 +369,18 @@ const r = cad.redraw.draw({
 })
 return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
 ```
+
+### 픽셀 비교
+
+`cad.redraw.compare`는 참조 이미지(또는 `views[].sourceRoi`)에 해당하는 CAD 범위로 도면을 렌더링하고, 보정(유사, 아핀, 호모그래피 변환)으로 이미지 좌표에 맞춘 뒤, 둘 다 1픽셀 중심선으로 세선화하여 거리 변환으로 서로 측정합니다.
+
+- `coverage`: 허용 오차 안에 그려진 형상이 있는 참조선의 비율(형상이 빠지면 낮아집니다).
+- `precision`: 허용 오차 안에 참조선이 있는 그려진 선의 비율(불필요하거나 잘못 놓인 형상이 있으면 낮아집니다).
+- `meanDistance*` / `p95Distance*`: 참조선과 도면 사이의 거리(참조 이미지 픽셀 및 CAD 단위).
+- `verdict`: `aligned`, `offset`(이동으로 대부분 해결 — `suggestedMove` 참고), `incomplete`, `cluttered`, `mismatch`.
+- `hotspots`: 차이가 가장 큰 격자 셀(`sourceRoi`는 이미지 픽셀, `cadBox`는 CAD 범위).
+
+오버레이는 흐리게 처리한 참조 이미지 위에 일치한 선을 녹색, 누락된 선을 빨간색, 불필요한 선을 파란색으로 표시합니다. 비교에는 렌더러와 첨부 이미지가 필요하므로 앱 내 에이전트에서 동작하며, 헤드리스 세션은 `reason: 'no_raster_host'`를 반환합니다. 픽셀 지표는 시각적 근거일 뿐 치수를 증명하지 않습니다.
 
 ## cad.edit.transaction
 

@@ -5,6 +5,7 @@ import type { AcDbDatabase } from '@mlightcad/data-model'
 import { exportDrawingHtml } from '../export/exportDrawingHtml.js'
 import { exportDrawingPdf } from '../export/exportDrawingPdf.js'
 import { captureDrawingPreview } from '../preview/captureDrawingPreview.js'
+import { createViewerRedrawRasterHost } from '../preview/redrawRasterHost.js'
 
 /**
  * Viewer implementation of {@link CadSession.runEdit}: one undo mark plus the
@@ -39,7 +40,14 @@ export function withViewerDefaults(session: CadSession): CadSession {
   const hasCapturePreview = 'capturePreview' in session
   const hasExportPdf = 'exportPdf' in session
   const hasExportHtml = 'exportHtml' in session
-  if (hasRunEdit && hasCapturePreview && hasExportPdf && hasExportHtml) {
+  const hasRedrawRaster = 'redrawRaster' in session
+  if (
+    hasRunEdit &&
+    hasCapturePreview &&
+    hasExportPdf &&
+    hasExportHtml &&
+    hasRedrawRaster
+  ) {
     return session
   }
   return {
@@ -54,6 +62,9 @@ export function withViewerDefaults(session: CadSession): CadSession {
       : options => exportDrawingPdf(options),
     exportHtml: hasExportHtml
       ? session.exportHtml?.bind(session)
-      : options => exportDrawingHtml(options)
+      : options => exportDrawingHtml(options),
+    redrawRaster: hasRedrawRaster
+      ? session.redrawRaster
+      : createViewerRedrawRasterHost()
   }
 }
