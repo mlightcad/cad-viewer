@@ -1983,11 +1983,16 @@ export default {
   },
   pdfimport: {
     pageNumber: '페이지 번호 입력 (1-{count})',
-    insertionPoint: '삽입점 지정 (축척 {scale}, 모드 {mode}) 또는',
+    insertionPoint:
+      '삽입점 지정 (축척 {scale}, 모드 {mode}, 문자 {text}) 또는',
     modePrompt: '가져오기 방식 선택',
     modeRecover: '도면 복원',
     modeVisual: 'PDF 모양 유지',
     scaleFactor: '축척 비율 입력',
+    textPrompt: '분해된 문자 인식 방식 선택',
+    textOff: '끄기',
+    textLocal: '로컬 글리프 사전',
+    textOcr: 'OCR 서비스',
     keywords: {
       scale: {
         display: '축척(S)',
@@ -1999,6 +2004,11 @@ export default {
         local: '모드',
         global: 'Mode'
       },
+      text: {
+        display: '문자(T)',
+        local: '문자',
+        global: 'Text'
+      },
       recover: {
         display: '복원(R)',
         local: '복원',
@@ -2008,6 +2018,21 @@ export default {
         display: '시각(V)',
         local: '시각',
         global: 'Visual'
+      },
+      off: {
+        display: '끄기(O)',
+        local: '끄기',
+        global: 'Off'
+      },
+      local: {
+        display: '로컬(L)',
+        local: '로컬',
+        global: 'Local'
+      },
+      ocr: {
+        display: '인식(C)',
+        local: '인식',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: '삽입점 지정',
@@ -2037,6 +2062,12 @@ export default {
       visualHint: 'PDF에 그려진 그대로 경로와 문자를 가져옵니다',
       recognizeDimensions: '치수 인식',
       recognizeDimensionsHint: '분해된 치수를 치수 객체로 되돌립니다',
+      recognizeExplodedText: '분해된 문자 인식',
+      recognizeExplodedTextHint:
+        'SHX / 외곽선 스트로크 문자를 문자 객체로 되돌립니다(로컬 사전 또는 OCR)',
+      recognizeExplodedTextOff: '끄기',
+      recognizeExplodedTextLocal: '로컬 글리프 사전',
+      recognizeExplodedTextOcr: 'OCR 서비스',
       ok: '확인',
       cancel: '취소'
     }

@@ -2092,11 +2092,16 @@ export default {
   },
   pdfimport: {
     pageNumber: 'أدخل رقم الصفحة (1-{count})',
-    insertionPoint: 'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}) أو',
+    insertionPoint:
+      'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}، النص {text}) أو',
     modePrompt: 'اختر طريقة الاستيراد',
     modeRecover: 'استعادة الرسم',
     modeVisual: 'الحفاظ على مظهر PDF',
     scaleFactor: 'أدخل معامل المقياس',
+    textPrompt: 'اختر طريقة التعرّف على النص المفكّك',
+    textOff: 'إيقاف',
+    textLocal: 'قاموس الحروف المحلي',
+    textOcr: 'خدمة OCR',
     keywords: {
       scale: {
         display: 'مقياس(S)',
@@ -2108,6 +2113,11 @@ export default {
         local: 'الوضع',
         global: 'Mode'
       },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
       recover: {
         display: 'استعادة(R)',
         local: 'استعادة',
@@ -2117,6 +2127,21 @@ export default {
         display: 'مرئي(V)',
         local: 'مرئي',
         global: 'Visual'
+      },
+      off: {
+        display: 'إيقاف(O)',
+        local: 'إيقاف',
+        global: 'Off'
+      },
+      local: {
+        display: 'محلي(L)',
+        local: 'محلي',
+        global: 'Local'
+      },
+      ocr: {
+        display: 'تعرّف(C)',
+        local: 'تعرّف',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: 'حدد نقطة الإدراج',
@@ -2147,6 +2172,12 @@ export default {
       visualHint: 'استيراد المسارات والنصوص كما رُسمت في PDF تمامًا',
       recognizeDimensions: 'التعرّف على الأبعاد',
       recognizeDimensionsHint: 'تحويل الأبعاد المفكّكة إلى كائنات أبعاد',
+      recognizeExplodedText: 'التعرّف على النص المفكّك',
+      recognizeExplodedTextHint:
+        'تحويل نص SHX / المخطط المرسوم بخطوط إلى كائنات نص (قاموس محلي أو OCR)',
+      recognizeExplodedTextOff: 'إيقاف',
+      recognizeExplodedTextLocal: 'قاموس الحروف المحلي',
+      recognizeExplodedTextOcr: 'خدمة OCR',
       ok: 'موافق',
       cancel: 'إلغاء'
     }

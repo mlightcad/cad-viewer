@@ -1988,11 +1988,16 @@ export default {
   },
   pdfimport: {
     pageNumber: 'ページ番号を入力 (1-{count})',
-    insertionPoint: '挿入点を指定（尺度 {scale}、モード {mode}）または',
+    insertionPoint:
+      '挿入点を指定（尺度 {scale}、モード {mode}、文字 {text}）または',
     modePrompt: 'インポート方式を選択',
     modeRecover: '図面を復元',
     modeVisual: 'PDF の見た目を保持',
     scaleFactor: '尺度を入力',
+    textPrompt: '分解文字の認識方法を選択',
+    textOff: 'オフ',
+    textLocal: 'ローカル字形辞書',
+    textOcr: 'OCR サービス',
     keywords: {
       scale: {
         display: '尺度(S)',
@@ -2004,6 +2009,11 @@ export default {
         local: 'モード',
         global: 'Mode'
       },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
       recover: {
         display: '復元(R)',
         local: '復元',
@@ -2013,6 +2023,21 @@ export default {
         display: '見た目(V)',
         local: '見た目',
         global: 'Visual'
+      },
+      off: {
+        display: 'オフ(O)',
+        local: 'オフ',
+        global: 'Off'
+      },
+      local: {
+        display: 'ローカル(L)',
+        local: 'ローカル',
+        global: 'Local'
+      },
+      ocr: {
+        display: '認識(C)',
+        local: '認識',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: '挿入点を指定',
@@ -2042,6 +2067,12 @@ export default {
       visualHint: 'PDF に描かれたとおりにパスと文字を読み込みます',
       recognizeDimensions: '寸法を認識',
       recognizeDimensionsHint: '分解された寸法を寸法オブジェクトに戻します',
+      recognizeExplodedText: '分解文字を認識',
+      recognizeExplodedTextHint:
+        'SHX / 輪郭のストローク文字を文字オブジェクトに戻します（ローカル辞書または OCR）',
+      recognizeExplodedTextOff: 'オフ',
+      recognizeExplodedTextLocal: 'ローカル字形辞書',
+      recognizeExplodedTextOcr: 'OCR サービス',
       ok: 'OK',
       cancel: 'キャンセル'
     }

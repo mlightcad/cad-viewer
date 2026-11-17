@@ -12,6 +12,8 @@ describe('resolveAcApPdfImportOptions', () => {
     // A filled PDF area must stay filled, not collapse to its outline.
     expect(options.fillHatches).toBe(true)
     expect(options.recognizeHatches).toBe(true)
+    expect(options.recognizeDimensions).toBe(true)
+    expect(options.recognizeExplodedText).toBe('local')
   })
 
   test('visual mode keeps PDF paths and text runs as painted', () => {
@@ -27,6 +29,8 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.dashLinetypes).toBe(true)
     expect(options.fillHatches).toBe(true)
     expect(options.recognizeHatches).toBe(false)
+    expect(options.recognizeDimensions).toBe(false)
+    expect(options.recognizeExplodedText).toBe(false)
     expect(options.fitTextWidth).toBe(true)
   })
 
@@ -34,16 +38,25 @@ describe('resolveAcApPdfImportOptions', () => {
     const options = resolveAcApPdfImportOptions({
       mode: 'visual',
       recognizeCurves: true,
-      lineWeights: false
+      lineWeights: false,
+      recognizeExplodedText: 'ocr'
     })
     expect(options.recognizeCurves).toBe(true)
     expect(options.lineWeights).toBe(false)
     expect(options.formBlocks).toBe(false)
+    expect(options.recognizeExplodedText).toBe('ocr')
   })
 
   test('fill hatches can still be turned off', () => {
     expect(
       resolveAcApPdfImportOptions({ fillHatches: false }).fillHatches
+    ).toBe(false)
+  })
+
+  test('exploded text recognition can be turned off in recover mode', () => {
+    expect(
+      resolveAcApPdfImportOptions({ recognizeExplodedText: false })
+        .recognizeExplodedText
     ).toBe(false)
   })
 })

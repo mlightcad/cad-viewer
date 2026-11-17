@@ -16,7 +16,12 @@ export function viewerMock() {
   }
   return {
     AcApDocManager: {
-      instance: { loadFonts, regen, avaiableFonts: [] }
+      instance: {
+        loadFonts,
+        regen,
+        avaiableFonts: [],
+        withBusyIndicator: async <T>(work: () => Promise<T>) => work()
+      }
     },
     // The drawing's current style font (SimKai) is a TrueType face.
     AcApFontUtil: {
@@ -36,7 +41,10 @@ export function viewerMock() {
     AcApI18n: { t: (key: string) => key, currentLocale: 'en' },
     AcApLlmSettingsService: { getStatus: async () => undefined },
     AcApPaletteService: { open: paletteOpen },
-    AcApTextRecognitionService: { hasRecognizer: false },
+    AcApTextRecognitionService: {
+      hasRecognizer: false,
+      recognizeBatch: async () => []
+    },
     acapZoomToVisible: jest.fn(),
     AcEdCommand,
     AcEdOpenMode: { Write: 2 },
@@ -72,17 +80,22 @@ export function strokesMock() {
 
 /** One line per stroke. */
 export function clusteringMock() {
+  const clusterPdfTextStrokes = (strokes: Array<{ id: string }>) => ({
+    lines: strokes.map(stroke => ({
+      strokes: [stroke],
+      glyphs: [],
+      position: { x: 0, y: 0 },
+      height: 1,
+      width: 1,
+      rotation: 0
+    })),
+    rejected: [],
+    textHeight: 1
+  })
   return {
-    clusterPdfTextStrokes: (strokes: Array<{ id: string }>) => ({
-      lines: strokes.map(stroke => ({
-        strokes: [stroke],
-        glyphs: [],
-        position: { x: 0, y: 0 },
-        height: 1,
-        width: 1,
-        rotation: 0
-      }))
-    })
+    clusterPdfTextStrokes,
+    clusterPdfTextStrokesMultiScale: clusterPdfTextStrokes,
+    isImplausiblePdfTextLine: () => false
   }
 }
 

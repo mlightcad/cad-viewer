@@ -2101,11 +2101,15 @@ export default {
   pdfimport: {
     pageNumber: 'Sayfa numarasını girin (1-{count})',
     insertionPoint:
-      'Ekleme noktasını belirtin (ölçek {scale}, mod {mode}) veya',
+      'Ekleme noktasını belirtin (ölçek {scale}, mod {mode}, metin {text}) veya',
     modePrompt: 'İçe aktarma yöntemini seçin',
     modeRecover: 'çizimi kurtar',
     modeVisual: 'PDF görünümünü koru',
     scaleFactor: 'Ölçek faktörünü girin',
+    textPrompt: 'Patlatılmış metin tanıma yöntemini seçin',
+    textOff: 'kapalı',
+    textLocal: 'yerel glif sözlüğü',
+    textOcr: 'OCR hizmeti',
     keywords: {
       scale: {
         display: 'Ölçek(S)',
@@ -2117,6 +2121,11 @@ export default {
         local: 'Mod',
         global: 'Mode'
       },
+      text: {
+        display: 'Metin(T)',
+        local: 'Metin',
+        global: 'Text'
+      },
       recover: {
         display: 'Kurtar(R)',
         local: 'Kurtar',
@@ -2126,6 +2135,21 @@ export default {
         display: 'Görünüm(V)',
         local: 'Görünüm',
         global: 'Visual'
+      },
+      off: {
+        display: 'Kapalı(O)',
+        local: 'Kapalı',
+        global: 'Off'
+      },
+      local: {
+        display: 'Yerel(L)',
+        local: 'Yerel',
+        global: 'Local'
+      },
+      ocr: {
+        display: 'Ocr(C)',
+        local: 'Ocr',
+        global: 'Ocr'
       }
     },
     pickInsertionPoint: 'Ekleme noktasını belirtin',
@@ -2157,6 +2181,12 @@ export default {
       recognizeDimensions: 'Ölçüleri tanı',
       recognizeDimensionsHint:
         'Patlatılmış ölçüleri ölçü nesnelerine dönüştürür',
+      recognizeExplodedText: 'Patlatılmış metni tanı',
+      recognizeExplodedTextHint:
+        'SHX / kontur çizgi metnini metin nesnelerine dönüştürür (yerel sözlük veya OCR)',
+      recognizeExplodedTextOff: 'Kapalı',
+      recognizeExplodedTextLocal: 'Yerel glif sözlüğü',
+      recognizeExplodedTextOcr: 'OCR hizmeti',
       ok: 'Tamam',
       cancel: 'İptal'
     }

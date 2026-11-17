@@ -27,13 +27,14 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscal
    - **PDF görünümünü koru**: PDF'i göründüğü gibi korur. Her yol bir çizgi veya çoklu çizgi (eğriler parçalanır), her metin parçası ayrı bir metin olur; birleştirme, yineleme temizliği veya blok oluşturma yapılmaz. Kurtarma sayfanın görünümünü değiştirdiğinde kullanın.
 5. **Tamam**'a tıklayın. Konum, ölçek ve mod bir sonraki `pdfimport` için hatırlanır.
 
-`-pdfimport` iletişim kutusu olmadan içe aktarır: dosya seçildikten sonra komut satırında sayfayı (yalnızca çok sayfalı dosyalar), ardından **Ölçek** ve **Mod** seçenekleriyle ekleme noktasını sorar. Enter başlangıç noktasını kabul eder.
+`-pdfimport` iletişim kutusu olmadan içe aktarır: dosya seçildikten sonra komut satırında sayfayı (yalnızca çok sayfalı dosyalar), ardından **Ölçek**, **Mod** ve (Kurtar modunda) **Metin** seçenekleriyle ekleme noktasını sorar. Enter başlangıç noktasını kabul eder.
 
 **Çizimi kurtar** modunda otomatik olarak yeniden oluşturulanlar:
 
 - **Eğriler**: Bézier daireler, yaylar ve elipsler daire, yay ve elips olur. Çizgi ve yayları karıştıran dış hatlar yay parçalı çoklu çizgiler olur. Üretici tarafından zaten kısa çizgilere bölünmüş yaylar yeniden uydurulur. Serbest eğriler spline olur.
 - **Bloklar**: aynı PDF formundan birkaç kez çizilen içerik tek bir blok (`PDF_FORM_n`) olur; döndürülmüş ve aynalanmış olanlar dahil her kopya bir blok referansı olur.
 - **Stiller**: çizgi genişlikleri çizgi kalınlığına dönüşür, kesikli çizgiler `PDF_DASH_*` çizgi tipini, metin ise `PDF_<yazı tipi>` metin stilini alır. Bir satırın bölünmüş metin parçaları birleştirilir.
+- **Patlatılmış metin**: glif sözlüğünün (ve isteğe bağlı olarak `AcApTextRecognitionService` üzerinden kayıtlı OCR’nin) okuyabildiği SHX / kontur çizgi metni metin nesnelerine dönüşür. İçe aktarma iletişim kutusunda **Kapalı**, **Yerel glif sözlüğü** veya **OCR hizmeti** seçin; okunamayan çizgiler `pdftext` için kalır. Tanıma her zaman çizgileri satırlara kümeleştirir ve OCR için her satırı sabit metin yüksekliğinde yeniden rasterleştirir — tüm sayfa tek görüntü olarak gönderilmez.
 - **Temizlik**: tamamen aynı olan yinelenen dış hatlar atılır.
 
 Dolgulu alanlar (renkli paneller, dolgulu logolar ve metin dış hatları) dolgu renginde düz tarama olarak, sayfadaki çizim sırasıyla içe aktarılır. Entegrasyonlar yalnızca dış hat almak için `fillHatches` seçeneğini `false` yapabilir.
