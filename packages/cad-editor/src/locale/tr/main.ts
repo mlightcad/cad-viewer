@@ -282,6 +282,9 @@ export default {
       ellipse: 'Elips',
       arc: 'Eliptik Yay'
     },
+    pdfText: {
+      auto: 'Otomatik'
+    },
     tooltip: {
       searchConvert:
         'Seçili nesnelerin tüm kopyalarını bulur ve bloklara dönüştürür (BSEARCH).',
@@ -299,6 +302,8 @@ export default {
         'PDF içindeki tekrarlanan geometriyi bloğa dönüştürür ve her kopyayı blok referansıyla değiştirir (PDFBLOCK).',
       pdfText:
         'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür (PDFTEXT).',
+      pdfTextAuto:
+        'Glif sözlüğünden sonra kullanılabilir OCR sağlayıcılarını sırayla dener (PDFTEXT).',
       line: 'Tek bir düz çizgi parçası çizin.',
       polyline:
         'Bağlı bir dizi çizgi veya yay parçasını tek bir nesne olarak çizin.',

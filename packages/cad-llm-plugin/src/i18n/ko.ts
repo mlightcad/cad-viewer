@@ -87,5 +87,9 @@ export const llmKo = {
   deleteProvider: '공급자 삭제',
   deleteProviderConfirm: '공급자 "{id}"와(과) 해당 API 키를 삭제하시겠습니까?',
   recognitionTimeout: 'AI 모델이 {seconds}초 안에 응답하지 않았습니다',
+  ocrLabel: '비전 LLM',
+  ocrKeywordDisplay: '비전 LLM(L)',
+  ocrKeywordLocal: '비전 LLM',
+  ocrKeywordGlobal: 'Llm',
   close: '닫기'
 } satisfies Record<keyof typeof llmEn, string>

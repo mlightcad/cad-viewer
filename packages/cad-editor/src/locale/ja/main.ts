@@ -280,6 +280,9 @@ export default {
       ellipse: '楕円',
       arc: '楕円弧'
     },
+    pdfText: {
+      auto: '自動'
+    },
     tooltip: {
       searchConvert:
         '選択したオブジェクトのすべてのコピーを検索してブロックに変換します（BSEARCH）。',
@@ -297,6 +300,8 @@ export default {
         'PDF の繰り返し図形をブロックにし、各コピーをブロック参照に置き換えます (PDFBLOCK)。',
       pdfText:
         'PDF で分解された文字のストロークを文字オブジェクトに戻します (PDFTEXT)。',
+      pdfTextAuto:
+        '字形辞書の後、利用可能な OCR を順に試します (PDFTEXT)。',
       line: '1 本の直線セグメントを作成します。',
       polyline:
         '連続した線分または円弧セグメントを 1 つのオブジェクトとして作成します。',

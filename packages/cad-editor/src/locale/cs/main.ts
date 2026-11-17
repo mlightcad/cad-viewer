@@ -325,6 +325,9 @@ export default {
       ellipse: 'Elipsa',
       arc: 'Eliptický oblouk'
     },
+    pdfText: {
+      auto: 'Automaticky'
+    },
     tooltip: {
       searchConvert:
         'Vyhledá všechny kopie vybraných objektů a převede je na bloky (BSEARCH).',
@@ -342,6 +345,8 @@ export default {
         'Převede opakovanou geometrii z PDF na blok a každou kopii nahradí referencí bloku (PDFBLOCK).',
       pdfText:
         'Převede rozložené tahy textu z PDF zpět na textové objekty (PDFTEXT).',
+      pdfTextAuto:
+        'Po slovníku znaků zkusí postupně všechny dostupné OCR služby (PDFTEXT).',
       line: 'Nakreslí jednu úsečku.',
       polyline: 'Nakreslí spojenou řadu úseček nebo oblouků jako jeden objekt.',
       spline: 'Nakreslí hladkou křivku splajn proložením nebo řídicími body.',

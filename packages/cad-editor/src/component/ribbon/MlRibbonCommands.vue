@@ -31,6 +31,8 @@ import {
   acapScreenPxToWcs,
   acapSetMeasurementDrawColor,
   acapSetMeasurementTextHeight,
+  AcApTextRecognitionService,
+  type AcApTextRecognizerInfo,
   type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
@@ -797,6 +799,10 @@ const activateRibbonTabAfterDrawCommand = (args: AcEdCommandEventArgs) => {
 }
 
 onMounted(() => {
+  void refreshPdfTextOcrProviders()
+  AcApTextRecognitionService.events.changed.addEventListener(
+    handleTextRecognitionChanged
+  )
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
   )
@@ -842,6 +848,9 @@ onUnmounted(() => {
   unsubscribeMarkupStore = undefined
   unsubscribeMeasurementSelection?.()
   unsubscribeMeasurementSelection = undefined
+  AcApTextRecognitionService.events.changed.removeEventListener(
+    handleTextRecognitionChanged
+  )
   AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
     handleSysVarChange
   )
@@ -1278,6 +1287,23 @@ const applyOpenModeTabVisibility = (
  * CAD conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily
  * on first use like their command-line counterparts.
  */
+const PDFTEXT_AUTO_ITEM_ID = 'pdftext-auto'
+const PDFTEXT_OCR_ITEM_PREFIX = 'pdftext-ocr:'
+
+/** Ribbon dropdown value for one OCR recognizer (URI-encoded id). */
+function pdfTextOcrItemId(recognizerId: string): string {
+  return `${PDFTEXT_OCR_ITEM_PREFIX}${encodeURIComponent(recognizerId)}`
+}
+
+function parsePdfTextOcrItemId(itemId: string): string | undefined {
+  if (!itemId.startsWith(PDFTEXT_OCR_ITEM_PREFIX)) return undefined
+  try {
+    return decodeURIComponent(itemId.slice(PDFTEXT_OCR_ITEM_PREFIX.length))
+  } catch {
+    return undefined
+  }
+}
+
 const buildAiTab = (
   agentPluginEnabled: boolean,
   llmPluginEnabled: boolean,
@@ -1293,7 +1319,10 @@ const buildAiTab = (
     | 'pdfDim'
     | 'pdfHatch',
     string
-  >
+  >,
+  pdfTextOcrProviders: AcApTextRecognizerInfo[],
+  pdfTextAutoLabel: string,
+  pdfTextAutoTooltip: string
 ): RibbonTabModel => {
   const largeButton = (
     id: string,
@@ -1308,6 +1337,20 @@ const buildAiTab = (
     size: 'large' as const,
     props: { icon, labelWrapLines: 2, labelWrapWidth: 'max-content' }
   })
+  const pdfTextOptions = [
+    {
+      id: PDFTEXT_AUTO_ITEM_ID,
+      value: PDFTEXT_AUTO_ITEM_ID,
+      label: pdfTextAutoLabel,
+      tooltip: pdfTextAutoTooltip
+    },
+    ...pdfTextOcrProviders.map(provider => ({
+      id: pdfTextOcrItemId(provider.id),
+      value: pdfTextOcrItemId(provider.id),
+      label: provider.label,
+      tooltip: provider.label
+    }))
+  ]
   return {
     id: 'ai',
     title: t('main.ribbon.tab.ai'),
@@ -1404,12 +1447,19 @@ const buildAiTab = (
                 ribbonTooltips.pdfScale,
                 ScaleToOriginal
               ),
-              largeButton(
-                'cmd-pdftext',
-                t('main.ribbon.command.pdfText'),
-                ribbonTooltips.pdfText,
-                pdfTextRecognize
-              ),
+              {
+                id: 'cmd-pdftext',
+                type: 'dropdown' as const,
+                label: t('main.ribbon.command.pdfText'),
+                tooltip: ribbonTooltips.pdfText,
+                size: 'large' as const,
+                props: {
+                  icon: pdfTextRecognize,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content',
+                  options: pdfTextOptions
+                }
+              },
               largeButton(
                 'cmd-pdfblock',
                 t('main.ribbon.command.pdfBlock'),
@@ -3421,16 +3471,44 @@ const buildBaseTabs = (
     groups: measurementGroups
   })
 
-  tabs.push(buildAiTab(agentPluginEnabled, llmPluginEnabled, ribbonTooltips))
+  tabs.push(
+    buildAiTab(
+      agentPluginEnabled,
+      llmPluginEnabled,
+      ribbonTooltips,
+      pdfTextOcrProviders.value,
+      t('main.ribbon.pdfText.auto'),
+      t('main.ribbon.tooltip.pdfTextAuto')
+    )
+  )
 
   return markComponentConfigRaw(applyOpenModeTabVisibility(tabs, openMode))
+}
+
+/** Available OCR entries for the AI → PDF → Recover Text dropdown. */
+const pdfTextOcrProviders = ref<AcApTextRecognizerInfo[]>([])
+
+async function refreshPdfTextOcrProviders() {
+  try {
+    pdfTextOcrProviders.value = await AcApTextRecognitionService.listAvailable()
+  } catch {
+    pdfTextOcrProviders.value = []
+  }
+}
+
+/** Lazy OCR plugins register after mount — keep the Recover Text list in sync. */
+const handleTextRecognitionChanged = () => {
+  void refreshPdfTextOcrProviders()
 }
 
 const ribbonData = computed(() => {
   locale.value
   store.features.agentPlugin
   store.features.llmPlugin
+  store.features.paddleOcrPlugin
   store.features.scriptPlugin
+  // Rebuild when OCR providers sync (LLM model settings / paddleocr).
+  pdfTextOcrProviders.value
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
@@ -3551,7 +3629,7 @@ const ribbonData = computed(() => {
   }
   commandByItemId.set('cmd-pdfimport', 'pdfimport')
   commandByItemId.set('cmd-pdfscale', 'pdfscale')
-  commandByItemId.set('cmd-pdftext', 'pdftext')
+  // cmd-pdftext / pdftext-* handled in handleRibbonItemClick (OCR picker).
   commandByItemId.set('cmd-pdfblock', 'pdfblock')
   commandByItemId.set('cmd-pdfdim', 'pdfdim')
   commandByItemId.set('cmd-pdfhatch', 'pdfhatch')
@@ -3728,6 +3806,17 @@ const ribbonTexts = computed<RibbonLocaleTexts>(() => {
   }
 })
 
+const runPdfTextCommand = async (recognizerId?: string) => {
+  const { AcApPdfTextCmd } = await import('@mlightcad/cad-pdf-plugin')
+  AcApPdfTextCmd.preferRecognizer(recognizerId)
+  await AcApDocManager.instance.pluginManager.loadByTrigger('pdftext')
+  AcApDocManager.instance.sendStringToExecute('pdftext')
+}
+
+watch(activeRibbonTabId, tabId => {
+  if (tabId === 'ai') void refreshPdfTextOcrProviders()
+})
+
 const handleRibbonItemClick = (payload: {
   tabId: string
   groupId: string
@@ -3736,6 +3825,18 @@ const handleRibbonItemClick = (payload: {
   if (isRibbonDisabled.value) return
   if (handleHatchItem(payload.itemId)) return
   if (handleMTextItem(payload.itemId)) return
+  if (
+    payload.itemId === 'cmd-pdftext' ||
+    payload.itemId === PDFTEXT_AUTO_ITEM_ID
+  ) {
+    void runPdfTextCommand(undefined)
+    return
+  }
+  const pdfTextOcrId = parsePdfTextOcrItemId(payload.itemId)
+  if (pdfTextOcrId !== undefined) {
+    void runPdfTextCommand(pdfTextOcrId)
+    return
+  }
   if (payload.itemId === 'cmd-group-select') {
     togglePickstyleGroupSelection()
     return

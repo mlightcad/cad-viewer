@@ -357,9 +357,31 @@ export const registerMTextColorPicker = () => {
 }
 
 let isLazyPluginRegistered = false
+let isPaddleOcrIntegrationStarted = false
 let isLlmIntegrationStarted = false
 let isAgentIntegrationStarted = false
 let isScriptIntegrationStarted = false
+
+/**
+ * Registers the local PaddleOCR text recognizer when the optional
+ * `@mlightcad/cad-paddleocr-plugin` peer is installed. Must run before the
+ * LLM recognizer so unread lines fall back to the vision model.
+ */
+const registerPaddleOcrIntegration = async (
+  pluginManager: AcApPluginManager
+) => {
+  try {
+    const paddleRegister = await import(
+      '@mlightcad/cad-paddleocr-plugin/register'
+    )
+    paddleRegister.registerLazyPaddleOcrPlugin(pluginManager, {
+      wasmPaths: './vendor/onnxruntime/'
+    })
+    store.features.paddleOcrPlugin = true
+  } catch {
+    // Optional peer `@mlightcad/cad-paddleocr-plugin` is not installed.
+  }
+}
 
 /**
  * Registers the shared AI model settings (`llmsettings`, LLM text
@@ -451,11 +473,12 @@ export interface RegisterLazyPluginsOptions {
  * Registers lazy plugins that load on first use of their trigger commands.
  *
  * Currently registers the PDF plugin (`-cpdf`, `pdfimport`), the HTML export
- * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the AI
- * model settings (`llmsettings`) when `@mlightcad/cad-llm-plugin` is
- * installed, the CAD Agent plugin (`agent`) when
- * `@mlightcad/cad-agent-plugin` is installed, and the
- * script console (`cadscript`) when `@mlightcad/cad-script-plugin` is installed.
+ * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally local
+ * PaddleOCR text recognition when `@mlightcad/cad-paddleocr-plugin` is
+ * installed, the AI model settings (`llmsettings`) when
+ * `@mlightcad/cad-llm-plugin` is installed, the CAD Agent plugin (`agent`)
+ * when `@mlightcad/cad-agent-plugin` is installed, and the script console
+ * (`cadscript`) when `@mlightcad/cad-script-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
  * are skipped and the PDF plugin only exposes `pdfimport`. Host UI commands
  * `chtml` / `cpdf` open export dialogs and load the plugins on confirm.
@@ -478,7 +501,19 @@ export const registerLazyPlugins = (
     registerLazySvgPlugin(pluginManager)
   }
 
-  if (!isLlmIntegrationStarted) {
+  if (!isPaddleOcrIntegrationStarted) {
+    isPaddleOcrIntegrationStarted = true
+    // Await Paddle before LLM so registration order is paddleocr → cad-llm.
+    // Both stay async (optional peers), but OCR pickers listen to
+    // AcApTextRecognitionService.events.changed so the UI catches up.
+    void (async () => {
+      await registerPaddleOcrIntegration(pluginManager)
+      if (!isLlmIntegrationStarted) {
+        isLlmIntegrationStarted = true
+        await registerLlmIntegration(pluginManager)
+      }
+    })()
+  } else if (!isLlmIntegrationStarted) {
     isLlmIntegrationStarted = true
     void registerLlmIntegration(pluginManager)
   }

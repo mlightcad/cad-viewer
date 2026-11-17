@@ -8,6 +8,7 @@
  * @packageDocumentation
  */
 
+export * from './AcApLlmOcrProviders.js'
 export * from './AcApLlmPlugin.js'
 export * from './AcApLlmTextRecognizer.js'
 export * from './command/AcApLlmSettingsCmd.js'

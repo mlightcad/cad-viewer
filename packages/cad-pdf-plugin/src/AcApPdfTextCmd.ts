@@ -5,6 +5,7 @@ import {
   AcApI18n,
   AcApLlmSettingsService,
   AcApPaletteService,
+  AcApTextRecognitionService,
   acapZoomToVisible,
   AcEdCommand,
   AcEdOpenMode,
@@ -78,6 +79,29 @@ export class AcApPdfTextCmd extends AcEdCommand {
   private static dictionaryLoaded = false
   /** Set once the "OCR is off" hint was shown, so it does not nag. */
   private static ocrHintShown = false
+  /**
+   * OCR recognizer id for the next {@link execute} (e.g. ribbon model pick).
+   * `undefined` keeps the auto chain. Consumed once per run.
+   */
+  private static preferredRecognizerId: string | undefined
+  private static preferredRecognizerPending = false
+
+  /**
+   * Pins the OCR recognizer used by the next `pdftext` run (ribbon dropdown).
+   * Pass `undefined` for the auto chain (every `auto` recognizer in order).
+   */
+  static preferRecognizer(id: string | undefined): void {
+    this.preferredRecognizerId = id
+    this.preferredRecognizerPending = true
+  }
+
+  private static takePreferredRecognizer(): string | undefined {
+    if (!this.preferredRecognizerPending) return undefined
+    this.preferredRecognizerPending = false
+    const id = this.preferredRecognizerId
+    this.preferredRecognizerId = undefined
+    return id
+  }
 
   /**
    * The shared glyph dictionary, loaded from `localStorage` on first use so
@@ -135,11 +159,13 @@ export class AcApPdfTextCmd extends AcEdCommand {
     })
 
     this.ocrErrorShown = false
-    await this.hintWhenOcrUnavailable()
+    const recognizerId = AcApPdfTextCmd.takePreferredRecognizer()
+    await this.hintWhenOcrUnavailable(recognizerId)
 
     const recognized = await acapPdfRecognizeExplodedTextLines(strokes, {
       dictionary: AcApPdfTextCmd.glyphDictionary,
       mode: 'ocr',
+      ...(recognizerId ? { recognizerId } : {}),
       locale: AcApI18n.currentLocale,
       withBusy: (work, message) =>
         AcApDocManager.instance.withBusyIndicator(work, message),
@@ -329,13 +355,20 @@ export class AcApPdfTextCmd extends AcEdCommand {
   }
 
   /**
-   * Tells the user once per session how to turn on OCR suggestions when the
-   * shared AI model settings report no image-capable model.
+   * Tells the user once per session how to turn on OCR suggestions when no
+   * OCR provider is currently available (for example no vision LLM and no
+   * local engine).
    */
-  private async hintWhenOcrUnavailable() {
+  private async hintWhenOcrUnavailable(recognizerId?: string) {
     if (AcApPdfTextCmd.ocrHintShown) return
+    if (recognizerId) {
+      if (AcApTextRecognitionService.has(recognizerId)) return
+    } else {
+      const available = await AcApTextRecognitionService.listAvailable()
+      if (available.length > 0) return
+    }
     const status = await AcApLlmSettingsService.getStatus()
-    if (!status || status.vision) return
+    if (!status) return
     AcApPdfTextCmd.ocrHintShown = true
     this.notify(AcApI18n.t('jig.pdftext.ocrNotConfigured'))
   }

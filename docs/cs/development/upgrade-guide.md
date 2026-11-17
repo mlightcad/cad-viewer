@@ -21,6 +21,26 @@ Migrace:
 - Pojmenované karty: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **vyžadují registrovaného hostitele** (bez dock fallbacku). Hostované `HTMLElement` panely dál používají `AcApPaletteService.open`.
   :::
 
+::: info Místní PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
+Od vydání, které obsahuje tuto změnu, mohou hostitelé nainstalovat **`@mlightcad/cad-paddleocr-plugin`** pro OCR rozloženého PDF textu v prohlížeči (`pdftext` / OCR při importu PDF). Registruje rozpoznávač `paddleocr` v `AcApTextRecognitionService`; Wasm a ONNX modely se načtou až při prvním OCR. Seznam „Rozpoznat rozložený text“ při importu PDF ukazuje každou *dostupnou* OCR volbu: místní PaddleOCR a každý nakonfigurovaný vision LLM **model** (např. `kkidc — model-id`), ne jeden řádek na poskytovatele.
+
+Migrace:
+
+- Nainstalujte `@mlightcad/cad-paddleocr-plugin` a volejte `registerLazyPaddleOcrPlugin` **před** `registerLazyLlmPlugin`, aby nepřečtené řádky spadly na vision LLM. Při nainstalovaném balíčku to `@mlightcad/cad-editor` udělá sám.
+- Servírujte wasm soubory ONNX Runtime Web ze stejného původu (dema používají `./vendor/onnxruntime/`) a předejte `wasmPaths`.
+- `AcApTextRecognitionService.has(id)` zjistí, zda je daný rozpoznávač registrován (např. přeskočit nápovědu LLM „OCR není nastaveno“, když je přítomen `paddleocr`).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info Sdílené nastavení modelu AI (`@mlightcad/cad-llm-plugin`)
 Od vydání, které obsahuje tuto změnu, se nastavení poskytovatelů LLM přesouvá z `@mlightcad/cad-agent-plugin` do nového balíčku **`@mlightcad/cad-llm-plugin`**, takže CAD agent i rozpoznávání textu `pdftext` (OCR) sdílejí jednu konfiguraci. Nový balíček přidává příkaz **LLMSETTINGS** a dialog nastavení nezávislý na UI frameworku (dostupný i na kartě AI pásu karet v `@mlightcad/cad-editor`) a `@mlightcad/cad-simple-viewer` přidává `AcApLlmSettingsService`, přes který může jakákoli funkce dialog otevřít nebo zjistit, zda je nakonfigurován model s podporou obrázků.
 

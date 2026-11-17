@@ -33,6 +33,9 @@ export {
   acapPdfSetImportResourceUrls
 } from './AcApPdfImportResources.js'
 export {
+  acapPdfExplodedTextModeIsOcr,
+  acapPdfExplodedTextOcrId,
+  acapPdfNormalizeExplodedTextMode,
   type AcApPdfExplodedTextMode,
   type AcApPdfImportMode,
   type AcApPdfImportOptions,

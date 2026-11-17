@@ -8,12 +8,14 @@ import {
   AcApDocManager,
   AcApFontUtil,
   AcApI18n,
-  AcApLlmSettingsService,
   AcApTextRecognitionService
 } from '@mlightcad/cad-simple-viewer'
 import type { AcDbDatabase, AcDbEntity } from '@mlightcad/data-model'
 
 import { acapPdfT } from './acapPdfI18n.js'
+import {
+  type AcApPdfExplodedTextMode,
+  acapPdfExplodedTextModeIsOcr} from './AcApPdfImportOptions.js'
 import {
   AcApPdfTextSession,
   type PdfTextMeasurer
@@ -42,11 +44,11 @@ export interface AcApPdfImportExplodedText {
 
 /** Options for {@link acapPdfRecognizeImportExplodedText}. */
 export interface AcApPdfRecognizeImportExplodedTextOptions {
-  /** `'local'` or `'ocr'` (see {@link AcApPdfImportOptions.recognizeExplodedText}). */
-  mode: 'local' | 'ocr'
+  /** See {@link AcApPdfImportOptions.recognizeExplodedText}. */
+  mode: Exclude<AcApPdfExplodedTextMode, false>
   /**
-   * Notifies once when OCR was requested but no recognizer / no vision model
-   * is available.
+   * Notifies once when OCR was requested but the chosen provider is missing
+   * or unavailable.
    */
   onOcrUnavailable?: () => void
   /** Notifies when a recognizer throws. */
@@ -89,21 +91,26 @@ export async function acapPdfRecognizeImportExplodedText(
     return { entities, converted: 0, replaced: 0, unread: 0 }
   }
 
-  let ocrMode = options.mode
-  if (ocrMode === 'ocr' && !AcApTextRecognitionService.hasRecognizer) {
-    options.onOcrUnavailable?.()
-    ocrMode = 'local'
-  } else if (ocrMode === 'ocr') {
-    // Soft hint when settings report no vision model (LLM plugin installed
-    // but not configured). Still attempt OCR — another recognizer may work.
-    const status = await AcApLlmSettingsService.getStatus()
-    if (status && !status.vision) options.onOcrUnavailable?.()
+  let mode: 'local' | 'ocr' = 'local'
+  let recognizerId: string | undefined
+  if (acapPdfExplodedTextModeIsOcr(options.mode)) {
+    const available = await AcApTextRecognitionService.listAvailable()
+    recognizerId = options.mode.ocr || available[0]?.id
+    if (
+      !recognizerId ||
+      !available.some(provider => provider.id === recognizerId)
+    ) {
+      options.onOcrUnavailable?.()
+    } else {
+      mode = 'ocr'
+    }
   }
 
   let ocrErrorShown = false
   const recognized = await acapPdfRecognizeExplodedTextLines(strokes, {
     dictionary,
-    mode: ocrMode,
+    mode,
+    ...(mode === 'ocr' && recognizerId ? { recognizerId } : {}),
     // Whole-page import mixes linework with text; do not pull long strokes
     // into text bands (same as dimension stroke reading).
     cluster: { attachLongStrokes: false },

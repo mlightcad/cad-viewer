@@ -2064,10 +2064,10 @@ export default {
       recognizeDimensionsHint: '분해된 치수를 치수 객체로 되돌립니다',
       recognizeExplodedText: '분해된 문자 인식',
       recognizeExplodedTextHint:
-        'SHX / 외곽선 스트로크 문자를 문자 객체로 되돌립니다(로컬 사전 또는 OCR)',
+        'SHX / 외곽선 스트로크 문자를 문자 객체로 되돌립니다(로컬 사전 또는 사용 가능한 OCR 제공자)',
       recognizeExplodedTextOff: '끄기',
       recognizeExplodedTextLocal: '로컬 글리프 사전',
-      recognizeExplodedTextOcr: 'OCR 서비스',
+      recognizeExplodedTextOcr: 'OCR',
       ok: '확인',
       cancel: '취소'
     }

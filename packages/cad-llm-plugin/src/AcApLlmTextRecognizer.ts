@@ -9,8 +9,17 @@ import { acapLlmCreateModel } from './model/AcApLlmModelFactory.js'
 import { acapLlmSkipDataUrlDownload } from './model/skipDataUrlDownload.js'
 import {
   acapLlmLoadConfig,
-  acapLlmResolveVisionSettings
+  acapLlmResolveVisionSettings,
+  acapLlmResolveVisionSettingsForModel,
+  acapLlmResolveVisionSettingsForProvider
 } from './storage/AcApLlmConfigStore.js'
+
+/** Optional pin to one LLM provider / model for OCR. */
+export interface AcApLlmOcrTarget {
+  providerId: string
+  /** When omitted, the provider's preferred vision model is used. */
+  modelId?: string
+}
 
 const TEXT_RECOGNITION_SYSTEM_PROMPT = `You read text from images of CAD drawings.
 
@@ -94,10 +103,11 @@ const BATCH_CONCURRENCY = 3
  * @returns One entry per image, in order; `undefined` when unread.
  */
 export async function acapLlmRecognizeTextBatch(
-  request: AcApTextBatchRecognitionRequest
+  request: AcApTextBatchRecognitionRequest,
+  target?: AcApLlmOcrTarget
 ): Promise<Array<string | undefined>> {
   const config = await acapLlmLoadConfig()
-  const settings = acapLlmResolveVisionSettings(config)
+  const settings = resolveOcrSettings(config, target)
   const none = request.images.map(() => undefined)
   if (!settings || request.images.length === 0) return none
 
@@ -189,18 +199,20 @@ export function acapLlmParseBatchText(
  *
  * Uses the active model when it accepts images, otherwise the first
  * vision-capable model of a configured provider (see
- * {@link acapLlmResolveVisionSettings}). Returns `undefined` when there is
- * none, so callers fall back to manual input. Registered as the `cad-llm`
- * recognizer in `AcApTextRecognitionService` by `registerLazyLlmPlugin`.
+ * {@link acapLlmResolveVisionSettings}). Pass `target` to pin one provider
+ * and optional model (PDF import OCR picker). Returns `undefined` when there
+ * is none, so callers fall back to manual input.
  *
  * @param request - Image, optional context hint, locale and abort signal.
+ * @param target - Optional LLM provider / model to use exclusively.
  * @returns Recognized text, or `undefined`.
  */
 export async function acapLlmRecognizeText(
-  request: AcApTextRecognitionRequest
+  request: AcApTextRecognitionRequest,
+  target?: AcApLlmOcrTarget
 ): Promise<string | undefined> {
   const config = await acapLlmLoadConfig()
-  const settings = acapLlmResolveVisionSettings(config)
+  const settings = resolveOcrSettings(config, target)
   if (!settings) return undefined
 
   const hints = [
@@ -241,4 +253,19 @@ export function acapLlmCleanRecognizedText(text: string): string | undefined {
     cleaned = cleaned.slice(1, -1).trim()
   }
   return cleaned || undefined
+}
+
+function resolveOcrSettings(
+  config: Awaited<ReturnType<typeof acapLlmLoadConfig>>,
+  target?: AcApLlmOcrTarget
+) {
+  if (!target) return acapLlmResolveVisionSettings(config)
+  if (target.modelId) {
+    return acapLlmResolveVisionSettingsForModel(
+      config,
+      target.providerId,
+      target.modelId
+    )
+  }
+  return acapLlmResolveVisionSettingsForProvider(config, target.providerId)
 }

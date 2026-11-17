@@ -29,6 +29,26 @@ Migrate hosts / plugins:
 - Named built-in tabs open through **`AcApPaletteService.openNamedTab`** / optional `AcApPaletteHost.openNamedTab` (ids in `ACAP_PALETTE_NAMED_TAB`) and **require a registered host** — there is no dock fallback for named tabs. Opens requested before a host is registered are queued and flushed when the host arrives (covers the async `simpleUi` load gap). Hosted HTMLElement panels still use `AcApPaletteService.open`.
   :::
 
+::: info Local PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
+Starting with the release that includes this change, hosts can install **`@mlightcad/cad-paddleocr-plugin`** for in-browser OCR of exploded PDF text (`pdftext` / PDF import OCR). It registers the `paddleocr` recognizer in `AcApTextRecognitionService`. Wasm and ONNX models load only on the first OCR request. The PDF import “Recognize exploded text” list shows each *available* OCR option: local PaddleOCR and every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not one row per provider.
+
+Migrate hosts:
+
+- Install `@mlightcad/cad-paddleocr-plugin` and call `registerLazyPaddleOcrPlugin` **before** `registerLazyLlmPlugin`, so unread lines still fall back to the vision LLM. `@mlightcad/cad-editor` does this when the package is installed.
+- Serve ONNX Runtime Web wasm files from a same-origin path (demos use `./vendor/onnxruntime/`) and pass `wasmPaths` to `registerLazyPaddleOcrPlugin`.
+- `AcApTextRecognitionService.has(id)` can check whether a given recognizer is registered (for example skip the “OCR not configured” LLM hint when `paddleocr` is present).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info Shared AI model settings (`@mlightcad/cad-llm-plugin`)
 Starting with the release that includes this change, the LLM provider settings move out of `@mlightcad/cad-agent-plugin` into the new **`@mlightcad/cad-llm-plugin`**, so the CAD Agent and `pdftext` text recognition (OCR) share one configuration. The new package adds the **LLMSETTINGS** command, a framework-free settings dialog (also on the AI ribbon tab of `@mlightcad/cad-editor`), and `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService` so any feature can open the dialog or check whether a vision model is configured.
 
@@ -281,6 +301,7 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 | Package                                  | Purpose                                                                  |
 | ---------------------------------------- | ------------------------------------------------------------------------ |
 | `@mlightcad/cad-html-plugin`             | One-click self-contained HTML export                                     |
+| `@mlightcad/cad-paddleocr-plugin`        | Local PaddleOCR.js recognizer for exploded PDF text                      |
 | `@mlightcad/cad-pdf-plugin`              | Browser PDF export and PDF-to-CAD import                                 |
 | `@mlightcad/cad-svg-plugin`              | SVG export                                                               |
 | `@mlightcad/cad-svg-converter`           | SVG File → Open (vector → AcDb entities)                                 |

@@ -1,6 +1,7 @@
 import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
 import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import { registerLazyCadScriptPlugin } from '@mlightcad/cad-script-plugin/register'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
@@ -31,6 +32,10 @@ export const registerLazyPlugins = async () => {
   })
   registerLazyPdfPlugin(pluginManager)
   registerLazySvgPlugin(pluginManager)
+  // Local PaddleOCR before the LLM recognizer so unread lines fall back.
+  registerLazyPaddleOcrPlugin(pluginManager, {
+    wasmPaths: './vendor/onnxruntime/'
+  })
   // Shared AI model settings (`llmsettings`): used by the agent and by
   // `pdftext` text recognition.
   registerLazyLlmPlugin(pluginManager)

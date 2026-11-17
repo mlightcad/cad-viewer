@@ -87,5 +87,9 @@ export const llmCs = {
   deleteProvider: 'Smazat poskytovatele',
   deleteProviderConfirm: 'Smazat poskytovatele „{id}“ a jeho API klíč?',
   recognitionTimeout: 'Model AI neodpověděl do {seconds} sekund',
+  ocrLabel: 'Vizuální LLM',
+  ocrKeywordDisplay: 'Vizuální LLM(L)',
+  ocrKeywordLocal: 'Vizuální LLM',
+  ocrKeywordGlobal: 'Llm',
   close: 'Zavřít'
 } satisfies Record<keyof typeof llmEn, string>

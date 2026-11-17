@@ -19,11 +19,44 @@ export type AcApPdfImportMode = 'recover' | 'visual'
  * How `pdfimport` recovers exploded text (SHX line text / outlined fonts).
  *
  * - `false` — leave strokes as imported; use `pdftext` later.
- * - `'local'` — glyph dictionary only (no OCR / LLM).
- * - `'ocr'` — dictionary first, then {@link AcApTextRecognitionService} for
- *   unread lines (whatever recognizer the host registered).
+ * - `'local'` — glyph dictionary only (no OCR).
+ * - `{ ocr: providerId }` — dictionary first, then that OCR provider only
+ *   (e.g. `'paddleocr'`, `'cad-llm'`).
  */
-export type AcApPdfExplodedTextMode = false | 'local' | 'ocr'
+export type AcApPdfExplodedTextMode = false | 'local' | { ocr: string }
+
+/** True when `mode` selects an OCR provider. */
+export function acapPdfExplodedTextModeIsOcr(
+  mode: AcApPdfExplodedTextMode
+): mode is { ocr: string } {
+  return typeof mode === 'object' && mode !== null && typeof mode.ocr === 'string'
+}
+
+/** OCR provider id when `mode` is `{ ocr }`, otherwise `undefined`. */
+export function acapPdfExplodedTextOcrId(
+  mode: AcApPdfExplodedTextMode
+): string | undefined {
+  return acapPdfExplodedTextModeIsOcr(mode) ? mode.ocr : undefined
+}
+
+/**
+ * Normalizes a stored / dialog value. Legacy `'ocr'` becomes
+ * `{ ocr: '' }` (resolved to the first available provider at use time).
+ */
+export function acapPdfNormalizeExplodedTextMode(
+  value: unknown
+): AcApPdfExplodedTextMode | undefined {
+  if (value === false || value === 'local') return value
+  if (value === 'ocr') return { ocr: '' }
+  if (
+    value &&
+    typeof value === 'object' &&
+    typeof (value as { ocr?: unknown }).ocr === 'string'
+  ) {
+    return { ocr: (value as { ocr: string }).ocr }
+  }
+  return undefined
+}
 
 /**
  * Options for {@link AcApPdfImportConvertor.convert}.
@@ -177,14 +210,13 @@ export function resolveAcApPdfImportOptions(
     hatchRecognition: options?.hatchRecognition,
     recognizeDimensions: options?.recognizeDimensions ?? recover,
     dimensionRecognition: options?.dimensionRecognition,
-    recognizeExplodedText:
-      options?.recognizeExplodedText === false ||
-      options?.recognizeExplodedText === 'local' ||
-      options?.recognizeExplodedText === 'ocr'
-        ? options.recognizeExplodedText
-        : recover
-          ? 'local'
-          : false,
+    recognizeExplodedText: (() => {
+      const normalized = acapPdfNormalizeExplodedTextMode(
+        options?.recognizeExplodedText
+      )
+      if (normalized !== undefined) return normalized
+      return recover ? 'local' : false
+    })(),
     textStyles: options?.textStyles ?? recover,
     fitTextWidth: options?.fitTextWidth ?? true,
     images: options?.images ?? true

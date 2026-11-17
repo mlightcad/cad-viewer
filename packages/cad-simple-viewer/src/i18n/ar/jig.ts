@@ -2174,10 +2174,10 @@ export default {
       recognizeDimensionsHint: 'تحويل الأبعاد المفكّكة إلى كائنات أبعاد',
       recognizeExplodedText: 'التعرّف على النص المفكّك',
       recognizeExplodedTextHint:
-        'تحويل نص SHX / المخطط المرسوم بخطوط إلى كائنات نص (قاموس محلي أو OCR)',
+        'تحويل نص SHX / المخطط المرسوم بخطوط إلى كائنات نص (قاموس محلي أو مزوّد OCR متاح)',
       recognizeExplodedTextOff: 'إيقاف',
       recognizeExplodedTextLocal: 'قاموس الحروف المحلي',
-      recognizeExplodedTextOcr: 'خدمة OCR',
+      recognizeExplodedTextOcr: 'OCR',
       ok: 'موافق',
       cancel: 'إلغاء'
     }

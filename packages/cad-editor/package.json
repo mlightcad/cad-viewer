@@ -55,6 +55,7 @@
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-llm-plugin": "workspace:*",
+    "@mlightcad/cad-paddleocr-plugin": "workspace:*",
     "@mlightcad/cad-script-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-onedrive-plugin": "workspace:*",
@@ -91,6 +92,7 @@
     "@mlightcad/cad-script-core": "workspace:^",
     "@mlightcad/cad-agent-plugin": "workspace:^",
     "@mlightcad/cad-llm-plugin": "workspace:^",
+    "@mlightcad/cad-paddleocr-plugin": "workspace:^",
     "@mlightcad/cad-script-plugin": "workspace:^",
     "@mlightcad/cad-html-plugin": "workspace:^",
     "@mlightcad/cad-onedrive-plugin": "workspace:^",
@@ -121,6 +123,9 @@
       "optional": true
     },
     "@mlightcad/cad-llm-plugin": {
+      "optional": true
+    },
+    "@mlightcad/cad-paddleocr-plugin": {
       "optional": true
     },
     "@mlightcad/cad-script-plugin": {

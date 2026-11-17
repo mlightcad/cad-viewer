@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { examplePeerPackageAliases, exampleRollupOutput } from '../vite-config/pluginRollupOutput'
+import { resolveOnnxRuntimeDist } from '../vite-config/resolveOnnxRuntimeDist'
 import {
   LIBREDWG_CONVERTER_PACKAGE,
   LIBREDWG_PARSER_WASM_FILE,
@@ -20,6 +21,13 @@ const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
 export default defineConfig(() => {
   const runtimePath = resolve(__dirname, VIEWER_RUNTIME_SRC)
   const hasViewerRuntime = existsSync(runtimePath)
+  const ortDist = resolveOnnxRuntimeDist(__dirname)
+  if (!ortDist) {
+    console.warn(
+      '[cad-simple-viewer-demo] onnxruntime-web not found — PaddleOCR wasm will be unavailable. ' +
+        'Install @mlightcad/cad-paddleocr-plugin to enable local OCR.'
+    )
+  }
   if (!hasViewerRuntime) {
     console.warn(
       '[cad-simple-viewer-demo] viewer-runtime.iife.js not found — HTML export (chtml) will be unavailable. ' +
@@ -100,6 +108,15 @@ export default defineConfig(() => {
                 {
                   src: VIEWER_RUNTIME_SRC,
                   dest: '',
+                  rename: { stripBase: true }
+                }
+              ]
+            : []),
+          ...(ortDist
+            ? [
+                {
+                  src: `${ortDist}/ort-wasm*`,
+                  dest: 'vendor/onnxruntime',
                   rename: { stripBase: true }
                 }
               ]

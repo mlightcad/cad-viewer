@@ -7,6 +7,7 @@ import svgLoader from 'vite-svg-loader'
 import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
 import { examplePeerPackageAliases, exampleRollupOutput } from '../vite-config/pluginRollupOutput'
+import { resolveOnnxRuntimeDist } from '../vite-config/resolveOnnxRuntimeDist'
 import {
   LIBREDWG_CONVERTER_PACKAGE,
   LIBREDWG_PARSER_WASM_FILE,
@@ -191,6 +192,15 @@ export default defineConfig(({ command, mode }) => {
   const mtextWorkerSrc = linkLocalMtextRenderer
     ? LOCAL_MTEXT_RENDERER_WORKER
     : `./node_modules/@mlightcad/cad-simple-viewer/dist/${MTEXT_RENDERER_WORKER_FILE}`
+  const ortDist = resolveOnnxRuntimeDist(__dirname)
+  if (!ortDist) {
+    console.warn(
+      '[cad-editor-demo] onnxruntime-web not found — PaddleOCR wasm will be unavailable. ' +
+        'Install @mlightcad/cad-paddleocr-plugin to enable local OCR.'
+    )
+  } else {
+    console.info(`[cad-editor-demo] copying ONNX Runtime wasm from ${ortDist}`)
+  }
 
   const plugins = [
     vue(),
@@ -221,6 +231,15 @@ export default defineConfig(({ command, mode }) => {
               {
                 src: VIEWER_RUNTIME_SRC,
                 dest: 'assets',
+                rename: { stripBase: true }
+              }
+            ]
+          : []),
+        ...(ortDist
+          ? [
+              {
+                src: `${ortDist}/ort-wasm*`,
+                dest: 'vendor/onnxruntime',
                 rename: { stripBase: true }
               }
             ]
