@@ -17,8 +17,11 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
     measureTextWidth: () => undefined
   },
   AcApI18n: { t: (key: string) => key, currentLocale: 'en' },
-  AcApLlmSettingsService: { getStatus: async () => undefined },
-  AcApTextRecognitionService: { hasRecognizer: false }
+  AcApTextRecognitionService: {
+    hasRecognizer: false,
+    has: () => false,
+    listAvailable: async () => []
+  }
 }))
 
 jest.mock('../src/pdfEntityStrokes', () => ({

@@ -10,7 +10,7 @@ import {
   LLM_PLUGIN_TRIGGERS,
   LLM_SERVICE_ID
 } from './constants.js'
-import { registerLlmI18n } from './i18n/index.js'
+import { llmT, registerLlmI18n } from './i18n/index.js'
 
 /** Loads the main bundle on first use. */
 const loadMain = () => import('@mlightcad/cad-llm-plugin')
@@ -22,8 +22,9 @@ const loadMain = () => import('@mlightcad/cad-llm-plugin')
  * - the settings dialog in `AcApLlmSettingsService`, so any feature (CAD
  *   agent, PDF text recognition, ...) can open it or check what is
  *   configured,
- * - the LLM text recognizer in `AcApTextRecognitionService`, used by `pdftext`
- *   when a vision-capable model is configured.
+ * - a bootstrap OCR recognizer (`cad-llm`) for the `pdftext` auto chain,
+ * - per-model OCR entries (`cad-llm:<provider>/<model>`) refreshed into the
+ *   PDF import picker whenever settings change.
  *
  * Import from `@mlightcad/cad-llm-plugin/register` so the main bundle (which
  * includes the AI SDK) stays out of the application entry chunk.
@@ -35,6 +36,21 @@ export function registerLazyLlmPlugin(pluginManager: AcApPluginManager): void {
 
   AcApTextRecognitionService.register({
     id: LLM_SERVICE_ID,
+    label: () => llmT('ocrLabel'),
+    keyword: () => ({
+      display: llmT('ocrKeywordDisplay'),
+      local: llmT('ocrKeywordLocal'),
+      global: llmT('ocrKeywordGlobal')
+    }),
+    // Hidden from the import picker; per-model entries are listed instead.
+    isAvailable: () => false,
+    // Still used by `pdftext` when no explicit provider id is chosen.
+    auto: true,
+    refresh: async () => {
+      const main = await loadMain()
+      main.acapLlmWatchOcrRecognizers()
+      await main.acapLlmSyncOcrRecognizers()
+    },
     recognize: async request =>
       (await loadMain()).acapLlmRecognizeText(request),
     recognizeBatch: async request =>

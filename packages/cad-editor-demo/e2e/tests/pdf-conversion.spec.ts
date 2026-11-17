@@ -111,7 +111,23 @@ async function preselect(
 }
 
 const ribbonButton = (page: Page, id: string) =>
-  page.locator(`[data-ribbon-button-id="${id}"]:visible`)
+  page
+    .locator(`[data-ribbon-button-id="${id}"]:visible`)
+    .or(
+      page.locator(
+        `.ml-ribbon-item-host.type-dropdown[data-item-id="${id}"]:visible`
+      )
+    )
+
+/** Starts PDFTEXT via the Recover Text ribbon control (dropdown → Auto). */
+async function clickPdfText(page: Page) {
+  const host = page.locator(
+    '.ml-ribbon-item-host.type-dropdown[data-item-id="cmd-pdftext"]:visible'
+  )
+  await expect(host).toBeVisible()
+  // Icon click runs the default Auto action without opening the menu.
+  await host.locator('.ml-ribbon-dropdown__icon').click()
+}
 
 /** The command line input; its placeholder is cleared during prompts. */
 const commandLine = (page: Page) => page.locator('input.ml-cli-text')
@@ -195,7 +211,7 @@ test('pdftext converts stroke text in the palette, learning glyphs from one line
 }) => {
   await importPdf(page, 'pdf-stroke-text.pdf')
   await preselect(page)
-  await ribbonButton(page, 'cmd-pdftext').click()
+  await clickPdfText(page)
 
   // The review panel opens in the palette with one row per line.
   await expect(pdftextLines(page)).toHaveCount(4, { timeout: 20_000 })
@@ -227,7 +243,7 @@ test('pdftext changes nothing when the palette is cancelled', async ({
   await importPdf(page, 'pdf-stroke-text.pdf')
   const before = await entityTypes(page)
   await preselect(page)
-  await ribbonButton(page, 'cmd-pdftext').click()
+  await clickPdfText(page)
 
   await expect(pdftextLines(page)).toHaveCount(4, { timeout: 20_000 })
   await pdftextLines(page).first().fill('THE HELL')

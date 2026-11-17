@@ -1999,10 +1999,10 @@ export default {
       recognizeDimensionsHint: '将分解的标注还原为标注对象',
       recognizeExplodedText: '识别打散文字',
       recognizeExplodedTextHint:
-        '将 SHX / 轮廓笔画文字还原为文字对象（本地词典或 OCR）',
+        '将 SHX / 轮廓笔画文字还原为文字对象（本地词典或可用的 OCR 提供方）',
       recognizeExplodedTextOff: '关闭',
       recognizeExplodedTextLocal: '本地字形词典',
-      recognizeExplodedTextOcr: 'OCR 服务',
+      recognizeExplodedTextOcr: 'OCR',
       ok: '确定',
       cancel: '取消'
     }

@@ -1,10 +1,14 @@
-import { AcUiDialog } from '@mlightcad/cad-simple-viewer'
+import {
+  type AcApTextRecognizerInfo,
+  AcUiDialog
+} from '@mlightcad/cad-simple-viewer'
 
 import { acapPdfT } from '../acapPdfI18n.js'
-import type {
-  AcApPdfExplodedTextMode,
-  AcApPdfImportMode
-} from '../AcApPdfImportOptions.js'
+import {
+  type AcApPdfExplodedTextMode,
+  acapPdfExplodedTextModeIsOcr,
+  type AcApPdfImportMode,
+  acapPdfNormalizeExplodedTextMode} from '../AcApPdfImportOptions.js'
 import { PDF_PT_TO_MM } from '../pdfVectorImport.js'
 
 const STYLE_ID = 'ml-pdf-import-dialog-styles'
@@ -58,7 +62,7 @@ export interface AcUiPdfImportDialogValues {
   recognizeDimensions: boolean
   /**
    * Recover exploded text strokes (recover mode only).
-   * `false` / `'local'` / `'ocr'`.
+   * `false` / `'local'` / `{ ocr: providerId }`.
    */
   recognizeExplodedText: AcApPdfExplodedTextMode
 }
@@ -74,6 +78,12 @@ export interface AcUiPdfImportDialogOptions {
   browse?: () => Promise<AcUiPdfImportSource | undefined>
   /** Starting values; omitted fields use the defaults. */
   initial?: Partial<AcUiPdfImportDialogValues>
+  /**
+   * OCR providers that are currently available (from
+   * {@link AcApTextRecognitionService.listAvailable}). Each becomes an option
+   * under "Recognize exploded text".
+   */
+  ocrProviders?: AcApTextRecognizerInfo[]
   /** Element that receives the backdrop. Defaults to `document.body`. */
   host?: HTMLElement
 }
@@ -119,6 +129,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
   private readonly dimensionsInput: HTMLInputElement
   private readonly explodedTextSelect: HTMLSelectElement
   private readonly okButton: HTMLButtonElement
+  private readonly ocrProviders: AcApTextRecognizerInfo[]
 
   private constructor(options: AcUiPdfImportDialogOptions) {
     super({
@@ -131,6 +142,7 @@ export class AcUiPdfImportDialog extends AcUiDialog {
     ensureStyles()
     this.source = options.source
     this.browse = options.browse
+    this.ocrProviders = options.ocrProviders ?? []
     const initial = options.initial ?? {}
     this.values = {
       pageNumber: clampPage(initial.pageNumber ?? 1, this.source),
@@ -141,7 +153,8 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       insertionPoint: initial.insertionPoint ?? { x: 0, y: 0 },
       recognizeDimensions: initial.recognizeDimensions ?? true,
       recognizeExplodedText: normalizeExplodedTextMode(
-        initial.recognizeExplodedText
+        initial.recognizeExplodedText,
+        this.ocrProviders
       )
     }
 
@@ -227,11 +240,16 @@ export class AcUiPdfImportDialog extends AcUiDialog {
     for (const [value, label] of [
       ['off', t('recognizeExplodedTextOff')],
       ['local', t('recognizeExplodedTextLocal')],
-      ['ocr', t('recognizeExplodedTextOcr')]
-    ] as const) {
+      ...this.ocrProviders.map(
+        provider =>
+          [`ocr:${provider.id}`, provider.label] as [string, string]
+      )
+    ]) {
       const option = h('option')
       option.value = value
-      option.textContent = label
+      // Keep the closed control narrow; full name stays on the option title.
+      option.textContent = truncateSelectLabel(label)
+      option.title = label
       this.explodedTextSelect.append(option)
     }
     this.explodedTextSelect.value = explodedTextSelectValue(
@@ -530,7 +548,8 @@ export class AcUiPdfImportDialog extends AcUiDialog {
       mode: this.modeInputs.visual.checked ? 'visual' : 'recover',
       recognizeDimensions: this.dimensionsInput.checked,
       recognizeExplodedText: parseExplodedTextSelect(
-        this.explodedTextSelect.value
+        this.explodedTextSelect.value,
+        this.ocrProviders
       ),
       scale: parseNumber(this.scaleInput.value, true) ?? 1,
       specifyOnScreen: onScreen,
@@ -546,18 +565,47 @@ export class AcUiPdfImportDialog extends AcUiDialog {
 }
 
 function normalizeExplodedTextMode(
-  value: AcApPdfExplodedTextMode | undefined
+  value: AcApPdfExplodedTextMode | undefined,
+  providers: AcApTextRecognizerInfo[]
 ): AcApPdfExplodedTextMode {
-  if (value === false || value === 'local' || value === 'ocr') return value
+  const normalized = acapPdfNormalizeExplodedTextMode(value)
+  if (normalized === false || normalized === 'local') return normalized ?? 'local'
+  if (normalized === undefined) return 'local'
+  if (acapPdfExplodedTextModeIsOcr(normalized)) {
+    const id = normalized.ocr
+    if (id && providers.some(provider => provider.id === id)) {
+      return { ocr: id }
+    }
+    // Legacy `'ocr'` / unavailable id → first available provider, else local.
+    if (providers[0]) return { ocr: providers[0].id }
+  }
   return 'local'
 }
 
-function explodedTextSelectValue(mode: AcApPdfExplodedTextMode): string {
-  return mode === false ? 'off' : mode
+/** Soft cap so long `provider — model` labels do not widen the select. */
+const SELECT_LABEL_MAX = 36
+
+function truncateSelectLabel(label: string): string {
+  const trimmed = label.trim()
+  if (trimmed.length <= SELECT_LABEL_MAX) return trimmed
+  return `${trimmed.slice(0, SELECT_LABEL_MAX - 1)}…`
 }
 
-function parseExplodedTextSelect(value: string): AcApPdfExplodedTextMode {
-  if (value === 'local' || value === 'ocr') return value
+function explodedTextSelectValue(mode: AcApPdfExplodedTextMode): string {
+  if (mode === false) return 'off'
+  if (mode === 'local') return 'local'
+  return `ocr:${mode.ocr}`
+}
+
+function parseExplodedTextSelect(
+  value: string,
+  providers: AcApTextRecognizerInfo[]
+): AcApPdfExplodedTextMode {
+  if (value === 'local') return 'local'
+  if (value.startsWith('ocr:')) {
+    const id = value.slice(4)
+    if (providers.some(provider => provider.id === id)) return { ocr: id }
+  }
   return false
 }
 
@@ -817,6 +865,8 @@ function ensureStyles() {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 .ml-pdf-import-dialog .ml-pdf-import-label {
   white-space: nowrap;
@@ -830,6 +880,17 @@ function ensureStyles() {
   background: var(--ml-ui-bg, #fff);
   color: var(--ml-ui-text, #303133);
   font: inherit;
+}
+/* Long OCR labels (provider — model) must not stretch past the dialog. */
+.ml-pdf-import-dialog .ml-pdf-import-field:has(> select) {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.ml-pdf-import-dialog .ml-pdf-import-field > select.ml-pdf-import-input {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .ml-pdf-import-dialog .ml-pdf-import-input:disabled {
   opacity: 0.55;

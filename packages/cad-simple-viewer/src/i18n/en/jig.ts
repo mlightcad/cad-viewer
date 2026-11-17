@@ -2032,10 +2032,10 @@ export default {
         'Turn exploded dimensions into dimension objects',
       recognizeExplodedText: 'Recognize exploded text',
       recognizeExplodedTextHint:
-        'Turn SHX / outline stroke text into text objects (local dictionary or OCR)',
+        'Turn SHX / outline stroke text into text objects (local dictionary or an available OCR provider)',
       recognizeExplodedTextOff: 'Off',
       recognizeExplodedTextLocal: 'Local dictionary',
-      recognizeExplodedTextOcr: 'OCR service',
+      recognizeExplodedTextOcr: 'OCR',
       ok: 'OK',
       cancel: 'Cancel'
     }

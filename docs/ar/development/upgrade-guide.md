@@ -21,6 +21,26 @@ title: 'ترقية cad-simple-viewer و cad-editor'
 - التبويبات المسماة عبر `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` و**تتطلب مضيفاً مسجّلاً** (لا يوجد مسار احتياطي للإرساء للتبويبات المسماة). لوحات `HTMLElement` المستضافة ما زالت تستخدم `AcApPaletteService.open`.
   :::
 
+::: info PaddleOCR المحلي (`@mlightcad/cad-paddleocr-plugin`)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يمكن للمضيف تثبيت **`@mlightcad/cad-paddleocr-plugin`** للتعرّف البصري على النص المفكّك من PDF داخل المتصفح (`pdftext` / OCR عند الاستيراد). تسجّل معرّف `paddleocr` في `AcApTextRecognitionService`؛ وتُحمَّل ملفات Wasm ونماذج ONNX عند أول طلب OCR فقط. تعرض قائمة «التعرّف على النص المفكّك» عند الاستيراد كل خيار OCR *متاح*: PaddleOCR المحلي وكل **نموذج** LLM مُعدّ ويدعم الصور (مثل `kkidc — model-id`)، وليس صفًا واحدًا لكل مزوّد.
+
+الترحيل:
+
+- ثبّت `@mlightcad/cad-paddleocr-plugin` واستدعِ `registerLazyPaddleOcrPlugin` **قبل** `registerLazyLlmPlugin` حتى تعود الأسطر غير المقروءة إلى نموذج الرؤية. تقوم `@mlightcad/cad-editor` بذلك تلقائيًا عند تثبيت الحزمة.
+- قدّم ملفات wasm الخاصة بـ ONNX Runtime Web من نفس المنشأ (تستخدم العروض التوضيحية `./vendor/onnxruntime/`) ومرّر `wasmPaths`.
+- يمكن التحقق من تسجيل معرّف معيّن عبر `AcApTextRecognitionService.has(id)` (مثلًا تخطّي تلميح «OCR غير مُعدّ» الخاص بـ LLM عند وجود `paddleocr`).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info إعدادات نموذج الذكاء الاصطناعي المشتركة (`@mlightcad/cad-llm-plugin`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، تنتقل إعدادات مزودي LLM من `@mlightcad/cad-agent-plugin` إلى الحزمة الجديدة **`@mlightcad/cad-llm-plugin`**، فيتشارك وكيل CAD والتعرف على النص في `pdftext` (OCR) إعدادًا واحدًا. تضيف الحزمة الجديدة الأمر **LLMSETTINGS** ومربع حوار إعدادات لا يعتمد على إطار واجهة مستخدم (متاح أيضًا من علامة تبويب AI في الشريط ضمن `@mlightcad/cad-editor`)، وتضيف `@mlightcad/cad-simple-viewer` الخدمة `AcApLlmSettingsService` حتى تتمكن أي ميزة من فتح مربع الحوار أو التحقق من إعداد نموذج يدعم الصور.
 

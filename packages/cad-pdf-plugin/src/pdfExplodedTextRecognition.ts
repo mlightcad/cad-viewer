@@ -50,6 +50,11 @@ export interface AcApPdfRecognizeExplodedTextOptions {
    * lines (falls back to local when no recognizer is registered).
    */
   mode: 'local' | 'ocr'
+  /**
+   * When `mode` is `'ocr'`, only this recognizer is used. When omitted, every
+   * registered recognizer is tried in order (e.g. `pdftext`).
+   */
+  recognizerId?: string
   /** Clustering tuning (import passes `attachLongStrokes: false`). */
   cluster?: PdfTextClusterOptions
   /** UI locale passed to the recognizer. Defaults to the current locale. */
@@ -113,7 +118,11 @@ export async function acapPdfOcrExplodedTextLines<Id>(
   texts: Array<string | undefined>,
   options: Pick<
     AcApPdfRecognizeExplodedTextOptions,
-    'locale' | 'withBusy' | 'recognizingMessage' | 'onOcrError'
+    | 'locale'
+    | 'recognizerId'
+    | 'withBusy'
+    | 'recognizingMessage'
+    | 'onOcrError'
   > = {}
 ): Promise<number> {
   return recognizeUnreadLines(lines, texts, options)
@@ -124,10 +133,18 @@ async function recognizeUnreadLines<Id>(
   texts: Array<string | undefined>,
   options: Pick<
     AcApPdfRecognizeExplodedTextOptions,
-    'locale' | 'withBusy' | 'recognizingMessage' | 'onOcrError'
+    | 'locale'
+    | 'recognizerId'
+    | 'withBusy'
+    | 'recognizingMessage'
+    | 'onOcrError'
   >
 ): Promise<number> {
-  if (!AcApTextRecognitionService.hasRecognizer) return 0
+  if (options.recognizerId) {
+    if (!AcApTextRecognitionService.has(options.recognizerId)) return 0
+  } else if (!AcApTextRecognitionService.hasRecognizer) {
+    return 0
+  }
   const pending: number[] = []
   const images: string[] = []
   lines.forEach((line, i) => {
@@ -149,7 +166,12 @@ async function recognizeUnreadLines<Id>(
   const work = () =>
     AcApTextRecognitionService.recognizeBatch(
       { images, locale },
-      { onError: error => options.onOcrError?.(error) }
+      {
+        onError: error => options.onOcrError?.(error),
+        ...(options.recognizerId
+          ? { recognizerId: options.recognizerId }
+          : {})
+      }
     )
   const results = options.withBusy
     ? await options.withBusy(work, message)

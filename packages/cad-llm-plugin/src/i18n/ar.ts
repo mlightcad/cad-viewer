@@ -87,5 +87,9 @@ export const llmAr = {
   deleteProvider: 'حذف المزوّد',
   deleteProviderConfirm: 'هل تريد حذف المزوّد "{id}" ومفتاح API الخاص به؟',
   recognitionTimeout: 'لم يستجب نموذج الذكاء الاصطناعي خلال {seconds} ثانية',
+  ocrLabel: 'نموذج رؤية LLM',
+  ocrKeywordDisplay: 'نموذج رؤية LLM(L)',
+  ocrKeywordLocal: 'نموذج رؤية LLM',
+  ocrKeywordGlobal: 'Llm',
   close: 'إغلاق'
 } satisfies Record<keyof typeof llmEn, string>

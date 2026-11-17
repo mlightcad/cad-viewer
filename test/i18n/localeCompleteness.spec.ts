@@ -54,6 +54,8 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
   'cad-agent-plugin/command': l => fromRecord(agentCommandDescriptions, l),
   'cad-llm-plugin': l => loadNamed(`${PKG}/cad-llm-plugin/src/i18n/${l}`)(),
   'cad-llm-plugin/command': l => fromRecord(llmCommandDescriptions, l),
+  'cad-paddleocr-plugin': l =>
+    loadNamed(`${PKG}/cad-paddleocr-plugin/src/i18n/${l}`)(),
   'cad-script-plugin': l =>
     loadNamed(`${PKG}/cad-script-plugin/src/i18n/${l}`)(),
   'cad-script-plugin/command': l => fromRecord(scriptCommandDescriptions, l),
@@ -86,7 +88,13 @@ const NEUTRAL_VALUES = new Set<string>([
   'Ole2Frame',
   'OleFrame',
   // Font technology name (pdftext panel).
-  'TrueType'
+  'TrueType',
+  // OCR provider brand / command-line global keywords (always English).
+  'PaddleOCR',
+  'PaddleOCR(P)',
+  'PaddleOcr',
+  'Llm',
+  'OCR'
 ])
 
 /** Values that are legitimately identical to English in one language. */

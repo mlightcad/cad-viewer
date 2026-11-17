@@ -43,6 +43,8 @@ export function viewerMock() {
     AcApPaletteService: { open: paletteOpen },
     AcApTextRecognitionService: {
       hasRecognizer: false,
+      has: () => false,
+      listAvailable: async () => [],
       recognizeBatch: async () => []
     },
     acapZoomToVisible: jest.fn(),

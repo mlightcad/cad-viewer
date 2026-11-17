@@ -21,6 +21,26 @@ title: 'cad-simple-viewer 및 cad-editor 업그레이드'
 - 이름 있는 탭은 `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB`이며 **등록된 호스트가 필요**(이름 있는 탭용 dock 폴백 없음). 호스팅된 `HTMLElement` 패널은 계속 `AcApPaletteService.open`.
   :::
 
+::: info 로컬 PaddleOCR(`@mlightcad/cad-paddleocr-plugin`)
+이 변경이 포함된 릴리스부터 호스트는 **`@mlightcad/cad-paddleocr-plugin`**을 설치해 분해된 PDF 문자를 브라우저에서 OCR할 수 있습니다(`pdftext` / PDF 가져오기 OCR). `AcApTextRecognitionService`에 `paddleocr` 인식기를 등록하며, Wasm과 ONNX 모델은 첫 OCR 요청 때만 로드됩니다. PDF 가져오기의 「분해된 문자 인식」 목록에는 *사용 가능한* OCR마다 항목이 표시됩니다: 로컬 PaddleOCR과 구성된 이미지 지원 LLM **모델** 각각(예: `kkidc — model-id`). 공급자당 한 줄이 아닙니다.
+
+마이그레이션:
+
+- `@mlightcad/cad-paddleocr-plugin`을 설치하고 `registerLazyLlmPlugin` **앞에** `registerLazyPaddleOcrPlugin`을 호출하세요. 읽지 못한 줄은 비전 LLM으로 넘어갑니다. 패키지가 있으면 `@mlightcad/cad-editor`가 자동 등록합니다.
+- ONNX Runtime Web wasm을 동일 출처로 제공하고(데모는 `./vendor/onnxruntime/`) `wasmPaths`를 넘기세요.
+- `AcApTextRecognitionService.has(id)`로 인식기 등록 여부를 확인할 수 있습니다(예: `paddleocr`가 있으면 LLM의 「OCR 미구성」 힌트를 건너뜀).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
 이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
 

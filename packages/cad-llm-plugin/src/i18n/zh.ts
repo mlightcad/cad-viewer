@@ -83,5 +83,9 @@ export const llmZh = {
   deleteProvider: '删除提供商',
   deleteProviderConfirm: '确定删除提供商“{id}”及其 API 密钥吗？',
   recognitionTimeout: 'AI 模型在 {seconds} 秒内没有响应',
+  ocrLabel: '视觉大模型',
+  ocrKeywordDisplay: '视觉大模型(L)',
+  ocrKeywordLocal: '视觉大模型',
+  ocrKeywordGlobal: 'Llm',
   close: '关闭'
 } satisfies Record<keyof typeof llmEn, string>

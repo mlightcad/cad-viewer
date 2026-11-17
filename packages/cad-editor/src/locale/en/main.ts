@@ -281,6 +281,9 @@ export default {
       ellipse: 'Ellipse',
       arc: 'Elliptical Arc'
     },
+    pdfText: {
+      auto: 'Auto'
+    },
     tooltip: {
       searchConvert:
         'Find all copies of the selected objects and convert them into blocks (BSEARCH).',
@@ -298,6 +301,8 @@ export default {
         'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
       pdfText:
         'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
+      pdfTextAuto:
+        'Try every available OCR provider in order after the glyph dictionary (PDFTEXT).',
       line: 'Draw a single straight line segment.',
       polyline:
         'Draw a connected series of line or arc segments as one object.',

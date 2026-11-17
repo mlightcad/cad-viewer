@@ -2069,10 +2069,10 @@ export default {
       recognizeDimensionsHint: '分解された寸法を寸法オブジェクトに戻します',
       recognizeExplodedText: '分解文字を認識',
       recognizeExplodedTextHint:
-        'SHX / 輪郭のストローク文字を文字オブジェクトに戻します（ローカル辞書または OCR）',
+        'SHX / 輪郭のストローク文字を文字オブジェクトに戻します（ローカル辞書または利用可能な OCR プロバイダ）',
       recognizeExplodedTextOff: 'オフ',
       recognizeExplodedTextLocal: 'ローカル字形辞書',
-      recognizeExplodedTextOcr: 'OCR サービス',
+      recognizeExplodedTextOcr: 'OCR',
       ok: 'OK',
       cancel: 'キャンセル'
     }

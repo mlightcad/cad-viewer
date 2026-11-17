@@ -42,6 +42,8 @@ export const store = reactive({
     agentPlugin: false,
     /** Set when `@mlightcad/cad-llm-plugin` is installed and registered. */
     llmPlugin: false,
+    /** Set when `@mlightcad/cad-paddleocr-plugin` is installed and registered. */
+    paddleOcrPlugin: false,
     /** Set when `@mlightcad/cad-script-plugin` is installed and registered. */
     scriptPlugin: false
   },

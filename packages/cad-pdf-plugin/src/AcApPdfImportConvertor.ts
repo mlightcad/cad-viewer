@@ -3,6 +3,8 @@ import {
   AcApDocManager,
   AcApFontUtil,
   AcApI18n,
+  AcApTextRecognitionService,
+  type AcApTextRecognizerInfo,
   AcEdCorsorType,
   type AcEdKeyword,
   type AcEdKeywordCollection,
@@ -28,6 +30,8 @@ import * as pdfjsLib from 'pdfjs-dist'
 import { acapPdfT } from './acapPdfI18n.js'
 import {
   type AcApPdfExplodedTextMode,
+  acapPdfExplodedTextModeIsOcr,
+  acapPdfExplodedTextOcrId,
   type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
@@ -108,17 +112,22 @@ function importModeLabelKey(mode: AcApPdfImportMode) {
     : 'jig.pdfimport.modeRecover'
 }
 
-/** i18n key of the prompt label for exploded-text recognition. */
-function importTextLabelKey(mode: AcApPdfExplodedTextMode) {
-  if (mode === 'ocr') return 'jig.pdfimport.textOcr'
-  if (mode === 'local') return 'jig.pdfimport.textLocal'
-  return 'jig.pdfimport.textOff'
+/** Prompt label for the current exploded-text mode. */
+function importTextLabel(
+  mode: AcApPdfExplodedTextMode,
+  providers: AcApTextRecognizerInfo[]
+): string {
+  if (mode === 'local') return AcApI18n.t('jig.pdfimport.textLocal')
+  if (mode === false) return AcApI18n.t('jig.pdfimport.textOff')
+  const id = acapPdfExplodedTextOcrId(mode)
+  const provider = providers.find(entry => entry.id === id)
+  return provider?.label ?? AcApI18n.t('jig.pdfimport.textOcr')
 }
 
 /** Adds the `jig.pdfimport.keywords.<name>` keyword to `keywords`. */
 function addPdfImportKeyword(
   keywords: AcEdKeywordCollection,
-  name: 'scale' | 'mode' | 'text' | 'recover' | 'visual' | 'off' | 'local' | 'ocr'
+  name: 'scale' | 'mode' | 'text' | 'recover' | 'visual' | 'off' | 'local'
 ): AcEdKeyword {
   const base = `jig.pdfimport.keywords.${name}`
   return keywords.add(
@@ -193,10 +202,12 @@ export class AcApPdfImportConvertor {
       const pdfBySource = new Map<AcUiPdfImportSource, PDFDocumentProxy>()
       pdfBySource.set(first, first.pdf)
 
+      const ocrProviders = await AcApTextRecognitionService.listAvailable()
       const result = await AcUiPdfImportDialog.open({
         host: context.view?.container ?? document.body,
         source: first,
         initial: lastDialogValues,
+        ocrProviders,
         browse: async () => {
           try {
             const next = await load()
@@ -402,14 +413,21 @@ export class AcApPdfImportConvertor {
 
     let scale = 1
     let mode = lastImportMode
+    const ocrProviders = await AcApTextRecognitionService.listAvailable()
     let explodedText =
       mode === 'visual' ? (false as AcApPdfExplodedTextMode) : lastImportExplodedText
+    if (acapPdfExplodedTextModeIsOcr(explodedText)) {
+      const ocrId = explodedText.ocr
+      if (!ocrProviders.some(provider => provider.id === ocrId)) {
+        explodedText = ocrProviders[0] ? { ocr: ocrProviders[0].id } : 'local'
+      }
+    }
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
         acapPdfT('jig.pdfimport.insertionPoint', {
           scale: String(scale),
           mode: AcApI18n.t(importModeLabelKey(mode)),
-          text: AcApI18n.t(importTextLabelKey(explodedText))
+          text: importTextLabel(explodedText, ocrProviders)
         })
       )
       pointPrompt.allowNone = true
@@ -435,7 +453,10 @@ export class AcApPdfImportConvertor {
         continue
       }
       if (result.stringResult === 'Text') {
-        const picked = await this.promptExplodedTextMode(explodedText)
+        const picked = await this.promptExplodedTextMode(
+          explodedText,
+          ocrProviders
+        )
         if (picked === undefined) return undefined
         explodedText = picked
         continue
@@ -471,7 +492,8 @@ export class AcApPdfImportConvertor {
    * @returns The chosen mode, or `undefined` when the user cancels.
    */
   private async promptExplodedTextMode(
-    current: AcApPdfExplodedTextMode
+    current: AcApPdfExplodedTextMode,
+    providers: AcApTextRecognizerInfo[]
   ): Promise<AcApPdfExplodedTextMode | undefined> {
     const prompt = new AcEdPromptKeywordOptions(
       AcApI18n.t('jig.pdfimport.textPrompt')
@@ -479,9 +501,26 @@ export class AcApPdfImportConvertor {
     prompt.allowNone = true
     const off = addPdfImportKeyword(prompt.keywords, 'off')
     const local = addPdfImportKeyword(prompt.keywords, 'local')
-    const ocr = addPdfImportKeyword(prompt.keywords, 'ocr')
+    const ocrByGlobal = new Map<string, string>()
+    const ocrKeywordById = new Map<string, AcEdKeyword>()
+    for (const provider of providers) {
+      const keyword = provider.keyword ?? {
+        display: provider.label,
+        local: provider.label,
+        global: provider.id
+      }
+      const added = prompt.keywords.add(
+        keyword.display,
+        keyword.global,
+        keyword.local
+      )
+      ocrByGlobal.set(keyword.global.toLowerCase(), provider.id)
+      ocrKeywordById.set(provider.id, added)
+    }
+    const currentOcrId = acapPdfExplodedTextOcrId(current)
     prompt.keywords.default =
-      current === 'ocr' ? ocr : current === false ? off : local
+      (currentOcrId && ocrKeywordById.get(currentOcrId)) ||
+      (current === false ? off : local)
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return current
     if (
@@ -490,9 +529,11 @@ export class AcApPdfImportConvertor {
     ) {
       return undefined
     }
-    if (result.stringResult === 'Off') return false
-    if (result.stringResult === 'Local') return 'local'
-    if (result.stringResult === 'Ocr') return 'ocr'
+    const picked = result.stringResult ?? ''
+    if (picked === 'Off') return false
+    if (picked === 'Local') return 'local'
+    const ocrId = ocrByGlobal.get(picked.toLowerCase())
+    if (ocrId) return { ocr: ocrId }
     return current
   }
 

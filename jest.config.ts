@@ -7,8 +7,8 @@ const config: Config = {
   transform: {
     // Transpile-only: type-checking the `ai` / `@ai-sdk/*` graph that
     // cad-agent-plugin / cad-llm-plugin pull in exhausts the heap (see
-    // cad-agent-plugin's copy-typings.mjs).
-    '^.+[\\\\/]packages[\\\\/]cad-(agent|llm)-plugin[\\\\/].+\\.ts$': [
+    // cad-agent-plugin's copy-typings.mjs). Same for paddleocr-js types.
+    '^.+[\\\\/]packages[\\\\/]cad-(agent|llm|paddleocr)-plugin[\\\\/].+\\.ts$': [
       'ts-jest',
       {
         tsconfig: '<rootDir>/packages/cad-agent-plugin/tsconfig.jest.json'
@@ -52,6 +52,9 @@ const config: Config = {
       '<rootDir>/packages/cad-agent-core/src/index.ts',
     '^@mlightcad/cad-llm-plugin$':
       '<rootDir>/packages/cad-llm-plugin/src/index.ts',
+    '^@mlightcad/cad-paddleocr-plugin$':
+      '<rootDir>/packages/cad-paddleocr-plugin/src/index.ts',
+    '^@paddleocr/paddleocr-js$': '<rootDir>/test/mocks/paddleocr-js.js',
     '^@mlightcad/cad-script-core$':
       '<rootDir>/packages/cad-script-core/src/index.ts',
     '^@mlightcad/cad-script-core/script-api$':

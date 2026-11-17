@@ -285,19 +285,73 @@ export function acapLlmResolveVisionSettings(
     return active
   }
   for (const provider of config.providers) {
-    if (!provider.apiKey.trim()) continue
-    const model = acapLlmEffectiveModels(provider).find(entry => entry.vision)
-    if (!model) continue
-    return {
-      provider: provider.id,
-      kind: provider.kind,
-      protocol: provider.protocol,
-      apiKey: provider.apiKey,
-      baseUrl: acapLlmEffectiveBaseUrl(provider),
-      model: model.id
-    }
+    const settings = acapLlmResolveVisionSettingsForProvider(
+      config,
+      provider.id
+    )
+    if (settings) return settings
   }
   return undefined
+}
+
+/**
+ * Resolves vision settings for one provider (auto OCR fallback).
+ *
+ * Prefers the active model when that provider is active and the model accepts
+ * images; otherwise the provider's first vision-capable catalog model.
+ *
+ * @returns Settings, or `undefined` when the provider has no key or no vision
+ *   model.
+ */
+export function acapLlmResolveVisionSettingsForProvider(
+  config: AcApLlmConfig,
+  providerId: string
+): AcApLlmSettings | undefined {
+  const provider = acapLlmFindProvider(config, providerId)
+  if (!provider?.apiKey.trim()) return undefined
+  if (
+    config.activeProviderId === providerId &&
+    acapLlmActiveModelSupportsVision(config)
+  ) {
+    return acapLlmResolveActiveSettings(config)
+  }
+  const model = acapLlmEffectiveModels(provider).find(entry => entry.vision)
+  if (!model) return undefined
+  return acapLlmSettingsForProviderModel(provider, model.id)
+}
+
+/**
+ * Resolves vision settings for one provider + model (PDF import OCR picker).
+ *
+ * @returns Settings, or `undefined` when the provider has no key or the model
+ *   is missing / not marked as vision-capable.
+ */
+export function acapLlmResolveVisionSettingsForModel(
+  config: AcApLlmConfig,
+  providerId: string,
+  modelId: string
+): AcApLlmSettings | undefined {
+  const provider = acapLlmFindProvider(config, providerId)
+  if (!provider?.apiKey.trim()) return undefined
+  const model = acapLlmEffectiveModels(provider).find(
+    entry => entry.id === modelId && entry.vision
+  )
+  if (!model) return undefined
+  return acapLlmSettingsForProviderModel(provider, model.id)
+}
+
+function acapLlmSettingsForProviderModel(
+  provider: AcApLlmProviderConfig,
+  modelId: string
+): AcApLlmSettings {
+  return {
+    provider: provider.id,
+    kind: provider.kind,
+    protocol: provider.protocol,
+    apiKey: provider.apiKey,
+    baseUrl: acapLlmEffectiveBaseUrl(provider),
+    model: modelId
+  }
 }
 
 /**

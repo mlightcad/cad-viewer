@@ -88,5 +88,9 @@ export const llmJa = {
   deleteProvider: 'プロバイダを削除',
   deleteProviderConfirm: 'プロバイダ「{id}」とその API キーを削除しますか?',
   recognitionTimeout: 'AI モデルが {seconds} 秒以内に応答しませんでした',
+  ocrLabel: 'ビジョン LLM',
+  ocrKeywordDisplay: 'ビジョン LLM(L)',
+  ocrKeywordLocal: 'ビジョン LLM',
+  ocrKeywordGlobal: 'Llm',
   close: '閉じる'
 } satisfies Record<keyof typeof llmEn, string>

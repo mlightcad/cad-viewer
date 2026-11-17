@@ -21,6 +21,26 @@ Geçiş:
 - Adlandırılmış sekmeler: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **kayıtlı host gerekir** (adlandırılmış sekmeler için dock yedek yolu yok). Hostlanan `HTMLElement` panelleri hâlâ `AcApPaletteService.open` kullanır.
   :::
 
+::: info Yerel PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
+Bu değişikliği içeren sürümden itibaren konak uygulamalar, parçalanmış PDF metnini tarayıcıda OCR etmek için **`@mlightcad/cad-paddleocr-plugin`** kurabilir (`pdftext` / PDF içe aktarma OCR). `AcApTextRecognitionService` içinde `paddleocr` tanıyıcısını kaydeder; Wasm ve ONNX modelleri yalnızca ilk OCR isteğinde yüklenir. PDF içe aktarma «Patlatılmış metni tanı» listesi her *kullanılabilir* OCR seçeneğini gösterir: yerel PaddleOCR ve yapılandırılmış her görüntü destekli LLM **modeli** (ör. `kkidc — model-id`); sağlayıcı başına tek satır değil.
+
+Geçiş:
+
+- `@mlightcad/cad-paddleocr-plugin` kurun ve `registerLazyLlmPlugin` **öncesinde** `registerLazyPaddleOcrPlugin` çağırın; okunamayan satırlar görüntü LLM’ine düşer. Paket kuruluysa `@mlightcad/cad-editor` bunu kendisi yapar.
+- ONNX Runtime Web wasm dosyalarını aynı kökenden sunun (demolar `./vendor/onnxruntime/` kullanır) ve `wasmPaths` geçin.
+- Belirli bir tanıyıcının kayıtlı olup olmadığını `AcApTextRecognitionService.has(id)` ile kontrol edebilirsiniz (ör. `paddleocr` varken LLM’in «OCR yapılandırılmadı» ipucunu atlayın).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info Paylaşılan yapay zekâ modeli ayarları (`@mlightcad/cad-llm-plugin`)
 Bu değişikliği içeren sürümden itibaren LLM sağlayıcı ayarları `@mlightcad/cad-agent-plugin` paketinden yeni **`@mlightcad/cad-llm-plugin`** paketine taşınır; böylece CAD Ajanı ve `pdftext` metin tanıma (OCR) aynı yapılandırmayı paylaşır. Yeni paket **LLMSETTINGS** komutunu ve UI çatısından bağımsız bir ayar iletişim kutusunu (`@mlightcad/cad-editor` içindeki AI şerit sekmesinden de açılır) ekler; `@mlightcad/cad-simple-viewer` ise herhangi bir özelliğin iletişim kutusunu açabilmesi veya görüntü destekli bir modelin yapılandırılıp yapılandırılmadığını denetleyebilmesi için `AcApLlmSettingsService` ekler.
 

@@ -2183,10 +2183,10 @@ export default {
         'Patlatılmış ölçüleri ölçü nesnelerine dönüştürür',
       recognizeExplodedText: 'Patlatılmış metni tanı',
       recognizeExplodedTextHint:
-        'SHX / kontur çizgi metnini metin nesnelerine dönüştürür (yerel sözlük veya OCR)',
+        'SHX / kontur çizgi metnini metin nesnelerine dönüştürür (yerel sözlük veya kullanılabilir bir OCR sağlayıcısı)',
       recognizeExplodedTextOff: 'Kapalı',
       recognizeExplodedTextLocal: 'Yerel glif sözlüğü',
-      recognizeExplodedTextOcr: 'OCR hizmeti',
+      recognizeExplodedTextOcr: 'OCR',
       ok: 'Tamam',
       cancel: 'İptal'
     }

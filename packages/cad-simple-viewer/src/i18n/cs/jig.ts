@@ -2071,10 +2071,10 @@ export default {
       recognizeDimensionsHint: 'Převede rozložené kóty zpět na objekty kót',
       recognizeExplodedText: 'Rozpoznat rozložený text',
       recognizeExplodedTextHint:
-        'Převede SHX / obrysový text ze tahů zpět na textové objekty (místní slovník nebo OCR)',
+        'Převede SHX / obrysový text ze tahů zpět na textové objekty (místní slovník nebo dostupný poskytovatel OCR)',
       recognizeExplodedTextOff: 'Vypnuto',
       recognizeExplodedTextLocal: 'Místní slovník znaků',
-      recognizeExplodedTextOcr: 'Služba OCR',
+      recognizeExplodedTextOcr: 'OCR',
       ok: 'OK',
       cancel: 'Storno'
     }

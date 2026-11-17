@@ -90,5 +90,10 @@ export const llmEn = {
   deleteProvider: 'Delete provider',
   deleteProviderConfirm: 'Delete provider "{id}" and its API key?',
   recognitionTimeout: 'The AI model did not answer within {seconds} seconds',
+  /** Label of this OCR provider in the PDF import dialog. */
+  ocrLabel: 'Vision LLM',
+  ocrKeywordDisplay: 'Vision LLM(L)',
+  ocrKeywordLocal: 'Vision LLM',
+  ocrKeywordGlobal: 'Llm',
   close: 'Close'
 } as const

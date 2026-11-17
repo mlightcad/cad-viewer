@@ -279,6 +279,9 @@ export default {
       ellipse: '타원',
       arc: '타원형 호'
     },
+    pdfText: {
+      auto: '자동'
+    },
     tooltip: {
       searchConvert:
         '선택한 객체의 모든 사본을 찾아 블록으로 변환합니다(BSEARCH).',
@@ -295,6 +298,8 @@ export default {
       pdfBlock:
         'PDF의 반복 형상을 블록으로 만들고 각 사본을 블록 참조로 바꿉니다 (PDFBLOCK).',
       pdfText: 'PDF에서 분해된 문자 획을 문자 객체로 되돌립니다 (PDFTEXT).',
+      pdfTextAuto:
+        '글리프 사전 다음에 사용 가능한 OCR을 순서대로 시도합니다 (PDFTEXT).',
       line: '단일 직선 세그먼트를 그립니다.',
       polyline: '연결된 선 또는 호 세그먼트를 하나의 객체로 그립니다.',
       spline: '맞춤점 또는 조정점을 지나는 매끄러운 스플라인 곡선을 그립니다.',

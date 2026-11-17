@@ -73,6 +73,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
           '@mlightcad/cad-agent-plugin/style.css',
           '@mlightcad/cad-llm-plugin',
           '@mlightcad/cad-llm-plugin/register',
+          '@mlightcad/cad-paddleocr-plugin',
+          '@mlightcad/cad-paddleocr-plugin/register',
           '@mlightcad/cad-script-plugin',
           '@mlightcad/cad-script-plugin/register',
           '@mlightcad/cad-script-plugin/style.css'

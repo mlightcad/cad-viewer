@@ -278,6 +278,9 @@ export default {
       ellipse: '椭圆',
       arc: '椭圆弧'
     },
+    pdfText: {
+      auto: '自动'
+    },
     tooltip: {
       searchConvert: '查找所选对象的所有副本并将其转换为块（BSEARCH）。',
       detectConvert: '在整个图形中查找重复对象并将其转换为块（BDETECT）。',
@@ -290,6 +293,8 @@ export default {
       pdfBlock:
         '将 PDF 中重复出现的图形创建为块，并把每个副本替换为块参照（PDFBLOCK）。',
       pdfText: '将 PDF 中被打散的文字笔画转换回文字对象（PDFTEXT）。',
+      pdfTextAuto:
+        '在字形词典之后按顺序尝试所有可用的 OCR 服务（PDFTEXT）。',
       line: '绘制单段直线。',
       polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
       spline: '通过拟合点或控制点绘制平滑样条曲线。',

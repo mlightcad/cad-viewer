@@ -87,5 +87,9 @@ export const llmTr = {
   deleteProvider: 'Sağlayıcıyı sil',
   deleteProviderConfirm: '"{id}" sağlayıcısı ve API anahtarı silinsin mi?',
   recognitionTimeout: 'Yapay zekâ modeli {seconds} saniye içinde yanıt vermedi',
+  ocrLabel: 'Görüntü LLM',
+  ocrKeywordDisplay: 'Görüntü LLM(L)',
+  ocrKeywordLocal: 'Görüntü LLM',
+  ocrKeywordGlobal: 'Llm',
   close: 'Kapat'
 } satisfies Record<keyof typeof llmEn, string>

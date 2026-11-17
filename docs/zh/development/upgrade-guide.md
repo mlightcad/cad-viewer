@@ -23,6 +23,26 @@ title: '升级 cad-simple-viewer 和 cad-editor'
 - 内置命名标签通过 **`AcApPaletteService.openNamedTab`** / 可选的 `AcApPaletteHost.openNamedTab` 打开（id 见 `ACAP_PALETTE_NAMED_TAB`），且**必须已注册宿主**——命名标签没有 dock 回退。托管的 `HTMLElement` 面板仍使用 `AcApPaletteService.open`。
   :::
 
+::: info 本地 PaddleOCR（`@mlightcad/cad-paddleocr-plugin`）
+从包含此变更的版本开始，宿主可安装 **`@mlightcad/cad-paddleocr-plugin`**，在浏览器内对打散的 PDF 文字做 OCR（`pdftext` / PDF 导入 OCR）。它在 `AcApTextRecognitionService` 中注册 `paddleocr` 识别器；Wasm 与 ONNX 模型仅在首次 OCR 时加载。PDF 导入的「识别打散文字」列表会列出每个*可用*的 OCR 选项：本地 PaddleOCR，以及每个已配置且支持图片的 LLM **模型**（例如 `kkidc — model-id`），而不是按服务商只显示一行。
+
+宿主迁移：
+
+- 安装 `@mlightcad/cad-paddleocr-plugin`，并在 `registerLazyLlmPlugin` **之前**调用 `registerLazyPaddleOcrPlugin`，以便未识别的行仍回退到视觉 LLM。安装该包后，`@mlightcad/cad-editor` 会自动完成注册。
+- 从同源路径提供 ONNX Runtime Web 的 wasm 文件（示例使用 `./vendor/onnxruntime/`），并通过 `wasmPaths` 传给 `registerLazyPaddleOcrPlugin`。
+- 可用 `AcApTextRecognitionService.has(id)` 检查某个识别器是否已注册（例如存在 `paddleocr` 时跳过「OCR 未配置」的 LLM 提示）。
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+  :::
+
 ::: info 共享的 AI 模型设置（`@mlightcad/cad-llm-plugin`）
 从包含此变更的版本开始，LLM 服务商设置从 `@mlightcad/cad-agent-plugin` 移到新的 **`@mlightcad/cad-llm-plugin`**，CAD 智能体和 `pdftext` 文字识别（OCR）共用同一份配置。新包提供 **LLMSETTINGS** 命令和一个不依赖 UI 框架的设置对话框（`@mlightcad/cad-editor` 的 AI 功能区选项卡中也有入口）；`@mlightcad/cad-simple-viewer` 新增 `AcApLlmSettingsService`，任何功能都可以通过它打开对话框，或检查是否配置了支持图片的模型。
 
@@ -269,6 +289,7 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 | 包                                       | 用途                                                |
 | ---------------------------------------- | --------------------------------------------------- |
 | `@mlightcad/cad-html-plugin`             | 一键导出自包含 HTML                                 |
+| `@mlightcad/cad-paddleocr-plugin`        | 本地 PaddleOCR.js，用于打散 PDF 文字识别            |
 | `@mlightcad/cad-pdf-plugin`              | 浏览器端 PDF 导出与 PDF 转 CAD 导入                 |
 | `@mlightcad/cad-svg-plugin`              | SVG 导出                                            |
 | `@mlightcad/cad-svg-converter`           | SVG File → Open（矢量 → AcDb 实体）                 |

@@ -39,12 +39,21 @@ describe('resolveAcApPdfImportOptions', () => {
       mode: 'visual',
       recognizeCurves: true,
       lineWeights: false,
-      recognizeExplodedText: 'ocr'
+      recognizeExplodedText: { ocr: 'paddleocr' }
     })
     expect(options.recognizeCurves).toBe(true)
     expect(options.lineWeights).toBe(false)
     expect(options.formBlocks).toBe(false)
-    expect(options.recognizeExplodedText).toBe('ocr')
+    expect(options.recognizeExplodedText).toEqual({ ocr: 'paddleocr' })
+  })
+
+  test('legacy recognizeExplodedText ocr becomes an empty provider id', () => {
+    expect(
+      resolveAcApPdfImportOptions({
+        // @ts-expect-error legacy string still accepted at resolve time
+        recognizeExplodedText: 'ocr'
+      }).recognizeExplodedText
+    ).toEqual({ ocr: '' })
   })
 
   test('fill hatches can still be turned off', () => {
