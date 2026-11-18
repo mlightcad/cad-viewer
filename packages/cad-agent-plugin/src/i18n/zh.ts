@@ -35,6 +35,9 @@ export const agentZh = {
   contextUsageDetail: '{percent}% · {used} / {limit}',
   contextUsageFull: '{percent}% 已用',
   contextUsageTokens: '~{used} / {limit} 令牌',
+  contextUsageEstimated: '估算窗口',
+  contextUsageEstimateNote:
+    '相对于本地估算的模型上下文窗口，并非服务商的硬性上限。',
   contextUsageSystemPrompt: '系统提示',
   contextUsageToolDefinitions: '工具定义',
   contextUsageImages: '图片',
@@ -48,6 +51,7 @@ export const agentZh = {
   send: '发送',
   stop: '停止',
   working: '处理中…',
+  thinking: '思考中',
   agentMode: 'Agent 模式',
   agentModeSimple: '简单模式',
   agentModeHighInference: '高推理模式',
@@ -109,7 +113,7 @@ export const agentZh = {
     '我将附加一张参考图（草图、截图或平面图）。请仔细分析，并按正确比例重建二维 CAD 几何，分好图层，可见尺寸一并标注。仅在关键尺寸无法判断时再询问我。',
   taskRedrawFromImageTitle: '将图片重绘为可编辑图纸',
   taskRedrawFromImagePrompt:
-    '我将附加一张图纸图片（扫描件、照片或截图）。请使用 cad.redraw 将其重绘为可编辑的 CAD 图纸：选择重绘配置（除非图片缺少单位或比例，否则使用 general），根据可读尺寸对每个视图进行标定，并将每个数值标记为 known、scaled、inferred 或 unreadable。在标准图层上重绘几何图形、尺寸标注、文字、引线和表格。不要默认单位为毫米。最后给出状态（pass / pass_with_warnings / needs_review / blocked / fail）、所用标定以及尚未解决的假设。',
+    '我将附加一张图纸图片（扫描件、照片或截图）。请使用 cad.redraw 将其重绘为可编辑的 CAD 图纸：选择重绘配置（除非图片缺少单位或比例，否则使用 general），根据可读尺寸对每个视图进行标定（每个 spec 都需要像素↔CAD 标定，以便 compare 能运行），并将每个数值标记为 known、scaled、inferred 或 unreadable。在标准图层上重绘几何图形、尺寸标注、文字、引线和表格。若图片中有图框或标题栏，请先用纯文字回复问我一次是否一并绘制图框，并等我回答后再调用 execute_cad_script / cad.redraw.draw。不要默认单位为毫米。之后按 validate → draw → inspect → cad.redraw.compare 执行，最后给出状态（pass / pass_with_warnings / needs_review / blocked / fail）、compare 判定、所用标定以及尚未解决的假设。',
   taskDraftingReviewTitle: '制图质量审核',
   taskDraftingReviewPrompt:
     '审核当前图纸的制图质量：文字高度是否不一致、尺寸是否可能与几何不符、注释是否重叠、本应分层却在 0 层的图元、视图是否不完整等。按严重程度列出问题；除非我要求，否则只修复明确且安全的问题。',

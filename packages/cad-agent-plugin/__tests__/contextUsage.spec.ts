@@ -1,10 +1,13 @@
 import {
   buildContextUsageBreakdown,
   contextUsagePercent,
+  contextUsageRingPercent,
   DEFAULT_CONTEXT_WINDOW,
   estimateTextTokens,
+  formatContextUsagePercent,
   formatTokenCount,
-  resolveContextWindow
+  resolveContextWindow,
+  resolveContextWindowInfo
 } from '../src/agent/contextUsage'
 
 describe('resolveContextWindow', () => {
@@ -20,15 +23,64 @@ describe('resolveContextWindow', () => {
     expect(resolveContextWindow('gpt-5.4')).toBe(400_000)
     expect(resolveContextWindow('deepseek-v4-flash')).toBe(128_000)
     expect(resolveContextWindow('deepseek-ai/deepseek-vl2')).toBe(32_768)
+    expect(resolveContextWindow('qwen2.5-72b')).toBe(128_000)
+    expect(resolveContextWindow('moonshot-v1')).toBe(128_000)
+  })
+
+  it('prefers an explicit catalog override', () => {
+    expect(resolveContextWindow('mystery-model-xyz', 64_000)).toBe(64_000)
+    expect(resolveContextWindow('claude-sonnet-4-6', 1_000_000)).toBe(
+      1_000_000
+    )
+  })
+})
+
+describe('resolveContextWindowInfo', () => {
+  it('marks unknown models as estimated defaults', () => {
+    expect(resolveContextWindowInfo('')).toEqual({
+      tokens: DEFAULT_CONTEXT_WINDOW,
+      estimated: true
+    })
+    expect(resolveContextWindowInfo('mystery-model-xyz')).toEqual({
+      tokens: DEFAULT_CONTEXT_WINDOW,
+      estimated: true
+    })
+  })
+
+  it('marks matched rules and overrides as not estimated', () => {
+    expect(resolveContextWindowInfo('gpt-5.4')).toEqual({
+      tokens: 400_000,
+      estimated: false
+    })
+    expect(resolveContextWindowInfo('mystery-model-xyz', 32_000)).toEqual({
+      tokens: 32_000,
+      estimated: false
+    })
   })
 })
 
 describe('contextUsagePercent', () => {
-  it('clamps to 0–100 and ignores invalid windows', () => {
+  it('returns the raw percentage and allows values over 100', () => {
     expect(contextUsagePercent(64_000, 128_000)).toBe(50)
-    expect(contextUsagePercent(200_000, 128_000)).toBe(100)
+    expect(contextUsagePercent(200_000, 128_000)).toBe(156.25)
     expect(contextUsagePercent(-10, 128_000)).toBe(0)
     expect(contextUsagePercent(10, 0)).toBe(0)
+  })
+})
+
+describe('contextUsageRingPercent', () => {
+  it('clamps ring fill to 0–100', () => {
+    expect(contextUsageRingPercent(50)).toBe(50)
+    expect(contextUsageRingPercent(156.25)).toBe(100)
+    expect(contextUsageRingPercent(-5)).toBe(0)
+  })
+})
+
+describe('formatContextUsagePercent', () => {
+  it('rounds for display labels', () => {
+    expect(formatContextUsagePercent(50)).toBe('50')
+    expect(formatContextUsagePercent(156.25)).toBe('156')
+    expect(formatContextUsagePercent(0)).toBe('0')
   })
 })
 
@@ -58,7 +110,8 @@ describe('buildContextUsageBreakdown', () => {
         {
           name: 'execute_cad_script',
           description: 'Run a CAD script',
-          schemaText: '{"type":"object","properties":{"script":{"type":"string"}}}'
+          schemaText:
+            '{"type":"object","properties":{"script":{"type":"string"}}}'
         }
       ],
       messages: [

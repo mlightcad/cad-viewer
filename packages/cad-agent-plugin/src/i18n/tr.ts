@@ -36,6 +36,9 @@ export const agentTr = {
   contextUsageDetail: '{percent}% · {used} / {limit}',
   contextUsageFull: '%{percent} dolu',
   contextUsageTokens: '~{used} / {limit} Token',
+  contextUsageEstimated: 'Tahmini pencere',
+  contextUsageEstimateNote:
+    'Model bağlam penceresinin yerel tahminine göredir; sağlayıcının kesin limiti değildir.',
   contextUsageSystemPrompt: 'Sistem istemi',
   contextUsageToolDefinitions: 'Araç tanımları',
   contextUsageImages: 'Görseller',
@@ -51,6 +54,7 @@ export const agentTr = {
   send: 'Gönder',
   stop: 'Durdur',
   working: 'Çalışıyor…',
+  thinking: 'Düşünüyor',
   agentMode: 'Ajan modu',
   agentModeSimple: 'Basit',
   agentModeHighInference: 'Yüksek akıl yürütme',
@@ -116,7 +120,7 @@ export const agentTr = {
     'Bir referans görüntü ekleyeceğim (kroki, ekran görüntüsü veya plan). Dikkatle analiz et, ardından doğru oranlarla 2B CAD geometrisini yeniden oluştur; katmanlara ayır ve görünen ölçüleri ekle. Yalnızca kritik bir boyut belirsizse sor.',
   taskRedrawFromImageTitle: 'Görüntüyü düzenlenebilir CAD olarak yeniden çiz',
   taskRedrawFromImagePrompt:
-    'Bir çizim görüntüsü ekleyeceğim (tarama, fotoğraf veya ekran görüntüsü). cad.redraw ile düzenlenebilir CAD olarak yeniden çiz: bir profil seç (görüntüde birim veya ölçek eksik değilse general), her görünüşü okunabilir ölçülerden kalibre et ve her değeri known, scaled, inferred veya unreadable olarak etiketle. Geometriyi, ölçüleri, metinleri, kılavuz çizgilerini ve tabloları standart katmanlarda yeniden oluştur. Milimetre varsayma. Sonunda durumu (pass / pass_with_warnings / needs_review / blocked / fail), kullanılan kalibrasyonu ve çözülmemiş varsayımları bildir.',
+    'Bir çizim görüntüsü ekleyeceğim (tarama, fotoğraf veya ekran görüntüsü). cad.redraw ile düzenlenebilir CAD olarak yeniden çiz: bir profil seç (görüntüde birim veya ölçek eksik değilse general), her görünüşü okunabilir ölçülerden kalibre et (compare için her specte piksel↔CAD kalibrasyonu gerekir) ve her değeri known, scaled, inferred veya unreadable olarak etiketle. Geometriyi, ölçüleri, metinleri, kılavuz çizgilerini ve tabloları standart katmanlarda yeniden oluştur. Görüntüde antet veya pafta çerçevesi varsa, önce yalnızca metinle bir kez dahil edip etmeyeceğimi sor; cevap verene kadar execute_cad_script / cad.redraw.draw çağırma. Milimetre varsayma. Sonra validate → draw → inspect → cad.redraw.compare çalıştır; sonunda durumu (pass / pass_with_warnings / needs_review / blocked / fail), compare sonucunu, kullanılan kalibrasyonu ve çözülmemiş varsayımları bildir.',
   taskDraftingReviewTitle: 'Çizim kalitesi incelemesi',
   taskDraftingReviewPrompt:
     'Açık çizimi çizim kalitesi açısından incele: tutarsız metin yükseklikleri, geometriyle uyuşmayabilecek ölçüler, çakışan notlar, 0 katmanında olması gereken nesneler, eksik görünümler. Bulguları önem sırasıyla listele; aksi istenmedikçe yalnızca net ve güvenli sorunları düzelt.',

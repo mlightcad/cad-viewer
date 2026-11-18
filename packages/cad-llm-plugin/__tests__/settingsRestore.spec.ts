@@ -47,6 +47,20 @@ describe('acapLlmRestoreModelEntries', () => {
     ])
   })
 
+  it('keeps a positive contextWindow when present', () => {
+    expect(
+      acapLlmRestoreModelEntries([
+        { id: 'a', vision: true, contextWindow: 64000.7 },
+        { id: 'b', vision: false, contextWindow: 0 },
+        { id: 'c', vision: false, contextWindow: -1 }
+      ])
+    ).toEqual([
+      { id: 'a', vision: true, contextWindow: 64001 },
+      { id: 'b', vision: false },
+      { id: 'c', vision: false }
+    ])
+  })
+
   it('returns null for a missing catalog', () => {
     expect(acapLlmRestoreModelEntries(undefined)).toBeNull()
   })

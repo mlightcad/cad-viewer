@@ -22,6 +22,11 @@ export interface AcApLlmModelEntry {
   name?: string
   /** Whether the model accepts image input in chat. */
   vision: boolean
+  /**
+   * Optional context-window size in tokens. When set, the agent context meter
+   * prefers this over the built-in model-id heuristic.
+   */
+  contextWindow?: number
 }
 
 /** Ids of the providers that ship with the plugin. */
