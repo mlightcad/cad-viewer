@@ -22,7 +22,7 @@ Migrace:
   :::
 
 ::: info Místní PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
-Od vydání, které obsahuje tuto změnu, mohou hostitelé nainstalovat **`@mlightcad/cad-paddleocr-plugin`** pro OCR rozloženého PDF textu v prohlížeči (`pdftext` / OCR při importu PDF). Registruje rozpoznávač `paddleocr` v `AcApTextRecognitionService`; Wasm a ONNX modely se načtou až při prvním OCR. Seznam „Rozpoznat rozložený text“ při importu PDF ukazuje každou *dostupnou* OCR volbu: místní PaddleOCR a každý nakonfigurovaný vision LLM **model** (např. `kkidc — model-id`), ne jeden řádek na poskytovatele.
+Od vydání, které obsahuje tuto změnu, mohou hostitelé nainstalovat **`@mlightcad/cad-paddleocr-plugin`** pro OCR rozloženého PDF textu v prohlížeči (`pdftext` / OCR při importu PDF). Registruje rozpoznávač `paddleocr` v `AcApTextRecognitionService`; Wasm a ONNX modely se načtou až při prvním OCR. Seznam „Rozpoznat rozložený text“ při importu PDF ukazuje každou _dostupnou_ OCR volbu: místní PaddleOCR a každý nakonfigurovaný vision LLM **model** (např. `kkidc — model-id`), ne jeden řádek na poskytovatele.
 
 Migrace:
 
@@ -39,7 +39,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info Sdílené nastavení modelu AI (`@mlightcad/cad-llm-plugin`)
 Od vydání, které obsahuje tuto změnu, se nastavení poskytovatelů LLM přesouvá z `@mlightcad/cad-agent-plugin` do nového balíčku **`@mlightcad/cad-llm-plugin`**, takže CAD agent i rozpoznávání textu `pdftext` (OCR) sdílejí jednu konfiguraci. Nový balíček přidává příkaz **LLMSETTINGS** a dialog nastavení nezávislý na UI frameworku (dostupný i na kartě AI pásu karet v `@mlightcad/cad-editor`) a `@mlightcad/cad-simple-viewer` přidává `AcApLlmSettingsService`, přes který může jakákoli funkce dialog otevřít nebo zjistit, zda je nakonfigurován model s podporou obrázků.
@@ -83,7 +84,7 @@ Porovnávání tvarů se přesunulo z `@mlightcad/cad-pdf-plugin` do `@mlightcad
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-Staré názvy fungují dál jako zastaralé aliasy. Text se přesunul z `kind` do `label`. `pdfblock` nyní používá pořadí výzev `-BSEARCH` (Převést → Nový/Existující → název → bod vložení → rozsah); skripty odpovídající na staré výzvy je třeba upravit.
+Staré názvy fungují dál jako zastaralé aliasy. Text se přesunul z `kind` do `label`. Příkaz `pdfblock` z `@mlightcad/cad-pdf-plugin` byl odstraněn; použijte `BSEARCH` / `-BSEARCH` (po importu PDF vypněte shodu hladin — hladiny PDF jsou podle barvy).
 :::
 
 ::: info AutoCAD skupiny (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
@@ -278,15 +279,15 @@ Před upgradem pomůže vědět, které balíčky patří ke koordinovanému vyd
 
 ### Pluginy — **musí přesně odpovídat verzi cad-simple-viewer**
 
-| Balíček                                  | Účel                                                |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | Export samostatného HTML jedním kliknutím           |
-| `@mlightcad/cad-pdf-plugin`              | Prohlížečový export PDF a import PDF do CAD         |
-| `@mlightcad/cad-svg-plugin`              | Export SVG                                          |
+| Balíček                                     | Účel                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | Export samostatného HTML jedním kliknutím           |
+| `@mlightcad/cad-pdf-plugin`                 | Prohlížečový export PDF a import PDF do CAD         |
+| `@mlightcad/cad-svg-plugin`                 | Export SVG                                          |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | Interakce poháněná AI agentem                       |
-| `@mlightcad/cad-onedrive-plugin`         | Integrace OneDrive                                  |
-| `@mlightcad/cad-google-drive-plugin`     | Integrace Google Drive                              |
+| `@mlightcad/cad-agent-plugin`               | Interakce poháněná AI agentem                       |
+| `@mlightcad/cad-onedrive-plugin`            | Integrace OneDrive                                  |
+| `@mlightcad/cad-google-drive-plugin`        | Integrace Google Drive                              |
 
 > **Základní pravidlo:** každý plugin ve výše uvedeném seznamu by měl být připnut k **přesně stejnému číslu verze** jako `cad-simple-viewer`, na který upgradujete (například `1.7.5`).
 

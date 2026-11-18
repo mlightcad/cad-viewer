@@ -341,8 +341,6 @@ export default {
         'Převede rozložené kóty z PDF (šipky nebo značky, čáry, vynášecí čáry a texty) zpět na kótovací objekty (PDFDIM).',
       pdfHatch:
         'Převede rozložené čáry šrafy z PDF zpět na šrafu se vzorem, měřítkem a úhlem (PDFHATCH).',
-      pdfBlock:
-        'Převede opakovanou geometrii z PDF na blok a každou kopii nahradí referencí bloku (PDFBLOCK).',
       pdfText:
         'Převede rozložené tahy textu z PDF zpět na textové objekty (PDFTEXT).',
       pdfTextAuto:
@@ -519,7 +517,6 @@ export default {
       pdfScale: 'Kalibrovat\nměřítko',
       pdfDim: 'Obnovit\nkóty',
       pdfHatch: 'Obnovit\nšrafy',
-      pdfBlock: 'Vytvořit\nblok',
       pdfText: 'Obnovit\ntext',
       line: 'Úsečka',
       polyline: 'Křivka',

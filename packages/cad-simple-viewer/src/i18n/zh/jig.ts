@@ -2209,35 +2209,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: '是(Y)',
-        local: '是',
-        global: 'Yes'
-      },
-      no: {
-        display: '否(N)',
-        local: '否',
-        global: 'No'
-      },
-      review: {
-        display: '逐个确认(R)',
-        local: '逐个确认',
-        global: 'Review'
-      },
-      all: {
-        display: '全部(A)',
-        local: '全部',
-        global: 'All'
-      },
-      exit: {
-        display: '退出(X)',
-        local: '退出',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: '识别文字',

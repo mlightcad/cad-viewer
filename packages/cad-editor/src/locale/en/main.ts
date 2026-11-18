@@ -297,8 +297,6 @@ export default {
         'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
       pdfHatch:
         'Turn the loose strokes of a PDF hatch back into a hatch with its pattern, scale and angle (PDFHATCH).',
-      pdfBlock:
-        'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
       pdfText:
         'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
       pdfTextAuto:
@@ -480,7 +478,6 @@ export default {
       pdfScale: 'Calibrate\nScale',
       pdfDim: 'Recover\nDims',
       pdfHatch: 'Recover\nHatch',
-      pdfBlock: 'Make\nBlock',
       pdfText: 'Recover\nText',
       line: 'Line',
       polyline: 'Polyline',

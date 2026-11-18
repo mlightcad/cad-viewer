@@ -5,16 +5,15 @@
 
 PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer). Registers system commands:
 
-| Command | Description |
-|---------|-------------|
-| `-cpdf` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
-| `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead |
-| `pdfimport` | Import vector geometry from a PDF file into model space through the Import PDF dialog, recovering circles, arcs, ellipses and splines |
-| `-pdfimport` | Same import with command-line prompts (page, insertion point, `Scale`, `Mode`) instead of the dialog |
-| `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
-| `pdftext` | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically |
-| `pdfblock` | Turn repeated geometry back into a block: select one instance, every rotated / mirrored copy is found and replaced |
-| `pdfdim` | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts — including stroke digits) back into linear, radius, diameter and angular dimensions via a review palette |
+| Command      | Description                                                                                                                                                                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-cpdf`      | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix)                                                                                                          |
+| `cpdf`       | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead                                              |
+| `pdfimport`  | Import vector geometry from a PDF file into model space through the Import PDF dialog, recovering circles, arcs, ellipses and splines                                              |
+| `-pdfimport` | Same import with command-line prompts (page, insertion point, `Scale`, `Mode`) instead of the dialog                                                                               |
+| `pdfscale`   | Calibrate imported PDF geometry: pick two points of a known distance and type its real length                                                                                      |
+| `pdftext`    | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically                                                                                     |
+| `pdfdim`     | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts — including stroke digits) back into linear, radius, diameter and angular dimensions via a review palette |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `pdfimport`.
 
@@ -26,7 +25,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **Shared core (1.8.0+)** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses so Node can export PDF without a browser ([upgrade guide](../../docs/development/upgrade-guide.md))
 - **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights, dashed strokes get matching `PDF_DASH_*` linetypes, PDF fonts become `PDF_<family>` text styles, filled areas become solid hatches in paint order (`fillHatches`), pattern hatches that the PDF holds as short lines are rebuilt as `AcDbHatch` with their `acadiso.pat` pattern, scale and angle (`recognizeHatches`, kept only when re-drawing reproduces the lines), exploded SHX / outline stroke text can be recovered on import (`recognizeExplodedText`: `'local'` glyph dictionary or `'ocr'` via `AcApTextRecognitionService`), and exact duplicate outlines are dropped
 - **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1. When the selection holds exploded dimensions, the scale their texts imply pre-fills the real length
-- **Block recovery** — `pdfimport` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
+- **Block recovery** — `pdfimport` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). Repeated symbols drawn inline (not as forms) can be turned into blocks afterward with Smart Blocks `BSEARCH` (turn off Same layer — PDF layers are by color)
 - **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius, diameter and angular dimensions in a selected area, including value text still drawn as strokes (grid template matcher, no LLM). A review palette lets you edit values, pick or create a dim style (shared style preview), then Apply; Cancel leaves the drawing unchanged. It infers the drawing scale from the texts and pins paper sizes via entity overrides on the chosen style (existing styles are left unchanged in the table; `PDF_DIM` / newly created styles get the recovered metrics written in) so a large inherited DIMSCALE cannot hide extensions, and a 1:100 drawing keeps its real values
 - **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), reads lines made of known glyph shapes from its glyph dictionary, and, with OCR recognizers registered in `AcApTextRecognitionService` (`@mlightcad/cad-paddleocr-plugin` for local PaddleOCR, then `@mlightcad/cad-llm-plugin` for the configured vision model), sends all other lines at once via `recognizeBatch` and converts the whole selection in one edit. Only lines nothing could read are prompted; typed glyph shapes are learned.
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
@@ -127,20 +126,22 @@ import {
 } from '@mlightcad/cad-pdf-plugin'
 
 // Export
-const context: AcApContext = /* active context */
-await new AcApPdfConvertor().convert(
-  context,
-  resolveAcApPdfExportOptions({
-    modelSpaceFit: 'extents',
-    exportLayouts: true,
-    textMode: 'text',
-    colorMode: 'monochrome' // or 'color' (default)
-  })
-)
+const context: AcApContext =
+  /* active context */
+  await new AcApPdfConvertor().convert(
+    context,
+    resolveAcApPdfExportOptions({
+      modelSpaceFit: 'extents',
+      exportLayouts: true,
+      textMode: 'text',
+      colorMode: 'monochrome' // or 'color' (default)
+    })
+  )
 
 // Import from bytes
-const buffer: ArrayBuffer = /* PDF file */
-await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
+const buffer: ArrayBuffer =
+  /* PDF file */
+  await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
 
 // ...or with full options
 await new AcApPdfImportConvertor().convert(context, buffer, {
@@ -173,14 +174,6 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 2. Show the application busy overlay (same animation pattern as `chtml`).
 3. Call `@mlightcad/cad-pdf-core` `acexPdfExportDatabase` (built on `@mlightcad/pdf-renderer`). With layouts enabled, model space and every paper space become one PDF page each. Monochrome paints linework and text black on white paper (solid fills become grey).
 4. Download the resulting PDF bytes.
-
-### Block recovery (`pdfblock`)
-
-1. Select one instance. Lines, arcs, circles, polylines, ellipses, splines and text take part; other entity types are left alone.
-2. Pick the base point. The `Scale` keyword toggles matching scaled copies; it is off by default.
-3. Enter the block name. A free `PDF_BLOCK_n` name is pre-filled.
-4. `recognition/pdfShapeMatching.ts` takes two anchor shapes: the largest one, and the one farthest from it. Each candidate pair of anchors fixes a similarity transform, and a copy counts only if every template shape lands on a free shape of the same kind, size and point set.
-5. All copies are highlighted. Choose `Yes` (replace all), `No` (only the selection becomes a block) or `Review` (Yes / No / All / Exit per copy).
 
 ### Dimension recovery (`pdfdim`)
 
@@ -222,54 +215,50 @@ Only the requested page is processed (default: page 1). Form XObject `/Matrix` i
 
 ## Main exports
 
-| Export | Role |
-|--------|------|
-| `createPdfPlugin` | Async factory used by lazy loader |
-| `PDF_PLUGIN_NAME`, `PDF_PLUGIN_TRIGGERS` | Plugin id and command triggers |
-| `@mlightcad/cad-pdf-plugin/register` | `registerLazyPdfPlugin` and registration constants |
-| `AcApPdfPlugin` | `AcApPlugin` implementation |
-| `AcApConvertToPdfCmd` | `-cpdf` / fallback `cpdf` command class |
-| `AcApImportPdfCmd` | `pdfimport` command class |
-| `AcApImportPdfPromptCmd` | `-pdfimport` command class |
-| `AcUiPdfImportDialog` | Import PDF dialog opened by `pdfimport` (page preview, location, scale, mode) |
-| `AcApPdfScaleCmd` | `pdfscale` command class |
-| `AcApPdfTextCmd` | `pdftext` command class |
-| `AcApPdfBlockCmd` | `pdfblock` command class |
-| `AcApPdfDimCmd` | `pdfdim` command class |
-| `AcApPdfDimSession`, `AcUiPdfDimPanel` | Review state and palette UI for `pdfdim` |
-| `recognizePdfDimensions`, `suggestPdfDimensionScale`, `pdfArrowFromPolygon`, `parsePdfDimensionValue`, `recognizePdfDimStrokeText` | Dimension recognition (including lightweight stroke digits) |
-| `pdfEntitiesToDimInput`, `acapPdfEnsureDimStyle`, `acapPdfCreateDimensions`, `acapPdfNiceScale` | Dimension conversion against a database |
-| `findPdfShapeMatches`, `buildPdfFormBlocks`, `pdfEntityToFeature` | Block recovery building blocks |
-| `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke` | Text recovery building blocks |
-| `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (mode, page, placement, scale, curve recognition) |
-| `recognizePdfCurves`, `buildPdfImportShapes`, `PdfRecognizedShape` | Curve recognition and page-level shape building |
-| `AcApPdfConvertor` | CAD → PDF export utility |
-| `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions` | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`) |
-| `AcApPdfImportConvertor` | PDF → CAD entities import utility |
-| `extractPdfImportSubpaths`, `PDF_IMPORT_FOREGROUND_COLOR`, `PdfImportExtractOptions`, contrast helpers | Programmatic vector import / ACI 7 remapping |
+| Export                                                                                                                             | Role                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `createPdfPlugin`                                                                                                                  | Async factory used by lazy loader                                             |
+| `PDF_PLUGIN_NAME`, `PDF_PLUGIN_TRIGGERS`                                                                                           | Plugin id and command triggers                                                |
+| `@mlightcad/cad-pdf-plugin/register`                                                                                               | `registerLazyPdfPlugin` and registration constants                            |
+| `AcApPdfPlugin`                                                                                                                    | `AcApPlugin` implementation                                                   |
+| `AcApConvertToPdfCmd`                                                                                                              | `-cpdf` / fallback `cpdf` command class                                       |
+| `AcApImportPdfCmd`                                                                                                                 | `pdfimport` command class                                                     |
+| `AcApImportPdfPromptCmd`                                                                                                           | `-pdfimport` command class                                                    |
+| `AcUiPdfImportDialog`                                                                                                              | Import PDF dialog opened by `pdfimport` (page preview, location, scale, mode) |
+| `AcApPdfScaleCmd`                                                                                                                  | `pdfscale` command class                                                      |
+| `AcApPdfTextCmd`                                                                                                                   | `pdftext` command class                                                       |
+| `AcApPdfDimCmd`                                                                                                                    | `pdfdim` command class                                                        |
+| `AcApPdfDimSession`, `AcUiPdfDimPanel`                                                                                             | Review state and palette UI for `pdfdim`                                      |
+| `recognizePdfDimensions`, `suggestPdfDimensionScale`, `pdfArrowFromPolygon`, `parsePdfDimensionValue`, `recognizePdfDimStrokeText` | Dimension recognition (including lightweight stroke digits)                   |
+| `pdfEntitiesToDimInput`, `acapPdfEnsureDimStyle`, `acapPdfCreateDimensions`, `acapPdfNiceScale`                                    | Dimension conversion against a database                                       |
+| `findPdfShapeMatches`, `buildPdfFormBlocks`, `pdfEntityToFeature`                                                                  | Block recovery building blocks                                                |
+| `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke`                                             | Text recovery building blocks                                                 |
+| `AcApPdfImportOptions`, `resolveAcApPdfImportOptions`                                                                              | Import options (mode, page, placement, scale, curve recognition)              |
+| `recognizePdfCurves`, `buildPdfImportShapes`, `PdfRecognizedShape`                                                                 | Curve recognition and page-level shape building                               |
+| `AcApPdfConvertor`                                                                                                                 | CAD → PDF export utility                                                      |
+| `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions`                                                          | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`)       |
+| `AcApPdfImportConvertor`                                                                                                           | PDF → CAD entities import utility                                             |
+| `extractPdfImportSubpaths`, `PDF_IMPORT_FOREGROUND_COLOR`, `PdfImportExtractOptions`, contrast helpers                             | Programmatic vector import / ACI 7 remapping                                  |
 
 ## Project layout
 
-| Path | Role |
-|------|------|
-| `src/register.ts` | Lazy plugin registration (`/register` entry) and `createPdfPlugin` |
-| `src/AcApPdfPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
-| `src/AcApConvertToPdfCmd.ts` | `-cpdf` command (command-line prompts) |
-| `src/AcApImportPdfCmd.ts` | `pdfimport` command |
-| `src/AcApPdfScaleCmd.ts` | `pdfscale` command |
-| `src/AcApPdfTextCmd.ts` | `pdftext` command |
-| `src/AcApPdfBlockCmd.ts` | `pdfblock` command |
-| `src/AcApPdfDimCmd.ts` | `pdfdim` command |
-| `src/pdfDimensionConvert.ts` | Dimension entities and the `PDF_DIM` style |
-| `src/acapPdfPrompts.ts` | Shared Yes / No / Review prompt |
-| `src/pdfEntityFeatures.ts` | Describes entities for instance matching |
-| `src/pdfEntityStrokes.ts` | Samples curve entities into strokes |
-| `src/AcApPdfImportOptions.ts` | Import option types and defaults |
-| `src/pdfImportShapes.ts` | Page-level recognition, placement and de-duplication |
-| `src/recognition/` | Pure geometry: curve recognition and fitting helpers |
-| `src/AcApPdfConvertor.ts` | Browser export: view box, fonts, download (rendering via `cad-pdf-core`) |
-| `src/AcApPdfExportOptions.ts` | Export option types and defaults |
-| `src/AcApPdfImportConvertor.ts` | Import pipeline (pdf.js operator parsing) |
+| Path                            | Role                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `src/register.ts`               | Lazy plugin registration (`/register` entry) and `createPdfPlugin`       |
+| `src/AcApPdfPlugin.ts`          | Plugin lifecycle (`onLoad` / `onUnload`)                                 |
+| `src/AcApConvertToPdfCmd.ts`    | `-cpdf` command (command-line prompts)                                   |
+| `src/AcApImportPdfCmd.ts`       | `pdfimport` command                                                      |
+| `src/AcApPdfScaleCmd.ts`        | `pdfscale` command                                                       |
+| `src/AcApPdfTextCmd.ts`         | `pdftext` command                                                        |
+| `src/AcApPdfDimCmd.ts`          | `pdfdim` command                                                         |
+| `src/pdfDimensionConvert.ts`    | Dimension entities and the `PDF_DIM` style                               |
+| `src/pdfEntityStrokes.ts`       | Samples curve entities into strokes                                      |
+| `src/AcApPdfImportOptions.ts`   | Import option types and defaults                                         |
+| `src/pdfImportShapes.ts`        | Page-level recognition, placement and de-duplication                     |
+| `src/recognition/`              | Pure geometry: curve recognition and fitting helpers                     |
+| `src/AcApPdfConvertor.ts`       | Browser export: view box, fonts, download (rendering via `cad-pdf-core`) |
+| `src/AcApPdfExportOptions.ts`   | Export option types and defaults                                         |
+| `src/AcApPdfImportConvertor.ts` | Import pipeline (pdf.js operator parsing)                                |
 
 ## Role in MLightCAD
 

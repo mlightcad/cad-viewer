@@ -22,7 +22,7 @@ title: 'cad-simple-viewer 및 cad-editor 업그레이드'
   :::
 
 ::: info 로컬 PaddleOCR(`@mlightcad/cad-paddleocr-plugin`)
-이 변경이 포함된 릴리스부터 호스트는 **`@mlightcad/cad-paddleocr-plugin`**을 설치해 분해된 PDF 문자를 브라우저에서 OCR할 수 있습니다(`pdftext` / PDF 가져오기 OCR). `AcApTextRecognitionService`에 `paddleocr` 인식기를 등록하며, Wasm과 ONNX 모델은 첫 OCR 요청 때만 로드됩니다. PDF 가져오기의 「분해된 문자 인식」 목록에는 *사용 가능한* OCR마다 항목이 표시됩니다: 로컬 PaddleOCR과 구성된 이미지 지원 LLM **모델** 각각(예: `kkidc — model-id`). 공급자당 한 줄이 아닙니다.
+이 변경이 포함된 릴리스부터 호스트는 **`@mlightcad/cad-paddleocr-plugin`**을 설치해 분해된 PDF 문자를 브라우저에서 OCR할 수 있습니다(`pdftext` / PDF 가져오기 OCR). `AcApTextRecognitionService`에 `paddleocr` 인식기를 등록하며, Wasm과 ONNX 모델은 첫 OCR 요청 때만 로드됩니다. PDF 가져오기의 「분해된 문자 인식」 목록에는 _사용 가능한_ OCR마다 항목이 표시됩니다: 로컬 PaddleOCR과 구성된 이미지 지원 LLM **모델** 각각(예: `kkidc — model-id`). 공급자당 한 줄이 아닙니다.
 
 마이그레이션:
 
@@ -39,7 +39,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
 이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
@@ -83,7 +84,7 @@ registerLazyAgentPlugin(pluginManager)
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-이전 이름은 사용 중단된 별칭으로 계속 동작합니다. 문자열은 특징의 `kind`에서 `label`로 옮겨졌습니다. `pdfblock`은 이제 `-BSEARCH` 프롬프트 순서(변환 → 새로 만들기/기존 → 이름 → 삽입점 → 범위)를 따르므로 이전 프롬프트에 응답하던 스크립트는 수정해야 합니다.
+이전 이름은 사용 중단된 별칭으로 계속 동작합니다. 문자열은 특징의 `kind`에서 `label`로 옮겨졌습니다. `@mlightcad/cad-pdf-plugin`의 `pdfblock` 명령은 제거되었습니다. 대신 `BSEARCH` / `-BSEARCH`를 사용하세요(PDF 가져오기 후에는 도면층 일치를 끄세요. PDF 도면층은 색상 기준입니다).
 :::
 
 ::: info AutoCAD 그룹(`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
@@ -278,15 +279,15 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### 플러그인 — **cad-simple-viewer 버전과 정확히 일치해야 함**
 
-| 패키지                                   | 목적                                                |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | 원클릭 자체 포함 HTML 내보내기                      |
-| `@mlightcad/cad-pdf-plugin`              | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기           |
-| `@mlightcad/cad-svg-plugin`              | SVG 내보내기                                        |
+| 패키지                                      | 목적                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | 원클릭 자체 포함 HTML 내보내기                      |
+| `@mlightcad/cad-pdf-plugin`                 | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기           |
+| `@mlightcad/cad-svg-plugin`                 | SVG 내보내기                                        |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | AI 에이전트 기반 상호 작용                          |
-| `@mlightcad/cad-onedrive-plugin`         | OneDrive 통합                                       |
-| `@mlightcad/cad-google-drive-plugin`     | Google Drive 통합                                   |
+| `@mlightcad/cad-agent-plugin`               | AI 에이전트 기반 상호 작용                          |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive 통합                                       |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive 통합                                   |
 
 > **경험칙:** 위 목록의 모든 플러그인은 업그레이드 대상인 `cad-simple-viewer`와 **정확히 동일한 버전 번호**(예: `1.7.5`)로 고정해야 합니다.
 

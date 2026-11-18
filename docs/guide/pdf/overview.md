@@ -6,16 +6,15 @@ title: Converting PDF Drawings
 
 PDF drawings keep only what was printed: curves are Bézier paths, text is often strokes, and dimensions and blocks are loose lines. The **AI** ribbon tab's **PDF** panel turns such a drawing back into editable CAD objects. Clear-cut cases are converted automatically on import; for the rest you pick an example or confirm what was found.
 
-| Button | Command | What it does |
-|---|---|---|
-| Import PDF | `pdfimport` / `-pdfimport` | Imports a PDF page and rebuilds curves, blocks, line weights and linetypes |
-| Calibrate Scale | `pdfscale` | Rescales the import to real-world size from one known distance |
-| Recover Text | `pdftext` | Turns exploded text strokes back into text |
-| Make Block | `pdfblock` | Turns repeated geometry back into a block |
-| Recover Dims | `pdfdim` | Turns exploded dimensions back into dimension objects |
-| Recover Hatch | `pdfhatch` | Turns the loose strokes of a hatch back into a hatch with its pattern |
+| Button          | Command                    | What it does                                                               |
+| --------------- | -------------------------- | -------------------------------------------------------------------------- |
+| Import PDF      | `pdfimport` / `-pdfimport` | Imports a PDF page and rebuilds curves, blocks, line weights and linetypes |
+| Calibrate Scale | `pdfscale`                 | Rescales the import to real-world size from one known distance             |
+| Recover Text    | `pdftext`                  | Turns exploded text strokes back into text                                 |
+| Recover Dims    | `pdfdim`                   | Turns exploded dimensions back into dimension objects                      |
+| Recover Hatch   | `pdfhatch`                 | Turns the loose strokes of a hatch back into a hatch with its pattern      |
 
-The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
+The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` → `pdftext` → `pdfdim` → `pdfhatch`.
 
 ## Import (`pdfimport`)
 
@@ -32,7 +31,7 @@ The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` 
 In **Recover drawing** mode, the following is rebuilt automatically:
 
 - **Curves**: Bézier circles, arcs and ellipses become circles, arcs and ellipses. Outlines mixing lines and arcs become polylines with arc segments. Arcs that the producer already broke into short lines are refitted. Free-form curves become splines.
-- **Blocks**: content drawn several times from the same PDF form becomes one block (`PDF_FORM_n`) with a reference per copy, including rotated and mirrored ones.
+- **Blocks**: content drawn several times from the same PDF form becomes one block (`PDF_FORM_n`) with a reference per copy, including rotated and mirrored ones. Symbols drawn inline (not as forms) stay as loose geometry; turn them into blocks afterward with Smart Blocks **Search and Convert** (`BSEARCH`) — turn off **Same layer**, because PDF import assigns layers by color.
 - **Styles**: stroke widths become line weights, dashed lines get a `PDF_DASH_*` linetype, and text gets a `PDF_<font>` text style. Fragmented text runs of one line are joined.
 - **Exploded text**: SHX / outline stroke text that the glyph dictionary (and optionally the host OCR service registered in `AcApTextRecognitionService`) can read becomes text objects. Choose **Off**, **Local dictionary** or **OCR service** in the import dialog; unread strokes stay for `pdftext`. Recognition always clusters strokes and, for OCR, re-rasterizes each line at a fixed text height — the whole page is never sent as one image.
 - **Clean-up**: exact duplicate outlines are dropped.
@@ -67,13 +66,6 @@ If the selection contains exploded dimensions, the scale their texts imply is fi
 5. Click **Apply** to convert. **Cancel**, or closing the palette, changes nothing.
 
 Every character shape you type is remembered in the browser, so drawings that use the same font benefit too. Text read by the AI model is not remembered. The whole command is one undo step, and converted texts can be edited like any other text.
-
-## Make a block (`pdfblock`)
-
-1. Select the objects of **one** copy of a repeated symbol.
-2. Pick the block base point. The **Scale** option also matches copies of a different size.
-3. Confirm the block name.
-4. All other copies, including rotated and mirrored ones, are highlighted. Choose **Yes** to replace them all, **No** to make only your selection a block, or **Review** to decide copy by copy.
 
 ## Recover dimensions (`pdfdim`)
 

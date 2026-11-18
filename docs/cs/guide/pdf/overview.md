@@ -6,16 +6,15 @@ title: Převod výkresů PDF
 
 Výkres v PDF uchovává jen to, co bylo vytištěno: křivky jsou Bézierovy cesty, text je často složený z tahů a kóty i bloky se rozpadly na samostatné čáry. Panel **PDF** na kartě **AI** pásu karet takový výkres převede zpět na upravitelné objekty CAD. Jednoznačné případy se převedou automaticky při importu; u ostatních vyberete vzor nebo potvrdíte, co bylo nalezeno.
 
-| Tlačítko | Příkaz | Co dělá |
-|---|---|---|
-| Import PDF | `pdfimport` / `-pdfimport` | Importuje stránku PDF a obnoví křivky, bloky, tloušťky a typy čar |
-| Kalibrovat měřítko | `pdfscale` | Změní měřítko importu na skutečnou velikost podle jedné známé vzdálenosti |
-| Obnovit text | `pdftext` | Převede rozložené tahy textu zpět na text |
-| Vytvořit blok | `pdfblock` | Převede opakovanou geometrii zpět na blok |
-| Obnovit kóty | `pdfdim` | Převede rozložené kóty zpět na kótovací objekty |
-| Obnovit šrafy | `pdfhatch` | Převede šrafu rozloženou na krátké čáry zpět na šrafu se vzorem |
+| Tlačítko           | Příkaz                     | Co dělá                                                                   |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------- |
+| Import PDF         | `pdfimport` / `-pdfimport` | Importuje stránku PDF a obnoví křivky, bloky, tloušťky a typy čar         |
+| Kalibrovat měřítko | `pdfscale`                 | Změní měřítko importu na skutečnou velikost podle jedné známé vzdálenosti |
+| Obnovit text       | `pdftext`                  | Převede rozložené tahy textu zpět na text                                 |
+| Obnovit kóty       | `pdfdim`                   | Převede rozložené kóty zpět na kótovací objekty                           |
+| Obnovit šrafy      | `pdfhatch`                 | Převede šrafu rozloženou na krátké čáry zpět na šrafu se vzorem           |
 
-Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
+Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `pdfscale` → `pdftext` → `pdfdim` → `pdfhatch`.
 
 ## Import (`pdfimport`)
 
@@ -32,7 +31,7 @@ Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `
 V režimu **Obnovit výkres** se automaticky obnoví:
 
 - **Křivky**: Bézierovy kružnice, oblouky a elipsy se stanou kružnicemi, oblouky a elipsami. Obrysy kombinující úsečky a oblouky se stanou křivkami s obloukovými segmenty. Oblouky, které tvůrce PDF už rozdělil na krátké úsečky, se znovu proloží. Volné křivky se stanou spliny.
-- **Bloky**: obsah nakreslený několikrát ze stejného formuláře PDF se stane jedním blokem (`PDF_FORM_n`) s referencí pro každou kopii, včetně otočených a zrcadlených.
+- **Bloky**: obsah nakreslený několikrát ze stejného formuláře PDF se stane jedním blokem (`PDF_FORM_n`) s referencí pro každou kopii, včetně otočených a zrcadlených. Symboly nakreslené přímo na stránce (ne jako formuláře) zůstanou jako volná geometrie; později je převeďte na bloky pomocí Chytrých bloků **Vyhledat a převést** (`BSEARCH`) — vypněte **Stejná hladina**, protože import PDF přiřazuje hladiny podle barvy.
 - **Styly**: šířky tahů se stanou tloušťkami čar, přerušované čáry dostanou typ čáry `PDF_DASH_*` a text dostane textový styl `PDF_<písmo>`. Rozdělené úseky textu na jednom řádku se spojí.
 - **Rozložený text**: SHX / obrysový text ze tahů, který dokáže přečíst slovník znaků (a volitelně OCR registrované v `AcApTextRecognitionService`), se stane textovými objekty. V dialogu zvolte **Vypnuto**, **Místní slovník znaků** nebo **Služba OCR**; nepřečtené tahy zůstanou pro `pdftext`. Rozpoznávání vždy seskupí tahy do řádků a u OCR každý řádek znovu vyrastrovat při pevné výšce textu — celá stránka se nikdy neposílá jako jeden obrázek.
 - **Úklid**: přesně duplicitní obrysy se odstraní.
@@ -67,13 +66,6 @@ Pokud výběr obsahuje rozložené kóty, skutečná délka se předvyplní podl
 5. Klepnutím na **Použít** text převedete. **Zrušit** nebo zavření palety nic nezmění.
 
 Každý napsaný tvar znaku se zapamatuje v prohlížeči, takže pomůže i u dalších výkresů se stejným písmem. Text přečtený modelem AI se nezapamatuje. Celý příkaz lze vrátit jedním krokem a převedené texty lze upravovat jako jakýkoli jiný text.
-
-## Vytvoření bloku (`pdfblock`)
-
-1. Vyberte objekty **jedné** kopie opakovaného symbolu.
-2. Určete základní bod bloku. Volba **Měřítko** najde i kopie jiné velikosti.
-3. Potvrďte název bloku.
-4. Všechny ostatní kopie, včetně otočených a zrcadlených, se zvýrazní. Zvolte **Ano** pro nahrazení všech, **Ne**, aby se blokem stal jen váš výběr, nebo **Revize** pro rozhodování kopii po kopii.
 
 ## Obnovení kót (`pdfdim`)
 

@@ -22,7 +22,7 @@ Geçiş:
   :::
 
 ::: info Yerel PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
-Bu değişikliği içeren sürümden itibaren konak uygulamalar, parçalanmış PDF metnini tarayıcıda OCR etmek için **`@mlightcad/cad-paddleocr-plugin`** kurabilir (`pdftext` / PDF içe aktarma OCR). `AcApTextRecognitionService` içinde `paddleocr` tanıyıcısını kaydeder; Wasm ve ONNX modelleri yalnızca ilk OCR isteğinde yüklenir. PDF içe aktarma «Patlatılmış metni tanı» listesi her *kullanılabilir* OCR seçeneğini gösterir: yerel PaddleOCR ve yapılandırılmış her görüntü destekli LLM **modeli** (ör. `kkidc — model-id`); sağlayıcı başına tek satır değil.
+Bu değişikliği içeren sürümden itibaren konak uygulamalar, parçalanmış PDF metnini tarayıcıda OCR etmek için **`@mlightcad/cad-paddleocr-plugin`** kurabilir (`pdftext` / PDF içe aktarma OCR). `AcApTextRecognitionService` içinde `paddleocr` tanıyıcısını kaydeder; Wasm ve ONNX modelleri yalnızca ilk OCR isteğinde yüklenir. PDF içe aktarma «Patlatılmış metni tanı» listesi her _kullanılabilir_ OCR seçeneğini gösterir: yerel PaddleOCR ve yapılandırılmış her görüntü destekli LLM **modeli** (ör. `kkidc — model-id`); sağlayıcı başına tek satır değil.
 
 Geçiş:
 
@@ -39,7 +39,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info Paylaşılan yapay zekâ modeli ayarları (`@mlightcad/cad-llm-plugin`)
 Bu değişikliği içeren sürümden itibaren LLM sağlayıcı ayarları `@mlightcad/cad-agent-plugin` paketinden yeni **`@mlightcad/cad-llm-plugin`** paketine taşınır; böylece CAD Ajanı ve `pdftext` metin tanıma (OCR) aynı yapılandırmayı paylaşır. Yeni paket **LLMSETTINGS** komutunu ve UI çatısından bağımsız bir ayar iletişim kutusunu (`@mlightcad/cad-editor` içindeki AI şerit sekmesinden de açılır) ekler; `@mlightcad/cad-simple-viewer` ise herhangi bir özelliğin iletişim kutusunu açabilmesi veya görüntü destekli bir modelin yapılandırılıp yapılandırılmadığını denetleyebilmesi için `AcApLlmSettingsService` ekler.
@@ -83,7 +84,7 @@ Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-Eski adlar kullanımdan kalkmış diğer adlar olarak çalışmaya devam eder. Metin `kind` alanından `label` alanına taşındı. `pdfblock` artık `-BSEARCH` istem sırasını izler (Dönüştür → Yeni/Mevcut → ad → ekleme noktası → kapsam); eski istemlere yanıt veren betikler güncellenmelidir.
+Eski adlar kullanımdan kalkmış diğer adlar olarak çalışmaya devam eder. Metin `kind` alanından `label` alanına taşındı. `@mlightcad/cad-pdf-plugin` içindeki `pdfblock` komutu kaldırıldı; bunun yerine `BSEARCH` / `-BSEARCH` kullanın (PDF içe aktardıktan sonra katman eşleştirmeyi kapatın — PDF katmanları renge göredir).
 :::
 
 ::: info AutoCAD grupları (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
@@ -278,15 +279,15 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 
 ### Eklentiler — **cad-simple-viewer sürümüyle tam olarak eşleşmelidir**
 
-| Paket                                    | Amaç                                                |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | Tek tıkla kendi kendine yeten HTML dışa aktarma     |
-| `@mlightcad/cad-pdf-plugin`              | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma  |
-| `@mlightcad/cad-svg-plugin`              | SVG dışa aktarma                                    |
+| Paket                                       | Amaç                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | Tek tıkla kendi kendine yeten HTML dışa aktarma     |
+| `@mlightcad/cad-pdf-plugin`                 | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma  |
+| `@mlightcad/cad-svg-plugin`                 | SVG dışa aktarma                                    |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | Yapay zeka ajanı destekli etkileşim                 |
-| `@mlightcad/cad-onedrive-plugin`         | OneDrive entegrasyonu                               |
-| `@mlightcad/cad-google-drive-plugin`     | Google Drive entegrasyonu                           |
+| `@mlightcad/cad-agent-plugin`               | Yapay zeka ajanı destekli etkileşim                 |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive entegrasyonu                               |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive entegrasyonu                           |
 
 > **Genel kural:** yukarıdaki listedeki her eklenti, yükselttiğiniz `cad-simple-viewer` sürümüyle **tam olarak aynı sürüm numarasına** sabitlenmelidir (örneğin `1.7.5`).
 

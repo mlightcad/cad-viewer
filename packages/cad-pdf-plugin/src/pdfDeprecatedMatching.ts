@@ -1,7 +1,7 @@
 /**
  * Deprecated aliases kept so existing imports from `@mlightcad/cad-pdf-plugin`
  * keep working. Shape matching moved to `@mlightcad/cad-simple-viewer` where
- * `BSEARCH` / `-BSEARCH` and `pdfblock` share it.
+ * `BSEARCH` / `-BSEARCH` use it.
  */
 
 import {

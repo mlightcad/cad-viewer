@@ -8,7 +8,6 @@ import packageJson from '../package.json'
 import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd.js'
 import { AcApImportPdfCmd } from './AcApImportPdfCmd.js'
 import { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd.js'
-import { AcApPdfBlockCmd } from './AcApPdfBlockCmd.js'
 import { AcApPdfDimCmd } from './AcApPdfDimCmd.js'
 import { AcApPdfHatchCmd } from './AcApPdfHatchCmd.js'
 import { AcApPdfScaleCmd } from './AcApPdfScaleCmd.js'
@@ -16,7 +15,7 @@ import { AcApPdfTextCmd } from './AcApPdfTextCmd.js'
 
 export interface AcApPdfPluginOptions {
   /**
-   * When true, only the import and clean-up commands (`pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock`, `pdfdim`, `pdfhatch`) are registered. Defaults to false.
+   * When true, only the import and clean-up commands (`pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfdim`, `pdfhatch`) are registered. Defaults to false.
    */
   disableExport?: boolean
 }
@@ -24,7 +23,7 @@ export interface AcApPdfPluginOptions {
 /**
  * PDF export/import plugin for cad-simple-viewer.
  *
- * Registers `-cpdf`, `pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock`, `pdfdim` and `pdfhatch` when loaded. Also registers `cpdf` when no UI
+ * Registers `-cpdf`, `pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfdim` and `pdfhatch` when loaded. Also registers `cpdf` when no UI
  * dialog command is already present. Register this plugin lazily via
  * {@link registerLazyPdfPlugin} so the PDF renderer is fetched on demand.
  */
@@ -35,7 +34,7 @@ export class AcApPdfPlugin implements AcApPlugin {
   version = packageJson.version
   /** @inheritdoc */
   description =
-    'PDF export (-cpdf / cpdf), import (pdfimport / -pdfimport) and PDF clean-up (pdfscale, pdftext, pdfblock, pdfdim, pdfhatch) commands'
+    'PDF export (-cpdf / cpdf), import (pdfimport / -pdfimport) and PDF clean-up (pdfscale, pdftext, pdfdim, pdfhatch) commands'
 
   private readonly _disableExport: boolean
 
@@ -87,13 +86,6 @@ export class AcApPdfPlugin implements AcApPlugin {
     this.registeredCommands.push({ group, name: 'pdfscale' })
     commandManager.addCommand(group, 'pdftext', 'pdftext', new AcApPdfTextCmd())
     this.registeredCommands.push({ group, name: 'pdftext' })
-    commandManager.addCommand(
-      group,
-      'pdfblock',
-      'pdfblock',
-      new AcApPdfBlockCmd()
-    )
-    this.registeredCommands.push({ group, name: 'pdfblock' })
     commandManager.addCommand(group, 'pdfdim', 'pdfdim', new AcApPdfDimCmd())
     this.registeredCommands.push({ group, name: 'pdfdim' })
     commandManager.addCommand(

@@ -2285,35 +2285,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: 'Ano(Y)',
-        local: 'Ano',
-        global: 'Yes'
-      },
-      no: {
-        display: 'Ne(N)',
-        local: 'Ne',
-        global: 'No'
-      },
-      review: {
-        display: 'Revize(R)',
-        local: 'Revize',
-        global: 'Review'
-      },
-      all: {
-        display: 'Vše(A)',
-        local: 'Vše',
-        global: 'All'
-      },
-      exit: {
-        display: 'Konec(X)',
-        local: 'Konec',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: 'Obnovit text',

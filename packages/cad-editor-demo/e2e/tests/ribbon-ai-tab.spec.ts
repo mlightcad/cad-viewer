@@ -83,10 +83,11 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
 
   await page.getByRole('tab', { name: 'AI' }).click()
   for (const id of [
+    'cmd-ai-bsearch',
+    'cmd-ai-bdetect',
     'cmd-pdfimport',
     'cmd-pdfscale',
     'cmd-pdftext',
-    'cmd-pdfblock',
     'cmd-pdfdim',
     'cmd-pdfhatch'
   ]) {

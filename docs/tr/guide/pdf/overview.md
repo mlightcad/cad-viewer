@@ -6,16 +6,15 @@ title: PDF Çizimlerini Dönüştürme
 
 PDF çizimleri yalnızca basılı görüntüyü saklar: eğriler Bézier yollarına dönüşür, metin çoğu zaman çizgilerden oluşur, ölçüler ve bloklar dağınık çizgilere ayrılır. Şeritteki **AI** sekmesinin **PDF** paneli böyle bir çizimi düzenlenebilir CAD nesnelerine geri dönüştürür. Kesin olan durumlar içe aktarırken otomatik olarak dönüştürülür; geri kalanı için bir örnek seçer ya da bulunanları onaylarsınız.
 
-| Düğme | Komut | Ne yapar |
-|---|---|---|
-| PDF İçe Aktar | `pdfimport` / `-pdfimport` | Bir PDF sayfasını içe aktarır; eğrileri, blokları, çizgi kalınlıklarını ve çizgi tiplerini yeniden oluşturur |
-| Ölçeği Kalibre Et | `pdfscale` | Bilinen tek bir mesafeden içe aktarımı gerçek boyuta ölçekler |
-| Metni Kurtar | `pdftext` | Patlatılmış metin çizgilerini yeniden metne dönüştürür |
-| Blok Oluştur | `pdfblock` | Tekrarlanan geometriyi yeniden bloğa dönüştürür |
-| Ölçüleri Kurtar | `pdfdim` | Patlatılmış ölçüleri yeniden ölçü nesnelerine dönüştürür |
-| Taramaları Kurtar | `pdfhatch` | Kısa çizgilere ayrılmış taramayı deseniyle birlikte yeniden taramaya dönüştürür |
+| Düğme             | Komut                      | Ne yapar                                                                                                     |
+| ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| PDF İçe Aktar     | `pdfimport` / `-pdfimport` | Bir PDF sayfasını içe aktarır; eğrileri, blokları, çizgi kalınlıklarını ve çizgi tiplerini yeniden oluşturur |
+| Ölçeği Kalibre Et | `pdfscale`                 | Bilinen tek bir mesafeden içe aktarımı gerçek boyuta ölçekler                                                |
+| Metni Kurtar      | `pdftext`                  | Patlatılmış metin çizgilerini yeniden metne dönüştürür                                                       |
+| Ölçüleri Kurtar   | `pdfdim`                   | Patlatılmış ölçüleri yeniden ölçü nesnelerine dönüştürür                                                     |
+| Taramaları Kurtar | `pdfhatch`                 | Kısa çizgilere ayrılmış taramayı deseniyle birlikte yeniden taramaya dönüştürür                              |
 
-Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
+Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscale` → `pdftext` → `pdfdim` → `pdfhatch`.
 
 ## İçe aktarma (`pdfimport`)
 
@@ -32,7 +31,7 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscal
 **Çizimi kurtar** modunda otomatik olarak yeniden oluşturulanlar:
 
 - **Eğriler**: Bézier daireler, yaylar ve elipsler daire, yay ve elips olur. Çizgi ve yayları karıştıran dış hatlar yay parçalı çoklu çizgiler olur. Üretici tarafından zaten kısa çizgilere bölünmüş yaylar yeniden uydurulur. Serbest eğriler spline olur.
-- **Bloklar**: aynı PDF formundan birkaç kez çizilen içerik tek bir blok (`PDF_FORM_n`) olur; döndürülmüş ve aynalanmış olanlar dahil her kopya bir blok referansı olur.
+- **Bloklar**: aynı PDF formundan birkaç kez çizilen içerik tek bir blok (`PDF_FORM_n`) olur; döndürülmüş ve aynalanmış olanlar dahil her kopya bir blok referansı olur. Form olmayan, sayfaya doğrudan çizilmiş tekrarlanan semboller dağınık geometri olarak kalır; sonra Akıllı Bloklar **Ara ve Dönüştür** (`BSEARCH`) ile bloğa çevirin — **Aynı katman**ı kapatın, çünkü PDF içe aktarma katmanları renge göre atar.
 - **Stiller**: çizgi genişlikleri çizgi kalınlığına dönüşür, kesikli çizgiler `PDF_DASH_*` çizgi tipini, metin ise `PDF_<yazı tipi>` metin stilini alır. Bir satırın bölünmüş metin parçaları birleştirilir.
 - **Patlatılmış metin**: glif sözlüğünün (ve isteğe bağlı olarak `AcApTextRecognitionService` üzerinden kayıtlı OCR’nin) okuyabildiği SHX / kontur çizgi metni metin nesnelerine dönüşür. İçe aktarma iletişim kutusunda **Kapalı**, **Yerel glif sözlüğü** veya **OCR hizmeti** seçin; okunamayan çizgiler `pdftext` için kalır. Tanıma her zaman çizgileri satırlara kümeleştirir ve OCR için her satırı sabit metin yüksekliğinde yeniden rasterleştirir — tüm sayfa tek görüntü olarak gönderilmez.
 - **Temizlik**: tamamen aynı olan yinelenen dış hatlar atılır.
@@ -67,13 +66,6 @@ Seçimde patlatılmış ölçüler varsa, metinlerinin gösterdiği ölçeğe g�
 5. Dönüştürmek için **Uygula**'ya tıklayın. **İptal** veya paleti kapatmak hiçbir şeyi değiştirmez.
 
 Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yazı tipini kullanan diğer çizimler de bundan yararlanır. Yapay zekâ modelinin okuduğu metin hatırlanmaz. Komutun tamamı tek adımda geri alınabilir ve dönüştürülen metinler diğer metinler gibi düzenlenebilir.
-
-## Blok oluşturma (`pdfblock`)
-
-1. Tekrarlanan bir sembolün **bir** kopyasının nesnelerini seçin.
-2. Blok taban noktasını seçin. **Ölçek** seçeneği farklı boyuttaki kopyaları da eşleştirir.
-3. Blok adını onaylayın.
-4. Döndürülmüş ve aynalanmış olanlar dahil diğer tüm kopyalar vurgulanır. Hepsini değiştirmek için **Evet**, yalnızca seçiminizi blok yapmak için **Hayır**, kopya kopya karar vermek için **İncele**'yi seçin.
 
 ## Ölçüleri kurtarma (`pdfdim`)
 

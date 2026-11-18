@@ -295,8 +295,6 @@ export default {
         'PDF에서 분해된 치수(화살표 또는 사선, 치수선, 치수 보조선, 문자)를 치수 객체로 되돌립니다 (PDFDIM).',
       pdfHatch:
         'PDF에서 선분으로 분해된 해치를 패턴, 축척, 각도를 가진 해치로 되돌립니다 (PDFHATCH).',
-      pdfBlock:
-        'PDF의 반복 형상을 블록으로 만들고 각 사본을 블록 참조로 바꿉니다 (PDFBLOCK).',
       pdfText: 'PDF에서 분해된 문자 획을 문자 객체로 되돌립니다 (PDFTEXT).',
       pdfTextAuto:
         '글리프 사전 다음에 사용 가능한 OCR을 순서대로 시도합니다 (PDFTEXT).',
@@ -453,7 +451,6 @@ export default {
       pdfScale: '축척\n보정',
       pdfDim: '치수\n인식',
       pdfHatch: '해치\n인식',
-      pdfBlock: '블록\n만들기',
       pdfText: '문자\n인식',
       line: '선',
       polyline: '폴리선',

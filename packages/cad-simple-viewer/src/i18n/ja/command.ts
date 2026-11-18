@@ -260,10 +260,6 @@ export default {
         'PDF で線分に分解されたハッチングをハッチング オブジェクトに戻します',
       prompt: 'ハッチング領域とその周囲の境界線を選択'
     },
-    pdfblock: {
-      description: 'PDF の繰り返し図形をブロックに戻します',
-      prompt: 'ブロック 1 個分のオブジェクトを選択'
-    },
     pdftext: {
       description:
         'PDF で分解された文字のストロークを文字オブジェクトに戻します',

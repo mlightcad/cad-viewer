@@ -166,7 +166,7 @@ export default {
       description: 'Opens or closes the layer manager dock panel'
     },
     loginname: {
-      description: 'Displays the user\'s login name (read-only)'
+      description: "Displays the user's login name (read-only)"
     },
     dynmode: {
       description: 'Controls Dynamic Input settings at the cursor'
@@ -256,10 +256,6 @@ export default {
       description:
         'Turns the loose strokes of a PDF hatch back into a hatch object',
       prompt: 'Select the hatched area with the lines around it'
-    },
-    pdfblock: {
-      description: 'Turns repeated PDF geometry back into a block',
-      prompt: 'Select the objects of one block instance'
     },
     pdftext: {
       description: 'Converts exploded PDF text strokes back into text objects',

@@ -257,10 +257,6 @@ export default {
       description: 'Převede rozložené čáry šrafy z PDF zpět na objekt šrafy',
       prompt: 'Vyberte šrafovanou oblast i s čarami kolem ní'
     },
-    pdfblock: {
-      description: 'Převede opakovanou geometrii z PDF zpět na blok',
-      prompt: 'Vyberte objekty jedné instance bloku'
-    },
     pdftext: {
       description: 'Převede rozložené tahy textu z PDF zpět na textové objekty',
       prompt: 'Vyberte tahy textu k převodu'

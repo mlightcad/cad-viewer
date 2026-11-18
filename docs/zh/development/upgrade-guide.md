@@ -41,7 +41,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info 共享的 AI 模型设置（`@mlightcad/cad-llm-plugin`）
 从包含此变更的版本开始，LLM 服务商设置从 `@mlightcad/cad-agent-plugin` 移到新的 **`@mlightcad/cad-llm-plugin`**，CAD 智能体和 `pdftext` 文字识别（OCR）共用同一份配置。新包提供 **LLMSETTINGS** 命令和一个不依赖 UI 框架的设置对话框（`@mlightcad/cad-editor` 的 AI 功能区选项卡中也有入口）；`@mlightcad/cad-simple-viewer` 新增 `AcApLlmSettingsService`，任何功能都可以通过它打开对话框，或检查是否配置了支持图片的模型。
@@ -85,7 +86,7 @@ registerLazyAgentPlugin(pluginManager)
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-旧名称仍作为已弃用的别名可用。文字内容已从特征的 `kind` 移到 `label`（默认 `ignoreLabels: false` 时仍需一致）。`pdfblock` 现在使用 `-BSEARCH` 的提示顺序（转换 → 新建/现有 → 名称 → 插入点 → 范围），按旧提示应答的脚本需要调整。
+旧名称仍作为已弃用的别名可用。文字内容已从特征的 `kind` 移到 `label`（默认 `ignoreLabels: false` 时仍需一致）。`@mlightcad/cad-pdf-plugin` 的 `pdfblock` 命令已移除；请改用 `BSEARCH` / `-BSEARCH`（PDF 导入后请关闭按图层匹配——PDF 图层按颜色划分）。
 :::
 
 ::: info AutoCAD 编组（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
@@ -286,17 +287,17 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### 插件——**必须与 cad-simple-viewer 版本完全一致**
 
-| 包                                       | 用途                                                |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | 一键导出自包含 HTML                                 |
-| `@mlightcad/cad-paddleocr-plugin`        | 本地 PaddleOCR.js，用于打散 PDF 文字识别            |
-| `@mlightcad/cad-pdf-plugin`              | 浏览器端 PDF 导出与 PDF 转 CAD 导入                 |
-| `@mlightcad/cad-svg-plugin`              | SVG 导出                                            |
-| `@mlightcad/cad-svg-converter`           | SVG File → Open（矢量 → AcDb 实体）                 |
+| 包                                          | 用途                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | 一键导出自包含 HTML                                 |
+| `@mlightcad/cad-paddleocr-plugin`           | 本地 PaddleOCR.js，用于打散 PDF 文字识别            |
+| `@mlightcad/cad-pdf-plugin`                 | 浏览器端 PDF 导出与 PDF 转 CAD 导入                 |
+| `@mlightcad/cad-svg-plugin`                 | SVG 导出                                            |
+| `@mlightcad/cad-svg-converter`              | SVG File → Open（矢量 → AcDb 实体）                 |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | AI 智能体驱动的交互                                 |
-| `@mlightcad/cad-onedrive-plugin`         | OneDrive 集成                                       |
-| `@mlightcad/cad-google-drive-plugin`     | Google Drive 集成                                   |
+| `@mlightcad/cad-agent-plugin`               | AI 智能体驱动的交互                                 |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive 集成                                       |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive 集成                                   |
 
 > **经验法则：** 上面列表中的每个插件都应固定为与你正在升级到的 `cad-simple-viewer` **完全相同的版本号**（例如 `1.7.5`）。
 
