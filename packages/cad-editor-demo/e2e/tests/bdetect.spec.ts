@@ -96,6 +96,9 @@ test('BDETECT finds repeated symbols and converts them into a block', async ({
   await clickRibbonButton(page, 'cmd-bdetect')
 
   const panel = page.getByTestId('bdetect-panel')
+  await expect(panel.getByTestId('bdetect-ready')).toBeVisible()
+  await expect(panel.getByTestId('bdetect-options')).toBeVisible()
+  await panel.getByTestId('bdetect-run').click()
   await expect(page.getByTestId('bdetect-count')).toHaveText(
     '1 groups of repeated objects',
     { timeout: 30_000 }

@@ -5,6 +5,7 @@ allowBuilds:
   core-js: true
   esbuild: true
   nx: true
+  protobufjs: true
   unrs-resolver: true
   vue-demi: true
 overrides:

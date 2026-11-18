@@ -15,10 +15,13 @@ import {
 import { type AcDbObjectId, AcDbText, AcGeBox2d } from '@mlightcad/data-model'
 
 import {
+  acuiBDetectCloseRequested,
   acuiBDetectGroups,
+  acuiBDetectOptions,
   acuiBeginBDetect,
   acuiEndBDetect,
   acuiNextBDetectAction,
+  acuiOpenBDetect,
   acuiRemoveBDetectGroups,
   acuiRequestBDetectClose,
   acuiSetBDetectError,
@@ -27,8 +30,10 @@ import {
   acuiSetBDetectSelected,
   acuiSetBDetectThumbnail,
   acuiShowBDetectGroups,
+  acuiShowBDetectReady,
   type MlBDetectAction,
-  type MlBDetectGroup
+  type MlBDetectGroup,
+  type MlBDetectOptions
 } from '../composable'
 import { i18n } from '../locale'
 import { AcApBSearchCmd } from './AcApBSearchCmd'
@@ -44,83 +49,77 @@ const THUMBNAIL_SIZE = 112
 /**
  * `BDETECT` — Smart Blocks: Detect and Convert.
  *
- * Searches the whole drawing for groups of repeated objects, without a
- * selection, and lists them in the Detect and Convert tab of the tool
- * palette, which is shown while the command runs. Click a group (or
- * an object in the drawing) to highlight its instances, review a group in
- * the Search and Convert palette, or convert the checked groups into new
- * blocks at once; texts that differ between instances become attributes.
+ * Opens the Detect and Convert tab of the tool palette with detection
+ * options. The user starts (or re-runs) the local geometric search
+ * ({@link acapDetectSmartBlocksAsync}); found groups are listed for review
+ * and conversion. Click a group (or an object in the drawing) to highlight
+ * its instances, review a group in the Search and Convert palette, or
+ * convert the checked groups into new blocks at once; texts that differ
+ * between instances become attributes. All conversions of one run undo in
+ * one step.
  *
  * AutoCAD's `BDETECT` sends the drawing to a cloud recognition model; this
- * one runs a local geometric search ({@link acapDetectSmartBlocksAsync}) and
- * finds any repeated group, not only trained object types. All conversions
- * of one run undo in one step.
+ * one finds any repeated group, not only trained object types.
  */
 export class AcApBDetectCmd extends AcApBSearchCmd {
-  /** Detection settings the command runs with. */
-  protected detectOptions(): AcApSmartBlockDetectOptions {
+  /** Detection settings from the panel (or search defaults before open). */
+  protected detectOptions(
+    panel?: MlBDetectOptions
+  ): AcApSmartBlockDetectOptions {
     const search = this.initialOptions()
+    const options = panel ?? {
+      allowRotation: search.allowRotation ?? true,
+      allowMirror: search.allowMirror ?? true,
+      allowScale: search.allowScale ?? false,
+      matchLayer: search.matchLayer ?? true,
+      textVariations: search.textVariations ?? true,
+      minInstances: 2,
+      minSavings: 10,
+      maxEntities: 64
+    }
     return {
-      allowRotation: search.allowRotation,
-      allowMirror: search.allowMirror,
-      allowScale: search.allowScale,
-      matchLayer: search.matchLayer,
-      textVariations: search.textVariations
+      allowRotation: options.allowRotation,
+      allowMirror: options.allowMirror,
+      allowScale: options.allowScale,
+      matchLayer: options.matchLayer,
+      textVariations: options.textVariations,
+      minInstances: options.minInstances,
+      minSavings: options.minSavings,
+      maxEntities: options.maxEntities
     }
   }
 
   async execute(context: AcApContext) {
-    const db = context.doc.database
     const view = context.view
-    const options = this.detectOptions()
-    const signal = acuiBeginBDetect()
+    acuiOpenBDetect(this.detectOptions())
     let running = true
+    let options = this.detectOptions(acuiBDetectOptions())
+    const byKey = new Map<number, AcApSmartBlockCluster>()
     // Closing the palette ends the run.
     const restorePalette = acuiOpenCommandPaletteTab(
       'bdetect',
       acuiRequestBDetectClose
     )
     try {
-      let clusters: AcApSmartBlockCluster[]
-      try {
-        clusters = await acapDetectSmartBlocksAsync(db, options, {
-          signal,
-          onProgress: p => acuiSetBDetectProgress(p.fraction, p.groups)
-        })
-      } catch (error) {
-        if (signal.aborted) return
-        throw error
-      }
-
-      const byKey = new Map<number, AcApSmartBlockCluster>()
-      const names = this.allocateNames(db, clusters.length)
-      const groups = clusters.map((cluster, key): MlBDetectGroup => {
-        byKey.set(key, cluster)
-        return { key, ...this.describe(db, cluster), name: names[key] }
-      })
-      acuiShowBDetectGroups(groups)
-      void this.captureThumbnails(byKey, () => running)
-
-      const groupOf = (id: AcDbObjectId) => {
-        for (const [key, cluster] of byKey) {
-          if (clusterIds(cluster).includes(id)) return key
-        }
-        return -1
-      }
-
       while (true) {
         const input = await this.waitForDetectInput()
         if (input.kind === 'close') return
         if (input.kind === 'point') {
           const key = view
             .pick({ x: input.x, y: input.y })
-            .map(item => groupOf(item.id))
+            .map(item => groupOf(byKey, item.id))
             .find(k => k >= 0)
           if (key !== undefined) this.selectGroup(context, byKey, key)
           continue
         }
         const action = input.action
         if (action.type === 'close') return
+        if (action.type === 'detect') {
+          const ran = await this.runDetection(context, byKey, () => running)
+          if (ran === 'closed') return
+          options = this.detectOptions(acuiBDetectOptions())
+          continue
+        }
         if (action.type === 'select') {
           this.selectGroup(context, byKey, action.key)
         } else if (action.type === 'review') {
@@ -135,6 +134,44 @@ export class AcApBDetectCmd extends AcApBSearchCmd {
       restorePalette()
       view.selectionSet.clear()
     }
+  }
+
+  /**
+   * Runs one detection pass with the panel's current options. Returns
+   * `'closed'` when the palette was closed during the search.
+   */
+  private async runDetection(
+    context: AcApContext,
+    byKey: Map<number, AcApSmartBlockCluster>,
+    running: () => boolean
+  ): Promise<'ok' | 'stopped' | 'closed'> {
+    const db = context.doc.database
+    const options = this.detectOptions(acuiBDetectOptions())
+    const signal = acuiBeginBDetect()
+    byKey.clear()
+    context.view.selectionSet.clear()
+    let clusters: AcApSmartBlockCluster[]
+    try {
+      clusters = await acapDetectSmartBlocksAsync(db, options, {
+        signal,
+        onProgress: p => acuiSetBDetectProgress(p.fraction, p.groups)
+      })
+    } catch (error) {
+      if (signal.aborted) {
+        if (acuiBDetectCloseRequested()) return 'closed'
+        acuiShowBDetectReady()
+        return 'stopped'
+      }
+      throw error
+    }
+    const names = this.allocateNames(db, clusters.length)
+    const groups = clusters.map((cluster, key): MlBDetectGroup => {
+      byKey.set(key, cluster)
+      return { key, ...this.describe(db, cluster), name: names[key] }
+    })
+    acuiShowBDetectGroups(groups)
+    void this.captureThumbnails(byKey, running)
+    return 'ok'
   }
 
   /** Row data of a group. */
@@ -387,6 +424,16 @@ export class AcApBDetectCmd extends AcApBSearchCmd {
     }
     acuiRemoveBDetectGroups(removed)
   }
+}
+
+function groupOf(
+  byKey: Map<number, AcApSmartBlockCluster>,
+  id: AcDbObjectId
+): number {
+  for (const [key, cluster] of byKey) {
+    if (clusterIds(cluster).includes(id)) return key
+  }
+  return -1
 }
 
 function clusterIds(cluster: AcApSmartBlockCluster): AcDbObjectId[] {
