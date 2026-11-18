@@ -2385,35 +2385,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: 'نعم(Y)',
-        local: 'نعم',
-        global: 'Yes'
-      },
-      no: {
-        display: 'لا(N)',
-        local: 'لا',
-        global: 'No'
-      },
-      review: {
-        display: 'مراجعة(R)',
-        local: 'مراجعة',
-        global: 'Review'
-      },
-      all: {
-        display: 'الكل(A)',
-        local: 'الكل',
-        global: 'All'
-      },
-      exit: {
-        display: 'خروج(X)',
-        local: 'خروج',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: 'استعادة النص',

@@ -2247,35 +2247,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: 'Yes(Y)',
-        local: 'Yes',
-        global: 'Yes'
-      },
-      no: {
-        display: 'No(N)',
-        local: 'No',
-        global: 'No'
-      },
-      review: {
-        display: 'Review(R)',
-        local: 'Review',
-        global: 'Review'
-      },
-      all: {
-        display: 'All(A)',
-        local: 'All',
-        global: 'All'
-      },
-      exit: {
-        display: 'eXit(X)',
-        local: 'eXit',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: 'Recover Text',

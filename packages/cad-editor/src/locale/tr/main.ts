@@ -298,8 +298,6 @@ export default {
         'Patlatılmış PDF ölçülerini (oklar veya işaretler, çizgiler, uzatma çizgileri ve metinler) ölçü nesnelerine geri dönüştürür (PDFDIM).',
       pdfHatch:
         'PDF taramasının dağınık çizgilerini deseni, ölçeği ve açısıyla birlikte taramaya geri dönüştürür (PDFHATCH).',
-      pdfBlock:
-        'PDF içindeki tekrarlanan geometriyi bloğa dönüştürür ve her kopyayı blok referansıyla değiştirir (PDFBLOCK).',
       pdfText:
         'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür (PDFTEXT).',
       pdfTextAuto:
@@ -487,7 +485,6 @@ export default {
       pdfScale: 'Ölçeği\nKalibre Et',
       pdfDim: 'Ölçüleri\nKurtar',
       pdfHatch: 'Taramaları\nKurtar',
-      pdfBlock: 'Blok\nOluştur',
       pdfText: 'Metni\nKurtar',
       line: 'Çizgi',
       polyline: 'Çoklu Çizgi',

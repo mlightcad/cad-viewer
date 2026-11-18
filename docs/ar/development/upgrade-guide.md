@@ -22,7 +22,7 @@ title: 'ترقية cad-simple-viewer و cad-editor'
   :::
 
 ::: info PaddleOCR المحلي (`@mlightcad/cad-paddleocr-plugin`)
-بدءًا من الإصدار الذي يتضمن هذا التغيير، يمكن للمضيف تثبيت **`@mlightcad/cad-paddleocr-plugin`** للتعرّف البصري على النص المفكّك من PDF داخل المتصفح (`pdftext` / OCR عند الاستيراد). تسجّل معرّف `paddleocr` في `AcApTextRecognitionService`؛ وتُحمَّل ملفات Wasm ونماذج ONNX عند أول طلب OCR فقط. تعرض قائمة «التعرّف على النص المفكّك» عند الاستيراد كل خيار OCR *متاح*: PaddleOCR المحلي وكل **نموذج** LLM مُعدّ ويدعم الصور (مثل `kkidc — model-id`)، وليس صفًا واحدًا لكل مزوّد.
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يمكن للمضيف تثبيت **`@mlightcad/cad-paddleocr-plugin`** للتعرّف البصري على النص المفكّك من PDF داخل المتصفح (`pdftext` / OCR عند الاستيراد). تسجّل معرّف `paddleocr` في `AcApTextRecognitionService`؛ وتُحمَّل ملفات Wasm ونماذج ONNX عند أول طلب OCR فقط. تعرض قائمة «التعرّف على النص المفكّك» عند الاستيراد كل خيار OCR _متاح_: PaddleOCR المحلي وكل **نموذج** LLM مُعدّ ويدعم الصور (مثل `kkidc — model-id`)، وليس صفًا واحدًا لكل مزوّد.
 
 الترحيل:
 
@@ -39,7 +39,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info إعدادات نموذج الذكاء الاصطناعي المشتركة (`@mlightcad/cad-llm-plugin`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، تنتقل إعدادات مزودي LLM من `@mlightcad/cad-agent-plugin` إلى الحزمة الجديدة **`@mlightcad/cad-llm-plugin`**، فيتشارك وكيل CAD والتعرف على النص في `pdftext` (OCR) إعدادًا واحدًا. تضيف الحزمة الجديدة الأمر **LLMSETTINGS** ومربع حوار إعدادات لا يعتمد على إطار واجهة مستخدم (متاح أيضًا من علامة تبويب AI في الشريط ضمن `@mlightcad/cad-editor`)، وتضيف `@mlightcad/cad-simple-viewer` الخدمة `AcApLlmSettingsService` حتى تتمكن أي ميزة من فتح مربع الحوار أو التحقق من إعداد نموذج يدعم الصور.
@@ -83,7 +84,7 @@ registerLazyAgentPlugin(pluginManager)
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-تبقى الأسماء القديمة متاحة كأسماء بديلة مهملة. انتقل نص الكتابة من `kind` إلى `label`. يتبع `pdfblock` الآن ترتيب مطالبات `-BSEARCH` (تحويل ← جديد/موجود ← الاسم ← نقطة الإدراج ← النطاق)، لذا يجب تعديل النصوص البرمجية التي تجيب على المطالبات القديمة.
+تبقى الأسماء القديمة متاحة كأسماء بديلة مهملة. انتقل نص الكتابة من `kind` إلى `label`. أُزيل أمر `pdfblock` من `@mlightcad/cad-pdf-plugin`؛ استخدم `BSEARCH` / `-BSEARCH` بدلًا منه (بعد استيراد PDF أوقف مطابقة الطبقة — طبقات PDF حسب اللون).
 :::
 
 ::: info مجموعات AutoCAD (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
@@ -278,15 +279,15 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### الإضافات — **يجب أن تطابق إصدار cad-simple-viewer بدقة**
 
-| الحزمة                                   | الغرض                                               |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | تصدير HTML مكتفٍ ذاتيًا بنقرة واحدة                 |
-| `@mlightcad/cad-pdf-plugin`              | تصدير PDF في المتصفح واستيراد PDF إلى CAD           |
-| `@mlightcad/cad-svg-plugin`              | تصدير SVG                                           |
+| الحزمة                                      | الغرض                                               |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | تصدير HTML مكتفٍ ذاتيًا بنقرة واحدة                 |
+| `@mlightcad/cad-pdf-plugin`                 | تصدير PDF في المتصفح واستيراد PDF إلى CAD           |
+| `@mlightcad/cad-svg-plugin`                 | تصدير SVG                                           |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | تفاعل مدعوم بوكيل ذكاء اصطناعي                      |
-| `@mlightcad/cad-onedrive-plugin`         | تكامل OneDrive                                      |
-| `@mlightcad/cad-google-drive-plugin`     | تكامل Google Drive                                  |
+| `@mlightcad/cad-agent-plugin`               | تفاعل مدعوم بوكيل ذكاء اصطناعي                      |
+| `@mlightcad/cad-onedrive-plugin`            | تكامل OneDrive                                      |
+| `@mlightcad/cad-google-drive-plugin`        | تكامل Google Drive                                  |
 
 > **قاعدة عامة:** يجب تثبيت كل إضافة في القائمة أعلاه على **رقم الإصدار نفسه بالضبط** الذي تنتقل إليه في `cad-simple-viewer` (على سبيل المثال، `1.7.5`).
 

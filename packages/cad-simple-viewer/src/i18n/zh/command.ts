@@ -235,10 +235,6 @@ export default {
       description: '将 PDF 中被打散成线段的图案填充恢复为图案填充对象',
       prompt: '选择填充区域及其周围的边界线'
     },
-    pdfblock: {
-      description: '将 PDF 中重复的图形恢复为块',
-      prompt: '选择一个块实例的对象'
-    },
     pdftext: {
       description: '将 PDF 中被打散的文字笔画转换回文字对象',
       prompt: '选择要转换的文字笔画'

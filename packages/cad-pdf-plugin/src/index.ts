@@ -7,7 +7,6 @@
 export { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd.js'
 export { AcApImportPdfCmd } from './AcApImportPdfCmd.js'
 export { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd.js'
-export { AcApPdfBlockCmd } from './AcApPdfBlockCmd.js'
 export { AcApPdfDimCmd } from './AcApPdfDimCmd.js'
 export {
   AcApPdfDimSession,

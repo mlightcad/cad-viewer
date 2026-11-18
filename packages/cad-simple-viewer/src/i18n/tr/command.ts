@@ -266,10 +266,6 @@ export default {
         'PDF taramasının dağınık çizgilerini tarama nesnesine geri dönüştürür',
       prompt: 'Taralı alanı çevresindeki çizgilerle birlikte seçin'
     },
-    pdfblock: {
-      description: 'PDF içindeki tekrarlanan geometriyi bloğa geri dönüştürür',
-      prompt: 'Bir blok örneğinin nesnelerini seçin'
-    },
     pdftext: {
       description:
         'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür',

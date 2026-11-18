@@ -30,7 +30,7 @@ Migrate hosts / plugins:
   :::
 
 ::: info Local PaddleOCR (`@mlightcad/cad-paddleocr-plugin`)
-Starting with the release that includes this change, hosts can install **`@mlightcad/cad-paddleocr-plugin`** for in-browser OCR of exploded PDF text (`pdftext` / PDF import OCR). It registers the `paddleocr` recognizer in `AcApTextRecognitionService`. Wasm and ONNX models load only on the first OCR request. The PDF import “Recognize exploded text” list shows each *available* OCR option: local PaddleOCR and every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not one row per provider.
+Starting with the release that includes this change, hosts can install **`@mlightcad/cad-paddleocr-plugin`** for in-browser OCR of exploded PDF text (`pdftext` / PDF import OCR). It registers the `paddleocr` recognizer in `AcApTextRecognitionService`. Wasm and ONNX models load only on the first OCR request. The PDF import “Recognize exploded text” list shows each _available_ OCR option: local PaddleOCR and every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not one row per provider.
 
 Migrate hosts:
 
@@ -47,7 +47,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info Shared AI model settings (`@mlightcad/cad-llm-plugin`)
 Starting with the release that includes this change, the LLM provider settings move out of `@mlightcad/cad-agent-plugin` into the new **`@mlightcad/cad-llm-plugin`**, so the CAD Agent and `pdftext` text recognition (OCR) share one configuration. The new package adds the **LLMSETTINGS** command, a framework-free settings dialog (also on the AI ribbon tab of `@mlightcad/cad-editor`), and `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService` so any feature can open the dialog or check whether a vision model is configured.
@@ -91,7 +92,7 @@ Shape matching moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-The old names still work as deprecated aliases. Text strings moved from the feature `kind` to `label` (compare with `ignoreLabels: false`, the default). `pdfblock` now runs the `-BSEARCH` prompts (Convert → New/Existing → name → insertion point → scope); scripts that answered its old prompts must follow the new order.
+The old names still work as deprecated aliases. Text strings moved from the feature `kind` to `label` (compare with `ignoreLabels: false`, the default). The `@mlightcad/cad-pdf-plugin` `pdfblock` command is removed; use `BSEARCH` / `-BSEARCH` instead (after PDF import, turn off layer matching — PDF layers are by color).
 :::
 
 ::: info AutoCAD groups (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
@@ -298,17 +299,17 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 
 ### Plugins — **must match the cad-simple-viewer version exactly**
 
-| Package                                  | Purpose                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------ |
-| `@mlightcad/cad-html-plugin`             | One-click self-contained HTML export                                     |
-| `@mlightcad/cad-paddleocr-plugin`        | Local PaddleOCR.js recognizer for exploded PDF text                      |
-| `@mlightcad/cad-pdf-plugin`              | Browser PDF export and PDF-to-CAD import                                 |
-| `@mlightcad/cad-svg-plugin`              | SVG export                                                               |
-| `@mlightcad/cad-svg-converter`           | SVG File → Open (vector → AcDb entities)                                 |
+| Package                                     | Purpose                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| `@mlightcad/cad-html-plugin`                | One-click self-contained HTML export                                     |
+| `@mlightcad/cad-paddleocr-plugin`           | Local PaddleOCR.js recognizer for exploded PDF text                      |
+| `@mlightcad/cad-pdf-plugin`                 | Browser PDF export and PDF-to-CAD import                                 |
+| `@mlightcad/cad-svg-plugin`                 | SVG export                                                               |
+| `@mlightcad/cad-svg-converter`              | SVG File → Open (vector → AcDb entities)                                 |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar and dock tab content (enabled via `simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | AI-agent-powered interaction                                             |
-| `@mlightcad/cad-onedrive-plugin`         | OneDrive integration                                                     |
-| `@mlightcad/cad-google-drive-plugin`     | Google Drive integration                                                 |
+| `@mlightcad/cad-agent-plugin`               | AI-agent-powered interaction                                             |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive integration                                                     |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive integration                                                 |
 
 > **Rule of thumb:** every plugin in the list above should be pinned to the **exact same version number** as `cad-simple-viewer` you are upgrading to (for example, `1.7.5`).
 

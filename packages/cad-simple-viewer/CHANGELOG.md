@@ -50,12 +50,10 @@
   layer-snapshot XDATA on `viewTable` records, and a View ribbon tab (Navigate +
   Named Views) wired to pan/zoom and named-view restore.
 
-- 529b935: PDF block recovery:
-  - `ipdf` turns Form XObjects that are painted repeatedly with identical content into blocks with one reference per paint.
-  - New `pdfblock` command: select one instance of a repeated symbol, and every rotated or mirrored (optionally scaled) copy is found, highlighted and replaced by block references.
-  - New Make Block button in the AI > PDF ribbon panel.
+- 529b935: PDF import Form block recovery:
+  - `pdfimport` turns Form XObjects that are painted repeatedly with identical content into blocks with one reference per paint.
 
-  Small circles far from the page origin are now recognized as circles; Float32 rounding used to leave them as two-arc polylines. `pdftext` and `pdfblock` pre-fill their default answers.
+  Small circles far from the page origin are now recognized as circles; Float32 rounding used to leave them as two-arc polylines. `pdftext` pre-fills its default answers.
 
 - 529b935: New `pdfdim` command turns exploded PDF dimensions back into dimension objects: linear (any angle, inside or outside arrows, architectural ticks, chained), radius and diameter. It infers the drawing scale from the dimension texts and creates a `PDF_DIM` style matching the PDF's text height and arrow size, with DIMLFAC set to that scale. A Recover Dims button joins the AI > PDF ribbon panel.
 - 510b0dc: PDF import (`ipdf`) now rebuilds CAD curves instead of flattening them: Bézier circles, arcs and ellipses become `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines become bulged polylines, free-form curves become exact splines, and arcs already flattened into short lines are refitted. `ipdf` now asks for the page, insertion point, scale and whether to recognize curves; stroke widths map to line weights and duplicate outlines are dropped. New `pdfscale` command calibrates imported geometry from a known distance.
@@ -127,7 +125,7 @@
 
 - f6048ff: Add Smart Blocks: Search and Convert (AutoCAD 2026 `BSEARCH`). Select one instance; every identical copy in model space is found (rotated, mirrored and optionally scaled copies, optionally existing block references and copies whose text differs) and highlighted. Review the instances in a toolbar over the canvas, include or exclude them, then convert the selection and the included instances into a new block (text variations become attributes) or an existing block definition, in one undo step. `-BSEARCH` offers the same workflow at the command line; `BCONVERT` is an alias. The ribbon gets a Search and Convert button on the Insert and AI tabs.
 
-  The shape matching that `pdfblock` used moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-viewer` (`acedFindShapeMatches`, `acedEntityToShapeFeature`) and now also handles single-shape templates under rotation and mirroring, heavy 2D/3D polylines with bulges, 2D solids, traces, points and hatches, with per-kind spatial grids for large drawings. `pdfblock` now runs the `-BSEARCH` workflow. The old `cad-pdf-plugin` exports remain as deprecated aliases.
+  Shape matching lives in `@mlightcad/cad-simple-viewer` (`acedFindShapeMatches`, `acedEntityToShapeFeature`) and handles single-shape templates under rotation and mirroring, heavy 2D/3D polylines with bulges, 2D solids, traces, points and hatches, with per-kind spatial grids for large drawings. The old `@mlightcad/cad-pdf-plugin` matching exports remain as deprecated aliases.
 
 - 6d80103: Add Smart Blocks: Detect and Convert (`BDETECT`). Without a selection, the editor finds groups of repeated objects anywhere in the drawing and lists them in a Detection tab of the tool palette, with thumbnails, editable block names and progress while it searches. Click a group to highlight its instances, review one with the Search and Convert toolbar, or convert the checked groups into new blocks at once; texts that differ between instances become attributes, and the whole run undoes in one step. The ribbon gets a Detect and Convert button on the Insert and AI tabs.
 

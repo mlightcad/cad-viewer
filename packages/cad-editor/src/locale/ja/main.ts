@@ -296,8 +296,6 @@ export default {
         'PDF で分解された寸法（矢印または斜線、寸法線、寸法補助線、文字）を寸法オブジェクトに戻します (PDFDIM)。',
       pdfHatch:
         'PDF で線分に分解されたハッチングを、パターン・尺度・角度付きのハッチングに戻します (PDFHATCH)。',
-      pdfBlock:
-        'PDF の繰り返し図形をブロックにし、各コピーをブロック参照に置き換えます (PDFBLOCK)。',
       pdfText:
         'PDF で分解された文字のストロークを文字オブジェクトに戻します (PDFTEXT)。',
       pdfTextAuto:
@@ -468,7 +466,6 @@ export default {
       pdfScale: '尺度\n校正',
       pdfDim: '寸法\n認識',
       pdfHatch: 'ハッチング\n認識',
-      pdfBlock: 'ブロック\n作成',
       pdfText: '文字\n認識',
       line: '線分',
       polyline: 'ポリライン',

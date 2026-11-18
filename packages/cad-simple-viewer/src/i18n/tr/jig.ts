@@ -2401,35 +2401,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: 'Evet(Y)',
-        local: 'Evet',
-        global: 'Yes'
-      },
-      no: {
-        display: 'Hayır(N)',
-        local: 'Hayır',
-        global: 'No'
-      },
-      review: {
-        display: 'İncele(R)',
-        local: 'İncele',
-        global: 'Review'
-      },
-      all: {
-        display: 'Tümü(A)',
-        local: 'Tümü',
-        global: 'All'
-      },
-      exit: {
-        display: 'Çıkış(X)',
-        local: 'Çıkış',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: 'Metni Kurtar',

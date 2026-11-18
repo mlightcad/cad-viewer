@@ -13,9 +13,6 @@ const fixtures = path.resolve(
 )
 const fixture = (name: string) => path.join(fixtures, name)
 
-/** 1 PDF point in mm. */
-const PT = 25.4 / 72
-
 let viewerModuleUrl: string | undefined
 /** Entities of the starter drawing, ignored by counts and selections. */
 let baselineIds: string[] = []
@@ -131,32 +128,6 @@ async function clickPdfText(page: Page) {
   await host.locator('.ml-ribbon-dropdown__icon').click()
 }
 
-/** The command line input; its placeholder is cleared during prompts. */
-const commandLine = (page: Page) => page.locator('input.ml-cli-text')
-
-async function waitForPrompt(page: Page, text: string | RegExp) {
-  await expect(page.locator('.ml-cli-recent')).toContainText(text, {
-    timeout: 20_000
-  })
-}
-
-/** Answers a point / keyword prompt on the command line. */
-async function answer(page: Page, value: string) {
-  const input = commandLine(page)
-  await input.focus()
-  await input.fill(value)
-  await page.keyboard.press('Enter')
-}
-
-/**
- * Answers a string prompt. On desktop string prompts are typed on the command
- * line (Space inserts text when the prompt allows spaces, Enter commits); the
- * mobile session text box stays hidden.
- */
-async function answerString(page: Page, value: string) {
-  await answer(page, value)
-}
-
 /** Opens a drawing in Write mode and imports a PDF fixture at the origin. */
 async function importPdf(
   page: Page,
@@ -256,28 +227,32 @@ test('pdftext changes nothing when the palette is cancelled', async ({
   expect(await textStrings(page)).toEqual([])
 })
 
-test('pdfimport rebuilds repeated forms as blocks and pdfblock finds copies', async ({
+test('pdfimport rebuilds repeated forms as blocks; BSEARCH converts inline copies', async ({
   page
 }) => {
   await importPdf(page, 'pdf-blocks.pdf')
-  // The Form XObject painted three times is a block already.
+  // The Form XObject painted three times becomes one block with three refs.
   expect((await entityTypes(page)).BLOCKREFERENCE).toBe(3)
 
-  // Select the first flag (pole, triangle, circle) and make it a block.
+  // Inline flags (not forms) stay as loose geometry; Smart Blocks finds them.
   expect(await preselect(page, { maxX: 42, maxY: 130 })).toBe(3)
-  await ribbonButton(page, 'cmd-pdfblock').click()
-  // pdfblock runs the -BSEARCH workflow: Convert → New → name → base point
-  // → also convert the found instances.
-  await waitForPrompt(page, /Found 2 matching instance/)
-  await answer(page, '')
-  await waitForPrompt(page, /Convert to/)
-  await answer(page, '')
-  await waitForPrompt(page, /PDF_BLOCK_\d+/)
-  await answerString(page, 'FLAG')
-  await waitForPrompt(page, /insertion point/i)
-  await answer(page, `${100 * PT},${300 * PT}`)
-  await waitForPrompt(page, /Convert the 2 found instance/)
-  await answer(page, '')
+  await ribbonButton(page, 'cmd-ai-bsearch').click()
+  const panel = page.getByTestId('bsearch-panel')
+  await expect(panel).toBeVisible({ timeout: 20_000 })
+  // PDF layers are by color; turn off Same layer like the old pdfblock default.
+  await panel.getByText('Search options').click()
+  await panel.getByText('Same layer').click()
+  await expect(page.getByTestId('bsearch-count')).toHaveText(
+    '2 instances found, 2 included',
+    { timeout: 20_000 }
+  )
+  await page.getByTestId('bsearch-convert').click()
+  const dialog = page.locator('.ml-base-dialog', {
+    hasText: 'Convert to Block'
+  })
+  await expect(dialog).toBeVisible()
+  await dialog.getByTestId('bconvert-name').fill('FLAG')
+  await dialog.getByRole('button', { name: 'OK' }).click()
 
   await expect
     .poll(async () => (await entityTypes(page)).BLOCKREFERENCE, {

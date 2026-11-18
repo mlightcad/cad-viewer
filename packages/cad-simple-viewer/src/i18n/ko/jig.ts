@@ -2279,35 +2279,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: '예(Y)',
-        local: '예',
-        global: 'Yes'
-      },
-      no: {
-        display: '아니요(N)',
-        local: '아니요',
-        global: 'No'
-      },
-      review: {
-        display: '개별 확인(R)',
-        local: '개별 확인',
-        global: 'Review'
-      },
-      all: {
-        display: '모두(A)',
-        local: '모두',
-        global: 'All'
-      },
-      exit: {
-        display: '종료(X)',
-        local: '종료',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: '문자 인식',

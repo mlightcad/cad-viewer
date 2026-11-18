@@ -2285,35 +2285,6 @@ export default {
       }
     }
   },
-  pdfblock: {
-    keywords: {
-      yes: {
-        display: 'はい(Y)',
-        local: 'はい',
-        global: 'Yes'
-      },
-      no: {
-        display: 'いいえ(N)',
-        local: 'いいえ',
-        global: 'No'
-      },
-      review: {
-        display: '個別確認(R)',
-        local: '個別確認',
-        global: 'Review'
-      },
-      all: {
-        display: 'すべて(A)',
-        local: 'すべて',
-        global: 'All'
-      },
-      exit: {
-        display: '終了(X)',
-        local: '終了',
-        global: 'eXit'
-      }
-    }
-  },
   pdftext: {
     panel: {
       title: '文字認識',

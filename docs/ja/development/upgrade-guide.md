@@ -39,7 +39,8 @@ registerLazyPaddleOcrPlugin(pluginManager, {
 })
 registerLazyLlmPlugin(pluginManager)
 ```
-  :::
+
+:::
 
 ::: info 共有 AI モデル設定（`@mlightcad/cad-llm-plugin`）
 この変更を含むリリースから、LLM プロバイダの設定は `@mlightcad/cad-agent-plugin` から新しい **`@mlightcad/cad-llm-plugin`** に移り、CAD エージェントと `pdftext` の文字認識（OCR）が同じ設定を共有します。新パッケージは **LLMSETTINGS** コマンドと UI フレームワークに依存しない設定ダイアログ（`@mlightcad/cad-editor` の AI リボン タブからも開けます）を提供し、`@mlightcad/cad-simple-viewer` には `AcApLlmSettingsService` が追加され、どの機能からもダイアログを開いたり、画像対応モデルが設定済みか確認したりできます。
@@ -83,7 +84,7 @@ registerLazyAgentPlugin(pluginManager)
 | `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
-旧名は非推奨の別名として引き続き使えます。文字列は特徴の `kind` から `label` に移りました。`pdfblock` は `-BSEARCH` のプロンプト順（変換 → 新規/既存 → 名前 → 挿入基点 → 範囲）になり、旧プロンプトに応答するスクリプトは調整が必要です。
+旧名は非推奨の別名として引き続き使えます。文字列は特徴の `kind` から `label` に移りました。`@mlightcad/cad-pdf-plugin` の `pdfblock` コマンドは削除されました。代わりに `BSEARCH` / `-BSEARCH` を使ってください（PDF 読み込み後は画層一致をオフにしてください。PDF の画層は色ごとです）。
 :::
 
 ::: info AutoCAD グループ（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
@@ -278,15 +279,15 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### プラグイン — **cad-simple-viewer のバージョンと完全に一致させる必要があります**
 
-| パッケージ                               | 目的                                                |
-| ---------------------------------------- | --------------------------------------------------- |
-| `@mlightcad/cad-html-plugin`             | ワンクリックの自己完結型 HTML エクスポート          |
-| `@mlightcad/cad-pdf-plugin`              | ブラウザの PDF エクスポートと PDF → CAD インポート  |
-| `@mlightcad/cad-svg-plugin`              | SVG エクスポート                                    |
+| パッケージ                                  | 目的                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | ワンクリックの自己完結型 HTML エクスポート          |
+| `@mlightcad/cad-pdf-plugin`                 | ブラウザの PDF エクスポートと PDF → CAD インポート  |
+| `@mlightcad/cad-svg-plugin`                 | SVG エクスポート                                    |
 | `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
-| `@mlightcad/cad-agent-plugin`            | AI エージェントによるインタラクション               |
-| `@mlightcad/cad-onedrive-plugin`         | OneDrive 統合                                       |
-| `@mlightcad/cad-google-drive-plugin`     | Google Drive 統合                                   |
+| `@mlightcad/cad-agent-plugin`               | AI エージェントによるインタラクション               |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive 統合                                       |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive 統合                                   |
 
 > **経験則：** 上記のリストのすべてのプラグインは、アップグレード先の `cad-simple-viewer` と**完全に同じバージョン番号**（たとえば `1.7.5`）に固定する必要があります。
 

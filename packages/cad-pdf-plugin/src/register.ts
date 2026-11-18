@@ -13,7 +13,6 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
  * - `-pdfimport` — same import with command-line prompts
  * - `pdfscale` — calibrate imported PDF geometry from a known distance
  * - `pdftext` — convert exploded PDF text strokes back into text
- * - `pdfblock` — turn repeated PDF geometry back into a block
  * - `pdfdim` — turn exploded PDF dimensions back into dimensions
  * - `pdfhatch` — turn the loose strokes of a PDF hatch back into a hatch
  */
@@ -24,7 +23,6 @@ export const PDF_PLUGIN_TRIGGERS = [
   '-pdfimport',
   'pdfscale',
   'pdftext',
-  'pdfblock',
   'pdfdim',
   'pdfhatch'
 ] as const
@@ -35,7 +33,6 @@ const PDF_IMPORT_TRIGGERS = [
   '-pdfimport',
   'pdfscale',
   'pdftext',
-  'pdfblock',
   'pdfdim',
   'pdfhatch'
 ] as const

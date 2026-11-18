@@ -257,10 +257,6 @@ export default {
         'Turns the loose strokes of a PDF hatch back into a hatch object',
       prompt: 'Select the hatched area with the lines around it'
     },
-    pdfblock: {
-      description: 'Turns repeated PDF geometry back into a block',
-      prompt: 'Select the objects of one block instance'
-    },
     pdftext: {
       description: 'Converts exploded PDF text strokes back into text objects',
       prompt: 'Select text strokes to convert'
