@@ -5,6 +5,8 @@ import {
   acapLlmActiveModelSupportsVision,
   type AcApLlmConfig,
   acapLlmCreateDefaultConfig,
+  acapLlmEffectiveModels,
+  acapLlmFindProvider,
   acapLlmLoadConfig,
   acapLlmModelChoices,
   acapLlmOnConfigChange,
@@ -14,14 +16,16 @@ import {
 } from '@mlightcad/cad-llm-plugin'
 import { AcApLlmSettingsService } from '@mlightcad/cad-simple-viewer'
 import type { FileUIPart, UIMessage } from 'ai'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   type AgentContextUsage,
   type AgentContextUsageCategoryId,
   contextUsagePercent,
+  contextUsageRingPercent,
+  formatContextUsagePercent,
   formatTokenCount,
-  resolveContextWindow
+  resolveContextWindowInfo
 } from '../agent/contextUsage'
 import type { AgentChatLabelKey } from '../i18n'
 import { agentT } from '../i18n'
@@ -102,6 +106,7 @@ const activeSettings = computed(() =>
 const settingsReady = ref(false)
 const input = ref('')
 const inputRef = ref<HTMLTextAreaElement | null>(null)
+const messagesRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const pendingImages = ref<File[]>([])
 const pendingPreviewUrls = ref<string[]>([])
@@ -157,8 +162,29 @@ const { chat, resetChat } = useAgentChatRef(() => ({
   }
 }))
 
-const contextWindowTokens = computed(() =>
-  resolveContextWindow(activeSettings.value.model)
+const activeModelContextWindow = computed(() => {
+  const provider = acapLlmFindProvider(
+    config.value,
+    config.value.activeProviderId
+  )
+  if (!provider) return undefined
+  const entry = acapLlmEffectiveModels(provider).find(
+    model => model.id === config.value.activeModel
+  )
+  return entry?.contextWindow
+})
+
+const resolvedContextWindow = computed(() =>
+  resolveContextWindowInfo(
+    activeSettings.value.model,
+    activeModelContextWindow.value
+  )
+)
+
+const contextWindowTokens = computed(() => resolvedContextWindow.value.tokens)
+
+const contextWindowEstimated = computed(
+  () => resolvedContextWindow.value.estimated
 )
 
 const usedContextTokens = computed(() => contextUsage.value?.usedTokens ?? 0)
@@ -167,12 +193,18 @@ const contextUsagePct = computed(() =>
   contextUsagePercent(usedContextTokens.value, contextWindowTokens.value)
 )
 
+const contextUsagePctLabel = computed(() =>
+  formatContextUsagePercent(contextUsagePct.value)
+)
+
 /** SVG ring geometry matching Cursor's compact context meter. */
 const CONTEXT_RING_RADIUS = 6
 const CONTEXT_RING_CIRCUMFERENCE = 2 * Math.PI * CONTEXT_RING_RADIUS
 
 const contextRingDashOffset = computed(
-  () => CONTEXT_RING_CIRCUMFERENCE * (1 - contextUsagePct.value / 100)
+  () =>
+    CONTEXT_RING_CIRCUMFERENCE *
+    (1 - contextUsageRingPercent(contextUsagePct.value) / 100)
 )
 
 const contextUsageLevel = computed(() => {
@@ -184,16 +216,13 @@ const contextUsageLevel = computed(() => {
 
 const contextUsageDetailText = computed(() =>
   labels.value.contextUsageDetail
-    .replace('{percent}', String(Math.round(contextUsagePct.value)))
+    .replace('{percent}', contextUsagePctLabel.value)
     .replace('{used}', formatTokenCount(usedContextTokens.value))
     .replace('{limit}', formatTokenCount(contextWindowTokens.value))
 )
 
 const contextUsageFullText = computed(() =>
-  labels.value.contextUsageFull.replace(
-    '{percent}',
-    String(Math.round(contextUsagePct.value))
-  )
+  labels.value.contextUsageFull.replace('{percent}', contextUsagePctLabel.value)
 )
 
 const contextUsageTokensText = computed(() =>
@@ -863,6 +892,7 @@ function clearChat() {
   showContextUsage.value = false
   contextUsage.value = null
   toolGroupOverrides.value = new Map()
+  reasoningGroupOverrides.value = new Map()
   messageTimes.value = new Map()
   resetChat()
 }
@@ -874,6 +904,31 @@ function partText(message: UIMessage): string {
     .filter(part => part?.type === 'text')
     .map(part => (part.type === 'text' ? part.text : ''))
     .join('')
+}
+
+/** Concatenates reasoning parts (kept separate from the visible reply text). */
+function reasoningText(message: UIMessage): string {
+  if (!message.parts?.length) return ''
+  return message.parts
+    .filter(part => part?.type === 'reasoning')
+    .map(part =>
+      part.type === 'reasoning' && 'text' in part ? String(part.text ?? '') : ''
+    )
+    .join('')
+}
+
+/** Whether a message's reasoning block is expanded. */
+function isReasoningOpen(message: UIMessage): boolean {
+  return (
+    reasoningGroupOverrides.value.get(message.id) ?? isMessageInFlight(message)
+  )
+}
+
+/** Expands or collapses a message's reasoning block. */
+function toggleReasoningGroup(message: UIMessage) {
+  const next = new Map(reasoningGroupOverrides.value)
+  next.set(message.id, !isReasoningOpen(message))
+  reasoningGroupOverrides.value = next
 }
 
 /** Extracts image file parts from a UI message for inline preview. */
@@ -1118,6 +1173,11 @@ function messageRelativeTime(messageId: string): string {
  * streams so progress stays visible, collapsed once the turn completes.
  */
 const toolGroupOverrides = ref(new Map<string, boolean>())
+/**
+ * Reasoning groups the user opened or closed by hand. Default: open while the
+ * assistant turn is in flight, collapsed once it finishes.
+ */
+const reasoningGroupOverrides = ref(new Map<string, boolean>())
 
 /** True for the assistant message the agent is still producing. */
 function isMessageInFlight(message: UIMessage): boolean {
@@ -1133,6 +1193,44 @@ function isMessageInFlight(message: UIMessage): boolean {
 function canEditMessage(message: UIMessage): boolean {
   return message.role === 'user' && !isBusy.value
 }
+
+/** Visible assistant reply content (text or tool calls), excluding reasoning. */
+function hasVisibleAssistantContent(message: UIMessage): boolean {
+  return partText(message).trim().length > 0 || toolParts(message).length > 0
+}
+
+/**
+ * Show the Working… row when busy and the in-flight assistant bubble has no
+ * text, tools, or reasoning yet (pre-first-token wait).
+ */
+const showWorkingStatus = computed(() => {
+  if (!isBusy.value) return false
+  const last = messages.value[messages.value.length - 1]
+  if (!last || last.role !== 'assistant') return true
+  if (hasVisibleAssistantContent(last)) return false
+  if (reasoningText(last).trim()) return false
+  return true
+})
+
+/**
+ * Hide the empty in-flight assistant shell while the dedicated Working… row
+ * is visible, so users do not see two waiting indicators.
+ */
+function shouldShowMessage(message: UIMessage): boolean {
+  if (!showWorkingStatus.value || message.role !== 'assistant') return true
+  const last = messages.value[messages.value.length - 1]
+  if (message !== last) return true
+  return (
+    hasVisibleAssistantContent(message) || !!reasoningText(message).trim()
+  )
+}
+
+watch(showWorkingStatus, async visible => {
+  if (!visible) return
+  await nextTick()
+  const scroller = messagesRef.value
+  if (scroller) scroller.scrollTop = scroller.scrollHeight
+})
 
 watch(
   messages,
@@ -1372,7 +1470,7 @@ function isVerificationMessage(message: UIMessage): boolean {
       </div>
     </div>
 
-    <div class="cad-agent-panel-messages">
+    <div ref="messagesRef" class="cad-agent-panel-messages">
       <div
         v-if="messages.length === 0 && !hasDisplayError"
         class="cad-agent-panel-empty"
@@ -1382,6 +1480,7 @@ function isVerificationMessage(message: UIMessage): boolean {
       <div
         v-for="message in messages"
         :key="message.id"
+        v-show="shouldShowMessage(message)"
         class="cad-agent-msg"
         :class="[
           message.role,
@@ -1432,7 +1531,46 @@ function isVerificationMessage(message: UIMessage): boolean {
           </div>
         </template>
         <template v-else>
-          <div class="cad-agent-msg-text">{{ partText(message) }}</div>
+          <div
+            v-if="reasoningText(message).trim()"
+            class="cad-agent-reasoning"
+            :class="{ 'is-open': isReasoningOpen(message) }"
+          >
+            <button
+              type="button"
+              class="cad-agent-reasoning-summary"
+              :aria-expanded="isReasoningOpen(message)"
+              @click="toggleReasoningGroup(message)"
+            >
+              <svg
+                class="cad-agent-reasoning-chevron"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"
+                />
+              </svg>
+              <span
+                v-if="isMessageInFlight(message)"
+                class="cad-agent-working-dots"
+                aria-hidden="true"
+              />
+              <span class="cad-agent-reasoning-summary-text">
+                {{ labels.thinking }}
+              </span>
+            </button>
+            <div
+              v-if="isReasoningOpen(message)"
+              class="cad-agent-reasoning-body"
+            >
+              {{ reasoningText(message) }}
+            </div>
+          </div>
+          <div v-if="partText(message)" class="cad-agent-msg-text">
+            {{ partText(message) }}
+          </div>
           <div
             v-if="imageParts(message).length"
             class="cad-agent-msg-images"
@@ -1593,6 +1731,16 @@ function isVerificationMessage(message: UIMessage): boolean {
           </div>
         </template>
       </div>
+      <div
+        v-if="showWorkingStatus"
+        class="cad-agent-msg assistant cad-agent-msg--status"
+        aria-live="polite"
+      >
+        <div class="cad-agent-working">
+          <span class="cad-agent-working-dots" aria-hidden="true" />
+          <span>{{ labels.working }}</span>
+        </div>
+      </div>
       <div v-if="hasDisplayError" class="cad-agent-msg error">
         <div class="cad-agent-error-card">
           <svg
@@ -1673,7 +1821,19 @@ function isVerificationMessage(message: UIMessage): boolean {
           <span class="cad-agent-context-usage-popover-tokens">
             {{ contextUsageTokensText }}
           </span>
+          <span
+            v-if="contextWindowEstimated"
+            class="cad-agent-context-usage-popover-estimated"
+          >
+            {{ labels.contextUsageEstimated }}
+          </span>
         </div>
+        <p
+          v-if="contextWindowEstimated"
+          class="cad-agent-context-usage-popover-note"
+        >
+          {{ labels.contextUsageEstimateNote }}
+        </p>
         <div class="cad-agent-context-usage-popover-bar">
           <div
             v-for="category in contextUsageCategories"

@@ -83,38 +83,82 @@ const CONTEXT_WINDOW_RULES: ReadonlyArray<{
   { pattern: /gpt-5/i, tokens: 400_000 },
   { pattern: /gpt-4\.1/i, tokens: 1_047_576 },
   { pattern: /gpt-4o/i, tokens: 128_000 },
-  { pattern: /o3|o4-mini/i, tokens: 200_000 },
+  { pattern: /gpt-4/i, tokens: 128_000 },
+  { pattern: /o1-pro/i, tokens: 200_000 },
+  { pattern: /o1|o3|o4-mini/i, tokens: 200_000 },
   // DeepSeek
   { pattern: /deepseek-v4|deepseek-reasoner|deepseek-chat/i, tokens: 128_000 },
   { pattern: /deepseek-vl/i, tokens: 32_768 },
   { pattern: /deepseek/i, tokens: 128_000 },
-  // Common gateways
-  { pattern: /gemini.*pro|gemini-2/i, tokens: 1_000_000 },
+  // Common gateways / open models
+  { pattern: /gemini.*pro|gemini-2|gemini-3/i, tokens: 1_000_000 },
   { pattern: /gemini/i, tokens: 128_000 },
-  { pattern: /qwen.*(plus|max|turbo)/i, tokens: 128_000 },
-  { pattern: /kimi/i, tokens: 128_000 }
+  { pattern: /qwen.*(plus|max|turbo|long)/i, tokens: 128_000 },
+  { pattern: /qwen/i, tokens: 128_000 },
+  { pattern: /kimi|moonshot/i, tokens: 128_000 },
+  { pattern: /glm-4|glm4/i, tokens: 128_000 },
+  { pattern: /doubao/i, tokens: 128_000 },
+  { pattern: /mistral|mixtral/i, tokens: 128_000 },
+  { pattern: /llama-?3\.1|llama3\.1/i, tokens: 128_000 },
+  { pattern: /llama/i, tokens: 128_000 }
 ]
 
 /** Rough per-image token cost when vision images are in the prompt. */
 const IMAGE_TOKEN_ESTIMATE = 765
 
+/** Resolved context-window size plus whether it came from a heuristic default. */
+export interface ResolvedContextWindow {
+  /** Token limit used for the context usage percentage. */
+  tokens: number
+  /**
+   * `true` when no model-entry override and no id rule matched, so the value
+   * is {@link DEFAULT_CONTEXT_WINDOW}.
+   */
+  estimated: boolean
+}
+
+/**
+ * Resolves the context window size for a model id (and optional override).
+ *
+ * @param modelId - Provider model identifier.
+ * @param overrideTokens - Optional catalog `contextWindow` for the active model.
+ */
+export function resolveContextWindowInfo(
+  modelId: string,
+  overrideTokens?: number
+): ResolvedContextWindow {
+  if (
+    typeof overrideTokens === 'number' &&
+    Number.isFinite(overrideTokens) &&
+    overrideTokens > 0
+  ) {
+    return { tokens: Math.round(overrideTokens), estimated: false }
+  }
+  const id = modelId.trim()
+  if (!id) return { tokens: DEFAULT_CONTEXT_WINDOW, estimated: true }
+  for (const rule of CONTEXT_WINDOW_RULES) {
+    if (rule.pattern.test(id)) return { tokens: rule.tokens, estimated: false }
+  }
+  return { tokens: DEFAULT_CONTEXT_WINDOW, estimated: true }
+}
+
 /**
  * Resolves the context window size for a model id.
  *
  * @param modelId - Provider model identifier.
+ * @param overrideTokens - Optional catalog `contextWindow` for the active model.
  * @returns Token limit used for the context usage percentage.
  */
-export function resolveContextWindow(modelId: string): number {
-  const id = modelId.trim()
-  if (!id) return DEFAULT_CONTEXT_WINDOW
-  for (const rule of CONTEXT_WINDOW_RULES) {
-    if (rule.pattern.test(id)) return rule.tokens
-  }
-  return DEFAULT_CONTEXT_WINDOW
+export function resolveContextWindow(
+  modelId: string,
+  overrideTokens?: number
+): number {
+  return resolveContextWindowInfo(modelId, overrideTokens).tokens
 }
 
 /**
- * Clamps used tokens into a 0–100 percentage of the context window.
+ * Percentage of the context window currently used. May exceed 100 when the
+ * provider-reported prompt is larger than the local window estimate.
  *
  * @param usedTokens - Tokens currently in context.
  * @param contextWindow - Model context window size.
@@ -130,8 +174,27 @@ export function contextUsagePercent(
   ) {
     return 0
   }
-  const raw = (Math.max(0, usedTokens) / contextWindow) * 100
-  return Math.min(100, Math.max(0, raw))
+  return (Math.max(0, usedTokens) / contextWindow) * 100
+}
+
+/**
+ * Clamps a usage percentage into 0–100 for SVG ring geometry.
+ *
+ * @param percent - Raw usage percentage (may exceed 100).
+ */
+export function contextUsageRingPercent(percent: number): number {
+  if (!Number.isFinite(percent)) return 0
+  return Math.min(100, Math.max(0, percent))
+}
+
+/**
+ * Formats a usage percentage for labels (rounded; may exceed 100).
+ *
+ * @param percent - Raw usage percentage.
+ */
+export function formatContextUsagePercent(percent: number): string {
+  if (!Number.isFinite(percent) || percent <= 0) return '0'
+  return String(Math.round(percent))
 }
 
 /**
@@ -144,16 +207,12 @@ export function formatTokenCount(tokens: number): string {
   if (tokens >= 1_000_000) {
     const value = tokens / 1_000_000
     const formatted = value.toFixed(1)
-    return formatted.endsWith('.0')
-      ? `${Math.floor(value)}M`
-      : `${formatted}M`
+    return formatted.endsWith('.0') ? `${Math.floor(value)}M` : `${formatted}M`
   }
   if (tokens >= 1_000) {
     const value = tokens / 1_000
     const formatted = value.toFixed(1)
-    return formatted.endsWith('.0')
-      ? `${Math.floor(value)}K`
-      : `${formatted}K`
+    return formatted.endsWith('.0') ? `${Math.floor(value)}K` : `${formatted}K`
   }
   return String(Math.round(tokens))
 }

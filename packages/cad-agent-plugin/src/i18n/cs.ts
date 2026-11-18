@@ -36,6 +36,9 @@ export const agentCs = {
   contextUsageDetail: '{percent}% · {used} / {limit}',
   contextUsageFull: '{percent}% zaplněno',
   contextUsageTokens: '~{used} / {limit} tokenů',
+  contextUsageEstimated: 'Odhadované okno',
+  contextUsageEstimateNote:
+    'Vůči lokálnímu odhadu kontextového okna modelu, nikoli vůči tvrdému limitu poskytovatele.',
   contextUsageSystemPrompt: 'Systémový prompt',
   contextUsageToolDefinitions: 'Definice nástrojů',
   contextUsageImages: 'Obrázky',
@@ -51,6 +54,7 @@ export const agentCs = {
   send: 'Odeslat',
   stop: 'Zastavit',
   working: 'Pracuji…',
+  thinking: 'Přemýšlím',
   agentMode: 'Režim agenta',
   agentModeSimple: 'Jednoduchý',
   agentModeHighInference: 'Vysoká inference',
@@ -114,7 +118,7 @@ export const agentCs = {
     'Připojím referenční obrázek (skicu, snímek nebo plán). Pečlivě ho analyzuj a zrekonstruuj zamýšlenou 2D CAD geometrii se správnými proporcemi, hladinami a viditelnými kótami. Ptej se jen když je kritický rozměr nejasný.',
   taskRedrawFromImageTitle: 'Překreslit obrázek do upravitelného výkresu',
   taskRedrawFromImagePrompt:
-    'Připojím obrázek výkresu (sken, fotografii nebo snímek obrazovky). Překresli ho pomocí cad.redraw do upravitelného CAD výkresu: zvol profil (general, pokud obrázku nechybí jednotky nebo měřítko), kalibruj každý pohled podle čitelných kót a každou hodnotu označ jako known, scaled, inferred nebo unreadable. Geometrii, kóty, texty, odkazy a tabulky umísti do standardních hladin. Nepředpokládej milimetry. Nakonec uveď stav (pass / pass_with_warnings / needs_review / blocked / fail), použitou kalibraci a nevyřešené předpoklady.',
+    'Připojím obrázek výkresu (sken, fotografii nebo snímek obrazovky). Překresli ho pomocí cad.redraw do upravitelného CAD výkresu: zvol profil (general, pokud obrázku nechybí jednotky nebo měřítko), kalibruj každý pohled podle čitelných kót (každý spec potřebuje kalibraci pixel↔CAD, aby mohl běžet compare) a každou hodnotu označ jako known, scaled, inferred nebo unreadable. Geometrii, kóty, texty, odkazy a tabulky umísti do standardních hladin. Pokud obrázek obsahuje razítko nebo rámeček výkresu, nejprve se textově jednou zeptej, zda ho mám zahrnout, a počkej na odpověď — do té doby nevolej execute_cad_script / cad.redraw.draw. Nepředpokládej milimetry. Poté spusť validate → draw → inspect → cad.redraw.compare a nakonec uveď stav (pass / pass_with_warnings / needs_review / blocked / fail), verdikt compare, použitou kalibraci a nevyřešené předpoklady.',
   taskDraftingReviewTitle: 'Kontrola kvality kreslení',
   taskDraftingReviewPrompt:
     'Zkontroluj otevřený výkres z hlediska kvality: nekonzistentní výšky textu, kóty které nemusí sedět s geometrií, překrývající se poznámky, entity na hladině 0, neúplné pohledy. Seřaď nálezy podle závažnosti; oprav jen jasné a bezpečné problémy, pokud nepožádám jinak.',

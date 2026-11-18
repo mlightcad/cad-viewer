@@ -24,4 +24,14 @@ describe('buildCadAgentSystemPrompt', () => {
     expect(prompt).toMatch(/OVERRIDES the "ignore dimensions \/ ignore text"/)
     expect(prompt).toMatch(/Never\s+assume millimeters/)
   })
+
+  test('requires pixel compare and gates title-block frames before draw', () => {
+    const prompt = buildCadAgentSystemPrompt('simple')
+    expect(prompt).toMatch(/required before finishing an image\s+redraw/)
+    expect(prompt).toContain('cad.redraw.compare(spec')
+    expect(prompt).toContain('compareQueued: cmp')
+    expect(prompt).toContain('FRAME GATE')
+    expect(prompt).toMatch(/FIRST reply must be a short text question only/)
+    expect(prompt).toMatch(/Do not silently default to omitting the frame/)
+  })
 })

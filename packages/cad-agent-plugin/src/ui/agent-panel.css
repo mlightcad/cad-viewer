@@ -247,6 +247,106 @@
   max-width: 92%;
 }
 
+.cad-agent-msg--status {
+  background: transparent;
+  padding: 4px 2px;
+  color: #9a9a9a;
+}
+
+.cad-agent-working {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #b0b0b0;
+}
+
+.cad-agent-working-dots {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 6px;
+}
+
+.cad-agent-working-dots::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #9cdcfe;
+  box-shadow:
+    7px 0 0 #9cdcfe,
+    14px 0 0 #9cdcfe;
+  animation: cad-agent-working-pulse 1.2s ease-in-out infinite;
+  opacity: 0.35;
+}
+
+@keyframes cad-agent-working-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.cad-agent-reasoning {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cad-agent-reasoning-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9a9a9a;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cad-agent-reasoning-summary:hover {
+  color: #c8c8c8;
+}
+
+.cad-agent-reasoning-summary-text {
+  min-width: 0;
+}
+
+.cad-agent-reasoning-chevron {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+.cad-agent-reasoning.is-open .cad-agent-reasoning-chevron {
+  transform: rotate(90deg);
+}
+
+.cad-agent-reasoning-body {
+  margin-top: 6px;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #a8a8a8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 12em;
+  overflow-y: auto;
+}
+
 /* Match `.cad-agent-msg.user` specificity so editing uses full palette width. */
 .cad-agent-msg.cad-agent-msg--editing {
   align-self: stretch;
@@ -701,10 +801,11 @@
 
 .cad-agent-context-usage-popover-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 8px 12px;
+  margin-bottom: 8px;
 }
 
 .cad-agent-context-usage-popover-full {
@@ -718,6 +819,19 @@
   font-size: 11px;
   color: #9a9a9a;
   white-space: nowrap;
+}
+
+.cad-agent-context-usage-popover-estimated {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #c9a227;
+}
+
+.cad-agent-context-usage-popover-note {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8a8a8a;
 }
 
 .cad-agent-context-usage-popover-bar {

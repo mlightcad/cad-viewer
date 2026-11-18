@@ -505,7 +505,20 @@ export function acapLlmRestoreModelEntries(
     if (!entry || typeof entry !== 'object') return []
     if (typeof entry.id !== 'string' || !entry.id.trim()) return []
     const name = typeof entry.name === 'string' ? entry.name.trim() : ''
-    return [{ id: entry.id, ...(name ? { name } : {}), vision: !!entry.vision }]
+    const contextWindow =
+      typeof entry.contextWindow === 'number' &&
+      Number.isFinite(entry.contextWindow) &&
+      entry.contextWindow > 0
+        ? Math.round(entry.contextWindow)
+        : undefined
+    return [
+      {
+        id: entry.id,
+        ...(name ? { name } : {}),
+        vision: !!entry.vision,
+        ...(contextWindow !== undefined ? { contextWindow } : {})
+      }
+    ]
   })
 }
 

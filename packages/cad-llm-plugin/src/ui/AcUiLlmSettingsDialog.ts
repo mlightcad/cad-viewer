@@ -89,7 +89,18 @@ function cleanModels(
     if (!id || seen.has(id)) continue
     seen.add(id)
     const name = model.name?.trim()
-    result.push({ id, ...(name ? { name } : {}), vision: model.vision })
+    const contextWindow =
+      typeof model.contextWindow === 'number' &&
+      Number.isFinite(model.contextWindow) &&
+      model.contextWindow > 0
+        ? Math.round(model.contextWindow)
+        : undefined
+    result.push({
+      id,
+      ...(name ? { name } : {}),
+      vision: model.vision,
+      ...(contextWindow !== undefined ? { contextWindow } : {})
+    })
   }
   return result
 }

@@ -19,7 +19,8 @@ function areModelListsEqual(
       (model, index) =>
         model.id === right[index].id &&
         (model.name ?? '') === (right[index].name ?? '') &&
-        model.vision === right[index].vision
+        model.vision === right[index].vision &&
+        (model.contextWindow ?? 0) === (right[index].contextWindow ?? 0)
     )
   )
 }

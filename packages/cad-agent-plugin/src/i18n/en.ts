@@ -36,6 +36,9 @@ export const agentEn = {
   contextUsageDetail: '{percent}% · {used} / {limit}',
   contextUsageFull: '{percent}% Full',
   contextUsageTokens: '~{used} / {limit} Tokens',
+  contextUsageEstimated: 'Estimated window',
+  contextUsageEstimateNote:
+    'Relative to a local estimate of the model context window, not a hard provider limit.',
   contextUsageSystemPrompt: 'System prompt',
   contextUsageToolDefinitions: 'Tool definitions',
   contextUsageImages: 'Images',
@@ -51,6 +54,7 @@ export const agentEn = {
   send: 'Send',
   stop: 'Stop',
   working: 'Working…',
+  thinking: 'Thinking',
   agentMode: 'Agent mode',
   agentModeSimple: 'Simple',
   agentModeHighInference: 'High inference',
@@ -115,7 +119,7 @@ export const agentEn = {
     'I will attach a reference image (sketch, screenshot, or plan). Analyze it carefully, then reconstruct the intended 2D CAD geometry with correct proportions, layers, and dimensions where visible. Ask only if a critical size is ambiguous.',
   taskRedrawFromImageTitle: 'Redraw image as editable CAD',
   taskRedrawFromImagePrompt:
-    'I will attach an image of a drawing (scan, photo, or screenshot). Redraw it as editable CAD with cad.redraw: choose a profile (general unless the image lacks units or scale), calibrate each view from readable dimensions, and tag every value as known, scaled, inferred, or unreadable. Reproduce geometry, dimensions, text, leaders, and tables on standard layers. Do not assume millimeters. Finish with the status (pass / pass_with_warnings / needs_review / blocked / fail), the calibration used, and any unresolved assumptions.',
+    'I will attach an image of a drawing (scan, photo, or screenshot). Redraw it as editable CAD with cad.redraw: choose a profile (general unless the image lacks units or scale), calibrate each view from readable dimensions (every spec needs a pixel↔CAD calibration so compare can run), and tag every value as known, scaled, inferred, or unreadable. Reproduce geometry, dimensions, text, leaders, and tables on standard layers. If the image shows a title block or sheet border, ask me once in a text-only reply whether to include it, and wait for my answer before any execute_cad_script / cad.redraw.draw. Do not assume millimeters. After that, run validate → draw → inspect → cad.redraw.compare, then finish with the status (pass / pass_with_warnings / needs_review / blocked / fail), the compare verdict, the calibration used, and any unresolved assumptions.',
   taskDraftingReviewTitle: 'Drafting quality review',
   taskDraftingReviewPrompt:
     'Review the open drawing for drafting quality issues: inconsistent text heights, dimensions that may not match geometry, overlapping annotations, entities on layer 0 that should be elsewhere, and incomplete views. List findings by severity; fix only clear, safe issues unless I ask otherwise.',
