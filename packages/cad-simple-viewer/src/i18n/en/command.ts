@@ -166,7 +166,7 @@ export default {
       description: 'Opens or closes the layer manager dock panel'
     },
     loginname: {
-      description: "Displays the user's login name (read-only)"
+      description: 'Displays the user\'s login name (read-only)'
     },
     dynmode: {
       description: 'Controls Dynamic Input settings at the cursor'

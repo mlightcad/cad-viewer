@@ -18,7 +18,7 @@ export default {
         'Geçerli açıklama ölçeğini desteklemeyen açıklamalı nesnelerin görüntülenip görüntülenmeyeceğini denetler'
     },
     angbase: {
-      description: "Geçerli KKS'ye göre 0 açı temel yönünü ayarlar"
+      description: 'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
     },
     angdir: {
       description:
@@ -70,7 +70,7 @@ export default {
     },
     cachefont: {
       description:
-        "Metin işleme için yerel bir yazı tipi dosyasını IndexedDB'ye önbelleğe alır"
+        'Metin işleme için yerel bir yazı tipi dosyasını IndexedDB\'ye önbelleğe alır'
     },
     circle: {
       description: 'Merkez ve yarıçapa göre bir daire oluşturur'
@@ -120,7 +120,7 @@ export default {
         'Panodaki nesneleri özgün çizimin koordinatlarını kullanarak yapıştırır'
     },
     csvg: {
-      description: "Geçerli çizimi SVG'ye dönüştürür"
+      description: 'Geçerli çizimi SVG\'ye dönüştürür'
     },
     chtml: {
       description:
@@ -128,7 +128,7 @@ export default {
     },
     '-chtml': {
       description:
-        "Komut satırı seçeneklerini kullanarak geçerli çizimi HTML'e dışa aktarır"
+        'Komut satırı seçeneklerini kullanarak geçerli çizimi HTML\'e dışa aktarır'
     },
     dimlinear: {
       description: 'Doğrusal ölçülendirmeler oluşturur'
@@ -343,7 +343,7 @@ export default {
       description: 'Bir katmanı ve o katmandaki tüm nesneleri siler'
     },
     layerclose: {
-      description: "Katman Özellikleri Yöneticisi'ni kapatır"
+      description: 'Katman Özellikleri Yöneticisi\'ni kapatır'
     },
     layerp: {
       description:
@@ -655,7 +655,7 @@ export default {
     },
     view: {
       description:
-        "Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi'ni açar"
+        'Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi\'ni açar'
     },
     newview: {
       description:
