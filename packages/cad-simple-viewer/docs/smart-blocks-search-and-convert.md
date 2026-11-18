@@ -336,7 +336,7 @@ shapes ─▶ touching neighbors ─▶ pair keys ─▶ frequent keys (most fre
 
 | Option                                                                       | Default         | Meaning                                                             |
 | ---------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------- |
-| `minInstances`                                                               | 3               | Fewest instances (the representative included)                      |
+| `minInstances`                                                               | 2               | Fewest instances (the representative included)                      |
 | `minEntities`                                                                | 2               | Fewest non-text shapes per instance                                 |
 | `maxEntities`                                                                | 64              | Most shapes per instance; growth stops there                        |
 | `minSavings`                                                                 | 10              | Smallest saving reported; also prunes seeds before the exact search |
@@ -372,16 +372,17 @@ A fresh `AcApSmartBlockSearch` from each of the 12 largest groups finds at least
 
 `@mlightcad/cad-editor` adds the `BDETECT` command (Insert and AI ribbon tabs, "Detect and Convert"). `AcApBDetectCmd` extends the editor's `AcApBSearchCmd`, so reviewing a single group reuses the Search and Convert palette tab and dialog unchanged.
 
-1. The tool palette opens on a **Detection** tab (palette title: Detect and Convert). The tab exists only while the command runs, like the Count and Find tabs it sits beside. It first shows the detection progress with a **Stop** button.
-2. The tab then lists the groups, largest saving first. Each row shows:
+1. The tool palette opens on a **Detection** tab (palette title: Detect and Convert). The tab exists only while the command runs, like the Count and Find tabs it sits beside. It starts in a ready state with **Detection options** (rotation, mirror, scale, same layer, text variations, min. instances, min. savings, max. objects) and a **Detect** button; searching does not start until Detect is clicked.
+2. While detecting, the tab shows progress with a **Stop** button. Stop returns to the ready state so options can be changed; **Detect again** after a finished run re-runs with the current options.
+3. The tab then lists the groups, largest saving first. Each row shows:
    - a thumbnail of the representative, captured in the background with `AcApEntityPreviewConvertor`;
    - an editable block name (`Block1`, `Block2`, ..., never an existing name);
    - the instance and object counts and the layers;
    - an **Attributes** tag when texts differ between instances.
-3. Clicking a row, or an object in the drawing, highlights every instance of that group and zooms to its representative.
-4. **Review** (the eye button) opens the Search and Convert palette tab for that group; the Detection tab stays open but inactive meanwhile and is shown again afterwards. Copies that belong to other groups start excluded, so converting one group leaves the others intact. After the review, the list returns without the converted group, and groups that lost instances are updated.
-5. **Convert selected** converts every checked group into its own new block. Names are validated first: empty, invalid, already used, or used by two checked groups.
-6. **Close**, Esc, or closing the palette ends the command. The tab disappears and the palette returns to how it was: closed, or open on its previous tab. All conversions of one run undo in one step.
+4. Clicking a row, or an object in the drawing, highlights every instance of that group and zooms to its representative.
+5. **Review** (the eye button) opens the Search and Convert palette tab for that group; the Detection tab stays open but inactive meanwhile and is shown again afterwards. Copies that belong to other groups start excluded, so converting one group leaves the others intact. After the review, the list returns without the converted group, and groups that lost instances are updated.
+6. **Convert selected** converts every checked group into its own new block. Names are validated first: empty, invalid, already used, or used by two checked groups.
+7. **Close**, Esc, or closing the palette ends the command. The tab disappears and the palette returns to how it was: closed, or open on its previous tab. All conversions of one run undo in one step.
 
 The tab is `MlBDetectPalette` in `MlPaletteManager`, shown through `store.dialogs.bdetectTabVisible`. Its state lives in `useBDetect` (`cad-editor/src/composable/useBDetect.ts`), following the `useBSearch` pattern: the command owns the logic and the palette only sends actions. The command races a palette action against a canvas point prompt, so canvas clicks and the command line keep working while the palette is open.
 

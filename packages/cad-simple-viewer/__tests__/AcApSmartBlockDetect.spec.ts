@@ -140,16 +140,16 @@ describe('Smart Blocks detection', () => {
   test('ignores dashed line pieces and too rare shapes', () => {
     // A dashed line drawn as separate pieces.
     for (let i = 0; i < 40; i++) add([line(i * 3, 0, i * 3 + 2, 0)])
-    // Only two doors: below the default minimum of three instances.
+    // Only two doors: found when minInstances is 2 (the default).
     add(door(), at(0, 100))
     add(door(), at(100, 100))
 
-    expect(acapDetectSmartBlocks(db, { minSavings: 0 })).toHaveLength(0)
+    expect(acapDetectSmartBlocks(db, { minSavings: 0 })).toHaveLength(1)
     expect(
-      acapDetectSmartBlocks(db, { minInstances: 2, minSavings: 0 })
-    ).toHaveLength(1)
+      acapDetectSmartBlocks(db, { minInstances: 3, minSavings: 0 })
+    ).toHaveLength(0)
     // Two doors of three shapes save four entities: below the default.
-    expect(acapDetectSmartBlocks(db, { minInstances: 2 })).toHaveLength(0)
+    expect(acapDetectSmartBlocks(db)).toHaveLength(0)
   })
 
   const bubbles = (labels: string[]) =>

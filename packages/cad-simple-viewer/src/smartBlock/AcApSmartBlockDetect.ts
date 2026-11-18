@@ -39,7 +39,7 @@ export interface AcApSmartBlockDetectOptions extends Pick<
   | 'matchLayer'
   | 'textVariations'
 > {
-  /** Fewest instances (source included) a group needs. Default `3`. */
+  /** Fewest instances (source included) a group needs. Default `2`. */
   minInstances?: number
   /** Fewest non-text shapes per instance. Default `2`. */
   minEntities?: number
@@ -317,7 +317,7 @@ function* detect(
   options: AcApSmartBlockDetectOptions,
   cache: AcApSmartBlockFeatureCache
 ): Generator<AcApSmartBlockDetectProgress, AcApSmartBlockCluster[]> {
-  const minInstances = Math.max(2, options.minInstances ?? 3)
+  const minInstances = Math.max(2, options.minInstances ?? 2)
   const minEntities = Math.max(1, options.minEntities ?? 2)
   const minSavings = options.minSavings ?? 10
   const maxEntities = options.maxEntities ?? 64
