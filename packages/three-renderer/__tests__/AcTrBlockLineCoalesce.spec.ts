@@ -160,4 +160,44 @@ describe('block line coalesce', () => {
     expect(ranges.some(range => range.maxX < 50)).toBe(true)
     expect(ranges.some(range => range.minX > 50)).toBe(true)
   })
+
+  it('keeps sub-unit precision for survey-scale block coordinates', () => {
+    // Survey drawings put contours at X ~ 3.36e7, where float32 can only
+    // represent every 4th unit. Staging absolute coordinates in float32
+    // snaps the vertices to that grid and makes contours look jagged.
+    const x0 = 33593852.123
+    const y0 = 2940437.456
+    const points = [0, 0.3, 1.1, 2.7].map((dx, i) => ({
+      x: x0 + dx,
+      y: y0 + i * 0.37,
+      z: 1166
+    }))
+    const renderer = createRenderer()
+    renderer.beginBlockLineCoalesce()
+    const first = renderer.lines(points)
+    const second = renderer.lines([
+      { x: x0 + 5.5, y: y0 + 1.25, z: 1166 },
+      { x: x0 + 6.75, y: y0 + 2.5, z: 1166 }
+    ])
+    first.objectId = 'contour-a'
+    second.objectId = 'contour-b'
+    first.layerName = '0'
+    second.layerName = '0'
+    const group = renderer.group([first, second])
+    renderer.endBlockLineCoalesce()
+
+    const line = coalescedLineSegments(group)
+    line.updateMatrixWorld(true)
+    const position = line.geometry.getAttribute('position')
+    const world = new THREE.Vector3()
+    for (let i = 0; i < 2; i++) {
+      // Segment i starts at points[i] and ends at points[i + 1].
+      world.fromBufferAttribute(position, i * 2).applyMatrix4(line.matrixWorld)
+      expect(world.x).toBeCloseTo(points[i].x, 3)
+      expect(world.y).toBeCloseTo(points[i].y, 3)
+    }
+    const box = group.wcsChildBoxes.find(b => b.id === 'contour-a')!
+    expect(box.minX).toBeCloseTo(x0, 3)
+    expect(box.maxX).toBeCloseTo(x0 + 2.7, 3)
+  })
 })

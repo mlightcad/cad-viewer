@@ -76,6 +76,8 @@ interface CompactBucket {
 
 const _worldOffset = /*@__PURE__*/ new THREE.Vector3()
 const _matrixNoTranslation = /*@__PURE__*/ new THREE.Matrix4()
+/** Leaf matrix with its translation rebased onto the bucket origin. */
+const _bakeMatrix = /*@__PURE__*/ new THREE.Matrix4()
 const _v1 = /*@__PURE__*/ new THREE.Vector3()
 const _v2 = /*@__PURE__*/ new THREE.Vector3()
 const _translation = /*@__PURE__*/ new THREE.Vector3()
@@ -518,12 +520,19 @@ export class AcTrGroupCompactor {
     AcTrBufferGeometryUtil.tryConvertInterleavedBufferAttributes(geometry)
     const indexStride: 2 | 3 = family === 'mesh' ? 3 : 2
 
-    // Bake full local transform into vertices, then rebase to the bucket origin.
+    // Bake the local transform into vertices relative to the bucket origin.
+    // Fold the origin into the translation in float64 first: baking the full
+    // matrix and subtracting afterwards stores absolute WCS in float32, which
+    // snaps survey-scale coordinates (X ~ 3e7) to a 4-unit grid.
     // Compact runs before INSERT applyMatrix, so matrix matches matrixWorld.
+    _translation.setFromMatrixPosition(object.matrix).sub(origin)
+    _bakeMatrix
+      .copy(object.matrix)
+      .setPosition(_translation.x, _translation.y, _translation.z)
     if (
       !AcTrBufferGeometryUtil.safeApplyMatrix4(
         geometry,
-        object.matrix,
+        _bakeMatrix,
         indexStride
       )
     ) {
@@ -536,15 +545,6 @@ export class AcTrGroupCompactor {
       geometry.dispose()
       return null
     }
-    for (let i = 0; i < position.count; i++) {
-      position.setXYZ(
-        i,
-        position.getX(i) - origin.x,
-        position.getY(i) - origin.y,
-        position.getZ(i) - origin.z
-      )
-    }
-    position.needsUpdate = true
 
     if (geometry.hasAttribute('lineDistance')) {
       // Recompute per leaf before merge so dash phase stays entity-local.
