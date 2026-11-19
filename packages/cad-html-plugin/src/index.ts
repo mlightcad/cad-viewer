@@ -41,6 +41,7 @@ export {
   getHtmlPluginOptions,
   resolveViewerRuntimeUrl
 } from './AcApHtmlPluginOptions.js'
+export { acapHtmlThumbnailToJpeg } from './AcApHtmlPreviewImage.js'
 export {
   AcApHtmlSnapshotBuilder,
   type AcApHtmlSnapshotBuilderOptions

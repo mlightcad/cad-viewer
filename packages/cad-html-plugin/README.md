@@ -16,7 +16,7 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
-- **Multi-file ACEX package** — generic `viewer.html` + fixed `drawing.acex.json` + per-chunk `*.acex.gz`; export downloads a zip (unzip before hosting for progressive load). The shell does not hard-code a drawing-specific data path: it probes sibling `drawing.acex.json`, supports `?manifest=` / `?acex=` URLs, and can open a local package folder or a pasted manifest URL when the default file is missing
+- **Multi-file ACEX package** — generic `viewer.html` + fixed `drawing.acex.json` + per-chunk `*.acex.gz` (+ `preview.jpg` when the drawing has a thumbnail); export downloads a zip (unzip before hosting for progressive load). The shell does not hard-code a drawing-specific data path: it probes sibling `drawing.acex.json`, supports `?manifest=` / `?acex=` URLs, and can open a local package folder or a pasted manifest URL when the default file is missing
 - **Offline viewer** — select / pan / zoom (extents, window, original view), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP). Select, pan, and zoom tools exit any active measurement or review drawing tool.
 - **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button opens a strip to pick a locale, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
@@ -206,6 +206,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `acexHtmlPackHtml`, `AcExHtmlPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
 | `acexHtmlPackHtmlEmbeddedPackage`, `acexHtmlShouldEmbedChunks` | Progressive self-contained HTML (large drawings) |
 | `acexHtmlPackHtmlPackage`, `acexHtmlBuildPackage`, `acexHtmlZipPackageFiles` | Multi-file package shell, builder, and export zip |
+| `acexHtmlAppendPackagePreview`, `acapHtmlThumbnailToJpeg`, `ACEX_PACKAGE_PREVIEW_FILE` | Add the drawing thumbnail as `preview.jpg` to package files |
 | `ACEX_DEFAULT_MANIFEST_FILE`, `ACEX_DEFAULT_MANIFEST_HREF`, package bootstrap helpers | Canonical `drawing.acex.json` name and generic viewer resolve / probe / directory-fetch helpers |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
 | `AcExHtmlSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |

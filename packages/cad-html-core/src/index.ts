@@ -165,7 +165,14 @@ export {
   ACEO_OSNAP_MAGIC,
   ACEO_OSNAP_VERSION
 } from './AcExHtmlOsnapCatalogCodec.js'
-export { acexHtmlZipPackageFiles, acexHtmlUnzipPackageFiles } from './AcExHtmlPackageZip.js'
+export {
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
+} from './AcExHtmlPackageZip.js'
+export {
+  ACEX_PACKAGE_PREVIEW_FILE,
+  acexHtmlAppendPackagePreview
+} from './AcExHtmlPackagePreview.js'
 export {
   ACEX_HTML_BACKGROUND_BLACK,
   ACEX_HTML_BACKGROUND_WHITE,
