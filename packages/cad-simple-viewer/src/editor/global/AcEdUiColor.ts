@@ -26,6 +26,7 @@ export {
 import {
   AcCmColor,
   AcCmColorMethod,
+  AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -90,6 +91,28 @@ export function isLightColorTheme(value: unknown): boolean {
 }
 
 /**
+ * Reports whether the block table already holds a `*Model_Space` record,
+ * without creating one.
+ *
+ * `blockTable.modelSpace`, `database.currentSpaceId` and
+ * `layoutManager.getActiveLayout()` all lazily create `*Model_Space` when it
+ * is missing. It is missing while `AcDbDatabase.read()` is parsing a file
+ * (tables are cleared first), and the render loop keeps running then. A
+ * placeholder created at that point is reused by name instead of the file's
+ * own record, so the Model layout ends up on an id the database rejects and
+ * the drawing opens blank. Per-frame code must check this first.
+ *
+ * @param database - Drawing database to inspect.
+ * @returns `true` once `*Model_Space` exists in the block table.
+ */
+export function acedHasModelSpaceRecord(database: AcDbDatabase): boolean {
+  return (
+    database.tables.blockTable.getAt(AcDbBlockTableRecord.MODEL_SPACE_NAME) !=
+    null
+  )
+}
+
+/**
  * Reports whether the given database's current space is model space.
  *
  * Compares `database.currentSpaceId` against the object id of the block table's
@@ -98,13 +121,16 @@ export function isLightColorTheme(value: unknown): boolean {
  * is consulted.
  *
  * @param database - Active drawing database whose current space is inspected.
- * @returns `true` when the database is in model space; `false` when it is in
- *   a paper-space layout.
+ * @returns `true` when the database is in model space, or has no
+ *   `*Model_Space` record yet (empty, or mid-read); `false` when it is in a
+ *   paper-space layout.
  *
  * @see {@link layoutBackgroundSysVar} — picks the background sysvar name from
  *   this result
  */
 export function isModelSpaceDatabase(database: AcDbDatabase): boolean {
+  // See acedHasModelSpaceRecord: never create *Model_Space from here.
+  if (!acedHasModelSpaceRecord(database)) return true
   return (
     database.currentSpaceId === database.tables.blockTable.modelSpace.objectId
   )
