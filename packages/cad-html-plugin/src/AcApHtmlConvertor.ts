@@ -11,6 +11,7 @@ import {
 } from '@mlightcad/cad-html-core'
 import { acexHtmlPackHtml } from '@mlightcad/cad-html-core'
 import { acexHtmlBuildPackageAsync } from '@mlightcad/cad-html-core'
+import { acexHtmlAppendPackagePreview } from '@mlightcad/cad-html-core'
 import { acexHtmlZipPackageFiles } from '@mlightcad/cad-html-core'
 import { acexHtmlEncodeSnapshot } from '@mlightcad/cad-html-core'
 import {
@@ -32,6 +33,7 @@ import {
   type AcApHtmlPluginOptions,
   resolveViewerRuntimeUrl
 } from './AcApHtmlPluginOptions.js'
+import { acapHtmlThumbnailToJpeg } from './AcApHtmlPreviewImage.js'
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder.js'
 
 function logExportTiming(label: string, ms: number) {
@@ -292,7 +294,16 @@ export class AcApHtmlConvertor {
         performance.now() - t0
       )
       t0 = performance.now()
-      const zipBytes = acexHtmlZipPackageFiles(pkg)
+      const previewJpeg = await acapHtmlThumbnailToJpeg(
+        document.database.thumbnailImage
+      )
+      const files = acexHtmlAppendPackagePreview(pkg.files, previewJpeg)
+      logExportTiming(
+        previewJpeg ? 'preview.jpg' : 'preview.jpg (no drawing thumbnail)',
+        performance.now() - t0
+      )
+      t0 = performance.now()
+      const zipBytes = acexHtmlZipPackageFiles({ ...pkg, files })
       logExportTiming('zip package', performance.now() - t0)
       await accmYieldForPaint()
       return {
