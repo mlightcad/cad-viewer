@@ -248,17 +248,32 @@ export class AcTrBaseView {
     this._cameraControls.update()
   }
 
+  /**
+   * Fits the orthographic camera's Z position and near/far planes so geometry
+   * whose WCS Z lies in `[minZ, maxZ]` is not clipped.
+   *
+   * Plan views ignore Z for placement, but the GPU still clips by depth.
+   * Survey drawings put contour polylines at their real height (elevation
+   * 1000+), which a fixed depth band hides. See {@link AcTrCamera.fitDepthRange}.
+   *
+   * @param minZ - Lowest WCS Z of the geometry to show.
+   * @param maxZ - Highest WCS Z of the geometry to show.
+   */
+  fitDepthRange(minZ: number, maxZ: number) {
+    this._camera.fitDepthRange(minZ, maxZ)
+  }
+
   private createCamera() {
-    const cameraLen = 500
+    const half = AcTrCamera.DEFAULT_DEPTH_HALF
     const camera = new THREE.OrthographicCamera(
       -this._width / 2,
       this._width / 2,
       this._height / 2,
       -this._height / 2,
-      0.1,
-      1000
+      AcTrCamera.NEAR,
+      2 * half
     )
-    camera.position.set(0, 0, cameraLen)
+    camera.position.set(0, 0, half)
     camera.up.set(0, 1, 0)
     camera.updateProjectionMatrix()
     return camera

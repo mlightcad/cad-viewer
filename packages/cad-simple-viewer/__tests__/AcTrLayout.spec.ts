@@ -804,3 +804,147 @@ describe('AcTrLayout insert layer freeze', () => {
     expect(mockSetCompareDisplay).toHaveBeenCalledWith(options)
   })
 })
+
+describe('AcTrLayout depth range', () => {
+  function entityAtZ(objectId: string, minZ: number, maxZ: number) {
+    const entity = createEntity(objectId)
+    entity.wcsBbox.min.z = minZ
+    entity.wcsBbox.max.z = maxZ
+    return entity
+  }
+
+  /** Makes the mocked batch bounds report geometry in `[minZ, maxZ]`. */
+  function batchBoundsAtZ(minZ: number, maxZ: number) {
+    mockComputeBoundingBox.mockImplementation((target: THREE.Box3) => {
+      target.min.set(0, 0, minZ)
+      target.max.set(10, 10, maxZ)
+      return target
+    })
+  }
+
+  /**
+   * A real scene-graph INSERT stand-in: its `wcsBbox` is 2D (Z=0) like
+   * {@link AcTrGroup}, while a child polyline sits at `elevation`.
+   */
+  function insertWithElevatedChild(objectId: string, elevation: number) {
+    const group = new THREE.Group() as unknown as AcTrEntity & THREE.Group
+    Object.assign(group, {
+      objectId,
+      layerName: '0',
+      ownerId: 'layout-1',
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(10, 10, 0)
+      )
+    })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 10, 0], 3)
+    )
+    const line = new THREE.Line(geometry, new THREE.LineBasicMaterial())
+    line.position.z = elevation
+    group.add(line)
+    return group
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    // Isolate the entity paths: batch bounds report nothing by default.
+    mockComputeBoundingBox.mockImplementation((target: THREE.Box3) =>
+      target.makeEmpty()
+    )
+  })
+
+  it('takes Z from drawable geometry when an INSERT has a 2D wcsBbox', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(insertWithElevatedChild('insert', 1243))
+
+    expect(layout.depthRange.max).toBe(1243)
+    // Reading the range is O(1): it must not rescan batch buffers per frame.
+    expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+
+  it('grows when an entity is updated to a new elevation', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(insertWithElevatedChild('insert', 0))
+    layout.updateEntity(insertWithElevatedChild('insert', 2000))
+
+    expect(layout.depthRange.max).toBe(2000)
+  })
+
+  it('reuses bounds computed by zoom extents', () => {
+    batchBoundsAtZ(-50, 900)
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('insert', 0, 0))
+    layout.box
+
+    expect(layout.depthRange.min).toBe(-50)
+    expect(layout.depthRange.max).toBe(900)
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+  })
+
+  it('is empty before any entity is added', () => {
+    const layout = new AcTrLayout()
+    expect(layout.depthRange.isEmpty).toBe(true)
+  })
+
+  it('grows with the Z extents of elevated entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('ground', 0, 0))
+    layout.addEntity(entityAtZ('contour', 1105, 1243))
+
+    expect(layout.depthRange.min).toBe(0)
+    expect(layout.depthRange.max).toBe(1243)
+  })
+
+  it('includes entities excluded from zoom extents', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('contour', -40, 2400), false)
+
+    expect(layout.depthRange.min).toBe(-40)
+    expect(layout.depthRange.max).toBe(2400)
+  })
+
+  it('tracks direct-batch entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    layout.addDirectEntity({
+      objectId: 'direct-contour',
+      ownerId: 'layout-1',
+      layerName: '0',
+      visible: true,
+      kind: 'lineBasic',
+      geometry,
+      material: new THREE.LineBasicMaterial(),
+      worldOffset: new THREE.Vector3(5, 0, 1166),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 1166),
+        new THREE.Vector3(10, 0, 1166)
+      )
+    })
+
+    expect(layout.depthRange.max).toBe(1166)
+  })
+
+  it('ignores non-finite boxes and resets on clear', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('xline', -Infinity, Infinity))
+    expect(layout.depthRange.isEmpty).toBe(true)
+
+    layout.addEntity(entityAtZ('contour', 1105, 1243))
+    layout.clear()
+    expect(layout.depthRange.isEmpty).toBe(true)
+  })
+})

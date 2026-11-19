@@ -129,6 +129,14 @@ export class AcTrEntityPreview {
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
     camera.position.z = 10
     AcTrEntityPreview.fitExportCamera(camera, bounds, width, height)
+    const trCamera = new AcTrCamera(camera)
+    // Elevated entities (e.g. contour polylines) sit far outside the default
+    // depth band; fit it to the drawable so the preview is not blank.
+    drawable.updateMatrixWorld(true)
+    const depthBox = new THREE.Box3().setFromObject(drawable)
+    if (!depthBox.isEmpty()) {
+      trCamera.fitDepthRange(depthBox.min.z, depthBox.max.z)
+    }
 
     let renderTarget: THREE.WebGLRenderTarget | undefined
     let canvas: HTMLCanvasElement | undefined
@@ -154,7 +162,7 @@ export class AcTrEntityPreview {
       webgl.setViewport(0, 0, width, height)
       webgl.setScissorTest(false)
 
-      renderer.render(scene, new AcTrCamera(camera))
+      renderer.render(scene, trCamera)
 
       const pixels = new Uint8Array(width * height * 4)
       webgl.readRenderTargetPixels(renderTarget, 0, 0, width, height, pixels)
