@@ -134,3 +134,59 @@ describe('AcTrBaseView camera fitting', () => {
     expect(visible.worldHeight).toBeCloseTo(200, 5)
   })
 })
+
+/**
+ * NDC depth of a world point; values outside [-1, 1] are clipped by the
+ * near/far planes.
+ */
+function ndcDepth(camera: THREE.OrthographicCamera, z: number) {
+  camera.updateMatrixWorld(true)
+  return new THREE.Vector3(camera.position.x, camera.position.y, z).project(
+    camera
+  ).z
+}
+
+describe('AcTrBaseView depth range', () => {
+  it('keeps the default depth band for geometry near Z=0', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    view.fitDepthRange(-10, 10)
+
+    expect(view.internalCamera.position.z).toBe(500)
+    expect(view.internalCamera.near).toBe(0.1)
+    expect(view.internalCamera.far).toBe(1000)
+  })
+
+  it('does not clip elevated geometry such as contour lines', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+    const camera = view.internalCamera
+    // Survey contour polylines carry their height as elevation (e.g. 1105-1243).
+    expect(Math.abs(ndcDepth(camera, 1243))).toBeGreaterThan(1)
+
+    view.fitDepthRange(0, 1243)
+
+    for (const z of [0, 1105, 1243]) {
+      expect(Math.abs(ndcDepth(camera, z))).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('does not clip geometry far below Z=0', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    view.fitDepthRange(-3000, 0)
+
+    expect(Math.abs(ndcDepth(view.internalCamera, -3000))).toBeLessThanOrEqual(
+      1
+    )
+    expect(Math.abs(ndcDepth(view.internalCamera, 0))).toBeLessThanOrEqual(1)
+  })
+
+  it('ignores non-finite ranges', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    view.fitDepthRange(Infinity, -Infinity)
+
+    expect(view.internalCamera.position.z).toBe(500)
+    expect(view.internalCamera.far).toBe(1000)
+  })
+})

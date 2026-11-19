@@ -36,11 +36,30 @@ export class AcTrOverlayViewport {
    */
   constructor(renderer: AcTrRenderer) {
     this._renderer = renderer
-    const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 0.1, 1000)
-    camera.position.set(0, 0, 500)
+    const half = AcTrCamera.DEFAULT_DEPTH_HALF
+    const camera = new THREE.OrthographicCamera(
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      AcTrCamera.NEAR,
+      2 * half
+    )
+    camera.position.set(0, 0, half)
     camera.up.set(0, 1, 0)
     camera.updateProjectionMatrix()
     this._camera = new AcTrCamera(camera)
+  }
+
+  /**
+   * Fits this overlay camera's depth band to WCS Z in `[minZ, maxZ]` so
+   * elevated geometry is not clipped. See {@link AcTrCamera.fitDepthRange}.
+   *
+   * @param minZ - Lowest WCS Z of the geometry to show.
+   * @param maxZ - Highest WCS Z of the geometry to show.
+   */
+  fitDepthRange(minZ: number, maxZ: number) {
+    this._camera.fitDepthRange(minZ, maxZ)
   }
 
   /**

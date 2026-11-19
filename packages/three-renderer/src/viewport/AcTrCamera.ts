@@ -2,10 +2,50 @@ import { AcGePoint2d, AcGePoint2dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 export class AcTrCamera {
+  /**
+   * Half-depth of the default orthographic depth band: the camera sits at
+   * `+DEFAULT_DEPTH_HALF` looking down -Z and sees WCS Z in
+   * `[-DEFAULT_DEPTH_HALF, +DEFAULT_DEPTH_HALF)`.
+   */
+  static readonly DEFAULT_DEPTH_HALF = 500
+  /** Near-plane distance of 2D view cameras. */
+  static readonly NEAR = 0.1
+  /**
+   * Clearance kept between fitted geometry and the near/far planes, so
+   * draw-order Z offsets stacked on top of the geometry are not clipped.
+   */
+  private static readonly DEPTH_MARGIN = 100
+
   private _camera: THREE.OrthographicCamera
 
   constructor(camera: THREE.OrthographicCamera) {
     this._camera = camera
+  }
+
+  /**
+   * Moves the camera along Z and sets its near/far planes so WCS Z in
+   * `[minZ, maxZ]` is inside the clip volume.
+   *
+   * The band only grows beyond the default one, so drawings near Z=0 keep
+   * full depth precision for draw-order Z stacking. Non-finite bounds fall
+   * back to the default band.
+   *
+   * @param minZ - Lowest WCS Z of the geometry to show.
+   * @param maxZ - Highest WCS Z of the geometry to show.
+   */
+  fitDepthRange(minZ: number, maxZ: number) {
+    const half = AcTrCamera.DEFAULT_DEPTH_HALF
+    const margin = AcTrCamera.DEPTH_MARGIN
+    const low = Number.isFinite(minZ) ? Math.min(minZ - margin, -half) : -half
+    const high = Number.isFinite(maxZ) ? Math.max(maxZ + margin, half) : half
+    const far = high - low
+    const camera = this._camera
+    if (camera.position.z === high && camera.far === far) return
+
+    camera.position.z = high
+    camera.near = AcTrCamera.NEAR
+    camera.far = far
+    camera.updateProjectionMatrix()
   }
 
   get position() {

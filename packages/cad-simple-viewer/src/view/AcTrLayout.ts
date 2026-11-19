@@ -95,6 +95,9 @@ export interface AcTrLayoutStats {
  * ```
  */
 export class AcTrLayout {
+  /** Reused by {@link extendDepthRangeFromDrawables} */
+  private static readonly _depthScratch = new THREE.Box3()
+
   /** The group that contains all entities in this layout */
   private _group: THREE.Group
   /** Spatial index tree for efficient entity queries */
@@ -110,6 +113,9 @@ export class AcTrLayout {
   private _smartExtentsGeneration = 0
   /** When true, {@link box} is recomputed from batch geometry on next read */
   private _boxDirty: boolean
+  /** Grow-only WCS Z extent of rendered geometry; see {@link depthRange} */
+  private _depthMin = Infinity
+  private _depthMax = -Infinity
   /** Entity ids excluded from layout bounds (e.g. RAY/XLINE) */
   private _extentExcludedObjectIds: Set<AcDbObjectId>
   /** Map of layers indexed by layer name */
@@ -199,6 +205,24 @@ export class AcTrLayout {
   }
 
   /**
+   * WCS Z extent of the geometry in this layout since the last {@link clear}.
+   *
+   * Views fit their camera depth band to it so elevated geometry (e.g.
+   * contour polylines at their survey height) is not clipped. It grows as
+   * entities are added (from their drawable geometry, since block references
+   * report a 2D `wcsBbox`) and whenever {@link box} is recomputed. It never
+   * shrinks on removal, which only widens the band. O(1) to read, so views
+   * can query it every frame.
+   */
+  get depthRange() {
+    return {
+      min: this._depthMin,
+      max: this._depthMax,
+      isEmpty: this._depthMin > this._depthMax
+    }
+  }
+
+  /**
    * Recomputes {@link box} from batch geometry across all visible layers.
    */
   computeBatchBoundingBox(target = new THREE.Box3()) {
@@ -218,11 +242,36 @@ export class AcTrLayout {
       }
     })
     this._boxDirty = false
+    if (!this._cachedBox.isEmpty()) {
+      this.extendDepthRange(this._cachedBox)
+    }
   }
 
   private invalidateBox() {
     this._boxDirty = true
     this.clearSmartExtentsCache()
+  }
+
+  private extendDepthRange(wcsBbox: THREE.Box3) {
+    // Infinite boxes (XLINE/RAY) or empty boxes carry no usable depth.
+    if (Number.isFinite(wcsBbox.min.z) && Number.isFinite(wcsBbox.max.z)) {
+      this._depthMin = Math.min(this._depthMin, wcsBbox.min.z)
+      this._depthMax = Math.max(this._depthMax, wcsBbox.max.z)
+    }
+  }
+
+  /**
+   * Grows {@link depthRange} from the WCS bounds of an entity's drawable
+   * geometry. Needed because {@link AcTrGroup} (INSERT) reports a 2D
+   * `wcsBbox`, while the contour polylines inside carry their elevation.
+   * Geometry bounding boxes are cached on the (often shared block-template)
+   * geometry, so this stays proportional to the geometry being added.
+   */
+  private extendDepthRangeFromDrawables(entity: AcTrEntity) {
+    // Lightweight test doubles are not scene-graph objects.
+    if (!(entity instanceof THREE.Object3D)) return
+    entity.updateMatrixWorld(true)
+    this.extendDepthRange(AcTrLayout._depthScratch.setFromObject(entity))
   }
 
   private clearSmartExtentsCache() {
@@ -345,6 +394,8 @@ export class AcTrLayout {
     this._cachedBox.makeEmpty()
     this.clearSmartExtentsCache()
     this._boxDirty = true
+    this._depthMin = Infinity
+    this._depthMax = -Infinity
     this._extentExcludedObjectIds.clear()
     this._insertLayerByObjectId.clear()
     this._spatialIndex.clear()
@@ -470,6 +521,9 @@ export class AcTrLayout {
       throw new Error(`layer '${entity.layerName}' doesn't exist!`)
     }
 
+    // Read drawable bounds before batching, which may consume the subtree.
+    this.extendDepthRange(entity.wcsBbox)
+    this.extendDepthRangeFromDrawables(entity)
     layer.addEntity(entity)
 
     const insertLayerName = entity.userData.insertLayerName
@@ -521,6 +575,7 @@ export class AcTrLayout {
       this._extentExcludedObjectIds.delete(meta.objectId)
     }
     this.invalidateBox()
+    this.extendDepthRange(meta.wcsBbox)
     this.registerSpatialIndexBox(meta.objectId, meta.wcsBbox)
     return true
   }
@@ -580,6 +635,8 @@ export class AcTrLayout {
    * @returns Return true if update the specified entity successfully. Otherwise, return false.
    */
   updateEntity(entity: AcTrEntity) {
+    this.extendDepthRange(entity.wcsBbox)
+    this.extendDepthRangeFromDrawables(entity)
     for (const [_, layer] of this._layers) {
       if (layer.updateEntity(entity)) {
         const insertLayerName = entity.userData.insertLayerName
