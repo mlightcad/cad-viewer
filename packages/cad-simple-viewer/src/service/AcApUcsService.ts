@@ -10,9 +10,13 @@ import {
   AcDbViewportTableRecord,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGeTol} from '@mlightcad/data-model'
+  AcGeTol
+} from '@mlightcad/data-model'
 
-import { isModelSpaceDatabase } from '../editor/global/AcEdUiColor.js'
+import {
+  acedHasModelSpaceRecord,
+  isModelSpaceDatabase
+} from '../editor/global/AcEdUiColor.js'
 import { acapRunServiceEdit } from './AcApServiceEdit.js'
 
 /** Undo label for UCS table / viewport edits. */
@@ -74,7 +78,10 @@ export interface AcApUcsChangedEventArgs {
 
 type SpaceKey = 'model' | 'paper'
 
-const previousStacks = new WeakMap<AcDbDatabase, Map<SpaceKey, AcApUcsFrame[]>>()
+const previousStacks = new WeakMap<
+  AcDbDatabase,
+  Map<SpaceKey, AcApUcsFrame[]>
+>()
 const sessionFrames = new WeakMap<AcDbDatabase, Map<SpaceKey, AcApUcsFrame>>()
 const allowSelectIconByDb = new WeakMap<AcDbDatabase, boolean>()
 const applyIconToAllByDb = new WeakMap<AcDbDatabase, boolean>()
@@ -101,7 +108,9 @@ function framesEqual(a: AcApUcsFrame, b: AcApUcsFrame, tol = 1e-8): boolean {
     Math.abs(p.x - q.x) <= tol &&
     Math.abs(p.y - q.y) <= tol &&
     Math.abs(p.z - q.z) <= tol
-  return near(a.origin, b.origin) && near(a.xAxis, b.xAxis) && near(a.yAxis, b.yAxis)
+  return (
+    near(a.origin, b.origin) && near(a.xAxis, b.xAxis) && near(a.yAxis, b.yAxis)
+  )
 }
 
 function normalizeAxis(axis: AcGePoint3dLike): AcGePoint3d {
@@ -110,10 +119,7 @@ function normalizeAxis(axis: AcGePoint3dLike): AcGePoint3d {
   return new AcGePoint3d(axis.x / len, axis.y / len, (axis.z ?? 0) / len)
 }
 
-function cross(
-  a: AcGePoint3dLike,
-  b: AcGePoint3dLike
-): AcGePoint3d {
+function cross(a: AcGePoint3dLike, b: AcGePoint3dLike): AcGePoint3d {
   return new AcGePoint3d(
     a.y * (b.z ?? 0) - (a.z ?? 0) * b.y,
     (a.z ?? 0) * b.x - a.x * (b.z ?? 0),
@@ -180,6 +186,9 @@ export class AcApUcsService {
   static getActiveFrame(database?: AcDbDatabase): AcApUcsFrame {
     const db = database ?? tryWorkingDatabase()
     if (!db) return worldFrame()
+    // Called every frame by the UCS icon, also mid-read: every space lookup
+    // below would lazily create *Model_Space (see acedHasModelSpaceRecord).
+    if (!acedHasModelSpaceRecord(db)) return worldFrame()
 
     // Prefer persisted VPORT/layout so undo/redo of UCS edits stays coherent.
     // Session cache is only a fallback when the drawing has no *ACTIVE VPORT.
@@ -194,7 +203,8 @@ export class AcApUcsService {
       }
     }
 
-    const layout = acdbHostApplicationServices().layoutManager.getActiveLayout(db)
+    const layout =
+      acdbHostApplicationServices().layoutManager.getActiveLayout(db)
     if (layout) {
       return {
         origin: layout.ucsOrigin.clone(),
@@ -221,9 +231,7 @@ export class AcApUcsService {
   static listUcsNames(database?: AcDbDatabase): AcApUcsListItem[] {
     const db = database ?? acdbHostApplicationServices().workingDatabase
     if (!db) {
-      return [
-        { name: UCS_WORLD_NAME, kind: 'world', isCurrent: true }
-      ]
+      return [{ name: UCS_WORLD_NAME, kind: 'world', isCurrent: true }]
     }
 
     const currentName = this.getCurrentName(db)
@@ -330,7 +338,10 @@ export class AcApUcsService {
 
       this.writeFrameToActive(db, next)
 
-      if (!options?.skipFollow && this.getViewportSettings(db).updateViewToPlan) {
+      if (
+        !options?.skipFollow &&
+        this.getViewportSettings(db).updateViewToPlan
+      ) {
         this.applyPlanViewTwist(db, next)
       }
     })
@@ -545,8 +556,7 @@ export class AcApUcsService {
     const x = normalizeAxis(frame.xAxis)
     const y = normalizeAxis(frame.yAxis)
     const z = normalizeAxis(cross(x, y))
-    const pivot =
-      axis === 'x' ? x : axis === 'y' ? y : z
+    const pivot = axis === 'x' ? x : axis === 'y' ? y : z
 
     const rotateVec = (v: AcGePoint3d): AcGePoint3d => {
       // Rodrigues around pivot
@@ -579,9 +589,7 @@ export class AcApUcsService {
     })
     // Pick a helper axis not parallel to Z.
     const helper =
-      Math.abs(z.x) < 0.9
-        ? new AcGePoint3d(1, 0, 0)
-        : new AcGePoint3d(0, 1, 0)
+      Math.abs(z.x) < 0.9 ? new AcGePoint3d(1, 0, 0) : new AcGePoint3d(0, 1, 0)
     const y = normalizeAxis(cross(z, helper))
     const x = normalizeAxis(cross(y, z))
     return {
@@ -656,7 +664,9 @@ export class AcApUcsService {
         bestI + 1 < num
           ? entity.getPoint3dAt(bestI + 1)
           : entity.getPoint3dAt(Math.max(bestI - 1, 0))
-      if (!AcGeTol.isPositive(Math.hypot(next.x - origin.x, next.y - origin.y))) {
+      if (
+        !AcGeTol.isPositive(Math.hypot(next.x - origin.x, next.y - origin.y))
+      ) {
         return {
           origin: new AcGePoint3d(origin.x, origin.y, origin.z ?? 0),
           xAxis: new AcGePoint3d(1, 0, 0),
@@ -703,7 +713,10 @@ export class AcApUcsService {
         setting === 2 ||
         setting === 3
       // Default AutoCAD: icon on + at origin when unset (0 often means default on).
-      if (setting === 0 && (flags & (UCS_ICON_VISIBLE_FLAG | UCS_ICON_ORIGIN_FLAG)) === 0) {
+      if (
+        setting === 0 &&
+        (flags & (UCS_ICON_VISIBLE_FLAG | UCS_ICON_ORIGIN_FLAG)) === 0
+      ) {
         return {
           on: true,
           atOrigin: true,
@@ -768,9 +781,7 @@ export class AcApUcsService {
     this.events.ucsChanged.dispatch({ database: db })
   }
 
-  static getViewportSettings(
-    database?: AcDbDatabase
-  ): AcApUcsViewportSettings {
+  static getViewportSettings(database?: AcDbDatabase): AcApUcsViewportSettings {
     const db = database ?? acdbHostApplicationServices().workingDatabase
     if (!db) {
       return { saveUcsWithViewport: true, updateViewToPlan: false }
@@ -823,7 +834,10 @@ export class AcApUcsService {
     this.events.ucsChanged.dispatch({ database: db })
   }
 
-  private static writeFrameToActive(db: AcDbDatabase, frame: AcApUcsFrame): void {
+  private static writeFrameToActive(
+    db: AcDbDatabase,
+    frame: AcApUcsFrame
+  ): void {
     let bySpace = sessionFrames.get(db)
     if (!bySpace) {
       bySpace = new Map()
@@ -844,7 +858,8 @@ export class AcApUcsService {
       }
     }
 
-    const layout = acdbHostApplicationServices().layoutManager.getActiveLayout(db)
+    const layout =
+      acdbHostApplicationServices().layoutManager.getActiveLayout(db)
     if (layout) {
       layout.ucsOrigin = frame.origin.clone()
       layout.ucsXAxis = frame.xAxis
@@ -856,7 +871,10 @@ export class AcApUcsService {
    * Stores Plan twist on the active VPORT (UCS X angle in WCS).
    * Visual camera twist for model space may be applied by the view layer.
    */
-  private static applyPlanViewTwist(db: AcDbDatabase, frame: AcApUcsFrame): void {
+  private static applyPlanViewTwist(
+    db: AcDbDatabase,
+    frame: AcApUcsFrame
+  ): void {
     const angle = Math.atan2(frame.xAxis.y, frame.xAxis.x)
     const vport = db.tables.viewportTable.getActiveVport()
     if (!vport) return
