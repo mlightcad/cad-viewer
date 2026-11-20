@@ -11,9 +11,15 @@ import { AcTrGroup } from '../object/AcTrGroup.js'
  * Simple lines append here instead of allocating a `number[]` per entity.
  * Nested block draws push their own builder so an inner merge cannot consume
  * the outer block's vertices.
+ *
+ * Coordinates are block-local but still absolute (survey drawings reach
+ * X ~ 3e7), so they are staged in float64. Float32 would snap them to a
+ * 4-unit grid before {@link mergeCoalescedBlockLines} subtracts the origin,
+ * making block linework visibly jagged. The buffer only lives for one
+ * block-template draw.
  */
 export class AcTrLineVertexBuilder {
-  private data = new Float32Array(4096)
+  private data = new Float64Array(4096)
   length = 0
 
   append(points: AcGePoint3dLike[]): { offset: number; floatCount: number } {
@@ -40,12 +46,12 @@ export class AcTrLineVertexBuilder {
     while (cap < needed) {
       cap *= 2
     }
-    const next = new Float32Array(cap)
+    const next = new Float64Array(cap)
     next.set(this.data.subarray(0, this.length))
     this.data = next
   }
 
-  get buffer(): Float32Array {
+  get buffer(): Float64Array {
     return this.data
   }
 }

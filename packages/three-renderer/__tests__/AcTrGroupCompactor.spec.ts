@@ -301,4 +301,49 @@ describe('AcTrGroupCompactor', () => {
       true
     )
   })
+
+  it('keeps sub-unit precision when baking survey-scale leaves', () => {
+    // Survey contours sit at X ~ 3.36e7, where float32 holds only every 4th
+    // unit. Baking the leaf translation into float32 vertices before
+    // subtracting the bucket origin snapped contours onto that grid.
+    const context = new AcTrRenderContext()
+    const x0 = 33593852.123
+    const y0 = 2940437.456
+    const ends = Array.from({ length: 8 }, (_, i) => ({
+      start: { x: x0 + i * 0.3, y: y0 + i * 0.37 },
+      end: { x: x0 + i * 0.3 + 1.1, y: y0 + i * 0.37 + 0.6 }
+    }))
+    const lines = ends.map(({ start, end }, i) =>
+      createLine(`contour-${i}`, start, end, context)
+    )
+    const group = new AcTrGroup(lines, context)
+
+    group.compactForInstancing()
+
+    const expected = ends.flatMap(({ start, end }) => [start, end])
+    const actual: THREE.Vector3[] = []
+    group.updateMatrixWorld(true)
+    group.traverse(child => {
+      if (!(child instanceof THREE.LineSegments)) return
+      const geometry = child.geometry as THREE.BufferGeometry
+      const position = geometry.getAttribute('position')
+      const index = geometry.getIndex()
+      const count = index ? index.count : position.count
+      for (let i = 0; i < count; i++) {
+        const vertex = index ? index.getX(i) : i
+        actual.push(
+          new THREE.Vector3()
+            .fromBufferAttribute(position, vertex)
+            .applyMatrix4(child.matrixWorld)
+        )
+      }
+    })
+    expect(actual.length).toBe(expected.length)
+    for (const point of expected) {
+      const nearest = Math.min(
+        ...actual.map(v => Math.hypot(v.x - point.x, v.y - point.y))
+      )
+      expect(nearest).toBeLessThan(1e-3)
+    }
+  })
 })
