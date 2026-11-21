@@ -97,7 +97,11 @@ import {
   layoutBackgroundColorFromRgb
 } from '@mlightcad/cad-simple-viewer'
 import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, ACGI_PAPER_SPACE_BACKGROUND, log } from '@mlightcad/data-model'
-import { provideLocale } from '@mlightcad/ui-components'
+import {
+  isMlLocaleName,
+  type MlLocaleId,
+  provideLocale
+} from '@mlightcad/ui-components'
 import { ElConfigProvider, ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -267,7 +271,12 @@ const { currentLocale, effectiveLocale, elementPlusLocale } = useLocale(
 )
 // Bridge landing-page AcApI18n → full-viewer singleton before plugins load.
 syncViewerAcApI18n()
-provideLocale(currentLocale)
+// Narrow AcApLocale → MlLocaleId (ui-components packs: en/zh/tr/cs/ar).
+provideLocale(
+  computed((): MlLocaleId =>
+    isMlLocaleName(currentLocale.value) ? currentLocale.value : 'en'
+  )
+)
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
 const layoutRef = ref<HTMLDivElement>()

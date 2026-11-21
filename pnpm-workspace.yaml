@@ -15,7 +15,7 @@ overrides:
   '@mlightcad/mtext-parser': '1.5.7'
   '@mlightcad/mtext-renderer': '0.13.10'
   '@mlightcad/ribbon': '0.1.14'
-  '@mlightcad/ui-components': '0.1.11'
+  '@mlightcad/ui-components': '0.1.14'
   '@types/three': '^0.186.0'
   element-plus: '^2.12.0'
   glob: '^13.0.6'
@@ -24,5 +24,3 @@ overrides:
   three: '^0.186.1'
   vue: '^3.4.21'
   vue-i18n: '^11.4.4'
-patchedDependencies:
-  '@mlightcad/ui-components@0.1.11': patches/@mlightcad__ui-components@0.1.11.patch

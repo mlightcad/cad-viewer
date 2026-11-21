@@ -69,7 +69,7 @@
     "@mlightcad/data-model": "1.15.30",
     "@mlightcad/ribbon": "0.1.14",
     "@mlightcad/three-renderer": "workspace:*",
-    "@mlightcad/ui-components": "0.1.11",
+    "@mlightcad/ui-components": "0.1.14",
     "@element-plus/icons-vue": "^2.3.1",
     "@vueuse/core": "^11.1.0",
     "@vitejs/plugin-vue": "^6.0.8",

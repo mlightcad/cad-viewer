@@ -453,8 +453,9 @@ onUnmounted(() => {
 }
 
 .ml-blocks-palette__source-label {
+  /* Sideways glyphs, first character at the top (中/EN top→bottom). */
   writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  text-orientation: sideways;
   font-size: 11px;
   letter-spacing: 0.04em;
   white-space: nowrap;
