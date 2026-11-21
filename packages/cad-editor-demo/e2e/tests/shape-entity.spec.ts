@@ -109,7 +109,12 @@ test('renders SHAPE entities from DXF', async ({ page }) => {
   await uploadFixture(page, shapeFixturePath)
   await waitForViewer(page)
 
-  expect(await countShapeEntities(page)).toBe(1)
+  // The viewer shell shows before the drawing finishes converting, so wait
+  // for the SHAPE to reach model space instead of sampling it once.
+  await expect.poll(() => countShapeEntities(page), { timeout: 60_000 }).toBe(1)
+  await expect(page.getByText('Rendering drawing')).toBeHidden({
+    timeout: 60_000
+  })
 
   const shapePixels = await countNonBackgroundPixels(page)
   expect(shapePixels).toBeGreaterThan(500)
