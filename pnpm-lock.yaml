@@ -11,7 +11,7 @@ overrides:
   '@mlightcad/mtext-parser': 1.5.7
   '@mlightcad/mtext-renderer': 0.13.10
   '@mlightcad/ribbon': 0.1.14
-  '@mlightcad/ui-components': 0.1.11
+  '@mlightcad/ui-components': 0.1.14
   '@types/three': ^0.186.0
   element-plus: ^2.12.0
   glob: ^13.0.6
@@ -20,11 +20,6 @@ overrides:
   three: ^0.186.1
   vue: ^3.4.21
   vue-i18n: ^11.4.4
-
-patchedDependencies:
-  '@mlightcad/ui-components@0.1.11':
-    hash: 9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f
-    path: patches/@mlightcad__ui-components@0.1.11.patch
 
 importers:
 
@@ -317,8 +312,8 @@ importers:
         specifier: workspace:*
         version: link:../three-renderer
       '@mlightcad/ui-components':
-        specifier: 0.1.11
-        version: 0.1.11(patch_hash=9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f)(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: 0.1.14
+        version: 0.1.14(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
@@ -2760,8 +2755,8 @@ packages:
     peerDependencies:
       three: ^0.186.1
 
-  '@mlightcad/ui-components@0.1.11':
-    resolution: {integrity: sha512-9za8wiknHdx2XJ50ETK/rElHnZcgSSOFnofea4nGOl1GjGFPRhjl98+8Bmzynv9r1zsNwRw/D1gU6ylTws6Prg==}
+  '@mlightcad/ui-components@0.1.14':
+    resolution: {integrity: sha512-CVJJq0m+sz9ZVv5Oftmgjfk/8rEYJeoZdJsKNB534BYG2Xc9xfoIzVvp8xmx881Z2wkAsjq8Y264UKcf16/log==}
     peerDependencies:
       element-plus: ^2.12.0
       vue: ^3.4.21
@@ -9471,7 +9466,7 @@ snapshots:
     dependencies:
       three: 0.186.1
 
-  '@mlightcad/ui-components@0.1.11(patch_hash=9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f)(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ui-components@0.1.14(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
