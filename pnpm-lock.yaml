@@ -21,6 +21,11 @@ overrides:
   vue: ^3.4.21
   vue-i18n: ^11.4.4
 
+patchedDependencies:
+  '@mlightcad/ui-components@0.1.11':
+    hash: 9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f
+    path: patches/@mlightcad__ui-components@0.1.11.patch
+
 importers:
 
   .:
@@ -313,7 +318,7 @@ importers:
         version: link:../three-renderer
       '@mlightcad/ui-components':
         specifier: 0.1.11
-        version: 0.1.11(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        version: 0.1.11(patch_hash=9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f)(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
@@ -2666,11 +2671,11 @@ packages:
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
-  '@maxim_mazurok/gapi.client.discovery-v1@0.6.20200806':
-    resolution: {integrity: sha512-QN6aGmIbLXcJW0SEf8tz9UWCpQTBMy2u4xSuZ04YofzMGknhWwMeUecySLntCZYAEstHzDoSgwxCf5Gb8GqIRQ==}
+  '@maxim_mazurok/gapi.client.discovery-v1@0.7.20200806':
+    resolution: {integrity: sha512-riyqpg72xKEGq/J0537prHI8MBKW7EnXrtoOkqWR+MJ+INP5v84GLIIt/NNZn8njtjO7UQyyisCa58YgQXJYGg==}
 
-  '@maxim_mazurok/gapi.client.drive-v3@0.4.20261109':
-    resolution: {integrity: sha512-DCo15gOuTiK1ii61In3rcDuTPmD4LV5rF00lr9i2GgRGiBsSeutTn0OYaFJmFdMRR6/7iV63WizSbMWVLe/BlQ==}
+  '@maxim_mazurok/gapi.client.drive-v3@0.5.20261117':
+    resolution: {integrity: sha512-2OVgNCeykmCcOwPg40WxSBw3WYWSJ94UMLsUpKe7mZDAiAYdYGVOaIAvJDtwHYsPh4vSIT4GjoLT9jqbT0gCjA==}
 
   '@mermaid-js/mermaid-mindmap@9.3.0':
     resolution: {integrity: sha512-IhtYSVBBRYviH1Ehu8gk69pMDF8DSRqXBRDMWrEfHoaMruHeaP2DXA3PBnuwsMaCdPQhlUUcy/7DBLAEIXvCAw==}
@@ -9343,12 +9348,12 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4': {}
 
-  '@maxim_mazurok/gapi.client.discovery-v1@0.6.20200806':
+  '@maxim_mazurok/gapi.client.discovery-v1@0.7.20200806':
     dependencies:
       '@types/gapi.client': 1.0.8
       '@types/gapi.client.discovery-v1': 0.0.4
 
-  '@maxim_mazurok/gapi.client.drive-v3@0.4.20261109':
+  '@maxim_mazurok/gapi.client.drive-v3@0.5.20261117':
     dependencies:
       '@types/gapi.client': 1.0.8
       '@types/gapi.client.discovery-v1': 0.0.4
@@ -9466,7 +9471,7 @@ snapshots:
     dependencies:
       three: 0.186.1
 
-  '@mlightcad/ui-components@0.1.11(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ui-components@0.1.11(patch_hash=9fdd16c520c61d5553ddb83a1ef01293ea575edd3efdc0ad50c35011ab29a71f)(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
@@ -10142,11 +10147,11 @@ snapshots:
 
   '@types/gapi.client.discovery-v1@0.0.4':
     dependencies:
-      '@maxim_mazurok/gapi.client.discovery-v1': 0.6.20200806
+      '@maxim_mazurok/gapi.client.discovery-v1': 0.7.20200806
 
   '@types/gapi.client.drive-v3@0.0.5':
     dependencies:
-      '@maxim_mazurok/gapi.client.drive-v3': 0.4.20261109
+      '@maxim_mazurok/gapi.client.drive-v3': 0.5.20261117
 
   '@types/gapi.client@1.0.8': {}
 

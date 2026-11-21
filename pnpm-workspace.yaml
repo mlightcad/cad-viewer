@@ -24,3 +24,5 @@ overrides:
   three: '^0.186.1'
   vue: '^3.4.21'
   vue-i18n: '^11.4.4'
+patchedDependencies:
+  '@mlightcad/ui-components@0.1.11': patches/@mlightcad__ui-components@0.1.11.patch

@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+
 import vue from '@vitejs/plugin-vue'
 import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
@@ -20,6 +22,9 @@ import {
 import { resolveOnnxRuntimeDist } from '../vite-config/resolveOnnxRuntimeDist'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const requireFromEditor = createRequire(
+  resolve(__dirname, '../cad-editor/package.json')
+)
 const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
 const LOCAL_DATA_MODEL_LIB = resolve(
   __dirname,
@@ -197,6 +202,19 @@ export default defineConfig(({ command, mode }) => {
         '[cad-editor-demo] Local ui-components alias requested but not found at:',
         LOCAL_UI_COMPONENTS_SRC
       )
+    } else {
+      // Same resolution as the cad-editor library build, so a patched
+      // ui-components source (overflow tabs) is what `pnpm dev` runs.
+      const uiComponentsSrc = resolve(
+        dirname(
+          requireFromEditor.resolve('@mlightcad/ui-components/package.json')
+        ),
+        'src/index.ts'
+      )
+      aliases.push({
+        find: /^@mlightcad\/ui-components$/,
+        replacement: uiComponentsSrc
+      })
     }
   }
 
@@ -305,7 +323,7 @@ export default defineConfig(({ command, mode }) => {
           ? [
               ...devSourcePackages.map(name => `@mlightcad/${name}`),
               ...(linkLocalDataModel ? ['@mlightcad/data-model'] : []),
-              ...(linkLocalUiComponents ? ['@mlightcad/ui-components'] : []),
+              '@mlightcad/ui-components',
               ...(linkLocalMtextRenderer ? ['@mlightcad/mtext-renderer'] : [])
             ]
           : []
