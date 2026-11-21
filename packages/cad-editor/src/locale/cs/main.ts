@@ -80,9 +80,6 @@ export default {
     drawingUnits: 'Jednotky výkresu',
     exportMenu: 'Exportovat',
     export: 'Exportovat do DXF',
-    exportHtml: 'Exportovat do HTML',
-    exportPdf: 'Exportovat do PDF',
-    exportSvg: 'Exportovat do SVG',
     exportImage: 'Exportovat do obrázku',
     about: 'O aplikaci'
   },
@@ -286,9 +283,6 @@ export default {
     },
     group: {
       smartBlocks: 'Chytré bloky',
-      agent: 'Agent AI',
-      aiModel: 'Model AI',
-      pdf: 'PDF',
       draw: 'Kreslení',
       dimension: 'Kóty',
       modify: 'Úpravy',
@@ -356,26 +350,11 @@ export default {
       ellipse: 'Elipsa',
       arc: 'Eliptický oblouk'
     },
-    pdfText: {
-      auto: 'Automaticky'
-    },
     tooltip: {
       searchConvert:
         'Vyhledá všechny kopie vybraných objektů a převede je na bloky (BSEARCH).',
       detectConvert:
         'Vyhledá opakující se objekty v celém výkresu a převede je na bloky (BDETECT).',
-      importPdf:
-        'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (PDFIMPORT).',
-      pdfScale:
-        'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
-      pdfDim:
-        'Převede rozložené kóty z PDF (šipky nebo značky, čáry, vynášecí čáry a texty) zpět na kótovací objekty (PDFDIM).',
-      pdfHatch:
-        'Převede rozložené čáry šrafy z PDF zpět na šrafu se vzorem, měřítkem a úhlem (PDFHATCH).',
-      pdfText:
-        'Převede rozložené tahy textu z PDF zpět na textové objekty (PDFTEXT).',
-      pdfTextAuto:
-        'Po slovníku znaků zkusí postupně všechny dostupné OCR služby (PDFTEXT).',
       line: 'Nakreslí jednu úsečku.',
       polyline: 'Nakreslí spojenou řadu úseček nebo oblouků jako jeden objekt.',
       spline: 'Nakreslí hladkou křivku splajn proložením nebo řídicími body.',
@@ -409,7 +388,6 @@ export default {
         'Přidá odkazovou čáru k existující vícenásobné odkazové čáře.',
       mleaderRemove:
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
-      script: 'Otevře konzoli CAD skriptu a spustí skript v aktuálním výkresu.',
       move: 'Posune vybrané objekty na novou pozici.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
       scale:
@@ -451,10 +429,6 @@ export default {
         'Otevře Rozšířený editor atributů pro úpravu hodnot a zobrazovacích vlastností atributů bloku (ATTEDIT).',
       defineAttribute:
         'Vytvoří definici atributu pro použití v bloku (ATTDEF).',
-      agent:
-        'Otevře kartu palety CAD Agent pro kreslení geometrie přirozeným jazykem.',
-      llmSettings:
-        'Nastaví poskytovatele modelů AI a klíče API, které používá CAD agent a rozpoznávání textu v PDF (OCR).',
       pan: 'Posune pohled na výkres beze změny zvětšení.',
       zoom: 'Zvětší nebo zmenší zobrazení výkresu.',
       zoomExtents: 'Zobrazí maximální rozsah všech objektů.',
@@ -544,11 +518,6 @@ export default {
     command: {
       searchConvert: 'Vyhledat a\npřevést',
       detectConvert: 'Detekovat a\npřevést',
-      importPdf: 'Importovat\nPDF',
-      pdfScale: 'Kalibrovat\nměřítko',
-      pdfDim: 'Obnovit\nkóty',
-      pdfHatch: 'Obnovit\nšrafy',
-      pdfText: 'Obnovit\ntext',
       line: 'Úsečka',
       polyline: 'Křivka',
       circle: 'Kružnice',
@@ -584,7 +553,6 @@ export default {
       mleader: 'Vícenásobná odkazová čára',
       mleaderAdd: 'Přidat odkaz',
       mleaderRemove: 'Odebrat odkaz',
-      script: 'Skript',
       move: 'Posunout',
       rotate: 'Otočit',
       scale: 'Měřítko',
@@ -613,8 +581,6 @@ export default {
       insert: 'Vložit',
       editAttributes: 'Upravit\natributy',
       defineAttribute: 'Definovat\natribut',
-      agent: 'Agent AI',
-      llmSettings: 'Nastavení\nmodelu',
       pan: 'Posun',
       zoom: 'Zoom',
       zoomExtents: 'Rozsah',

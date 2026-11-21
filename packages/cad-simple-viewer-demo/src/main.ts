@@ -261,7 +261,9 @@ class CadViewerApp {
       progressiveRendering: isProgressiveOpenMode(),
       sysVars: {
         lwdisplay: false,
-        paperbkcolor: viewer().layoutBackgroundColorFromRgb(viewer().ACGI_PAPER_SPACE_BACKGROUND)
+        paperbkcolor: viewer().layoutBackgroundColorFromRgb(
+          viewer().ACGI_PAPER_SPACE_BACKGROUND
+        )
       },
       ...overrides
     }
@@ -775,9 +777,11 @@ class CadViewerApp {
 
     this.toolbarLayoutSelect.disabled = !enabled
     if (enabled) {
-      void loadDemoToolbarPresets().then(({ getCurrentDemoToolbarLayoutId }) => {
-        this.toolbarLayoutSelect.value = getCurrentDemoToolbarLayoutId()
-      })
+      void loadDemoToolbarPresets().then(
+        ({ getCurrentDemoToolbarLayoutId }) => {
+          this.toolbarLayoutSelect.value = getCurrentDemoToolbarLayoutId()
+        }
+      )
     }
 
     this.viewerToolbarButton.textContent = 'Toolbar'
@@ -855,16 +859,21 @@ class CadViewerApp {
       }
     )
 
-    viewer().AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
-      this.setLoadingState(true)
-    })
+    viewer().AcApDocManager.instance.events.documentToBeOpened.addEventListener(
+      () => {
+        this.setLoadingState(true)
+      }
+    )
 
     viewer().eventBus.on('open-local-file-started', () => {
       this.setLoadingState(true)
     })
 
     viewer().eventBus.on('failed-to-open-file', params => {
-      this.showMessage(viewer().acapFormatOpenFileErrorToastMessage(params), 'error')
+      this.showMessage(
+        viewer().acapFormatOpenFileErrorToastMessage(params),
+        'error'
+      )
       this.finishLoadingState()
     })
 
@@ -887,8 +896,12 @@ class CadViewerApp {
       return
     }
     if (visible) {
-      viewer().AcApSettingManager.instance.clearSessionOverride('isShowCommandLine')
-      viewer().AcApSettingManager.instance.clearSessionOverride('isShowShortCutToolbar')
+      viewer().AcApSettingManager.instance.clearSessionOverride(
+        'isShowCommandLine'
+      )
+      viewer().AcApSettingManager.instance.clearSessionOverride(
+        'isShowShortCutToolbar'
+      )
     } else {
       viewer().AcApSettingManager.instance.apply(
         {
@@ -942,15 +955,6 @@ class CadViewerApp {
       ])
       registerLibreDwgConverter(dwgParserUrl)
       registerSvgConverter()
-      const [
-        { AGENT_TOOLBAR_ITEM },
-        { SCRIPT_TOOLBAR_ITEM },
-        { setupAgentIntegration }
-      ] = await Promise.all([
-        import('./agentToolbarItem'),
-        import('./scriptToolbarItem'),
-        import('./agentIntegration')
-      ])
 
       viewer().AcApDocManager.createInstance({
         container: this.container,
@@ -975,8 +979,6 @@ class CadViewerApp {
           toolbar: {
             placement: 'right',
             items: 'default',
-            appendItems: [AGENT_TOOLBAR_ITEM, SCRIPT_TOOLBAR_ITEM],
-            appendItemsAfter: 'layout',
             collapsible: true
           },
           layouts: {
@@ -1013,11 +1015,6 @@ class CadViewerApp {
       )
       await registerLazyPlugins()
       this.fileOpenSession?.refreshSourceButtons()
-
-      const plugin = await viewer().AcApDocManager.instance.simpleUiReady
-      if (plugin) {
-        setupAgentIntegration(plugin)
-      }
 
       this.isInitialized = true
       if (!showChrome) {
@@ -1075,7 +1072,9 @@ class CadViewerApp {
       onAfterOpen: (request, result) => {
         if (result.ok) {
           this.onFileOpened()
-          this.predefinedButtons.forEach(item => item.classList.remove('active'))
+          this.predefinedButtons.forEach(item =>
+            item.classList.remove('active')
+          )
           this.updateFileSidebarSubtitle('Tap to browse sample files')
           if (request.kind === 'new') {
             this.showMessage('New drawing created', 'success')
@@ -1107,9 +1106,8 @@ class CadViewerApp {
     const oneDriveEnv = getOneDriveEnvConfig()
     if (oneDriveEnv && !session.manager.get('onedrive')) {
       try {
-        const { AcApOneDriveDataSource } = await import(
-          '@mlightcad/cad-onedrive-plugin'
-        )
+        const { AcApOneDriveDataSource } =
+          await import('@mlightcad/cad-onedrive-plugin')
         const source = new AcApOneDriveDataSource(oneDriveEnv, session.manager)
         session.registerSource(source)
         await source.restoreSession()
@@ -1121,9 +1119,8 @@ class CadViewerApp {
     const googleDriveEnv = getGoogleDriveEnvConfig()
     if (googleDriveEnv && !session.manager.get('googledrive')) {
       try {
-        const { AcApGoogleDriveDataSource } = await import(
-          '@mlightcad/cad-google-drive-plugin'
-        )
+        const { AcApGoogleDriveDataSource } =
+          await import('@mlightcad/cad-google-drive-plugin')
         const source = new AcApGoogleDriveDataSource(
           googleDriveEnv,
           session.manager

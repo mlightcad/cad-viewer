@@ -653,13 +653,12 @@ export function acuiEnsureUiStyles() {
       background: var(--ml-ui-bg, #ffffff);
       color: var(--ml-ui-text, #303133);
       font: inherit;
-      /* 16px avoids iOS focus zoom on touch screens. */
-      font-size: 16px;
+      font-size: 12px;
       padding: 4px 8px;
     }
 
     .ml-ex-ui-find-btn {
-      /* Icon button as tall as the query field (about 30px). */
+      /* Same height as the query field. */
       align-self: stretch;
       width: 32px;
       display: inline-flex;

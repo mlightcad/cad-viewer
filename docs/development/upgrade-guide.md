@@ -6,6 +6,19 @@ title: 'Upgrading cad-simple-viewer and cad-editor'
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info Plugin UI comes from `AcApUiRegistry`
+Starting with the release that includes this change, ribbon groups, File → Export rows, simple-UI toolbar buttons, and palette tabs that belong to a plugin are declared by that plugin's `/register` module through **`AcApUiRegistry`**. The host draws whatever is registered. A package that is not installed contributes no UI.
+
+Migrate hosts and plugins:
+
+- `@mlightcad/cad-editor` no longer hardcodes Agent, model settings, script, PDF, HTML, or SVG buttons. It loads `@mlightcad/cad-pdf-plugin/register`, `@mlightcad/cad-html-plugin/register`, and `@mlightcad/cad-svg-plugin/register` with dynamic `import()`, the same way it already loads the agent, LLM, script, and PaddleOCR packages. Keep those specifiers external when bundling the editor.
+- The `store.features` flags (`agentPlugin`, `llmPlugin`, `paddleOcrPlugin`, `scriptPlugin`) are removed.
+- A plugin calls `AcApUiRegistry.register` from `/register` with ribbon groups, `file.export` menu rows, a palette `mount`, and locale messages. The button exists as soon as `/register` runs. The heavy module still loads on the command.
+- Simple UI builds its export menu and extra toolbar buttons from the same registry. Remove handwritten Agent and Script toolbar items.
+- `setAgentPaletteOpener` and `setCadScriptPaletteOpener` remain for hosts that do not open registry palette ids. `cad-editor` and simple UI open those ids themselves.
+- `chtml` and `cpdf` open framework-free dialogs that live in `cad-html-plugin` and `cad-pdf-plugin`. `/register` claims those commands in the browser; OK loads the plugin through `-chtml` / `-cpdf`. Headless hosts pass `dialog: false` so `chtml` and `cpdf` stay command-line prompts. The Vue dialogs `MlExportHtmlDlg` / `MlExportPdfDlg` and the editor command classes are removed.
+  :::
+
 ::: info Simple UI chrome moves into `cad-simple-viewer`
 Starting with the release that includes this change, **`@mlightcad/cad-simple-ui-plugin` is removed**. Toolbar presets, dock palette tabs (layers / find / review / measurements), theme sync, and the default `AcApPaletteHost` live in **`@mlightcad/cad-simple-viewer`** (types under `src/ui/`).
 

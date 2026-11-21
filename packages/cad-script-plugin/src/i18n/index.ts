@@ -2,6 +2,7 @@ import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
 import type { ScriptExampleId } from '../examples/scriptExamples'
 import { scriptAr } from './ar'
+import { scriptChrome } from './chrome'
 import { scriptCommandDescriptions } from './command'
 import { scriptCs } from './cs'
 import { scriptEn } from './en'
@@ -52,6 +53,7 @@ let isRegistered = false
  */
 function buildVueMessages(locale: AcApLocale) {
   const descriptions = scriptCommandDescriptions[locale]
+  const chrome = scriptChrome[locale]
   return {
     command: {
       ACAD: {
@@ -59,6 +61,10 @@ function buildVueMessages(locale: AcApLocale) {
       }
     },
     main: {
+      ribbon: {
+        command: { script: chrome.command },
+        tooltip: { script: chrome.tooltip }
+      },
       toolPalette: {
         script: {
           ...scriptMessagesByLocale[locale],
@@ -67,6 +73,22 @@ function buildVueMessages(locale: AcApLocale) {
       }
     }
   }
+}
+
+/**
+ * Locale trees for {@link AcApUiRegistry}, including the console and the
+ * ribbon button.
+ */
+export function scriptLocaleMessages(): Partial<
+  Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+> {
+  const messages: Partial<
+    Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+  > = {}
+  for (const locale of LOCALES) {
+    messages[locale] = buildVueMessages(locale)
+  }
+  return messages
 }
 
 /**

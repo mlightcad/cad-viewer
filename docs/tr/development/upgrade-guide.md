@@ -6,6 +6,19 @@ title: 'cad-simple-viewer ve cad-editor Yükseltme'
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Eklenti arayüzü `AcApUiRegistry` üzerinden gelir
+Bu değişikliği içeren sürümden itibaren, bir eklentiye ait şerit grupları, Dosya → Dışa Aktar satırları, basit UI araç çubuğu düğmeleri ve palet sekmeleri o eklentinin `/register` modülü tarafından **`AcApUiRegistry`** ile bildirilir. Barındıran yalnızca kayıtlı olanı çizer. Kurulu olmayan paket arayüz eklemez.
+
+Geçiş:
+
+- `@mlightcad/cad-editor` artık aracı, model ayarları, betik, PDF, HTML veya SVG düğmelerini kendisi tutmaz. `@mlightcad/cad-pdf-plugin/register`, `@mlightcad/cad-html-plugin/register` ve `@mlightcad/cad-svg-plugin/register` paketlerini, aracı / LLM / betik / PaddleOCR gibi dinamik `import()` ile yükler. Düzenleyiciyi paketlerken bu belirteçleri external bırakın.
+- `store.features` bayrakları (`agentPlugin`, `llmPlugin`, `paddleOcrPlugin`, `scriptPlugin`) kaldırıldı.
+- Eklenti `/register` içinden `AcApUiRegistry.register` çağırır: şerit grupları, `file.export` menü satırları, palet `mount` işlevi ve yerel dizgiler. Düğme `/register` çalışır çalışmaz görünür. Ağır modül komutta yüklenir.
+- Basit UI dışa aktarma menüsünü ve ek araç çubuğu düğmelerini aynı kayıttan kurar. Elle yazılmış aracı ve betik düğmelerini kaldırın.
+- `setAgentPaletteOpener` ve `setCadScriptPaletteOpener`, kayıt palet kimliklerini açmayan barındıranlar için durur. `cad-editor` ve basit UI bu kimlikleri kendisi açar.
+- `chtml` ve `cpdf`, `cad-html-plugin` ile `cad-pdf-plugin` içindeki çerçevesiz iletişim kutularını açar. Tarayıcıda bu komutları `/register` kaydeder; onayda eklenti `-chtml` / `-cpdf` ile yüklenir. Arayüzsüz ana bilgisayarlar `dialog: false` geçirir, böylece `chtml` ve `cpdf` komut satırı istemi olarak kalır. Vue iletişim kutuları `MlExportHtmlDlg` / `MlExportPdfDlg` ve düzenleyicideki komut sınıfları kaldırıldı.
+  :::
+
 ::: info Basit UI `cad-simple-viewer` içine alındı
 Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`. `@mlightcad/cad-simple-viewer/find` alt yolu kaldırıldı; bulma API’lerini `@mlightcad/cad-simple-viewer` üzerinden import edin. `/simple-ui` ve `/find` alt yolları kaldırıldı.
 :::

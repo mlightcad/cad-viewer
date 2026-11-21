@@ -1,17 +1,19 @@
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
+
+import vue from '@vitejs/plugin-vue'
+import peerDepsExternal from 'rollup-plugin-peer-deps-external'
+import { visualizer } from 'rollup-plugin-visualizer'
 import {
-  defineConfig,
   type ConfigEnv,
+  defineConfig,
   type LibraryFormats,
   PluginOption
 } from 'vite'
-import svgLoader from 'vite-svg-loader'
-import { visualizer } from 'rollup-plugin-visualizer'
-import peerDepsExternal from 'rollup-plugin-peer-deps-external'
-import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
+import svgLoader from 'vite-svg-loader'
+
 import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
 
 const packageId = 'cad-editor'
@@ -66,8 +68,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         // PDF/HTML/SVG/LLM/Agent plugins are peers; loaded at runtime via dynamic import
         external: [
           '@mlightcad/cad-pdf-plugin',
+          '@mlightcad/cad-pdf-plugin/register',
           '@mlightcad/cad-html-plugin',
+          '@mlightcad/cad-html-plugin/register',
           '@mlightcad/cad-svg-plugin',
+          '@mlightcad/cad-svg-plugin/register',
           '@mlightcad/cad-agent-plugin',
           '@mlightcad/cad-agent-plugin/register',
           '@mlightcad/cad-agent-plugin/style.css',

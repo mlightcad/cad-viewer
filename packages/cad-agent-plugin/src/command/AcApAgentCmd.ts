@@ -1,4 +1,8 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 
 import { openAgentPalette } from '../palette/agentPaletteIntegration'
@@ -13,6 +17,7 @@ export class AcApAgentCmd extends AcEdCommand {
    * @param _context - Application context (unused).
    */
   async execute(_context: AcApContext) {
+    if (AcApPaletteService.openNamedTab('agent')) return
     if (!openAgentPalette()) {
       log.warn('CAD Agent palette is not available.')
     }

@@ -6,6 +6,19 @@ title: 'Upgrade cad-simple-viewer a cad-editor'
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: info UI pluginů přichází z `AcApUiRegistry`
+Od vydání s touto změnou skupiny pásu karet, řádky Soubor → Export, tlačítka panelu jednoduchého UI a karty palety, které patří pluginu, deklaruje modul `/register` toho pluginu přes **`AcApUiRegistry`**. Hostitel kreslí jen to, co je zaregistrováno. Nenainstalovaný balíček nepřidá žádné UI.
+
+Migrace:
+
+- `@mlightcad/cad-editor` už neobsahuje vlastní tlačítka agenta, nastavení modelu, skriptu, PDF, HTML ani SVG. Načítá `@mlightcad/cad-pdf-plugin/register`, `@mlightcad/cad-html-plugin/register` a `@mlightcad/cad-svg-plugin/register` dynamickým `import()`, stejně jako agenta, LLM, skript a PaddleOCR. Při balení editoru nechte tyto specifikátory jako external.
+- Příznaky `store.features` (`agentPlugin`, `llmPlugin`, `paddleOcrPlugin`, `scriptPlugin`) jsou odstraněny.
+- Plugin volá `AcApUiRegistry.register` z `/register` se skupinami pásu, řádky nabídky `file.export`, funkcí `mount` palety a texty locales. Tlačítko existuje hned po běhu `/register`. Těžký modul se načte až při příkazu.
+- Jednoduché UI skládá nabídku exportu a další tlačítka panelu ze stejného registru. Ručně přidaná tlačítka agenta a skriptu odeberte.
+- `setAgentPaletteOpener` a `setCadScriptPaletteOpener` zůstávají pro hostitele, kteří neotevírají id palet z registru. `cad-editor` a jednoduché UI tato id otevírají samy.
+- `chtml` a `cpdf` otevírají dialogy bez UI frameworku v `cad-html-plugin` a `cad-pdf-plugin`. V prohlížeči je registruje modul `/register` a po potvrzení načte plugin přes `-chtml` / `-cpdf`. Bezobslužní hostitelé předají `dialog: false`, takže `chtml` a `cpdf` zůstanou výzvami na příkazovém řádku. Vue dialogy `MlExportHtmlDlg` / `MlExportPdfDlg` a třídy příkazů v editoru jsou odstraněny.
+  :::
+
 ::: info Jednoduché UI je součástí `cad-simple-viewer`
 Od vydání s touto změnou je **`@mlightcad/cad-simple-ui-plugin` odstraněn**. Panel nástrojů, dokovací karty a výchozí `AcApPaletteHost` jsou v **`@mlightcad/cad-simple-viewer`**. Zapněte přes `simpleUi` (výchozí zapnuto); pro `cad-editor` / CLI použijte `simpleUi: false`. Subcesta `@mlightcad/cad-simple-viewer/find` je odstraněna — API hledání importujte z `@mlightcad/cad-simple-viewer`. Subcesty `/simple-ui` a `/find` jsou odstraněny.
 :::

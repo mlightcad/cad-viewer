@@ -1,6 +1,7 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
 import { agentAr } from './ar'
+import { agentChrome } from './chrome'
 import { agentCommandDescriptions } from './command'
 import { agentCs } from './cs'
 import { agentEn } from './en'
@@ -50,6 +51,7 @@ const LOCALES: readonly AcApLocale[] = [
  */
 function buildVueMessages(locale: AcApLocale) {
   const descriptions = agentCommandDescriptions[locale]
+  const chrome = agentChrome[locale]
   return {
     command: {
       ACAD: {
@@ -57,11 +59,32 @@ function buildVueMessages(locale: AcApLocale) {
       }
     },
     main: {
+      ribbon: {
+        group: { agent: chrome.group },
+        command: { agent: chrome.command },
+        tooltip: { agent: chrome.tooltip }
+      },
       toolPalette: {
         agent: agentMessagesByLocale[locale]
       }
     }
   }
+}
+
+/**
+ * Locale trees for {@link AcApUiRegistry}, including the chat panel and the
+ * ribbon group.
+ */
+export function agentLocaleMessages(): Partial<
+  Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+> {
+  const messages: Partial<
+    Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+  > = {}
+  for (const locale of LOCALES) {
+    messages[locale] = buildVueMessages(locale)
+  }
+  return messages
 }
 
 /**

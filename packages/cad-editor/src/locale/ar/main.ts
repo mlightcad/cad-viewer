@@ -5,9 +5,6 @@ export default {
     drawingUnits: 'وحدات الرسم',
     exportMenu: 'تصدير',
     export: 'تصدير إلى DXF',
-    exportHtml: 'تصدير إلى HTML',
-    exportPdf: 'تصدير إلى PDF',
-    exportSvg: 'تصدير إلى SVG',
     exportImage: 'تصدير إلى صورة',
     about: 'حول'
   },
@@ -208,9 +205,6 @@ export default {
     },
     group: {
       smartBlocks: 'الكتل الذكية',
-      agent: 'الوكيل',
-      aiModel: 'نموذج الذكاء الاصطناعي',
-      pdf: 'PDF',
       draw: 'رسم',
       dimension: 'أبعاد',
       modify: 'تعديل',
@@ -278,25 +272,11 @@ export default {
       ellipse: 'قطع ناقص',
       arc: 'قوس بيضاوي'
     },
-    pdfText: {
-      auto: 'تلقائي'
-    },
     tooltip: {
       searchConvert:
         'ابحث عن جميع نسخ الكائنات المحددة وحوّلها إلى كتل (BSEARCH).',
       detectConvert:
         'ابحث عن الكائنات المتكررة في أي مكان من الرسم وحوّلها إلى كتل (BDETECT).',
-      importPdf:
-        'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (PDFIMPORT).',
-      pdfScale:
-        'تغيير مقياس هندسة PDF المستوردة من نقطتين لمسافة معروفة (PDFSCALE).',
-      pdfDim:
-        'تحويل أبعاد PDF المفككة (الأسهم أو العلامات والخطوط وخطوط الامتداد والنصوص) إلى كائنات أبعاد (PDFDIM).',
-      pdfHatch:
-        'تحويل الخطوط المتفرقة لتهشير PDF إلى تهشير بنمطه ومقياسه وزاويته (PDFHATCH).',
-      pdfText: 'تحويل خطوط نص PDF المفككة إلى كائنات نصية (PDFTEXT).',
-      pdfTextAuto:
-        'بعد قاموس الحروف يجرّب كل خدمات OCR المتاحة بالترتيب (PDFTEXT).',
       line: 'ارسم قطعة خط مستقيم واحدة.',
       polyline: 'ارسم سلسلة مترابطة من مقاطع الخطوط أو الأقواس كعنصر واحد.',
       spline: 'ارسم منحنى Spline ناعمًا باستخدام نقاط الملاءمة أو نقاط التحكم.',
@@ -328,7 +308,6 @@ export default {
       mleader: 'إنشاء تعليق توضيحي بخط إشارة متعدد.',
       mleaderAdd: 'إضافة خط إشارة إلى خط إشارة متعدد موجود.',
       mleaderRemove: 'إزالة خط إشارة من خط إشارة متعدد موجود.',
-      script: 'يفتح وحدة تحكم سكريبت CAD لتشغيل سكريبت على الرسم الحالي.',
       move: 'انقل العناصر المحددة إلى موضع جديد.',
       rotate: 'دوّر العناصر المحددة حول نقطة أساس.',
       scale:
@@ -366,9 +345,6 @@ export default {
       editAttributes:
         'افتح محرر السمات المتقدم لتعديل قيم وخصائص عرض سمات الكتلة (ATTEDIT).',
       defineAttribute: 'أنشئ تعريف سمة لاستخدامه داخل كتلة (ATTDEF).',
-      agent: 'افتح لوحة CAD Agent لإنشاء هندسة باستخدام اللغة الطبيعية.',
-      llmSettings:
-        'إعداد مزودي نماذج الذكاء الاصطناعي ومفاتيح API التي يستخدمها وكيل CAD والتعرف على النص في PDF (OCR).',
       pan: 'تحريك عرض الرسم دون تغيير التكبير.',
       zoom: 'تكبير عرض الرسم أو تصغيره.',
       zoomExtents: 'التكبير لعرض أقصى امتداد لجميع العناصر.',
@@ -444,11 +420,6 @@ export default {
     command: {
       searchConvert: 'بحث\nوتحويل',
       detectConvert: 'اكتشاف\nوتحويل',
-      importPdf: 'استيراد\nPDF',
-      pdfScale: 'معايرة\nالمقياس',
-      pdfDim: 'استعادة\nالأبعاد',
-      pdfHatch: 'استعادة\nالتهشير',
-      pdfText: 'استعادة\nالنص',
       line: 'خط',
       polyline: 'متعدد الخطوط',
       circle: 'دائرة',
@@ -484,7 +455,6 @@ export default {
       mleader: 'خط إشارة متعدد',
       mleaderAdd: 'إضافة خط إشارة',
       mleaderRemove: 'إزالة خط إشارة',
-      script: 'سكريبت',
       move: 'نقل',
       rotate: 'تدوير',
       scale: 'تغيير المقياس',
@@ -513,8 +483,6 @@ export default {
       insert: 'إدراج',
       editAttributes: 'تعديل\nالسمات',
       defineAttribute: 'تعريف\nسمة',
-      agent: 'الوكيل',
-      llmSettings: 'إعدادات\nالنموذج',
       pan: 'تحريك',
       zoom: 'تكبير',
       zoomExtents: 'الامتداد',

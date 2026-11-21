@@ -6,6 +6,19 @@ title: 'ترقية cad-simple-viewer و cad-editor'
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info واجهة الإضافات تأتي من `AcApUiRegistry`
+بدءًا من الإصدار الذي يتضمن هذا التغيير، مجموعات الشريط وصفوف ملف ← تصدير وأزرار شريط الأدوات في الواجهة البسيطة وألسنة اللوحة التي تخص إضافةً ما تُعلَن من وحدة `/register` الخاصة بتلك الإضافة عبر **`AcApUiRegistry`**. المضيف يرسم ما هو مسجّل فقط. الحزمة غير المثبّتة لا تُظهر واجهة.
+
+الترحيل:
+
+- لم يعد `@mlightcad/cad-editor` يضم أزرار الوكيل وإعدادات النموذج والسكريبت وPDF وHTML وSVG. يحمّل `@mlightcad/cad-pdf-plugin/register` و`@mlightcad/cad-html-plugin/register` و`@mlightcad/cad-svg-plugin/register` عبر `import()` الديناميكي، كما يفعل مع الوكيل وLLM والسكريبت وPaddleOCR. أبقِ هذه المحدّدات external عند تجميع المحرّر.
+- أُزيلت أعلام `store.features` (`agentPlugin` و`llmPlugin` و`paddleOcrPlugin` و`scriptPlugin`).
+- تستدعي الإضافة `AcApUiRegistry.register` من `/register` مع مجموعات الشريط وصفوف قائمة `file.export` ودالة `mount` للوحة ورسائل اللغات. يظهر الزر فور تنفيذ `/register`، وتُحمَّل الوحدة الثقيلة عند الأمر.
+- تبني الواجهة البسيطة قائمة التصدير وأزرار شريط الأدوات الإضافية من السجل نفسه. أزل أزرار الوكيل والسكريبت المكتوبة يدويًا.
+- تبقى `setAgentPaletteOpener` و`setCadScriptPaletteOpener` للمضيفين الذين لا يفتحون معرّفات لوحات السجل. يفتح `cad-editor` والواجهة البسيطة هذه المعرّفات بنفسيهما.
+- يفتح `chtml` و`cpdf` حوارات بلا إطار واجهة داخل `cad-html-plugin` و`cad-pdf-plugin`. في المتصفح تسجّلهما وحدة `/register`، وعند التأكيد يُحمَّل الملحق عبر `-chtml` / `-cpdf`. تمرّر البيئات بلا واجهة `dialog: false` ليبقى `chtml` و`cpdf` موجهَي سطر أوامر. حُذف حوارا Vue `MlExportHtmlDlg` / `MlExportPdfDlg` وفئتا الأمر في المحرّر.
+  :::
+
 ::: info واجهة Simple UI أصبحت داخل `cad-simple-viewer`
 بدءًا من الإصدار الذي يتضمن هذا التغيير، **تمت إزالة `@mlightcad/cad-simple-ui-plugin`**. شريط الأدوات وعلامات الإرساء و`AcApPaletteHost` الافتراضي موجودة في **`@mlightcad/cad-simple-viewer`**. فعّل عبر `simpleUi` (مفعّل افتراضيًا)؛ ولـ `cad-editor` / CLI استخدم `simpleUi: false`. تمت إزالة المسار الفرعي `@mlightcad/cad-simple-viewer/find`؛ استورد واجهات البحث من `@mlightcad/cad-simple-viewer`. أُزيلت المسارات الفرعية `/simple-ui` و`/find`.
 :::

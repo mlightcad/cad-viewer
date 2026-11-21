@@ -87,22 +87,11 @@
           <ml-b-search-palette />
         </div>
         <div
-          v-else-if="
-            store.features.agentPlugin &&
-            store.dialogs.activePaletteTab === 'agent'
-          "
+          v-else-if="activePluginPalette"
+          :key="activePluginPalette.id"
           class="ml-agent-palette-wrapper"
         >
-          <agent-chat-panel embedded />
-        </div>
-        <div
-          v-else-if="
-            store.features.scriptPlugin &&
-            store.dialogs.activePaletteTab === 'cadScript'
-          "
-          class="ml-agent-palette-wrapper"
-        >
-          <ml-cad-script-panel />
+          <ml-plugin-palette :palette="activePluginPalette" />
         </div>
         <div
           v-else-if="activeHostedPanel"
@@ -117,7 +106,11 @@
 </template>
 
 <script setup lang="ts">
-import { AcApDocManager, AcApLayerService } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcApLayerService,
+  AcApUiRegistry
+} from '@mlightcad/cad-simple-viewer'
 import { AcDbEntityProperties } from '@mlightcad/data-model'
 import {
   type MlOverflowTab,
@@ -125,16 +118,20 @@ import {
   MlToolPalette
 } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
-import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
+import {
+  mlPluginPaletteHeader,
+  mlPluginPaletteTitle,
+  pluginUiRevision
+} from '../../app/pluginUi'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlBDetectPalette from './MlBDetectPalette.vue'
 import MlBlocksPalette from './MlBlocksPalette.vue'
 import MlBSearchPalette from './MlBSearchPalette.vue'
-import MlCadScriptPanel from './MlCadScriptPanel.vue'
 import MlCountList from './MlCountList.vue'
 import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
@@ -145,16 +142,7 @@ import MlMeasurementPalette from './MlMeasurementPalette.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
 import MlMissingResources from './MlMissingResources.vue'
 import MlOpenFileProfile from './MlOpenFileProfile.vue'
-
-const loadAgentPlugin = () =>
-  Promise.all([
-    import('@mlightcad/cad-agent-plugin/style.css'),
-    import('@mlightcad/cad-agent-plugin')
-  ]).then(([, module]) => module)
-
-const AgentChatPanel = defineAsyncComponent(() =>
-  loadAgentPlugin().then(module => module.AgentChatPanel)
-)
+import MlPluginPalette from './MlPluginPalette.vue'
 
 /**
  * Properties of palette manager component
@@ -167,7 +155,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { t } = useI18n()
+const { locale } = useI18n()
 const containerRect = useViewerRect()
 
 const DEFAULT_WIDTH = 520
@@ -277,12 +265,8 @@ const tabNames = computed((): readonly string[] => {
   if (store.dialogs.bsearchTabVisible) {
     names.push('bsearch')
   }
-  if (store.features.agentPlugin) {
-    names.push('agent')
-  }
-  if (store.features.scriptPlugin) {
-    names.push('cadScript')
-  }
+  pluginUiRevision.value
+  for (const palette of AcApUiRegistry.palettes()) names.push(palette.id)
   for (const panel of store.dialogs.hostedPanels) names.push(panel.tab)
   return names
 })
@@ -295,23 +279,33 @@ const activeHostedPanel = computed(() =>
 )
 
 const tabs = computed<MlOverflowTab[]>(() => {
+  locale.value
+  pluginUiRevision.value
   return tabNames.value.map(name => {
     const hosted = store.dialogs.hostedPanels.find(panel => panel.tab === name)
+    const palette = AcApUiRegistry.palette(name)
     return {
       name,
       label: hosted
         ? hosted.title
-        : name === 'cadScript'
-          ? t('main.toolPalette.script.scriptTab')
+        : palette
+          ? mlPluginPaletteTitle(palette)
           : toolPaletteTabName(name)
     }
   })
 })
 
+/** Plugin palette for the active tab, when one is registered. */
+const activePluginPalette = computed(() => {
+  pluginUiRevision.value
+  return AcApUiRegistry.palette(store.dialogs.activePaletteTab)
+})
+
 const activeTabTitle = computed(() => {
-  if (store.dialogs.activePaletteTab === 'cadScript') {
-    return t('main.toolPalette.script.scriptTitle')
-  }
+  locale.value
+  pluginUiRevision.value
+  const palette = AcApUiRegistry.palette(store.dialogs.activePaletteTab)
+  if (palette) return mlPluginPaletteHeader(palette)
   if (activeHostedPanel.value) return activeHostedPanel.value.title
   return toolPaletteTitle(store.dialogs.activePaletteTab)
 })

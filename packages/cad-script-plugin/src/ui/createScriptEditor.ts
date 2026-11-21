@@ -53,6 +53,52 @@ export interface ScriptEditor {
   focus(): void
   /** Removes the editor from the page. */
   destroy(): void
+  /**
+   * Switches the editor between the light and dark color schemes.
+   *
+   * @param theme - Active viewer theme.
+   */
+  setTheme(theme: ScriptEditorTheme): void
+}
+
+/** Viewer color scheme the script editor can follow. */
+export type ScriptEditorTheme = 'light' | 'dark'
+
+/**
+ * Light editor chrome. Syntax colors come from CodeMirror's default highlight
+ * style. Dark mode uses {@link oneDark} instead.
+ */
+const lightEditorTheme = EditorView.theme(
+  {
+    '&': {
+      color: 'var(--ml-ui-text, #303133)',
+      backgroundColor: 'var(--ml-ui-bg, #fff)'
+    },
+    '.cm-content': {
+      caretColor: 'var(--ml-ui-text, #303133)'
+    },
+    '.cm-cursor, .cm-dropCursor': {
+      borderLeftColor: 'var(--ml-ui-text, #303133)'
+    },
+    '.cm-gutters': {
+      backgroundColor: 'var(--ml-ui-bg, #fff)',
+      color: 'var(--ml-ui-text-muted, #606266)',
+      borderRight: '1px solid var(--ml-ui-border, #dcdfe6)'
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'transparent'
+    },
+    '.cm-tooltip': {
+      backgroundColor: 'var(--ml-ui-bg, #fff)',
+      color: 'var(--ml-ui-text, #303133)',
+      border: '1px solid var(--ml-ui-border, #dcdfe6)'
+    }
+  },
+  { dark: false }
+)
+
+function editorTheme(theme: ScriptEditorTheme) {
+  return theme === 'dark' ? oneDark : lightEditorTheme
 }
 
 /**
@@ -64,23 +110,26 @@ export interface ScriptEditor {
  * @param doc - Initial script text.
  * @param onChange - Called after the text changes.
  * @param onRun - Called for Ctrl/Cmd+Enter.
+ * @param theme - Initial color scheme. Later changes go through {@link ScriptEditor.setTheme}.
  * @returns Controls used by the script panel.
  */
 export function createScriptEditor(
   parent: HTMLElement,
   doc: string,
   onChange: () => void,
-  onRun: () => void
+  onRun: () => void,
+  theme: ScriptEditorTheme
 ): ScriptEditor {
   const placeholderConfig = new Compartment()
   const ariaConfig = new Compartment()
+  const themeConfig = new Compartment()
   const view = new EditorView({
     parent,
     state: EditorState.create({
       doc,
       extensions: [
         basicSetup,
-        oneDark,
+        themeConfig.of(editorTheme(theme)),
         tooltips({ parent: document.body }),
         javascript(),
         javascriptLanguage.data.of({
@@ -158,6 +207,11 @@ export function createScriptEditor(
     },
     focus() {
       view.focus()
+    },
+    setTheme(next: ScriptEditorTheme) {
+      view.dispatch({
+        effects: themeConfig.reconfigure(editorTheme(next))
+      })
     },
     destroy() {
       view.destroy()

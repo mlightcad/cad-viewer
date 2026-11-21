@@ -76,7 +76,49 @@ async function loadCadViewer(page: Page, fixturePath: string) {
   await expect(page.locator('.ml-cad-container')).toBeVisible({
     timeout: 30000
   })
-  await page.waitForTimeout(2500)
+  // The container shows before `@create` assigns `window.AcApDocManager` and
+  // before the drawing finishes opening. A fixed sleep reads an empty model
+  // space on a slow runner.
+  await page.waitForFunction(
+    () => {
+      const mgr = (
+        window as Window & {
+          AcApDocManager?: {
+            instance?: { curDocument?: unknown; curView?: unknown }
+          }
+        }
+      ).AcApDocManager?.instance
+      return Boolean(mgr?.curDocument && mgr.curView)
+    },
+    undefined,
+    { timeout: 30_000 }
+  )
+  await page.waitForFunction(
+    () => {
+      const overlays = Array.from(
+        document.querySelectorAll<HTMLElement>('.ml-ccl-overlay')
+      )
+      return (
+        overlays.length === 0 ||
+        overlays.every(el => getComputedStyle(el).display === 'none')
+      )
+    },
+    undefined,
+    { timeout: 60_000 }
+  )
+  const idle = await page.evaluate(async () => {
+    const mgr = (
+      window as Window & {
+        AcApDocManager: {
+          instance: {
+            curView: { waitUntilIdle: (ms?: number) => Promise<boolean> }
+          }
+        }
+      }
+    ).AcApDocManager.instance
+    return mgr.curView.waitUntilIdle(60_000)
+  })
+  expect(idle).toBe(true)
 }
 
 /**
@@ -127,18 +169,33 @@ test('honors DXF group code 60 entity visibility for LWPOLYLINE', async ({
 
   await page.goto('/')
   await loadCadViewer(page, invisibleFixturePath)
-  const invisibleEntities = await readModelSpaceEntityVisibility(page)
-  expect(invisibleEntities.length).toBeGreaterThan(0)
-  expect(invisibleEntities.every(entity => entity.visibility === false)).toBe(
-    true
-  )
+  // Model space can still be empty for a moment after the container is shown.
+  await expect
+    .poll(
+      async () => {
+        const entities = await readModelSpaceEntityVisibility(page)
+        return (
+          entities.length > 0 &&
+          entities.every(entity => entity.visibility === false)
+        )
+      },
+      { timeout: 30_000 }
+    )
+    .toBe(true)
   const invisiblePixels = await countNonBackgroundPixels(page)
   expect(invisiblePixels - emptyPixels).toBeLessThan(200)
 
   await page.goto('/')
   await loadCadViewer(page, visibleFixturePath)
-  const visibleEntities = await readModelSpaceEntityVisibility(page)
-  expect(visibleEntities.some(entity => entity.visibility === true)).toBe(true)
+  await expect
+    .poll(
+      async () => {
+        const visibleEntities = await readModelSpaceEntityVisibility(page)
+        return visibleEntities.some(entity => entity.visibility === true)
+      },
+      { timeout: 30_000 }
+    )
+    .toBe(true)
   const visiblePixels = await countNonBackgroundPixels(page)
   expect(visiblePixels - emptyPixels).toBeGreaterThan(400)
   expect(invisiblePixels).toBeLessThanOrEqual(emptyPixels + 250)

@@ -60,7 +60,7 @@ jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
 }))
 
 import { AcEdOpenMode } from '../../src/editor'
-
+import { AcApUiRegistry } from '../../src/ui/AcApUiRegistry'
 import { acuiCreateDefaultToolbarItems } from '../../src/ui/toolbar/defaultToolbarItems'
 import { acuiMergeToolbarOptionsForLayout } from '../../src/ui/toolbar/mergeToolbarOptionsForLayout'
 import {
@@ -288,14 +288,9 @@ describe('acuiResolveEffectiveToolbarItem', () => {
 })
 
 describe('default toolbar items', () => {
-  it('includes export submenu and a settings strip with theme, locale, placement', () => {
+  it('omits export until a plugin registers file.export rows, and keeps settings', () => {
     const items = acuiCreateDefaultToolbarItems()
-    const exportItem = items.find(item => item.id === 'export')
-    expect(exportItem?.children?.map(child => child.command)).toEqual([
-      'chtml',
-      'cpdf',
-      'csvg'
-    ])
+    expect(items.find(item => item.id === 'export')).toBeUndefined()
     const settings = items.find(item => item.id === 'settings')
     expect(settings?.childrenUi).toBe('toolbar')
     const childIds = settings?.children?.map(child => child.id) ?? []
@@ -354,7 +349,20 @@ describe('default toolbar items', () => {
   })
 
   it('uses selected child icon for toolbar placement and locale', () => {
+    const dispose = AcApUiRegistry.register({
+      plugin: 'test-export',
+      menuItems: [
+        {
+          id: 'ExportHtml',
+          parentId: 'file.export',
+          labelKey: 'main.mainMenu.exportHtml',
+          command: 'chtml',
+          order: 10
+        }
+      ]
+    })
     const items = acuiCreateDefaultToolbarItems()
+    dispose()
     const settings = items.find(item => item.id === 'settings')
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
     expect(
@@ -429,11 +437,33 @@ describe('default toolbar items', () => {
     ).toBeDefined()
   })
 
-  it('places review tools after measure and export after review', () => {
-    const items = acuiCreateDefaultToolbarItems()
-    const measureIndex = items.findIndex(item => item.id === 'measure')
-    expect(items[measureIndex + 1]?.id).toBe('annotation')
-    expect(items[measureIndex + 2]?.id).toBe('export')
+  it('places review tools after measure and export after review when a plugin registers', () => {
+    const measureIndex = acuiCreateDefaultToolbarItems().findIndex(
+      item => item.id === 'measure'
+    )
+    expect(acuiCreateDefaultToolbarItems()[measureIndex + 1]?.id).toBe(
+      'annotation'
+    )
+    const dispose = AcApUiRegistry.register({
+      plugin: 'test-export',
+      menuItems: [
+        {
+          id: 'ExportHtml',
+          parentId: 'file.export',
+          labelKey: 'main.mainMenu.exportHtml',
+          command: 'chtml',
+          order: 10
+        }
+      ]
+    })
+    try {
+      const items = acuiCreateDefaultToolbarItems()
+      const index = items.findIndex(item => item.id === 'measure')
+      expect(items[index + 1]?.id).toBe('annotation')
+      expect(items[index + 2]?.id).toBe('export')
+    } finally {
+      dispose()
+    }
   })
 
   it('uses dismissible sub-toolbars for measure, review, export, and settings', () => {
@@ -445,7 +475,6 @@ describe('default toolbar items', () => {
     expect(items.find(item => item.id === 'annotation')?.childrenUi).toBe(
       'toolbar'
     )
-    expect(items.find(item => item.id === 'export')?.childrenUi).toBe('toolbar')
     expect(items.find(item => item.id === 'layout')?.childrenUi).toBe('menu')
     expect(settings?.childrenUi).toBe('toolbar')
     expect(
@@ -457,14 +486,73 @@ describe('default toolbar items', () => {
     ).toBe('toolbar')
   })
 
+  it('places plugin toolbar buttons after the anchor and runs invoke', () => {
+    const invoke = jest.fn()
+    const dispose = AcApUiRegistry.register({
+      plugin: 'test-toolbar',
+      ribbonGroups: [
+        {
+          id: 'extra',
+          tabId: 'home',
+          items: [
+            {
+              id: 'cmd-custom',
+              label: 'Custom',
+              invoke,
+              toolbar: { after: 'layout' }
+            },
+            {
+              id: 'cmd-script',
+              command: 'cadscript',
+              labelKey: 'toolbar.layer',
+              toolbar: { after: 'layout' }
+            }
+          ]
+        }
+      ]
+    })
+    try {
+      const items = acuiCreateDefaultToolbarItems()
+      const layout = items.findIndex(item => item.id === 'layout')
+      expect(items[layout + 1]?.id).toBe('cmd-custom')
+      expect(items[layout + 2]?.id).toBe('cmd-script')
+      expect(items[layout + 2]?.command).toBe('cadscript')
+      const custom = items[layout + 1]
+      expect(custom?.requiresDocument).toBe(true)
+      custom?.action?.()
+      expect(invoke).toHaveBeenCalledTimes(1)
+    } finally {
+      dispose()
+    }
+  })
+
   it('uses the same export parent icon as cad-viewer toolbar and ribbon', () => {
-    const items = acuiCreateDefaultToolbarItems()
-    expect(items.find(item => item.id === 'export')?.icon).toContain(
-      'M15.5 2H9.1L4.5 6.6'
-    )
-    expect(items.find(item => item.id === 'annotation')?.icon).toContain(
-      'M12.4 3.25H5.5'
-    )
+    const dispose = AcApUiRegistry.register({
+      plugin: 'test-export',
+      menuItems: [
+        {
+          id: 'ExportHtml',
+          parentId: 'file.export',
+          labelKey: 'main.mainMenu.exportHtml',
+          command: 'chtml',
+          order: 10
+        }
+      ]
+    })
+    try {
+      const items = acuiCreateDefaultToolbarItems()
+      expect(items.find(item => item.id === 'export')?.icon).toContain(
+        'M15.5 2H9.1L4.5 6.6'
+      )
+      expect(items.find(item => item.id === 'export')?.childrenUi).toBe(
+        'toolbar'
+      )
+      expect(items.find(item => item.id === 'annotation')?.icon).toContain(
+        'M12.4 3.25H5.5'
+      )
+    } finally {
+      dispose()
+    }
   })
 
   it('uses the same review submenu icons as cad-viewer', () => {

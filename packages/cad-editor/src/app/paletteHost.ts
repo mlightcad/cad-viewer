@@ -3,7 +3,8 @@ import {
   type AcApPaletteContent,
   type AcApPaletteHost,
   type AcApPaletteHostHandle,
-  type AcApPaletteNamedTabId
+  type AcApPaletteNamedTabId,
+  AcApUiRegistry
 } from '@mlightcad/cad-simple-viewer'
 import { markRaw, watch } from 'vue'
 
@@ -69,9 +70,18 @@ export const mlPaletteHost: AcApPaletteHost = {
   },
 
   openNamedTab(id: AcApPaletteNamedTabId | string): boolean {
-    const tab = NAMED_TAB_TO_EDITOR[id]
-    if (!tab) return false
     const dialogs = store.dialogs
+    const tab = NAMED_TAB_TO_EDITOR[id]
+    if (!tab) {
+      if (!AcApUiRegistry.palette(id)) return false
+      if (dialogs.layerManager && dialogs.activePaletteTab === id) {
+        dialogs.layerManager = false
+        return true
+      }
+      dialogs.activePaletteTab = id
+      dialogs.layerManager = true
+      return true
+    }
     if (id === ACAP_PALETTE_NAMED_TAB.openFileProfile) {
       dialogs.openFileProfileTabVisible = true
     }

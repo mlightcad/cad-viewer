@@ -26,7 +26,13 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      external: [packageName],
+      // The register entry loads styles at runtime via this package's own
+      // `style.css` export. Bundling that specifier would inline the previous
+      // dist file and its rules would override the CSS just emitted.
+      external: (id: string) =>
+        id === packageName ||
+        id.replaceAll('\\', '/').endsWith('/cad-agent-plugin/style.css') ||
+        id.replaceAll('\\', '/').endsWith('/cad-agent-plugin/dist/style.css'),
       output: {
         ...createLibRollupOutput(packageId),
         // Keep `style.css` so `@mlightcad/cad-agent-plugin/style.css` resolves

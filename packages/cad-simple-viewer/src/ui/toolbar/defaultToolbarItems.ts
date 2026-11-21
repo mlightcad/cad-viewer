@@ -4,12 +4,15 @@ import {
 } from '../../app/dataSource/acapBuildDataSourceMenu.js'
 import { acapRunDataSourceMenuAction } from '../../app/dataSource/acapRunDataSourceMenuAction.js'
 import { AcApDocManager, AcApSettingManager } from '../../app/index.js'
-import {
-  isMarkupVisible,
-  isMeasurementVisible
-} from '../../command/index.js'
+import { isMarkupVisible, isMeasurementVisible } from '../../command/index.js'
 import { AcEdOpenMode, type AcEdUiTheme } from '../../editor/index.js'
-import type { AcApLocale } from '../../i18n/index.js'
+import { AcApI18n, type AcApLocale } from '../../i18n/index.js'
+import {
+  acapToolbarItems,
+  type AcApUiMenuItem,
+  AcApUiRegistry,
+  type AcApUiRibbonItem
+} from '../AcApUiRegistry.js'
 import {
   ICON_ANNOTATION,
   ICON_ANNOTATION_HIDE,
@@ -17,9 +20,6 @@ import {
   ICON_CLEAR_MARKUPS,
   ICON_CLEAR_MEASUREMENTS,
   ICON_EXPORT,
-  ICON_EXPORT_HTML,
-  ICON_EXPORT_PDF,
-  ICON_EXPORT_SVG,
   ICON_FIND,
   ICON_LANGUAGE,
   ICON_LAYER,
@@ -110,15 +110,7 @@ function acuiCreateToolbarPlacementItem(
   }
 }
 
-const TOOLBAR_LOCALES: AcApLocale[] = [
-  'en',
-  'zh',
-  'ja',
-  'ko',
-  'cs',
-  'tr',
-  'ar'
-]
+const TOOLBAR_LOCALES: AcApLocale[] = ['en', 'zh', 'ja', 'ko', 'cs', 'tr', 'ar']
 
 const LOCALE_BADGES: Record<AcApLocale, string> = {
   en: 'EN',
@@ -628,32 +620,7 @@ export function acuiCreateDefaultToolbarItems(
     acuiCreateLayoutToolbarItem(),
     acuiCreateMeasureToolbarItem(),
     acuiCreateAnnotationToolbarItem(),
-    {
-      id: 'export',
-      label: 'toolbar.export',
-      icon: ICON_EXPORT,
-      childrenUi: 'toolbar',
-      children: [
-        {
-          id: 'export-html',
-          label: 'toolbar.exportHtml',
-          icon: ICON_EXPORT_HTML,
-          command: 'chtml'
-        },
-        {
-          id: 'export-pdf',
-          label: 'toolbar.exportPdf',
-          icon: ICON_EXPORT_PDF,
-          command: 'cpdf'
-        },
-        {
-          id: 'export-svg',
-          label: 'toolbar.exportSvg',
-          icon: ICON_EXPORT_SVG,
-          command: 'csvg'
-        }
-      ]
-    },
+    ...acuiPluginExportToolbarItem(),
     {
       type: 'separator',
       id: 'sep-settings'
@@ -661,7 +628,92 @@ export function acuiCreateDefaultToolbarItems(
     acuiCreateSettingsToolbarItem(context)
   ]
 
-  return items
+  return acuiInsertPluginToolbarItems(items)
+}
+
+/** Export button whose children are the plugins registered under `file.export`. */
+function acuiPluginExportToolbarItem(): AcUiToolbarItem[] {
+  const children = AcApUiRegistry.menuItems('file.export').map(item =>
+    acuiToolbarItemFromMenu(item)
+  )
+  if (children.length === 0) return []
+  return [
+    {
+      id: 'export',
+      label: 'toolbar.export',
+      icon: ICON_EXPORT,
+      childrenUi: 'toolbar',
+      children
+    }
+  ]
+}
+
+/** Places plugin ribbon items that opted into the toolbar, keeping registration order. */
+function acuiInsertPluginToolbarItems(
+  items: AcUiToolbarItem[]
+): AcUiToolbarItem[] {
+  const extra = acapToolbarItems(AcApUiRegistry.ribbonGroups())
+  if (extra.length === 0) return items
+  const next = [...items]
+  const cursor = new Map<string, string>()
+  for (const source of extra) {
+    const button = acuiToolbarItemFromRibbon(source)
+    const after =
+      typeof source.toolbar === 'object' ? source.toolbar.after : undefined
+    if (!after) {
+      next.push(button)
+      continue
+    }
+    const anchor = cursor.get(after) ?? after
+    const index = next.findIndex(entry => entry.id === anchor)
+    if (index < 0) next.push(button)
+    else next.splice(index + 1, 0, button)
+    cursor.set(after, source.id)
+  }
+  return next
+}
+
+function acuiToolbarItemFromMenu(item: AcApUiMenuItem): AcUiToolbarItem {
+  return acuiContributedToolbarItem(
+    item.id,
+    AcApI18n.t(item.labelKey),
+    item.iconSvg,
+    item.command,
+    item.invoke
+  )
+}
+
+function acuiToolbarItemFromRibbon(item: AcApUiRibbonItem): AcUiToolbarItem {
+  return acuiContributedToolbarItem(
+    item.id,
+    item.label ?? (item.labelKey ? AcApI18n.t(item.labelKey) : item.id),
+    item.iconSvg,
+    item.command,
+    item.invoke
+  )
+}
+
+/**
+ * Toolbar button for one registry row.
+ *
+ * {@link AcApUiRibbonItem.invoke} runs instead of {@link AcApUiRibbonItem.command},
+ * matching the editor ribbon. An invoke-only item still requires a document.
+ */
+function acuiContributedToolbarItem(
+  id: string,
+  label: string,
+  icon: string | undefined,
+  command: string | undefined,
+  invoke: (() => void | Promise<void>) | undefined
+): AcUiToolbarItem {
+  const item: AcUiToolbarItem = { id, label, icon, command }
+  if (invoke) {
+    item.action = () => {
+      void invoke()
+    }
+  }
+  if (!command && invoke) item.requiresDocument = true
+  return item
 }
 
 /**

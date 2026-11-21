@@ -1,4 +1,7 @@
+export * from './AcApUiRegistry.js'
 export * from './AcUiDialog.js'
+export * from './AcUiTabs.js'
+export * from './acuiFormControls.js'
 export * from './AcUiFileOpenLanding.js'
 export * from './AcUiFileOpenPanel.js'
 export * from './AcUiFileOpenSession.js'

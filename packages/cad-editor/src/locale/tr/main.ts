@@ -5,9 +5,6 @@ export default {
     drawingUnits: 'Çizim Birimleri',
     exportMenu: 'Dışa Aktar',
     export: 'DXF\'e Dışa Aktar',
-    exportHtml: 'HTML\'e Dışa Aktar',
-    exportPdf: 'PDF\'e Dışa Aktar',
-    exportSvg: 'SVG\'e Dışa Aktar',
     exportImage: 'Görüntüye Dışa Aktar',
     about: 'Hakkında'
   },
@@ -212,9 +209,6 @@ export default {
     },
     group: {
       smartBlocks: 'Akıllı Bloklar',
-      agent: 'Ajan',
-      aiModel: 'Yapay Zekâ Modeli',
-      pdf: 'PDF',
       draw: 'Çiz',
       dimension: 'Ölçü',
       modify: 'Düzenle',
@@ -282,26 +276,11 @@ export default {
       ellipse: 'Elips',
       arc: 'Eliptik Yay'
     },
-    pdfText: {
-      auto: 'Otomatik'
-    },
     tooltip: {
       searchConvert:
         'Seçili nesnelerin tüm kopyalarını bulur ve bloklara dönüştürür (BSEARCH).',
       detectConvert:
         'Çizimin her yerindeki yinelenen nesneleri bulur ve bloklara dönüştürür (BDETECT).',
-      importPdf:
-        'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (PDFIMPORT).',
-      pdfScale:
-        'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
-      pdfDim:
-        'Patlatılmış PDF ölçülerini (oklar veya işaretler, çizgiler, uzatma çizgileri ve metinler) ölçü nesnelerine geri dönüştürür (PDFDIM).',
-      pdfHatch:
-        'PDF taramasının dağınık çizgilerini deseni, ölçeği ve açısıyla birlikte taramaya geri dönüştürür (PDFHATCH).',
-      pdfText:
-        'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür (PDFTEXT).',
-      pdfTextAuto:
-        'Glif sözlüğünden sonra kullanılabilir OCR sağlayıcılarını sırayla dener (PDFTEXT).',
       line: 'Tek bir düz çizgi parçası çizin.',
       polyline:
         'Bağlı bir dizi çizgi veya yay parçasını tek bir nesne olarak çizin.',
@@ -337,8 +316,6 @@ export default {
       mleader: 'Çoklu önder oluşturun.',
       mleaderAdd: 'Mevcut çoklu öndere bir önder çizgisi ekleyin.',
       mleaderRemove: 'Mevcut çoklu önderden bir önder çizgisini kaldırın.',
-      script:
-        'Geçerli çizimde betik çalıştırmak için CAD betik konsolunu açar.',
       move: 'Seçili nesneleri yeni bir konuma taşıyın.',
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       scale:
@@ -383,10 +360,6 @@ export default {
         'Blok öznitelik değerlerini ve görüntü özelliklerini düzenlemek için Gelişmiş Öznitelik Düzenleyiciyi açın (ATTEDIT).',
       defineAttribute:
         'Bir blokta kullanılacak öznitelik tanımı oluşturun (ATTDEF).',
-      agent:
-        'Doğal dil kullanarak geometri çizmek için CAD Ajanı panel sekmesini açın.',
-      llmSettings:
-        'CAD Ajanı ve PDF metin tanıma (OCR) tarafından kullanılan yapay zekâ modeli sağlayıcılarını ve API anahtarlarını yapılandırın.',
       pan: 'Büyütmeyi değiştirmeden çizimin görünümünü taşır.',
       zoom: 'Çizim görüntüsünü yakınlaştırır veya uzaklaştırır.',
       zoomExtents:
@@ -481,11 +454,6 @@ export default {
     command: {
       searchConvert: 'Ara ve\nDönüştür',
       detectConvert: 'Algıla ve\nDönüştür',
-      importPdf: 'PDF\nİçe Aktar',
-      pdfScale: 'Ölçeği\nKalibre Et',
-      pdfDim: 'Ölçüleri\nKurtar',
-      pdfHatch: 'Taramaları\nKurtar',
-      pdfText: 'Metni\nKurtar',
       line: 'Çizgi',
       polyline: 'Çoklu Çizgi',
       circle: 'Daire',
@@ -521,7 +489,6 @@ export default {
       mleader: 'Çoklu Önder',
       mleaderAdd: 'Önder Ekle',
       mleaderRemove: 'Önder Kaldır',
-      script: 'Betik',
       move: 'Taşı',
       rotate: 'Döndür',
       scale: 'Ölçekle',
@@ -550,8 +517,6 @@ export default {
       insert: 'Ekle',
       editAttributes: 'Öznitelikleri\nDüzenle',
       defineAttribute: 'Öznitelik\nTanımla',
-      agent: 'Ajan',
-      llmSettings: 'Model\nAyarları',
       pan: 'Kaydır',
       zoom: 'Yakınlaştır',
       zoomExtents: 'Sınırlar',
