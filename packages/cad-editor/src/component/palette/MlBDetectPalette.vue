@@ -15,49 +15,110 @@
             class="ml-bdetect-panel__filters"
             :class="{ 'is-disabled': !optionsEditable }"
           >
-            <el-checkbox
-              :model-value="state.options.allowRotation"
-              :disabled="!optionsEditable"
-              @change="(v: unknown) => setOptions({ allowRotation: !!v })"
-            >
-              {{ t('main.bdetect.rotation') }}
-            </el-checkbox>
-            <el-checkbox
-              :model-value="state.options.allowMirror"
-              :disabled="!optionsEditable"
-              @change="(v: unknown) => setOptions({ allowMirror: !!v })"
-            >
-              {{ t('main.bdetect.mirror') }}
-            </el-checkbox>
-            <el-checkbox
-              :model-value="state.options.allowScale"
-              :disabled="!optionsEditable"
-              @change="(v: unknown) => setOptions({ allowScale: !!v })"
-            >
-              {{ t('main.bdetect.scale') }}
-            </el-checkbox>
-            <el-checkbox
-              :model-value="state.options.matchLayer"
-              :disabled="!optionsEditable"
-              @change="(v: unknown) => setOptions({ matchLayer: !!v })"
-            >
-              {{ t('main.bdetect.sameLayer') }}
-            </el-checkbox>
-            <el-checkbox
-              :model-value="state.options.textVariations"
-              :disabled="!optionsEditable"
-              @change="(v: unknown) => setOptions({ textVariations: !!v })"
-            >
-              {{ t('main.bdetect.textVariations') }}
-            </el-checkbox>
+            <div class="ml-bdetect-panel__option">
+              <el-checkbox
+                :model-value="state.options.allowRotation"
+                :disabled="!optionsEditable"
+                @change="(v: unknown) => setOptions({ allowRotation: !!v })"
+              >
+                {{ t('main.bdetect.rotation') }}
+              </el-checkbox>
+              <MlBDetectOptionHelp
+                :text="t('main.bdetect.help.rotation')"
+                :label="
+                  t('main.bdetect.explain', {
+                    option: t('main.bdetect.rotation')
+                  })
+                "
+              />
+            </div>
+            <div class="ml-bdetect-panel__option">
+              <el-checkbox
+                :model-value="state.options.allowMirror"
+                :disabled="!optionsEditable"
+                @change="(v: unknown) => setOptions({ allowMirror: !!v })"
+              >
+                {{ t('main.bdetect.mirror') }}
+              </el-checkbox>
+              <MlBDetectOptionHelp
+                :text="t('main.bdetect.help.mirror')"
+                :label="
+                  t('main.bdetect.explain', {
+                    option: t('main.bdetect.mirror')
+                  })
+                "
+              />
+            </div>
+            <div class="ml-bdetect-panel__option">
+              <el-checkbox
+                :model-value="state.options.allowScale"
+                :disabled="!optionsEditable"
+                @change="(v: unknown) => setOptions({ allowScale: !!v })"
+              >
+                {{ t('main.bdetect.scale') }}
+              </el-checkbox>
+              <MlBDetectOptionHelp
+                :text="t('main.bdetect.help.scale')"
+                :label="
+                  t('main.bdetect.explain', { option: t('main.bdetect.scale') })
+                "
+              />
+            </div>
+            <div class="ml-bdetect-panel__option">
+              <el-checkbox
+                :model-value="state.options.matchLayer"
+                :disabled="!optionsEditable"
+                @change="(v: unknown) => setOptions({ matchLayer: !!v })"
+              >
+                {{ t('main.bdetect.sameLayer') }}
+              </el-checkbox>
+              <MlBDetectOptionHelp
+                :text="t('main.bdetect.help.sameLayer')"
+                :label="
+                  t('main.bdetect.explain', {
+                    option: t('main.bdetect.sameLayer')
+                  })
+                "
+              />
+            </div>
+            <div class="ml-bdetect-panel__option">
+              <el-checkbox
+                :model-value="state.options.textVariations"
+                :disabled="!optionsEditable"
+                @change="(v: unknown) => setOptions({ textVariations: !!v })"
+              >
+                {{ t('main.bdetect.textVariations') }}
+              </el-checkbox>
+              <MlBDetectOptionHelp
+                :text="t('main.bdetect.help.textVariations')"
+                :label="
+                  t('main.bdetect.explain', {
+                    option: t('main.bdetect.textVariations')
+                  })
+                "
+              />
+            </div>
           </div>
           <div
             class="ml-bdetect-panel__thresholds"
             :class="{ 'is-disabled': !optionsEditable }"
           >
-            <label class="ml-bdetect-panel__field">
-              <span>{{ t('main.bdetect.minInstances') }}</span>
+            <div class="ml-bdetect-panel__field">
+              <span class="ml-bdetect-panel__field-label">
+                <label :for="minInstancesId">
+                  {{ t('main.bdetect.minInstances') }}
+                </label>
+                <MlBDetectOptionHelp
+                  :text="t('main.bdetect.help.minInstances')"
+                  :label="
+                    t('main.bdetect.explain', {
+                      option: t('main.bdetect.minInstances')
+                    })
+                  "
+                />
+              </span>
               <el-input-number
+                :id="minInstancesId"
                 :model-value="state.options.minInstances"
                 :min="2"
                 :step="1"
@@ -69,10 +130,23 @@
                     setOptions({ minInstances: v ?? 2 })
                 "
               />
-            </label>
-            <label class="ml-bdetect-panel__field">
-              <span>{{ t('main.bdetect.minSavings') }}</span>
+            </div>
+            <div class="ml-bdetect-panel__field">
+              <span class="ml-bdetect-panel__field-label">
+                <label :for="minSavingsId">
+                  {{ t('main.bdetect.minSavings') }}
+                </label>
+                <MlBDetectOptionHelp
+                  :text="t('main.bdetect.help.minSavings')"
+                  :label="
+                    t('main.bdetect.explain', {
+                      option: t('main.bdetect.minSavings')
+                    })
+                  "
+                />
+              </span>
               <el-input-number
+                :id="minSavingsId"
                 :model-value="state.options.minSavings"
                 :min="0"
                 :step="1"
@@ -83,10 +157,23 @@
                   (v: number | undefined) => setOptions({ minSavings: v ?? 0 })
                 "
               />
-            </label>
-            <label class="ml-bdetect-panel__field">
-              <span>{{ t('main.bdetect.maxEntities') }}</span>
+            </div>
+            <div class="ml-bdetect-panel__field">
+              <span class="ml-bdetect-panel__field-label">
+                <label :for="maxEntitiesId">
+                  {{ t('main.bdetect.maxEntities') }}
+                </label>
+                <MlBDetectOptionHelp
+                  :text="t('main.bdetect.help.maxEntities')"
+                  :label="
+                    t('main.bdetect.explain', {
+                      option: t('main.bdetect.maxEntities')
+                    })
+                  "
+                />
+              </span>
               <el-input-number
+                :id="maxEntitiesId"
                 :model-value="state.options.maxEntities"
                 :min="2"
                 :step="1"
@@ -98,7 +185,7 @@
                     setOptions({ maxEntities: v ?? 64 })
                 "
               />
-            </label>
+            </div>
           </div>
         </el-collapse-item>
       </el-collapse>
@@ -218,11 +305,7 @@
           </el-scrollbar>
         </template>
         <div class="ml-bdetect-panel__footer">
-          <el-button
-            type="primary"
-            data-testid="bdetect-run"
-            @click="detect"
-          >
+          <el-button type="primary" data-testid="bdetect-run" @click="detect">
             {{
               state.phase === 'ready'
                 ? t('main.bdetect.detect')
@@ -268,10 +351,11 @@ import {
   ElScrollbar,
   ElTag
 } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBDetect } from '../../composable'
+import MlBDetectOptionHelp from './MlBDetectOptionHelp.vue'
 
 const { t } = useI18n()
 const {
@@ -289,6 +373,9 @@ const {
 } = useBDetect()
 
 const openSections = ref(['options'])
+const minInstancesId = useId()
+const minSavingsId = useId()
+const maxEntitiesId = useId()
 const optionsEditable = computed(
   () => state.phase === 'ready' || state.phase === 'list'
 )
@@ -341,12 +428,26 @@ const someChecked = computed(() => checkedCount.value > 0)
 
 .ml-bdetect-panel__filters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 2px 8px;
 }
 
+.ml-bdetect-panel__option {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
 .ml-bdetect-panel__filters .el-checkbox {
+  height: auto;
   margin-right: 0;
+  white-space: normal;
+}
+
+.ml-bdetect-panel__filters :deep(.el-checkbox__label) {
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .ml-bdetect-panel__thresholds {
@@ -362,6 +463,16 @@ const someChecked = computed(() => checkedCount.value > 0)
   gap: 2px;
   font-size: 12px;
   color: var(--el-text-color-regular);
+}
+
+.ml-bdetect-panel__field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ml-bdetect-panel__field-label label {
+  cursor: pointer;
 }
 
 .ml-bdetect-panel__field .el-input-number {
