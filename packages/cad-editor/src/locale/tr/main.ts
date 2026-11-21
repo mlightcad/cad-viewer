@@ -4,7 +4,7 @@ export default {
     open: 'Çizim Aç',
     drawingUnits: 'Çizim Birimleri',
     exportMenu: 'Dışa Aktar',
-    export: "DXF'e Dışa Aktar",
+    export: 'DXF\'e Dışa Aktar',
     exportImage: 'Görüntüye Dışa Aktar',
     about: 'Hakkında'
   },
@@ -141,9 +141,9 @@ export default {
         obliqueAngle:
           'Seçili karakterler için eğim açısını derece cinsinden ayarlayın (negatif değer diğer yöne eğer).',
         tracking:
-          "Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1'dir).",
+          'Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1\'dir).',
         widthFactor:
-          "Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1'dir).",
+          'Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1\'dir).',
         attachment: 'Çok satırlı metin bağlantı noktasını ayarlayın.',
         list: 'Madde işaretleri ve numaralandırma ekleyin veya yapılandırın.',
         lineSpacing: 'Satır aralığını ayarlayın.',
@@ -372,17 +372,17 @@ export default {
       newView:
         'Geçerli görüntüden veya bir pencereden yeni bir adlı görünüm oluşturur.',
       viewManager:
-        "Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi'ni açar.",
+        'Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi\'ni açar.',
       ucs: 'Geçerli kullanıcı koordinat sisteminin orijinini ve yönünü ayarlar.',
       namedUcs: 'Adlı UCS tanımlarını ve UCS simgesi ayarlarını yönetir.',
-      ucsWorld: "UCS'yi dünya koordinat sistemine ayarlar.",
+      ucsWorld: 'UCS\'yi dünya koordinat sistemine ayarlar.',
       ucsOrigin: 'Yeni bir UCS orijini tanımlar.',
-      ucsX: "UCS'yi X ekseni etrafında döndürür.",
-      ucsY: "UCS'yi Y ekseni etrafında döndürür.",
-      ucsZ: "UCS'yi Z ekseni etrafında döndürür.",
+      ucsX: 'UCS\'yi X ekseni etrafında döndürür.',
+      ucsY: 'UCS\'yi Y ekseni etrafında döndürür.',
+      ucsZ: 'UCS\'yi Z ekseni etrafında döndürür.',
       ucsZAxis: 'Z eksenini belirterek bir UCS tanımlar.',
-      ucsView: "UCS'yi geçerli görünümle hizalar.",
-      ucsObject: "UCS'yi seçilen bir nesneye hizalar.",
+      ucsView: 'UCS\'yi geçerli görünümle hizalar.',
+      ucsObject: 'UCS\'yi seçilen bir nesneye hizalar.',
       restoreView: 'Çizimde kayıtlı adlı bir görünümü geri yükler.',
       propertyColor:
         'Yeni oluşturulan nesneler veya seçili varlıklar için rengi ayarlayın.',

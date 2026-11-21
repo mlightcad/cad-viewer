@@ -325,10 +325,10 @@ export default {
       },
       justifyOptions: {
         center: 'Ortalanmış',
-        first: "Uzatma Çizgisi 1'de",
-        second: "Uzatma Çizgisi 2'de",
-        overFirst: "Uzatma Çizgisi 1'in Üstünde",
-        overSecond: "Uzatma Çizgisi 2'nin Üstünde"
+        first: 'Uzatma Çizgisi 1\'de',
+        second: 'Uzatma Çizgisi 2\'de',
+        overFirst: 'Uzatma Çizgisi 1\'in Üstünde',
+        overSecond: 'Uzatma Çizgisi 2\'nin Üstünde'
       },
       directionOptions: {
         ltr: 'Soldan Sağa',
@@ -673,7 +673,7 @@ export default {
   ucsManagerDlg: {
     title: 'UCS',
     tabs: {
-      named: "Adlı UCS'ler",
+      named: 'Adlı UCS\'ler',
       settings: 'Ayarlar'
     },
     currentUcs: 'Geçerli UCS: {name}',
@@ -691,8 +691,8 @@ export default {
     applyToAllViewports: 'Tüm etkin görüntü pencerelerine uygula',
     allowSelectingIcon: 'UCS simgesinin seçilmesine izin ver',
     ucsSettings: 'UCS ayarları',
-    saveWithViewport: "UCS'yi görüntü penceresiyle kaydet",
-    updateViewToPlan: "UCS değiştiğinde görünümü Plan'a güncelle"
+    saveWithViewport: 'UCS\'yi görüntü penceresiyle kaydet',
+    updateViewToPlan: 'UCS değiştiğinde görünümü Plan\'a güncelle'
   },
   ucsDetailsDlg: {
     title: 'UCS Ayrıntıları',
