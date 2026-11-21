@@ -74,23 +74,47 @@ import {
 export type AcTrDrawOrderZAllocator = () => number
 
 let activeDrawOrderZAllocator: AcTrDrawOrderZAllocator = () => 0
+/** Whether a view wired an allocator; without one every Z stays 0. */
+let drawOrderZEnabled = false
 
 /** Sets the process-wide draw-order Z allocator used when packing batches. */
 export function setAcTrDrawOrderZAllocator(
   allocator: AcTrDrawOrderZAllocator
 ): void {
   activeDrawOrderZAllocator = allocator
+  drawOrderZEnabled = true
 }
 
 /** Restores the no-op allocator (Z stays 0). */
 export function clearAcTrDrawOrderZAllocator(): void {
   activeDrawOrderZAllocator = () => 0
+  drawOrderZEnabled = false
 }
 
 /**
- * Elevates linework-tier geometry so later entities occlude earlier ones.
- * Hatch-tier fills (`drawOrder < 0`) keep Z unchanged so they stay under
- * linework via `renderOrder` regardless of creation order.
+ * Z band of hatch-tier fills (`drawOrder < 0`), below every linework Z.
+ *
+ * Hatches still take the next draw-order Z, so a later hatch occludes an
+ * earlier one where they overlap (a coloured drop on a white label panel).
+ * Without it all hatches sat at one Z and three.js drew them in material-id
+ * order, which let an earlier panel cover later fills. The band keeps them
+ * under linework; it stays well inside the default camera depth band.
+ */
+export const ACTR_HATCH_TIER_Z = -50
+
+/** Draw-order Z for one drawable of `material`. */
+function drawOrderZ(material: THREE.Material): number {
+  if (!drawOrderZEnabled) return 0
+  const z = activeDrawOrderZAllocator()
+  return (getMaterialMetadata(material).drawOrder ?? 0) < 0
+    ? ACTR_HATCH_TIER_Z + z
+    : z
+}
+
+/**
+ * Elevates geometry so later entities occlude earlier ones. Hatch-tier fills
+ * (`drawOrder < 0`) are stacked in {@link ACTR_HATCH_TIER_Z}, under all
+ * linework.
  *
  * Within one entity, Z follows the order {@link AcTrBatchedGroup.addEntity}
  * visits drawable leaves. INSERT templates must therefore keep MTEXT
@@ -101,10 +125,7 @@ function applyDrawOrderZ(
   worldOffset: THREE.Vector3,
   material: THREE.Material
 ): void {
-  const drawOrder = getMaterialMetadata(material).drawOrder ?? 0
-  if (drawOrder >= 0) {
-    worldOffset.z += activeDrawOrderZAllocator()
-  }
+  worldOffset.z += drawOrderZ(material)
 }
 
 /**
@@ -1344,25 +1365,21 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
         cloned.visible = entityVisible && object.visible
-        // Elevate later unbatched linework so wipeouts can occlude it.
-        // Hatch-tier unbatched meshes keep Z=0 (under linework via renderOrder).
+        // Elevate later unbatched geometry so later entities occlude it.
         const material = (cloned as THREE.Mesh).material as
           | THREE.Material
           | THREE.Material[]
           | undefined
         const firstMaterial = Array.isArray(material) ? material[0] : material
-        if (
-          firstMaterial &&
-          (getMaterialMetadata(firstMaterial).drawOrder ?? 0) >= 0
-        ) {
+        if (firstMaterial) {
           // cloneUnbatchedObject stores the source matrixWorld directly.
           // updateMatrix() recomposes from TRS and drops that transform, so
           // OLE/raster images inside a scaled INSERT draw at block-local
           // coordinates (a wide smear beside the drawing).
-          const drawOrderZ = activeDrawOrderZAllocator()
-          if (drawOrderZ !== 0) {
-            cloned.matrix.elements[14] += drawOrderZ
-            cloned.matrixWorld.elements[14] += drawOrderZ
+          const z = drawOrderZ(firstMaterial)
+          if (z !== 0) {
+            cloned.matrix.elements[14] += z
+            cloned.matrixWorld.elements[14] += z
           }
         }
         // IMAGE / OLE materials are created without layer metadata. Stamp the
@@ -2712,9 +2729,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (this.mustBakeSharedDrawable(object, kind, geometry)) return null
 
     const matrixWorld = object.matrixWorld.clone()
-    if ((getMaterialMetadata(material).drawOrder ?? 0) >= 0) {
-      matrixWorld.elements[14] += activeDrawOrderZAllocator()
-    }
+    matrixWorld.elements[14] += drawOrderZ(material)
     const translation = new THREE.Vector3().setFromMatrixPosition(matrixWorld)
     const batch = this.resolveSharedGeometryBatch(
       geometry,

@@ -206,8 +206,10 @@ export function acapPdfRemoveTextOutlineTwins(
     const stroke = pdfEntityToStroke(entity, entity)
     if (!stroke) continue
     if (
-      bands.some(({ text, band }) =>
-        acapPdfTextCoversStrokePoints(text, stroke.points, band)
+      bands.some(
+        ({ text, band }) =>
+          acapPdfSameInk(entity, text) &&
+          acapPdfTextCoversStrokePoints(text, stroke.points, band)
       )
     ) {
       consumed.add(entity)
@@ -222,8 +224,10 @@ export function acapPdfRemoveTextOutlineTwins(
       contours.some(
         points =>
           points.length >= MIN_GLYPH_POLY_VERTICES &&
-          bands.some(({ text, band }) =>
-            acapPdfTextCoversStrokePoints(text, points, band)
+          bands.some(
+            ({ text, band }) =>
+              acapPdfSameInk(hatch, text) &&
+              acapPdfTextCoversStrokePoints(text, points, band)
           )
       )
     ) {
@@ -245,6 +249,24 @@ export function acapPdfRemoveTextOutlineTwins(
   }
 
   return entities.filter(entity => !consumed.has(entity))
+}
+
+/**
+ * Whether `entity` is painted in the text's colour. A glyph twin repeats the
+ * text in the same ink; a fill of another colour under the text is artwork
+ * the text sits on (a white digit on a coloured badge), so it must survive.
+ *
+ * @param entity - Outline or fill that overlaps the text.
+ * @param text - Imported PDF text.
+ */
+export function acapPdfSameInk(entity: AcDbEntity, text: AcDbText): boolean {
+  try {
+    return entity.color.equals(text.color)
+  } catch {
+    // ByLayer colours resolve through the working database; without one
+    // (detached entities) keep the geometric test alone.
+    return true
+  }
 }
 
 function normalizeAngleDelta(delta: number): number {

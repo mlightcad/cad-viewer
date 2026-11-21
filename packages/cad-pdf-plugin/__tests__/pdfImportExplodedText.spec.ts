@@ -93,14 +93,8 @@ describe('acapPdfRecognizeImportExplodedText', () => {
 
   test('replaces readable stroke groups with text and keeps unread strokes', async () => {
     const db = new AcDbDatabase()
-    const s1 = new AcDbLine(
-      new AcGePoint3d(0, 0, 0),
-      new AcGePoint3d(1, 0, 0)
-    )
-    const s2 = new AcDbLine(
-      new AcGePoint3d(2, 0, 0),
-      new AcGePoint3d(3, 0, 0)
-    )
+    const s1 = new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(1, 0, 0))
+    const s2 = new AcDbLine(new AcGePoint3d(2, 0, 0), new AcGePoint3d(3, 0, 0))
     s1.layer = 'TEXT'
     s1.color = new AcCmColor()
     s2.layer = 'TEXT'
@@ -144,7 +138,15 @@ describe('acapPdfRecognizeImportExplodedText', () => {
     recognizeExploded.mockImplementation(async () => [
       {
         line: {
-          strokes: [{ id: hatch, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }],
+          strokes: [
+            {
+              id: hatch,
+              points: [
+                { x: 0, y: 0 },
+                { x: 1, y: 1 }
+              ]
+            }
+          ],
           glyphs: [],
           position: { x: 0, y: 2 },
           height: 3,
@@ -157,7 +159,15 @@ describe('acapPdfRecognizeImportExplodedText', () => {
       },
       {
         line: {
-          strokes: [{ id: hatch, points: [{ x: 2, y: 0 }, { x: 3, y: 1 }] }],
+          strokes: [
+            {
+              id: hatch,
+              points: [
+                { x: 2, y: 0 },
+                { x: 3, y: 1 }
+              ]
+            }
+          ],
           glyphs: [],
           position: { x: 5, y: 2 },
           height: 3,
@@ -225,21 +235,23 @@ describe('acapPdfRecognizeImportExplodedText', () => {
     native.rotation = 0
     native.widthFactor = 1
 
-    recognizeExploded.mockImplementation(async (strokes: Array<{ id: unknown }>) => [
-      {
-        line: {
-          strokes: [strokes[0]],
-          glyphs: [],
-          position: { x: 0, y: 0 },
-          height: 3,
-          width: 12,
-          rotation: 0
-        },
-        kind: 'mesh',
-        text: '',
-        source: 'unread'
-      }
-    ])
+    recognizeExploded.mockImplementation(
+      async (strokes: Array<{ id: unknown }>) => [
+        {
+          line: {
+            strokes: [strokes[0]],
+            glyphs: [],
+            position: { x: 0, y: 0 },
+            height: 3,
+            width: 12,
+            rotation: 0
+          },
+          kind: 'mesh',
+          text: '',
+          source: 'unread'
+        }
+      ]
+    )
 
     const recovered = await acapPdfRecognizeImportExplodedText(
       db,
@@ -252,6 +264,52 @@ describe('acapPdfRecognizeImportExplodedText', () => {
     expect(recovered.replaced).toBe(1)
     expect(recovered.entities).toEqual([native])
     expect(recovered.entities).not.toContain(outline)
+  })
+
+  test('keeps a coloured fill under a differently coloured imported text', async () => {
+    const db = new AcDbDatabase()
+    // A green badge with a white "1" on it: the badge outline clusters into
+    // the digit's line, but it is artwork, not the digit's outline twin.
+    const badge = new AcDbHatch()
+    badge.color = new AcCmColor().setRGB(0, 171, 79)
+    const twin = new AcDbHatch()
+    twin.color = new AcCmColor().setRGB(255, 255, 255)
+    const native = new AcDbText()
+    native.textString = '1'
+    native.position = new AcGePoint3d(0, 0, 0)
+    native.height = 3
+    native.rotation = 0
+    native.widthFactor = 1
+    native.color = new AcCmColor().setRGB(255, 255, 255)
+
+    recognizeExploded.mockImplementation(
+      async (strokes: Array<{ id: unknown }>) => [
+        {
+          line: {
+            strokes: [strokes[0], strokes[1]],
+            glyphs: [],
+            position: { x: 0, y: 0 },
+            height: 3,
+            width: 2,
+            rotation: 0
+          },
+          kind: 'mesh',
+          text: '',
+          source: 'unread'
+        }
+      ]
+    )
+
+    const recovered = await acapPdfRecognizeImportExplodedText(
+      db,
+      [badge, twin, native],
+      new PdfGlyphDictionary(),
+      { mode: 'local' }
+    )
+
+    expect(recovered.entities).toContain(badge)
+    expect(recovered.entities).toContain(native)
+    expect(recovered.entities).not.toContain(twin)
   })
 
   test('also drops fill+stroke companion outlines when the hatch becomes text', async () => {
@@ -269,7 +327,15 @@ describe('acapPdfRecognizeImportExplodedText', () => {
     recognizeExploded.mockImplementation(async () => [
       {
         line: {
-          strokes: [{ id: hatch, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }],
+          strokes: [
+            {
+              id: hatch,
+              points: [
+                { x: 0, y: 0 },
+                { x: 1, y: 1 }
+              ]
+            }
+          ],
           glyphs: [],
           position: { x: 0, y: 0 },
           height: 3,
