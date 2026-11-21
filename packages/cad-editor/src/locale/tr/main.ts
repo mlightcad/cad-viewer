@@ -607,6 +607,7 @@ export default {
     detect: 'Algıla',
     detectAgain: 'Yeniden algıla',
     options: 'Algılama seçenekleri',
+    explain: '{option} açıklaması',
     rotation: 'Döndürülmüş',
     mirror: 'Aynalanmış',
     scale: 'Ölçeklenmiş',
@@ -615,6 +616,24 @@ export default {
     minInstances: 'En az örnek',
     minSavings: 'En az tasarruf',
     maxEntities: 'En fazla nesne',
+    help: {
+      rotation:
+        'Herhangi bir açıyla döndürülmüş kopyalar aynı nesne sayılır. Kapatırsanız yalnızca aynı yöne bakan kopyalar gruplanır.',
+      mirror:
+        'Ters çevrilmiş kopyalar da aynı nesne sayılır; örneğin diğer yana açılan bir kapı. Kapatırsanız aynalanmış kopyalar gruba alınmaz.',
+      scale:
+        'Oran korunarak büyütülmüş veya küçültülmüş kopyalar aynı nesne sayılır. Kapatırsanız yalnızca aynı boyuttaki kopyalar gruplanır. Gerilmiş veya ezilmiş şekiller hiç eşleşmez.',
+      sameLayer:
+        'Bir kopyadaki her şekil, karşılık gelen şekille aynı katmanda olmalıdır. PDF’den gelen çizimlerde katmanlar çoğu zaman renge göre ayrılır ve bir simge birkaç katmana dağılır. Bu durumda kapatın.',
+      textVariations:
+        'Oda numarası gibi, kopyalar arasında farklı tek satırlık metinlere izin verilir. Grup dönüştürülünce bu metinler blok özniteliği olur. Kapatırsanız metnin harfi harfine aynı olması gerekir. Çok satırlı metin her zaman birebir aynı olmalıdır ve öznitelik olmaz.',
+      minInstances:
+        'Özgün nesne dahil en az bu kadar kopya bulunursa grup listelenir. En küçük değer 2’dir. Yükseltirseniz yalnızca ikili tekrarlar yok sayılır ve daha sık tekrarlanan nesneler kalır.',
+      minSavings:
+        'Bir grup, bloğa dönüştürünce en az bu kadar nesne kaldırılacaksa tutulur. Tasarruf, kopya sayısı çarpı (bir kopyadaki nesne sayısı eksi 1) kadardır: bir kopya blok olur, diğer her kopya tek bir blok referansıyla değiştirilir. Örneğin 3 nesneli 5 kopya 10 nesne kazandırır. Yükseltirseniz küçük gruplar gizlenir; 0 yaparsanız her tekrar listelenir.',
+      maxEntities:
+        'Bir kopyanın içerebileceği en fazla nesne sayısıdır. Algılama bu boyuta ulaşınca parça eklemeyi durdurur; daha çok parçadan oluşan bir simge yalnızca kısmen alınır. Büyük ve karmaşık tekrarları atlamak için düşürün; aradığınız simgenin daha çok parçası varsa yükseltin. Varsayılan 64’tür.'
+    },
     groups: '{count} yinelenen nesne grubu',
     none: 'Yinelenen nesne bulunamadı.',
     selectAll: 'Tümünü seç',

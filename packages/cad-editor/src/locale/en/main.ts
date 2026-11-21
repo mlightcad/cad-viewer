@@ -333,7 +333,8 @@ export default {
       mleader: 'Create a multileader annotation.',
       mleaderAdd: 'Add a leader line to an existing multileader.',
       mleaderRemove: 'Remove a leader line from an existing multileader.',
-      script: 'Open the CAD script console to run a script on the current drawing.',
+      script:
+        'Open the CAD script console to run a script on the current drawing.',
       move: 'Move selected objects to a new position.',
       rotate: 'Rotate selected objects around a base point.',
       scale:
@@ -600,6 +601,7 @@ export default {
     detect: 'Detect',
     detectAgain: 'Detect again',
     options: 'Detection options',
+    explain: 'Details for {option}',
     rotation: 'Rotated',
     mirror: 'Mirrored',
     scale: 'Scaled',
@@ -608,6 +610,24 @@ export default {
     minInstances: 'Min. instances',
     minSavings: 'Min. savings',
     maxEntities: 'Max. objects',
+    help: {
+      rotation:
+        'Rotated copies still count as the same object, at any angle. Turn this off to group only copies that face the same way.',
+      mirror:
+        'Mirrored copies still count as the same object, such as a door that swings the other way. Turn this off to leave flipped copies out.',
+      scale:
+        'Copies that are uniformly larger or smaller still count as the same object. Turn this off to group only copies of the same size. Stretched or skewed shapes are never matched.',
+      sameLayer:
+        'Each shape in a copy must lie on the same layer as the matching shape. Turn this off when one symbol is split across layers, which is common after a PDF import that assigns layers by color.',
+      textVariations:
+        'Copies may contain different single-line text, such as room numbers. Those texts become block attributes when the group is converted. Turn this off to require the text to read exactly the same. Multiline text always has to match and does not become an attribute.',
+      minInstances:
+        'A group is listed only when at least this many copies are found, including the original. The smallest value is 2. Raise it to ignore pairs and keep only objects that repeat more often.',
+      minSavings:
+        'A group is kept only when converting it would remove at least this many objects. The saving is the number of copies times one less than the objects in a copy: one copy becomes the block, and each other copy is replaced by a single block reference. For example, 5 copies of a 3-object symbol save 10 objects. Raise this to hide small groups, or set it to 0 to list every repeat.',
+      maxEntities:
+        'The most objects one copy may contain. Detection stops adding pieces once a group reaches this size, so a symbol with more pieces is only partly included. Lower it to skip large, complicated repeats, and raise it when a symbol you want has more pieces. The default is 64.'
+    },
     groups: '{count} groups of repeated objects',
     none: 'No repeated objects were found.',
     selectAll: 'Select all',

@@ -32,6 +32,7 @@ export default {
     detect: 'Detekovat',
     detectAgain: 'Detekovat znovu',
     options: 'Možnosti detekce',
+    explain: 'Vysvětlení: {option}',
     rotation: 'Otočené',
     mirror: 'Zrcadlené',
     scale: 'Měřítko',
@@ -40,6 +41,24 @@ export default {
     minInstances: 'Min. počet instancí',
     minSavings: 'Min. úspora',
     maxEntities: 'Max. počet objektů',
+    help: {
+      rotation:
+        'Kopie otočené o libovolný úhel se stále počítají jako stejný objekt. Vypnutím se seskupí jen kopie se stejnou orientací.',
+      mirror:
+        'Zrcadlené kopie se stále počítají jako stejný objekt, například dveře otevírané na druhou stranu. Vypnutím se zrcadlené kopie do skupiny nezařadí.',
+      scale:
+        'Kopie rovnoměrně zvětšené nebo zmenšené se stále počítají jako stejný objekt. Vypnutím se seskupí jen kopie stejné velikosti. Natažené nebo zploštělé tvary se neshodují.',
+      sameLayer:
+        'Každý tvar v kopii musí ležet na stejné hladině jako odpovídající tvar. Po importu z PDF se hladiny často dělí podle barvy a jeden symbol je rozprostřen na několik hladin. V tom případě volbu vypněte.',
+      textVariations:
+        'Kopie mohou obsahovat různý jednořádkový text, například čísla místností. Při převodu se z těchto textů stanou atributy bloku. Vypnutím musí text znít úplně stejně. Víceřádkový text se musí vždy shodovat doslova a atributem se nestane.',
+      minInstances:
+        'Skupina se zobrazí, jen když se najde alespoň tolik kopií včetně původního objektu. Nejmenší hodnota je 2. Zvýšením se ignorují pouhé dvojice a zůstanou objekty, které se opakují častěji.',
+      minSavings:
+        'Skupina zůstane, jen když by její převod odebral alespoň tolik objektů. Úspora je počet kopií krát (objekty v jedné kopii minus 1): jedna kopie se stane blokem a každá další se nahradí jedním odkazem na blok. Například 5 kopií symbolu ze 3 objektů ušetří 10 objektů. Zvýšením se skryjí malé skupiny; hodnota 0 vypíše každé opakování.',
+      maxEntities:
+        'Nejvyšší počet objektů v jedné kopii. Detekce přestane přidávat díly na této velikosti, takže symbol z více dílů se zahrne jen zčásti. Snížením se přeskočí velké a složité opakování; zvyšte hodnotu, má-li hledaný symbol více dílů. Výchozí hodnota je 64.'
+    },
     groups: 'Skupiny opakujících se objektů: {count}',
     none: 'Nebyly nalezeny žádné opakující se objekty.',
     selectAll: 'Vybrat vše',
