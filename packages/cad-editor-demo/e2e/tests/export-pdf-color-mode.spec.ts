@@ -53,19 +53,15 @@ async function exportPdfFromDialog(
   await commandLine.fill('cpdf')
   await page.keyboard.press('Enter')
 
-  const dialog = page.locator('.ml-export-pdf-dlg')
+  const dialog = page.locator('.ml-pdf-export-dialog')
   await expect(dialog).toBeVisible()
-  await dialog
-    .locator('.ml-export-pdf-dlg__card', { hasText: colorLabel })
-    .click()
+  await dialog.locator('.ml-ui-form-card', { hasText: colorLabel }).click()
   await expect(
-    dialog.locator('.ml-export-pdf-dlg__card.is-selected', {
-      hasText: colorLabel
-    })
+    dialog.locator('.ml-ui-form-card.is-selected', { hasText: colorLabel })
   ).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download', { timeout: 60_000 })
-  await page.getByRole('button', { name: 'OK', exact: true }).click()
+  await dialog.getByRole('button', { name: 'OK', exact: true }).click()
   const download = await downloadPromise
   const file = await download.path()
   return readFile(file)
