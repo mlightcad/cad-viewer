@@ -32,7 +32,10 @@ import {
   acapPdfOcrErrorMessage,
   acapPdfRecognizeExplodedTextLines
 } from './pdfExplodedTextRecognition.js'
-import { acapPdfTextCoversStrokeLine } from './pdfTextStrokeCoverage.js'
+import {
+  acapPdfSameInk,
+  acapPdfTextCoversStrokeLine
+} from './pdfTextStrokeCoverage.js'
 import type { PdfTextStroke } from './recognition/pdfGlyphClustering.js'
 import type { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary.js'
 import type { PdfRecPoint } from './recognition/pdfRecGeometry.js'
@@ -130,8 +133,7 @@ export async function acapPdfRecognizeImportExplodedText(
     locale: AcApI18n.currentLocale,
     withBusy: (work, message) =>
       AcApDocManager.instance.withBusyIndicator(work, message),
-    recognizingMessage: count =>
-      acapPdfT('jig.pdftext.recognizing', { count }),
+    recognizingMessage: count => acapPdfT('jig.pdftext.recognizing', { count }),
     onOcrError: error => {
       if (ocrErrorShown) return
       ocrErrorShown = true
@@ -145,11 +147,18 @@ export async function acapPdfRecognizeImportExplodedText(
   const covered = new Set<AcDbEntity>()
   let coveredLines = 0
   const readable = recognized.filter(row => {
-    if (
-      existingTexts.some(text => acapPdfTextCoversStrokeLine(text, row.line))
-    ) {
+    const covering = existingTexts.filter(text =>
+      acapPdfTextCoversStrokeLine(text, row.line)
+    )
+    if (covering.length > 0) {
       coveredLines++
-      for (const stroke of row.line.strokes) covered.add(stroke.id)
+      // Only same-colour strokes are the text's outline twin; a fill of
+      // another colour is artwork under the text (a badge behind a digit).
+      for (const stroke of row.line.strokes) {
+        if (covering.some(text => acapPdfSameInk(stroke.id, text))) {
+          covered.add(stroke.id)
+        }
+      }
       return false
     }
     return !!row.text.trim()
@@ -266,10 +275,7 @@ async function prepareMeasure(
   try {
     await AcApFontUtil.prepareTextMeasurement(fonts)
   } catch (error) {
-    console.warn(
-      '[PdfImport] Could not load fonts to fit text widths:',
-      error
-    )
+    console.warn('[PdfImport] Could not load fonts to fit text widths:', error)
     return undefined
   }
   return (text, font, height, bigFont) =>

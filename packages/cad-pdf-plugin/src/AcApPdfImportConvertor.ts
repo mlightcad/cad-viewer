@@ -65,7 +65,8 @@ import {
   extractPdfImportSubpaths,
   type PdfImportedImage,
   type PdfImportedText,
-  type PdfImportOps
+  type PdfImportOps,
+  type PdfImportPoint
 } from './pdfVectorImport.js'
 import {
   AcUiPdfImportDialog,
@@ -417,7 +418,9 @@ export class AcApPdfImportConvertor {
     let mode = lastImportMode
     const ocrProviders = await AcApTextRecognitionService.listAvailable()
     let explodedText =
-      mode === 'visual' ? (false as AcApPdfExplodedTextMode) : lastImportExplodedText
+      mode === 'visual'
+        ? (false as AcApPdfExplodedTextMode)
+        : lastImportExplodedText
     if (acapPdfExplodedTextModeIsOcr(explodedText)) {
       const ocrId = explodedText.ocr
       if (!ocrProviders.some(provider => provider.id === ocrId)) {
@@ -451,7 +454,8 @@ export class AcApPdfImportConvertor {
         if (!picked) return undefined
         mode = picked
         if (mode === 'visual') explodedText = false
-        else if (explodedText === false) explodedText = lastImportExplodedText || 'local'
+        else if (explodedText === false)
+          explodedText = lastImportExplodedText || 'local'
         continue
       }
       if (result.stringResult === 'Text') {
@@ -728,7 +732,13 @@ export class AcApPdfImportConvertor {
       // Images go first so linework and text draw on top of them.
       const imageEntities =
         options.images && content.images
-          ? await createImageEntities(page, db, content.images, options)
+          ? await createImageEntities(
+              page,
+              db,
+              content.images,
+              content.clipPaths,
+              options
+            )
           : []
       for (const image of imageEntities) {
         if (image.layer && image.layer !== '0') usedLayerNames.add(image.layer)
@@ -881,6 +891,7 @@ async function createImageEntities(
   page: PdfPageObjects,
   db: AcDbDatabase,
   images: PdfImportedImage[],
+  clipPaths: PdfImportPoint[][][] | undefined,
   options: AcApResolvedPdfImportOptions
 ): Promise<AcDbRasterImage[]> {
   const { scale, insertionPoint } = options
@@ -901,16 +912,27 @@ async function createImageEntities(
     if (!image) continue
 
     const { a, b, c, d, e, f } = paint.toCad
+    const clipLoops =
+      paint.clipPath !== undefined ? clipPaths?.[paint.clipPath] : undefined
     let raster
     try {
-      raster = await acapPdfRasterizeImage(image, {
-        a: a * scale,
-        b: b * scale,
-        c: c * scale,
-        d: d * scale,
-        e: insertionPoint.x + e * scale,
-        f: insertionPoint.y + f * scale
-      })
+      raster = await acapPdfRasterizeImage(
+        image,
+        {
+          a: a * scale,
+          b: b * scale,
+          c: c * scale,
+          d: d * scale,
+          e: insertionPoint.x + e * scale,
+          f: insertionPoint.y + f * scale
+        },
+        clipLoops?.map(loop =>
+          loop.map(p => ({
+            x: insertionPoint.x + p.x * scale,
+            y: insertionPoint.y + p.y * scale
+          }))
+        )
+      )
     } catch (err) {
       log.warn('[PdfImport] Skipped an image that could not be drawn:', err)
       continue

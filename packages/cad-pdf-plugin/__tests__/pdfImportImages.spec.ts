@@ -1,4 +1,5 @@
 import {
+  acapPdfClipBounds,
   acapPdfFlattenInkOnPaper,
   acapPdfImagePlacement,
   acapPdfImageToRgba
@@ -61,6 +62,37 @@ describe('acapPdfImagePlacement', () => {
     )!
     expect(p.canvasWidth).toBe(4096)
     expect(p.canvasHeight).toBe(4096)
+  })
+
+  test('crops the placement to clip bounds', () => {
+    // 100×100 px image drawn 100×100 mm at the origin, clipped to a
+    // 20×10 mm window.
+    const p = acapPdfImagePlacement(
+      { a: 100, b: 0, c: 0, d: 100, e: 0, f: 0 },
+      100,
+      100,
+      undefined,
+      { minX: 40, minY: 30, maxX: 60, maxY: 40 }
+    )!
+    expect(p.box).toEqual({ x: 40, y: 30, width: 20, height: 10 })
+    expect(p.canvasWidth).toBe(20)
+    expect(p.canvasHeight).toBe(10)
+    // Image pixel (40, 60) is model (40, 40): the window's top-left.
+    const tl = apply(p.transform, 40, 60)
+    expect(tl.x).toBeCloseTo(0)
+    expect(tl.y).toBeCloseTo(0)
+  })
+
+  test('drops an image clipped away entirely', () => {
+    expect(
+      acapPdfImagePlacement(
+        { a: 10, b: 0, c: 0, d: 10, e: 0, f: 0 },
+        10,
+        10,
+        undefined,
+        { minX: 50, minY: 50, maxX: 60, maxY: 60 }
+      )
+    ).toBeUndefined()
   })
 
   test('rejects degenerate placements', () => {
@@ -138,5 +170,24 @@ describe('acapPdfFlattenInkOnPaper', () => {
     expect(Array.from(coloured)).toEqual([0, 160, 140, 255, 0, 0, 0, 0])
     const opaque = new Uint8ClampedArray([0, 0, 0, 255, 255, 255, 255, 255])
     expect(acapPdfFlattenInkOnPaper(opaque)).toBe(false)
+  })
+})
+
+describe('acapPdfClipBounds', () => {
+  test('spans every loop', () => {
+    expect(
+      acapPdfClipBounds([
+        [
+          { x: 1, y: 2 },
+          { x: 5, y: 2 },
+          { x: 5, y: 4 }
+        ],
+        [{ x: -1, y: 7 }]
+      ])
+    ).toEqual({ minX: -1, minY: 2, maxX: 5, maxY: 7 })
+  })
+
+  test('is undefined without points', () => {
+    expect(acapPdfClipBounds([])).toBeUndefined()
   })
 })

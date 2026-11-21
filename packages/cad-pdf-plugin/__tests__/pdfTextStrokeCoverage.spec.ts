@@ -124,6 +124,38 @@ describe('pdfTextStrokeCoverage', () => {
     for (const glyph of glyphs) expect(kept).not.toContain(glyph)
   })
 
+  test('removeTextOutlineTwins keeps a coloured fill a different-coloured digit sits on', () => {
+    // A green water-efficiency drop with a white "1" painted on it: same
+    // place and size as a glyph twin, but a different colour, so it is
+    // artwork under the text rather than the text's outline.
+    const digit = text('1', 1, 1, 3)
+    digit.color = new AcCmColor().setRGB(255, 255, 255)
+    const drop = new AcDbHatch()
+    drop.color = new AcCmColor().setRGB(0, 171, 79)
+    const twin = new AcDbHatch()
+    twin.color = new AcCmColor().setRGB(255, 255, 255)
+    const contour = [
+      { x: 1, y: 1 },
+      { x: 2, y: 0.5 },
+      { x: 3, y: 1 },
+      { x: 3.5, y: 2.5 },
+      { x: 2.5, y: 4 },
+      { x: 1.5, y: 4 },
+      { x: 0.5, y: 2.5 }
+    ]
+    const fillOutlines = new Map([
+      [drop, [contour]],
+      [twin, [contour]]
+    ])
+    const kept = acapPdfRemoveTextOutlineTwins(
+      [drop, digit, twin],
+      fillOutlines
+    )
+    expect(kept).toContain(drop)
+    expect(kept).toContain(digit)
+    expect(kept).not.toContain(twin)
+  })
+
   test('removeTextOutlineTwins drops filled glyph hatches under text', () => {
     const native = text('AB', 0, 0, 10)
     const hatch = new AcDbHatch()

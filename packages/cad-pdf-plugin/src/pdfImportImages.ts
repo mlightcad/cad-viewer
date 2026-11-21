@@ -25,6 +25,37 @@ export interface PdfImagePlacement {
   transform: [number, number, number, number, number, number]
 }
 
+/** Axis-aligned model-space box. */
+export interface PdfImageBounds {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/**
+ * Bounding box of clip loops, or `undefined` when they hold no points.
+ *
+ * @param loops - Closed loops in model space.
+ */
+export function acapPdfClipBounds(
+  loops: readonly (readonly { x: number; y: number }[])[]
+): PdfImageBounds | undefined {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const loop of loops) {
+    for (const p of loop) {
+      if (p.x < minX) minX = p.x
+      if (p.x > maxX) maxX = p.x
+      if (p.y < minY) minY = p.y
+      if (p.y > maxY) maxY = p.y
+    }
+  }
+  return minX <= maxX && minY <= maxY ? { minX, minY, maxX, maxY } : undefined
+}
+
 /** Largest canvas side; keeps memory bounded for huge scans. */
 export const PDF_IMAGE_MAX_CANVAS_SIDE = 4096
 
@@ -38,13 +69,17 @@ export const PDF_IMAGE_MAX_CANVAS_SIDE = 4096
  * @param pixelWidth - Image width in pixels.
  * @param pixelHeight - Image height in pixels.
  * @param maxSide - Largest canvas side in pixels.
- * @returns The placement, or `undefined` for a degenerate image.
+ * @param bounds - Model-space box the image is clipped to; the placement
+ * covers only the part of the image inside it.
+ * @returns The placement, or `undefined` for a degenerate image or one that
+ * lies entirely outside `bounds`.
  */
 export function acapPdfImagePlacement(
   toCad: PdfImageAffine,
   pixelWidth: number,
   pixelHeight: number,
-  maxSide = PDF_IMAGE_MAX_CANVAS_SIDE
+  maxSide = PDF_IMAGE_MAX_CANVAS_SIDE,
+  bounds?: PdfImageBounds
 ): PdfImagePlacement | undefined {
   const { a, b, c, d, e, f } = toCad
   const uLength = Math.hypot(a, b)
@@ -61,12 +96,19 @@ export function acapPdfImagePlacement(
 
   const xs = [e, e + a, e + c, e + a + c]
   const ys = [f, f + b, f + d, f + b + d]
-  const minX = Math.min(...xs)
-  const maxX = Math.max(...xs)
-  const minY = Math.min(...ys)
-  const maxY = Math.max(...ys)
+  let minX = Math.min(...xs)
+  let maxX = Math.max(...xs)
+  let minY = Math.min(...ys)
+  let maxY = Math.max(...ys)
+  if (bounds) {
+    minX = Math.max(minX, bounds.minX)
+    maxX = Math.min(maxX, bounds.maxX)
+    minY = Math.max(minY, bounds.minY)
+    maxY = Math.min(maxY, bounds.maxY)
+  }
   const width = maxX - minX
   const height = maxY - minY
+  if (!(width > 1e-9) || !(height > 1e-9)) return undefined
 
   let k = Math.max(pixelWidth / uLength, pixelHeight / vLength)
   k = Math.min(k, maxSide / Math.max(width, height))
@@ -220,15 +262,26 @@ export interface PdfRasterizedImage {
  *
  * @param image - Decoded PDF.js image.
  * @param toCad - Unit square → model space, already scaled and placed.
- * @returns The PNG and its box, or `undefined` when it cannot be drawn.
+ * @param clip - Clip loops in the same model space. The picture is cropped
+ * to their bounds and pixels outside them stay transparent.
+ * @returns The PNG and its box, or `undefined` when it cannot be drawn or
+ * is clipped away entirely.
  */
 export async function acapPdfRasterizeImage(
   image: PdfJsImageLike,
-  toCad: PdfImageAffine
+  toCad: PdfImageAffine,
+  clip?: readonly (readonly { x: number; y: number }[])[]
 ): Promise<PdfRasterizedImage | undefined> {
   const width = image.width ?? 0
   const height = image.height ?? 0
-  const placement = acapPdfImagePlacement(toCad, width, height)
+  const clipBounds = clip ? acapPdfClipBounds(clip) : undefined
+  const placement = acapPdfImagePlacement(
+    toCad,
+    width,
+    height,
+    PDF_IMAGE_MAX_CANVAS_SIDE,
+    clipBounds
+  )
   if (!placement) return undefined
 
   // Work on RGBA so ink-on-transparency can be put on paper either way.
@@ -260,6 +313,23 @@ export async function acapPdfRasterizeImage(
   const context = canvas.getContext('2d')
   if (!context) return undefined
   context.imageSmoothingEnabled = true
+  if (clip && clipBounds) {
+    // Model → canvas pixels (y down), same scale as the placement.
+    const { box } = placement
+    const kx = placement.canvasWidth / box.width
+    const ky = placement.canvasHeight / box.height
+    context.beginPath()
+    for (const loop of clip) {
+      loop.forEach((p, i) => {
+        const x = (p.x - box.x) * kx
+        const y = (box.y + box.height - p.y) * ky
+        if (i === 0) context.moveTo(x, y)
+        else context.lineTo(x, y)
+      })
+      context.closePath()
+    }
+    context.clip()
+  }
   context.setTransform(...placement.transform)
   context.drawImage(source, 0, 0, width, height)
 

@@ -260,19 +260,130 @@ export function applyPdfImportContrastColors(
         ])
       : requested
 
+  // Ink painted over a fill of the paper colour stays a fixed colour: the
+  // fill keeps its RGB on every canvas, so ACI 7 ink on it would vanish
+  // (white text on a white label panel on a dark canvas).
+  const isPaperColor =
+    tone === 'light' ? isPdfNearWhiteColor : isPdfNearBlackColor
+  const paperFills: {
+    order: number
+    box: PdfImportBox
+    loop: PdfImportPoint[]
+  }[] = []
+  content.subpaths.forEach((subpath, index) => {
+    if (!subpath.filled || !isPaperColor(subpath.fillColor)) return
+    if (subpath.points.length < 3) return
+    paperFills.push({
+      order: subpath.paintOrder ?? index,
+      box: pointsBox(subpath.points),
+      loop: subpath.points
+    })
+  })
+  const onPaperFill = (point: PdfImportPoint, order: number) =>
+    paperFills.some(
+      fill =>
+        fill.order < order &&
+        point.x >= fill.box.minX &&
+        point.x <= fill.box.maxX &&
+        point.y >= fill.box.minY &&
+        point.y <= fill.box.maxY &&
+        pointInLoop(point, fill.loop)
+    )
+  const remapInk = (
+    color: string | undefined,
+    point: PdfImportPoint | undefined,
+    order: number
+  ) => {
+    const remapped = remapPdfImportColor(color, tone)
+    if (
+      remapped !== PDF_IMPORT_FOREGROUND_COLOR ||
+      color === PDF_IMPORT_FOREGROUND_COLOR ||
+      !point ||
+      !onPaperFill(point, order)
+    ) {
+      return remapped
+    }
+    return color?.toLowerCase()
+  }
+
   return {
-    subpaths: content.subpaths.map(subpath => ({
-      ...subpath,
-      color: remapPdfImportColor(subpath.color, tone),
-      ...(subpath.fillColor
-        ? { fillColor: remapPdfImportColor(subpath.fillColor, tone) }
-        : {})
-    })),
+    subpaths: content.subpaths.map((subpath, index) => {
+      const order = subpath.paintOrder ?? index
+      const probe = subpath.filled ? undefined : pointsMidpoint(subpath.points)
+      return {
+        ...subpath,
+        color: remapInk(subpath.color, probe, order),
+        ...(subpath.fillColor
+          ? { fillColor: remapPdfImportColor(subpath.fillColor, tone) }
+          : {})
+      }
+    }),
     texts: content.texts.map(text => ({
       ...text,
-      color: remapPdfImportColor(text.color, tone)
+      color: remapInk(
+        text.color,
+        textMidpoint(text),
+        text.paintOrder ?? Number.POSITIVE_INFINITY
+      )
     }))
   }
+}
+
+type PdfImportBox = { minX: number; minY: number; maxX: number; maxY: number }
+
+function pointsBox(points: readonly PdfImportPoint[]): PdfImportBox {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const p of points) {
+    if (p.x < minX) minX = p.x
+    if (p.x > maxX) maxX = p.x
+    if (p.y < minY) minY = p.y
+    if (p.y > maxY) maxY = p.y
+  }
+  return { minX, minY, maxX, maxY }
+}
+
+/** Middle of the bounding box; stands for where a stroke sits. */
+function pointsMidpoint(
+  points: readonly PdfImportPoint[]
+): PdfImportPoint | undefined {
+  if (points.length === 0) return undefined
+  const box = pointsBox(points)
+  return { x: (box.minX + box.maxX) / 2, y: (box.minY + box.maxY) / 2 }
+}
+
+/** Centre of a text run's glyph box (baseline plus half the height). */
+function textMidpoint(text: PdfImportedText): PdfImportPoint {
+  const length = text.width ?? 0
+  const cos = Math.cos(text.rotation)
+  const sin = Math.sin(text.rotation)
+  const along = length / 2
+  const up = text.height / 2
+  return {
+    x: text.position.x + along * cos - up * sin,
+    y: text.position.y + along * sin + up * cos
+  }
+}
+
+/** Even-odd point-in-polygon test. */
+function pointInLoop(
+  point: PdfImportPoint,
+  loop: readonly PdfImportPoint[]
+): boolean {
+  let inside = false
+  for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) {
+    const a = loop[i]
+    const b = loop[j]
+    if (
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
 }
 
 export interface PdfImportOperatorList {
@@ -297,6 +408,11 @@ export interface PdfImportedSubpath {
   stroked?: boolean
   /** Fill colour of a filled subpath (`#rrggbb` or foreground). */
   fillColor?: string
+  /**
+   * Position of the paint operator in the page's paint sequence, shared
+   * with {@link PdfImportedText.paintOrder}. Later paints cover earlier ones.
+   */
+  paintOrder?: number
   /**
    * Subpaths painted by one operator share this number, so an even-odd fill
    * with holes can become one hatch with several loops.
@@ -349,6 +465,8 @@ export interface PdfImportedText {
    * {@link PDF_IMPORT_FOREGROUND_COLOR} after contrast remapping.
    */
   color?: string
+  /** Position in the page's paint sequence (see `PdfImportedSubpath`). */
+  paintOrder?: number
 }
 
 /**
@@ -383,6 +501,12 @@ export interface PdfImportedImage {
    */
   toCad: { a: number; b: number; c: number; d: number; e: number; f: number }
   layerName?: string
+  /**
+   * Index into {@link PdfImportPageContent.clipPaths} of the clip in effect
+   * when the image was painted (the innermost one). Only the part inside it
+   * is visible: a PDF often clips a large picture down to a small detail.
+   */
+  clipPath?: number
 }
 
 export interface PdfImportPageContent {
@@ -624,7 +748,11 @@ export function extractPdfImportSubpaths(
     const dashes = stroked ? dashPatternMm() : undefined
     const group = paintCount++
     for (const subpath of subpaths) {
-      const result: PdfImportedSubpath = { ...subpath, color }
+      const result: PdfImportedSubpath = {
+        ...subpath,
+        color,
+        paintOrder: group
+      }
       if (filled) {
         result.filled = true
         result.fillColor = fillColor
@@ -1185,6 +1313,7 @@ export function extractPdfImportSubpaths(
         },
         layerName: activeLayerName
       }
+      if (clipId !== undefined) image.clipPath = clipId
       if (fn === ops.paintImageXObject) {
         if (typeof rawArgs[0] !== 'string') continue
         image.objId = rawArgs[0]
@@ -1413,6 +1542,7 @@ export function extractPdfImportSubpaths(
           widthFactor,
           layerName: activeLayerName,
           color: (textRenderingMode & 3) === 1 ? strokeColor : fillColor,
+          paintOrder: paintCount++,
           ...(fontId !== undefined ? { fontId } : {})
         })
       }

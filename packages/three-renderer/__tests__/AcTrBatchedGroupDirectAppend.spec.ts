@@ -1,13 +1,18 @@
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
+import {
+  AcTrBatchedGroup,
+  clearAcTrDrawOrderZAllocator,
+  setAcTrDrawOrderZAllocator
+} from '../src/batch/AcTrBatchedGroup'
+import { AcTrLine } from '../src/object/AcTrLine'
 import {
   buildLineGeometry,
   buildPointGeometry
 } from '../src/object/AcTrLineGeometryBuilder'
-import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { setMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util'
 
@@ -159,15 +164,10 @@ describe('AcTrBatchedGroup direct line append', () => {
     const group = new AcTrBatchedGroup()
 
     expect(
-      group.appendPointGeometry(
-        built.geometry,
-        material,
-        built.worldOffset,
-        {
-          objectId: 'pt-1',
-          position: built.position
-        }
-      )
+      group.appendPointGeometry(built.geometry, material, built.worldOffset, {
+        objectId: 'pt-1',
+        position: built.position
+      })
     ).toBe(true)
     built.geometry.dispose()
 
@@ -181,23 +181,88 @@ describe('AcTrBatchedGroup direct line append', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'position',
-      new THREE.Float32BufferAttribute(
-        [-1, -1, 0, 1, -1, 0, 0, 1, 0],
-        3
-      )
+      new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 0, 1, 0], 3)
     )
     geometry.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 1, 2]), 1))
 
     const group = new AcTrBatchedGroup()
     expect(
-      group.appendMeshGeometry(geometry, material, new THREE.Vector3(50, 50, 0), {
-        objectId: 'mesh-1'
-      })
+      group.appendMeshGeometry(
+        geometry,
+        material,
+        new THREE.Vector3(50, 50, 0),
+        {
+          objectId: 'mesh-1'
+        }
+      )
     ).toBe(true)
     geometry.dispose()
 
     expect(group.hasEntity('mesh-1')).toBe(true)
     group.removeEntity('mesh-1')
     material.dispose()
+  })
+})
+
+describe('AcTrBatchedGroup hatch-tier draw order', () => {
+  afterEach(() => clearAcTrDrawOrderZAllocator())
+
+  function triangle() {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 0, 1, 0], 3)
+    )
+    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 1, 2]), 1))
+    return geometry
+  }
+
+  function fillMaterial(color: number, drawOrder: number) {
+    const material = new THREE.MeshBasicMaterial({ color })
+    setMaterialMetadata(material, { drawOrder })
+    return material
+  }
+
+  /** World Z of the one batch holding `material`'s geometry. */
+  function batchZ(group: AcTrBatchedGroup, color: number) {
+    let z: number | undefined
+    group.traverse(object => {
+      const mesh = object as THREE.Mesh
+      const material = mesh.material as THREE.MeshBasicMaterial | undefined
+      if (!mesh.isMesh || !material?.color) return
+      if (material.color.getHex() !== color) return
+      const box = new THREE.Box3().setFromObject(mesh)
+      z = box.min.z
+    })
+    return z
+  }
+
+  it('stacks overlapping hatches in creation order, below linework', () => {
+    let next = 0
+    setAcTrDrawOrderZAllocator(() => (next += 1e-4))
+    const group = new AcTrBatchedGroup()
+    // White panel first, then a green drop on it, then a text-like fill.
+    const white = fillMaterial(0xffffff, -1)
+    const green = fillMaterial(0x00ff00, -1)
+    const ink = fillMaterial(0x000000, 0)
+    for (const [id, material] of [
+      ['panel', white],
+      ['drop', green],
+      ['text', ink]
+    ] as const) {
+      const geometry = triangle()
+      group.appendMeshGeometry(geometry, material, new THREE.Vector3(), {
+        objectId: id
+      })
+      geometry.dispose()
+    }
+
+    const panelZ = batchZ(group, 0xffffff)!
+    const dropZ = batchZ(group, 0x00ff00)!
+    const textZ = batchZ(group, 0x000000)!
+    // A later hatch must occlude an earlier one on shared pixels.
+    expect(dropZ).toBeGreaterThan(panelZ)
+    // Every hatch stays under every piece of linework.
+    expect(textZ).toBeGreaterThan(dropZ)
   })
 })
