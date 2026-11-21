@@ -5,9 +5,6 @@ export default {
     drawingUnits: '図面単位',
     exportMenu: '書き出し',
     export: 'DXF に書き出し',
-    exportHtml: 'HTML に書き出し',
-    exportPdf: 'PDF に書き出し',
-    exportSvg: 'SVG に書き出し',
     exportImage: 'イメージに書き出し',
     about: 'バージョン情報'
   },
@@ -210,9 +207,6 @@ export default {
     },
     group: {
       smartBlocks: 'スマート ブロック',
-      agent: 'エージェント',
-      aiModel: 'AI モデル',
-      pdf: 'PDF',
       draw: '作成',
       dimension: '寸法',
       modify: '修正',
@@ -280,25 +274,11 @@ export default {
       ellipse: '楕円',
       arc: '楕円弧'
     },
-    pdfText: {
-      auto: '自動'
-    },
     tooltip: {
       searchConvert:
         '選択したオブジェクトのすべてのコピーを検索してブロックに変換します（BSEARCH）。',
       detectConvert:
         '図面全体から繰り返しオブジェクトを検出してブロックに変換します（BDETECT）。',
-      importPdf:
-        'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (PDFIMPORT)。',
-      pdfScale:
-        '既知の距離の 2 点から読み込んだ PDF 図形の尺度を変更します (PDFSCALE)。',
-      pdfDim:
-        'PDF で分解された寸法（矢印または斜線、寸法線、寸法補助線、文字）を寸法オブジェクトに戻します (PDFDIM)。',
-      pdfHatch:
-        'PDF で線分に分解されたハッチングを、パターン・尺度・角度付きのハッチングに戻します (PDFHATCH)。',
-      pdfText:
-        'PDF で分解された文字のストロークを文字オブジェクトに戻します (PDFTEXT)。',
-      pdfTextAuto: '字形辞書の後、利用可能な OCR を順に試します (PDFTEXT)。',
       line: '1 本の直線セグメントを作成します。',
       polyline:
         '連続した線分または円弧セグメントを 1 つのオブジェクトとして作成します。',
@@ -332,8 +312,6 @@ export default {
       mleader: 'マルチ引出線の注釈を作成します。',
       mleaderAdd: '既存のマルチ引出線に引出線を追加します。',
       mleaderRemove: '既存のマルチ引出線から引出線を削除します。',
-      script:
-        '現在の図面でスクリプトを実行するための CAD スクリプトコンソールを開きます。',
       move: '選択したオブジェクトを新しい位置に移動します。',
       rotate: '選択したオブジェクトを基点を中心に回転します。',
       scale: '選択したオブジェクトを縦横比を保ったまま拡大または縮小します。',
@@ -377,10 +355,6 @@ export default {
       editAttributes:
         '拡張属性編集を開き、ブロックの属性値と表示プロパティを編集します (ATTEDIT)。',
       defineAttribute: 'ブロックで使用する属性定義を作成します (ATTDEF)。',
-      agent:
-        'CAD エージェント パレット タブを開き、自然言語で図形を作成します。',
-      llmSettings:
-        'CAD エージェントと PDF の文字認識（OCR）で使用する AI モデルのプロバイダと API キーを設定します。',
       pan: '表示倍率を変更せずに図面の表示を移動します。',
       zoom: '図面の表示をズームします。',
       zoomExtents:
@@ -461,11 +435,6 @@ export default {
     command: {
       searchConvert: '検索して\n変換',
       detectConvert: '検出して\n変換',
-      importPdf: 'PDF\n読み込み',
-      pdfScale: '尺度\n校正',
-      pdfDim: '寸法\n認識',
-      pdfHatch: 'ハッチング\n認識',
-      pdfText: '文字\n認識',
       line: '線分',
       polyline: 'ポリライン',
       circle: '円',
@@ -501,7 +470,6 @@ export default {
       mleader: 'マルチ引出線',
       mleaderAdd: '引出線を追加',
       mleaderRemove: '引出線を削除',
-      script: 'スクリプト',
       move: '移動',
       rotate: '回転',
       scale: '尺度変更',
@@ -530,8 +498,6 @@ export default {
       insert: '挿入',
       editAttributes: '属性\n編集',
       defineAttribute: '属性\n定義',
-      agent: 'エージェント',
-      llmSettings: 'モデル\n設定',
       pan: '画面移動',
       zoom: 'ズーム',
       zoomExtents: 'オブジェクト範囲',

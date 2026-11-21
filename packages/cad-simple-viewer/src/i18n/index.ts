@@ -1,5 +1,10 @@
 import { AcEdCommandStack } from '../editor/index.js'
-import { AcApI18n, type AcApLocale, type AcApLocaleChangedEventArgs } from './AcApI18n.js'
+import {
+  AcApI18n,
+  type AcApLocale,
+  type AcApLocaleChangedEventArgs,
+  type AcApLocaleMessage
+} from './AcApI18n.js'
 import arCommand from './ar/command.js'
 import arJig from './ar/jig.js'
 import arMain from './ar/main.js'
@@ -86,6 +91,10 @@ export const userCmdDescription = (name: string) => {
   return cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
 }
 
-export { AcApI18n, type AcApLocale, type AcApLocaleChangedEventArgs }
+export {
+  AcApI18n,
+  type AcApLocale,
+  type AcApLocaleChangedEventArgs,
+  type AcApLocaleMessage
+}
 export { AcUiI18n, acuiRegisterSimpleUiI18n } from './AcUiI18n.js'
-

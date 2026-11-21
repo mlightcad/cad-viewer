@@ -8,7 +8,6 @@ import {
   Hide,
   RefreshRight,
   Right,
-  ScaleToOriginal,
   Scissor,
   Stamp,
   View
@@ -31,8 +30,6 @@ import {
   acapScreenPxToWcs,
   acapSetMeasurementDrawColor,
   acapSetMeasurementTextHeight,
-  AcApTextRecognitionService,
-  type AcApTextRecognizerInfo,
   type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
@@ -93,7 +90,12 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { store } from '../../app'
+import {
+  mlApplyPluginMenu,
+  mlApplyPluginRibbon,
+  mlRunPluginMenuItem
+} from '../../app/pluginRibbon'
+import { ensurePluginUiBridge, pluginUiRevision } from '../../app/pluginUi'
 import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
   LAYER_FILTER_ALL,
@@ -111,7 +113,6 @@ import {
 } from '../../composable/namedViewsRevision'
 import { LocaleProp } from '../../locale'
 import {
-  agent,
   arcCenterStartAngle,
   arcCenterStartEnd,
   arcCenterStartLength,
@@ -164,7 +165,6 @@ import {
   layerUnisolate,
   layerUnlock,
   line,
-  llmSettings,
   mleader,
   mleaderAdd,
   mleaderRemove,
@@ -179,10 +179,6 @@ import {
   pasteBlock,
   pasteClip,
   pasteOrig,
-  pdfDimRecognize,
-  pdfHatchRecognize,
-  pdfImport,
-  pdfTextRecognize,
   polygon,
   polyline,
   properties,
@@ -191,7 +187,6 @@ import {
   rect,
   revFreeDraw,
   scale,
-  script,
   setting,
   splineFitPoints,
   textStyle,
@@ -797,11 +792,9 @@ const activateRibbonTabAfterDrawCommand = (args: AcEdCommandEventArgs) => {
   scheduleActivateRibbonTabForOverlaySelection()
 }
 
+ensurePluginUiBridge()
+
 onMounted(() => {
-  void refreshPdfTextOcrProviders()
-  AcApTextRecognitionService.events.changed.addEventListener(
-    handleTextRecognitionChanged
-  )
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
   )
@@ -847,9 +840,6 @@ onUnmounted(() => {
   unsubscribeMarkupStore = undefined
   unsubscribeMeasurementSelection?.()
   unsubscribeMeasurementSelection = undefined
-  AcApTextRecognitionService.events.changed.removeEventListener(
-    handleTextRecognitionChanged
-  )
   AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
     handleSysVarChange
   )
@@ -1280,47 +1270,11 @@ const applyOpenModeTabVisibility = (
 }
 
 /**
- * AI tab: the CAD Agent and the shared AI model settings (when their plugins
- * are installed), Smart Blocks
- * (`BSEARCH`: find repeated geometry and turn it into blocks) and the PDF to
- * CAD conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily
- * on first use like their command-line counterparts.
+ * AI tab core groups. Agent, model settings, and PDF tools are plugin
+ * contributions merged in after this tab is built.
  */
-const PDFTEXT_AUTO_ITEM_ID = 'pdftext-auto'
-const PDFTEXT_OCR_ITEM_PREFIX = 'pdftext-ocr:'
-
-/** Ribbon dropdown value for one OCR recognizer (URI-encoded id). */
-function pdfTextOcrItemId(recognizerId: string): string {
-  return `${PDFTEXT_OCR_ITEM_PREFIX}${encodeURIComponent(recognizerId)}`
-}
-
-function parsePdfTextOcrItemId(itemId: string): string | undefined {
-  if (!itemId.startsWith(PDFTEXT_OCR_ITEM_PREFIX)) return undefined
-  try {
-    return decodeURIComponent(itemId.slice(PDFTEXT_OCR_ITEM_PREFIX.length))
-  } catch {
-    return undefined
-  }
-}
-
 const buildAiTab = (
-  agentPluginEnabled: boolean,
-  llmPluginEnabled: boolean,
-  ribbonTooltips: Record<
-    | 'agent'
-    | 'llmSettings'
-    | 'searchConvert'
-    | 'detectConvert'
-    | 'importPdf'
-    | 'pdfScale'
-    | 'pdfText'
-    | 'pdfDim'
-    | 'pdfHatch',
-    string
-  >,
-  pdfTextOcrProviders: AcApTextRecognizerInfo[],
-  pdfTextAutoLabel: string,
-  pdfTextAutoTooltip: string
+  ribbonTooltips: Record<'searchConvert' | 'detectConvert', string>
 ): RibbonTabModel => {
   const largeButton = (
     id: string,
@@ -1335,70 +1289,10 @@ const buildAiTab = (
     size: 'large' as const,
     props: { icon, labelWrapLines: 2, labelWrapWidth: 'max-content' }
   })
-  const pdfTextOptions = [
-    {
-      id: PDFTEXT_AUTO_ITEM_ID,
-      value: PDFTEXT_AUTO_ITEM_ID,
-      label: pdfTextAutoLabel,
-      tooltip: pdfTextAutoTooltip
-    },
-    ...pdfTextOcrProviders.map(provider => ({
-      id: pdfTextOcrItemId(provider.id),
-      value: pdfTextOcrItemId(provider.id),
-      label: provider.label,
-      tooltip: provider.label
-    }))
-  ]
   return {
     id: 'ai',
     title: t('main.ribbon.tab.ai'),
     groups: [
-      ...(agentPluginEnabled
-        ? [
-            {
-              id: 'ai-agent',
-              title: t('main.ribbon.group.agent'),
-              orientation: 'row' as const,
-              collections: [
-                {
-                  id: 'ai-agent-main',
-                  layout: 'row' as const,
-                  items: [
-                    largeButton(
-                      'cmd-agent',
-                      t('main.ribbon.command.agent'),
-                      ribbonTooltips.agent,
-                      agent
-                    )
-                  ]
-                }
-              ]
-            }
-          ]
-        : []),
-      ...(llmPluginEnabled
-        ? [
-            {
-              id: 'ai-model',
-              title: t('main.ribbon.group.aiModel'),
-              orientation: 'row' as const,
-              collections: [
-                {
-                  id: 'ai-model-main',
-                  layout: 'row' as const,
-                  items: [
-                    largeButton(
-                      'cmd-llmsettings',
-                      t('main.ribbon.command.llmSettings'),
-                      ribbonTooltips.llmSettings,
-                      llmSettings
-                    )
-                  ]
-                }
-              ]
-            }
-          ]
-        : []),
       {
         id: 'ai-smart-blocks',
         title: t('main.ribbon.group.smartBlocks'),
@@ -1423,56 +1317,6 @@ const buildAiTab = (
             ]
           }
         ]
-      },
-      {
-        id: 'ai-pdf',
-        title: t('main.ribbon.group.pdf'),
-        orientation: 'row' as const,
-        collections: [
-          {
-            id: 'ai-pdf-main',
-            layout: 'row' as const,
-            items: [
-              largeButton(
-                'cmd-pdfimport',
-                t('main.ribbon.command.importPdf'),
-                ribbonTooltips.importPdf,
-                pdfImport
-              ),
-              largeButton(
-                'cmd-pdfscale',
-                t('main.ribbon.command.pdfScale'),
-                ribbonTooltips.pdfScale,
-                ScaleToOriginal
-              ),
-              {
-                id: 'cmd-pdftext',
-                type: 'dropdown' as const,
-                label: t('main.ribbon.command.pdfText'),
-                tooltip: ribbonTooltips.pdfText,
-                size: 'large' as const,
-                props: {
-                  icon: pdfTextRecognize,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content',
-                  options: pdfTextOptions
-                }
-              },
-              largeButton(
-                'cmd-pdfdim',
-                t('main.ribbon.command.pdfDim'),
-                ribbonTooltips.pdfDim,
-                pdfDimRecognize
-              ),
-              largeButton(
-                'cmd-pdfhatch',
-                t('main.ribbon.command.pdfHatch'),
-                ribbonTooltips.pdfHatch,
-                pdfHatchRecognize
-              )
-            ]
-          }
-        ]
       }
     ]
   }
@@ -1482,9 +1326,6 @@ const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
   measurementVisible: boolean,
-  agentPluginEnabled: boolean,
-  llmPluginEnabled: boolean,
-  scriptPluginEnabled: boolean,
   namedViewNames: string[] = []
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
@@ -1519,7 +1360,6 @@ const buildBaseTabs = (
     mleader: t('main.ribbon.tooltip.mleader'),
     mleaderAdd: t('main.ribbon.tooltip.mleaderAdd'),
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
-    script: t('main.ribbon.tooltip.script'),
     move: t('main.ribbon.tooltip.move'),
     rotate: t('main.ribbon.tooltip.rotate'),
     scale: t('main.ribbon.tooltip.scale'),
@@ -1550,13 +1390,6 @@ const buildBaseTabs = (
     insert: t('main.ribbon.tooltip.insert'),
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
     defineAttribute: t('main.ribbon.tooltip.defineAttribute'),
-    agent: t('main.ribbon.tooltip.agent'),
-    llmSettings: t('main.ribbon.tooltip.llmSettings'),
-    importPdf: t('main.ribbon.tooltip.importPdf'),
-    pdfScale: t('main.ribbon.tooltip.pdfScale'),
-    pdfText: t('main.ribbon.tooltip.pdfText'),
-    pdfDim: t('main.ribbon.tooltip.pdfDim'),
-    pdfHatch: t('main.ribbon.tooltip.pdfHatch'),
     pan: t('main.ribbon.tooltip.pan'),
     zoom: t('main.ribbon.tooltip.zoom'),
     zoomExtents: t('main.ribbon.tooltip.zoomExtents'),
@@ -3028,23 +2861,7 @@ const buildBaseTabs = (
                     labelWrapLines: 2,
                     labelWrapWidth: 'max-content'
                   }
-                },
-                ...(scriptPluginEnabled
-                  ? [
-                      {
-                        id: 'cmd-cadscript',
-                        type: 'button' as const,
-                        label: t('main.ribbon.command.script'),
-                        tooltip: ribbonTooltips.script,
-                        size: 'large' as const,
-                        props: {
-                          icon: script,
-                          labelWrapLines: 2,
-                          labelWrapWidth: 'max-content'
-                        }
-                      }
-                    ]
-                  : [])
+                }
               ]
             }
           ]
@@ -3462,44 +3279,14 @@ const buildBaseTabs = (
     groups: measurementGroups
   })
 
-  tabs.push(
-    buildAiTab(
-      agentPluginEnabled,
-      llmPluginEnabled,
-      ribbonTooltips,
-      pdfTextOcrProviders.value,
-      t('main.ribbon.pdfText.auto'),
-      t('main.ribbon.tooltip.pdfTextAuto')
-    )
-  )
+  tabs.push(buildAiTab(ribbonTooltips))
 
   return markComponentConfigRaw(applyOpenModeTabVisibility(tabs, openMode))
 }
 
-/** Available OCR entries for the AI → PDF → Recover Text dropdown. */
-const pdfTextOcrProviders = ref<AcApTextRecognizerInfo[]>([])
-
-async function refreshPdfTextOcrProviders() {
-  try {
-    pdfTextOcrProviders.value = await AcApTextRecognitionService.listAvailable()
-  } catch {
-    pdfTextOcrProviders.value = []
-  }
-}
-
-/** Lazy OCR plugins register after mount — keep the Recover Text list in sync. */
-const handleTextRecognitionChanged = () => {
-  void refreshPdfTextOcrProviders()
-}
-
 const ribbonData = computed(() => {
   locale.value
-  store.features.agentPlugin
-  store.features.llmPlugin
-  store.features.paddleOcrPlugin
-  store.features.scriptPlugin
-  // Rebuild when OCR providers sync (LLM model settings / paddleocr).
-  pdfTextOcrProviders.value
+  pluginUiRevision.value
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
@@ -3609,20 +3396,6 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-ai-bsearch', 'bsearch')
   commandByItemId.set('cmd-bdetect', 'bdetect')
   commandByItemId.set('cmd-ai-bdetect', 'bdetect')
-  if (store.features.agentPlugin) {
-    commandByItemId.set('cmd-agent', 'agent')
-  }
-  if (store.features.llmPlugin) {
-    commandByItemId.set('cmd-llmsettings', 'llmsettings')
-  }
-  if (store.features.scriptPlugin) {
-    commandByItemId.set('cmd-cadscript', 'cadscript')
-  }
-  commandByItemId.set('cmd-pdfimport', 'pdfimport')
-  commandByItemId.set('cmd-pdfscale', 'pdfscale')
-  // cmd-pdftext / pdftext-* handled in handleRibbonItemClick (OCR picker).
-  commandByItemId.set('cmd-pdfdim', 'pdfdim')
-  commandByItemId.set('cmd-pdfhatch', 'pdfhatch')
   commandByItemId.set('cmd-tool-markup-panel', 'markuppanel')
   commandByItemId.set('cmd-tool-markup-text', 'markuptext')
   commandByItemId.set('cmd-tool-markup-cloud', 'markupcloud')
@@ -3693,14 +3466,18 @@ const ribbonData = computed(() => {
     openMode,
     markupVisible,
     measurementVisible,
-    store.features.agentPlugin,
-    store.features.llmPlugin,
-    store.features.scriptPlugin,
     namedViewNames
   )
+  const pluginRibbon = mlApplyPluginRibbon(tabs)
+  for (const [id, action] of pluginRibbon.actions) {
+    if (action.command && !action.invoke) {
+      commandByItemId.set(id, action.command)
+    }
+  }
   return {
-    tabs,
-    commandByItemId
+    tabs: pluginRibbon.tabs,
+    commandByItemId,
+    pluginActions: pluginRibbon.actions
   }
 })
 
@@ -3726,6 +3503,7 @@ watch(
 
 const fileMenuItems = computed<FileMenuItemModel[]>(() => {
   locale.value
+  pluginUiRevision.value
   dataSourceMenuItems.value
   isSingleLocalOpen.value
   const openItem: FileMenuItemModel = isSingleLocalOpen.value
@@ -3757,28 +3535,20 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
       id: 'Export',
       label: t('main.mainMenu.exportMenu'),
       divided: true,
-      children: [
-        {
-          id: 'Convert',
-          label: t('main.mainMenu.export')
-        },
-        {
-          id: 'ExportHtml',
-          label: t('main.mainMenu.exportHtml')
-        },
-        {
-          id: 'ExportPdf',
-          label: t('main.mainMenu.exportPdf')
-        },
-        {
-          id: 'ExportSvg',
-          label: t('main.mainMenu.exportSvg')
-        },
-        {
-          id: 'PngOut',
-          label: t('main.mainMenu.exportImage')
-        }
-      ]
+      children: mlApplyPluginMenu(
+        [
+          {
+            id: 'Convert',
+            label: t('main.mainMenu.export')
+          },
+          {
+            id: 'PngOut',
+            label: t('main.mainMenu.exportImage')
+          }
+        ],
+        'file.export',
+        'PngOut'
+      )
     })
   }
   items.push({
@@ -3796,17 +3566,6 @@ const ribbonTexts = computed<RibbonLocaleTexts>(() => {
   }
 })
 
-const runPdfTextCommand = async (recognizerId?: string) => {
-  const { AcApPdfTextCmd } = await import('@mlightcad/cad-pdf-plugin')
-  AcApPdfTextCmd.preferRecognizer(recognizerId)
-  await AcApDocManager.instance.pluginManager.loadByTrigger('pdftext')
-  AcApDocManager.instance.sendStringToExecute('pdftext')
-}
-
-watch(activeRibbonTabId, tabId => {
-  if (tabId === 'ai') void refreshPdfTextOcrProviders()
-})
-
 const handleRibbonItemClick = (payload: {
   tabId: string
   groupId: string
@@ -3815,16 +3574,9 @@ const handleRibbonItemClick = (payload: {
   if (isRibbonDisabled.value) return
   if (handleHatchItem(payload.itemId)) return
   if (handleMTextItem(payload.itemId)) return
-  if (
-    payload.itemId === 'cmd-pdftext' ||
-    payload.itemId === PDFTEXT_AUTO_ITEM_ID
-  ) {
-    void runPdfTextCommand(undefined)
-    return
-  }
-  const pdfTextOcrId = parsePdfTextOcrItemId(payload.itemId)
-  if (pdfTextOcrId !== undefined) {
-    void runPdfTextCommand(pdfTextOcrId)
+  const pluginAction = ribbonData.value.pluginActions.get(payload.itemId)
+  if (pluginAction?.invoke) {
+    void pluginAction.invoke()
     return
   }
   if (payload.itemId === 'cmd-group-select') {
@@ -3861,16 +3613,6 @@ const handleRibbonItemClick = (payload: {
   }
   const command = ribbonData.value.commandByItemId.get(payload.itemId)
   if (!command) return
-  if (command === 'agent') {
-    void runLazyCommand('agent')
-    return
-  }
-  AcApDocManager.instance.sendStringToExecute(command)
-}
-
-const runLazyCommand = async (command: string) => {
-  const pluginManager = AcApDocManager.instance.pluginManager
-  await pluginManager.loadByTrigger(command)
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
@@ -3888,25 +3630,14 @@ const handleFileMenuSelect = async (command: string) => {
   if (isRibbonDisabled.value) return
   if (
     AcApDocManager.instance.disableExport &&
-    (command === 'Convert' ||
-      command === 'ExportHtml' ||
-      command === 'ExportPdf' ||
-      command === 'ExportSvg' ||
-      command === 'PngOut')
+    (command === 'Convert' || command === 'PngOut')
   ) {
     return
   }
+  if (mlRunPluginMenuItem(command)) return
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
-  } else if (command === 'ExportHtml') {
-    AcApDocManager.instance.sendStringToExecute('chtml')
-  } else if (command === 'ExportPdf') {
-    // Same path as chtml/csvg: DocManager lazy-loads the plugin then runs cpdf.
-    // Avoid a separate await+execute that raced Vite's first-time pdf-lib optimize.
-    AcApDocManager.instance.sendStringToExecute('cpdf')
-  } else if (command === 'ExportSvg') {
-    AcApDocManager.instance.sendStringToExecute('csvg')
   } else if (command === 'PngOut') {
     AcApDocManager.instance.sendStringToExecute('pngout')
   } else if (command === 'QNew') {
@@ -4021,5 +3752,15 @@ const handleFileMenuSelect = async (command: string) => {
   .ml-ribbon-item-host.is-large.type-button.is-label-wrap
   .ml-ribbon-item-host__label {
   white-space: pre-line;
+}
+
+.ml-svg-icon {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.ml-svg-icon svg {
+  width: 1em;
+  height: 1em;
 }
 </style>

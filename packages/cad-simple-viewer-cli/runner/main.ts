@@ -330,7 +330,9 @@ function logOpenProfile() {
   }
 }
 
-async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void> {
+async function ensureViewer(
+  options: CadViewerCliRunOptions = {}
+): Promise<void> {
   if (ready) {
     return
   }
@@ -378,9 +380,10 @@ async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void>
 
   const pluginManager = AcApDocManager.instance.pluginManager
   registerLazyHtmlPlugin(pluginManager, {
-    viewerRuntimeUrl: './viewer-runtime.iife.js'
+    viewerRuntimeUrl: './viewer-runtime.iife.js',
+    dialog: false
   })
-  registerLazyPdfPlugin(pluginManager)
+  registerLazyPdfPlugin(pluginManager, { dialog: false })
   registerLazySvgPlugin(pluginManager)
 
   ready = true

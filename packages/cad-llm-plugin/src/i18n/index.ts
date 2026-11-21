@@ -1,6 +1,7 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
 import { llmAr } from './ar.js'
+import { llmChrome } from './chrome.js'
 import { llmCommandDescriptions } from './command.js'
 import { llmCs } from './cs.js'
 import { llmEn } from './en.js'
@@ -40,6 +41,7 @@ let isRegistered = false
  * @returns Messages shaped for `mergeLocaleMessage`.
  */
 function buildMessages(locale: AcApLocale) {
+  const chrome = llmChrome[locale]
   return {
     command: {
       ACAD: {
@@ -48,8 +50,31 @@ function buildMessages(locale: AcApLocale) {
         }
       }
     },
-    main: { llm: llmMessagesByLocale[locale] }
+    main: {
+      llm: llmMessagesByLocale[locale],
+      ribbon: {
+        group: { aiModel: chrome.group },
+        command: { llmSettings: chrome.command },
+        tooltip: { llmSettings: chrome.tooltip }
+      }
+    }
   }
+}
+
+/**
+ * Locale trees for {@link AcApUiRegistry}, including the settings dialog and
+ * the ribbon group.
+ */
+export function llmLocaleMessages(): Partial<
+  Record<AcApLocale, ReturnType<typeof buildMessages>>
+> {
+  const messages: Partial<
+    Record<AcApLocale, ReturnType<typeof buildMessages>>
+  > = {}
+  for (const locale of LOCALES) {
+    messages[locale] = buildMessages(locale)
+  }
+  return messages
 }
 
 /**

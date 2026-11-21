@@ -24,6 +24,7 @@ import {
 } from '../editor/index.js'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../i18n/AcUiI18n.js'
 import { AcApI18n, type AcApLocale } from '../i18n/index.js'
+import { AcApUiRegistry } from './AcApUiRegistry.js'
 import { AcUiFindPaletteView } from './AcUiFindPaletteView.js'
 import { AcUiLayerListView } from './AcUiLayerListView.js'
 import { AcUiMeasurementPaletteView } from './AcUiMeasurementPaletteView.js'
@@ -36,7 +37,11 @@ import {
 } from './AcUiSimpleUiOptions.js'
 import { acuiRemoveUiStylesIfUnused } from './AcUiSimpleUiStyles.js'
 import { AcUiThemeSync } from './AcUiThemeSync.js'
-import { AcUiDockPanel, type AcUiDockPanelSide, type AcUiDockPanelTab } from './dock/AcUiDockPanel.js'
+import {
+  AcUiDockPanel,
+  type AcUiDockPanelSide,
+  type AcUiDockPanelTab
+} from './dock/AcUiDockPanel.js'
 import { AcUiToolbar } from './toolbar/AcUiToolbar.js'
 import { acuiToolbarItemsIncludeItem } from './toolbar/index.js'
 import {
@@ -170,6 +175,16 @@ export class AcApSimpleUiChrome {
   private unsubscribeLayout?: () => void
   /** Commands registered during {@link start} for cleanup on {@link dispose}. */
   private registeredCommands: Array<{ group: string; name: string }> = []
+  /** Disposes plugin palette mounts created for registry tabs. */
+  private pluginPaletteDisposers = new Map<string, () => void>()
+  /**
+   * Generation of the open that should keep each palette.
+   * A mount that finishes for an older generation unmounts itself.
+   */
+  private pluginPaletteGeneration = new Map<string, number>()
+  private pluginPaletteSerial = 0
+  /** Set in {@link dispose} so a mount that resolves later unmounts itself. */
+  private chromeDisposed = false
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
     this.rebuildToolbarItems(this.activeLayoutKind)
@@ -183,6 +198,16 @@ export class AcApSimpleUiChrome {
       this.toolbar.updateItems(this.baseToolbarItems)
       this.toolbar.refreshLocale()
     }
+  }
+  /** Rebuilds the toolbar when a plugin adds or removes chrome. */
+  private handlePluginUiChanged = () => {
+    this.releaseUnregisteredPluginPalettes()
+    this.rebuildToolbarItems(this.activeLayoutKind)
+    if (this.toolbar) {
+      this.toolbar.updateItems(this.baseToolbarItems)
+      this.toolbar.refreshLocale()
+    }
+    this.dockPanel?.refreshLocale()
   }
   /** Re-resolves mount targets after the viewer view becomes available. */
   private handleDocumentActivatedForDock = () => {
@@ -285,7 +310,7 @@ export class AcApSimpleUiChrome {
           this.findPaletteView?.focus()
           return true
         default:
-          return false
+          return this.openPluginPalette(id)
       }
     }
   }
@@ -560,6 +585,7 @@ export class AcApSimpleUiChrome {
    * @param commandManager - Command stack used to register UI commands.
    */
   start(commandManager: AcEdCommandStack): void {
+    this.chromeDisposed = false
     acuiRegisterSimpleUiI18n()
     this.commandManager = commandManager
     // This shell has no command ribbon; keep the draw-style overlay available
@@ -590,6 +616,7 @@ export class AcApSimpleUiChrome {
 
     this.i18n = new AcUiI18n()
     AcApI18n.events.localeChanged.addEventListener(this.handleLocaleChanged)
+    AcApUiRegistry.events.changed.addEventListener(this.handlePluginUiChanged)
     AcApDocManager.instance.events.documentActivated.addEventListener(
       this.handleDocumentActivatedForDock
     )
@@ -699,7 +726,10 @@ export class AcApSimpleUiChrome {
     try {
       this.setLayout(this.layoutMode)
     } catch (error) {
-      console.warn('[SimpleUiChrome] setLayout failed during toolbar setup:', error)
+      console.warn(
+        '[SimpleUiChrome] setLayout failed during toolbar setup:',
+        error
+      )
     }
   }
 
@@ -1461,6 +1491,68 @@ export class AcApSimpleUiChrome {
     this.toolbar.syncInParentLayout()
   }
 
+  /**
+   * Opens a plugin palette in the dock. A second call on the same tab toggles
+   * the dock the way the editor palette host does.
+   */
+  private openPluginPalette(id: string): boolean {
+    const palette = AcApUiRegistry.palette(id)
+    if (!palette) return false
+    this.ensureDockReady()
+    if (!this.dockPanel) return false
+    if (this.dockPanel.hasTab(palette.id)) {
+      return this.toggleDockPanelTab(palette.id)
+    }
+    const content = document.createElement('div')
+    content.style.flex = '1'
+    content.style.minHeight = '0'
+    content.style.width = '100%'
+    content.style.height = '100%'
+    content.style.display = 'flex'
+    content.style.flexDirection = 'column'
+    const added = this.addDockPanelTab({
+      id: palette.id,
+      // Key, not a baked string, so refreshLocale follows AcApI18n.
+      labelKey: palette.titleKey,
+      content
+    })
+    if (!added) return false
+    const generation = ++this.pluginPaletteSerial
+    this.pluginPaletteGeneration.set(palette.id, generation)
+    void Promise.resolve(palette.mount(content)).then(dispose => {
+      if (typeof dispose !== 'function') return
+      if (
+        this.chromeDisposed ||
+        this.pluginPaletteGeneration.get(palette.id) !== generation
+      ) {
+        dispose()
+        return
+      }
+      this.pluginPaletteDisposers.set(palette.id, dispose)
+    })
+    return true
+  }
+
+  /**
+   * Drops dock tabs whose plugin is no longer registered.
+   *
+   * Clearing the generation makes a mount that is still loading unmount
+   * itself when it finishes, instead of attaching to a removed tab.
+   */
+  private releaseUnregisteredPluginPalettes() {
+    let removed = false
+    for (const id of [...this.pluginPaletteGeneration.keys()]) {
+      if (AcApUiRegistry.palette(id)) continue
+      this.pluginPaletteGeneration.delete(id)
+      const dispose = this.pluginPaletteDisposers.get(id)
+      this.pluginPaletteDisposers.delete(id)
+      dispose?.()
+      this.dockPanel?.removeTab(id)
+      removed = true
+    }
+    if (removed) this.destroyDockIfUnused()
+  }
+
   /** Updates toolbar placement. */
   private applyToolbarPlacement(placement: AcUiToolbarPlacement) {
     this.toolbarPlacement = placement
@@ -1478,7 +1570,14 @@ export class AcApSimpleUiChrome {
     this.unsubscribeLayout?.()
     this.unsubscribeLayout = undefined
 
+    this.chromeDisposed = true
     AcApI18n.events.localeChanged.removeEventListener(this.handleLocaleChanged)
+    AcApUiRegistry.events.changed.removeEventListener(
+      this.handlePluginUiChanged
+    )
+    this.pluginPaletteGeneration.clear()
+    for (const dispose of this.pluginPaletteDisposers.values()) dispose()
+    this.pluginPaletteDisposers.clear()
     AcApDocManager.instance.events.documentActivated.removeEventListener(
       this.handleDocumentActivatedForDock
     )

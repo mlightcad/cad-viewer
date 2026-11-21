@@ -3,7 +3,12 @@ import {
   createDocManagerSession,
   executeCadScript
 } from '@mlightcad/cad-agent-core'
-import { acapDocsUrl, AcApI18n } from '@mlightcad/cad-simple-viewer'
+import {
+  acapDocsUrl,
+  AcApI18n,
+  acedSubscribeUiTheme,
+  resolveUiTheme
+} from '@mlightcad/cad-simple-viewer'
 import JSONFormatter from 'json-formatter-js'
 
 import { SCRIPT_EXAMPLES } from '../examples/scriptExamples'
@@ -79,6 +84,11 @@ export class CadScriptPanel {
     this.renderResult()
   }
 
+  private readonly unsubscribeTheme = acedSubscribeUiTheme(() => {
+    this.editor.setTheme(resolveUiTheme(this.element))
+    this.renderResult()
+  })
+
   constructor() {
     registerScriptI18n()
     this.element = document.createElement('div')
@@ -142,7 +152,8 @@ export class CadScriptPanel {
       },
       () => {
         void this.runScript()
-      }
+      },
+      resolveUiTheme(this.element)
     )
     this.editorWrap.append(editorHost)
 
@@ -190,6 +201,7 @@ export class CadScriptPanel {
     this.resizeObserver?.disconnect()
     this.stopSplitDrag()
     AcApI18n.events.localeChanged.removeEventListener(this.onLocaleChanged)
+    this.unsubscribeTheme()
     this.element.remove()
   }
 
@@ -489,9 +501,7 @@ export class CadScriptPanel {
 
     const images = this.result.images ?? []
     if (images.length) {
-      const section = createSection(
-        `${labels.scriptImages} (${images.length})`
-      )
+      const section = createSection(`${labels.scriptImages} (${images.length})`)
       const gallery = document.createElement('div')
       gallery.className = 'cad-script-images'
       images.forEach((image, index) => {
@@ -677,7 +687,7 @@ function createJsonView(value: unknown): HTMLDivElement {
   host.className = 'cad-script-json'
   const formatter = new JSONFormatter(value, 3, {
     hoverPreviewEnabled: true,
-    theme: 'dark'
+    ...(resolveUiTheme(host) === 'dark' ? { theme: 'dark' } : {})
   })
   host.append(formatter.render())
   return host

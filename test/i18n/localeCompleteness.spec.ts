@@ -9,11 +9,19 @@
  * "Text"), add it to `NEUTRAL_VALUES` (all languages) or `SAME_AS_ENGLISH`
  * (one language) — never to silence a missing translation.
  */
+import { agentChrome } from '../../packages/cad-agent-plugin/src/i18n/chrome'
 import { agentCommandDescriptions } from '../../packages/cad-agent-plugin/src/i18n/command'
 import { ACEX_HTML_MESSAGES } from '../../packages/cad-html-core/src/AcExHtmlI18n'
+import { htmlExportLabel } from '../../packages/cad-html-plugin/src/i18n/chrome'
+import { htmlExportDialogCopy } from '../../packages/cad-html-plugin/src/i18n/exportDialog'
+import { llmChrome } from '../../packages/cad-llm-plugin/src/i18n/chrome'
 import { llmCommandDescriptions } from '../../packages/cad-llm-plugin/src/i18n/command'
+import { pdfChrome } from '../../packages/cad-pdf-plugin/src/i18n/chrome'
+import { pdfExportDialogCopy } from '../../packages/cad-pdf-plugin/src/i18n/exportDialog'
+import { scriptChrome } from '../../packages/cad-script-plugin/src/i18n/chrome'
 import { scriptCommandDescriptions } from '../../packages/cad-script-plugin/src/i18n/command'
 import { scriptExampleCopyByLocale } from '../../packages/cad-script-plugin/src/i18n/exampleCopy'
+import { svgExportLabel } from '../../packages/cad-svg-plugin/src/i18n/chrome'
 
 const LOCALES = ['zh', 'ja', 'ko', 'tr', 'cs', 'ar'] as const
 type Locale = 'en' | (typeof LOCALES)[number]
@@ -51,14 +59,22 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
   'cad-editor-demo': l =>
     loadDefault(`${PKG}/cad-editor-demo/src/locale/${l}`)(),
   'cad-agent-plugin': l => loadNamed(`${PKG}/cad-agent-plugin/src/i18n/${l}`)(),
+  'cad-agent-plugin/chrome': l => fromRecord(agentChrome, l),
   'cad-agent-plugin/command': l => fromRecord(agentCommandDescriptions, l),
   'cad-llm-plugin': l => loadNamed(`${PKG}/cad-llm-plugin/src/i18n/${l}`)(),
+  'cad-llm-plugin/chrome': l => fromRecord(llmChrome, l),
   'cad-llm-plugin/command': l => fromRecord(llmCommandDescriptions, l),
+  'cad-pdf-plugin/chrome': l => fromRecord(pdfChrome, l),
+  'cad-pdf-plugin/exportDialog': l => fromRecord(pdfExportDialogCopy, l),
   'cad-paddleocr-plugin': l =>
     loadNamed(`${PKG}/cad-paddleocr-plugin/src/i18n/${l}`)(),
   'cad-script-plugin': l =>
     loadNamed(`${PKG}/cad-script-plugin/src/i18n/${l}`)(),
+  'cad-script-plugin/chrome': l => fromRecord(scriptChrome, l),
   'cad-script-plugin/command': l => fromRecord(scriptCommandDescriptions, l),
+  'cad-html-plugin/chrome': l => fromRecord(htmlExportLabel, l),
+  'cad-html-plugin/exportDialog': l => fromRecord(htmlExportDialogCopy, l),
+  'cad-svg-plugin/chrome': l => fromRecord(svgExportLabel, l),
   'cad-script-plugin/examples': l => fromRecord(scriptExampleCopyByLocale, l),
   'cad-html-core': l => ACEX_HTML_MESSAGES[l]
 }
@@ -94,7 +110,8 @@ const NEUTRAL_VALUES = new Set<string>([
   'PaddleOCR(P)',
   'PaddleOcr',
   'Llm',
-  'OCR'
+  'OCR',
+  'PDF'
 ])
 
 /** Values that are legitimately identical to English in one language. */

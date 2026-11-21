@@ -1,4 +1,8 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 
 import { openCadScriptPalette } from '../palette/scriptPaletteIntegration'
@@ -13,6 +17,7 @@ export class AcApCadScriptCmd extends AcEdCommand {
    * @param _context - Application context (unused).
    */
   async execute(_context: AcApContext) {
+    if (AcApPaletteService.openNamedTab('cadScript')) return
     if (!openCadScriptPalette()) {
       log.warn('CAD script console is not available.')
     }

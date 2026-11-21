@@ -5,9 +5,6 @@ export default {
     drawingUnits: '图形单位',
     exportMenu: '导出',
     export: '导出为DXF',
-    exportHtml: '导出为 HTML',
-    exportPdf: '导出为PDF',
-    exportSvg: '导出为 SVG',
     exportImage: '导出图片',
     about: '关于'
   },
@@ -208,9 +205,6 @@ export default {
     },
     group: {
       smartBlocks: '智能块',
-      agent: '智能体',
-      aiModel: 'AI 模型',
-      pdf: 'PDF',
       draw: '绘制',
       dimension: '标注',
       modify: '修改',
@@ -278,20 +272,9 @@ export default {
       ellipse: '椭圆',
       arc: '椭圆弧'
     },
-    pdfText: {
-      auto: '自动'
-    },
     tooltip: {
       searchConvert: '查找所选对象的所有副本并将其转换为块（BSEARCH）。',
       detectConvert: '在整个图形中查找重复对象并将其转换为块（BDETECT）。',
-      importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（PDFIMPORT）。',
-      pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
-      pdfDim:
-        '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
-      pdfHatch:
-        '将 PDF 中被打散成线段的图案填充恢复为带图案、比例和角度的图案填充（PDFHATCH）。',
-      pdfText: '将 PDF 中被打散的文字笔画转换回文字对象（PDFTEXT）。',
-      pdfTextAuto: '在字形词典之后按顺序尝试所有可用的 OCR 服务（PDFTEXT）。',
       line: '绘制单段直线。',
       polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
       spline: '通过拟合点或控制点绘制平滑样条曲线。',
@@ -323,7 +306,6 @@ export default {
       mleader: '创建多重引线注释。',
       mleaderAdd: '向现有多重引线添加引线。',
       mleaderRemove: '从现有多重引线移除引线。',
-      script: '打开 CAD 脚本控制台，在当前图纸上运行脚本。',
       move: '将选中的对象移动到新位置。',
       rotate: '围绕基点旋转选中的对象。',
       scale: '放大或缩小选中的对象，缩放后对象的比例保持不变。',
@@ -353,9 +335,6 @@ export default {
       insert: '打开块工具选项板以浏览并插入块定义（INSERT）。',
       editAttributes: '打开增强属性编辑器，编辑块属性值与显示特性（ATTEDIT）。',
       defineAttribute: '创建用于块的属性定义（ATTDEF）。',
-      agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
-      llmSettings:
-        '配置 CAD 智能体和 PDF 文字识别（OCR）使用的 AI 模型服务商和 API 密钥。',
       pan: '在不改变缩放比例的情况下平移图形显示。',
       zoom: '缩放图形显示。',
       zoomExtents: '缩放到显示所有对象的最大范围。',
@@ -425,11 +404,6 @@ export default {
     command: {
       searchConvert: '搜索并\n转换',
       detectConvert: '检测并\n转换',
-      importPdf: '导入\nPDF',
-      pdfScale: '校准\n比例',
-      pdfDim: '识别\n标注',
-      pdfHatch: '识别\n填充',
-      pdfText: '识别\n文字',
       line: '直线',
       polyline: '多段线',
       circle: '圆',
@@ -465,7 +439,6 @@ export default {
       mleader: '引线',
       mleaderAdd: '添加引线',
       mleaderRemove: '移除引线',
-      script: '脚本',
       move: '移动',
       rotate: '旋转',
       scale: '缩放',
@@ -494,8 +467,6 @@ export default {
       insert: '插入',
       editAttributes: '编辑属性',
       defineAttribute: '定义属性',
-      agent: '智能体',
-      llmSettings: '模型设置',
       pan: '平移',
       zoom: '缩放',
       zoomExtents: '范围',

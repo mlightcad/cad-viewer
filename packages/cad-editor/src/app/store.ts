@@ -37,16 +37,6 @@ export const store = reactive({
     /** Bumped by the FIND command so the Find palette focuses its query field. */
     findFocusTick: 0
   },
-  features: {
-    /** Set when `@mlightcad/cad-agent-plugin` is installed and registered. */
-    agentPlugin: false,
-    /** Set when `@mlightcad/cad-llm-plugin` is installed and registered. */
-    llmPlugin: false,
-    /** Set when `@mlightcad/cad-paddleocr-plugin` is installed and registered. */
-    paddleOcrPlugin: false,
-    /** Set when `@mlightcad/cad-script-plugin` is installed and registered. */
-    scriptPlugin: false
-  },
   /**
    * Bumped by the MEM command after publishing a fresh snapshot so an already
    * mounted Memory palette can pick it up without remounting.

@@ -69,112 +69,6 @@ export default {
     aciTabTitle: 'Renk Dizini',
     rgbTabTitle: 'Gerçek Renk'
   },
-  exportHtmlDlg: {
-    title: 'HTML Olarak Dışa Aktar',
-    tabData: 'Veri',
-    tabDisplay: 'Görünüm',
-    tabSecurity: 'Güvenlik',
-    exportFormat: 'Dışa aktarma biçimi',
-    exportFormatSingle: 'Tek dosyalı HTML',
-    exportFormatSingleHint: 'Çevrimdışı açılabilen tek .html dosyası',
-    exportFormatMulti: 'Çok dosyalı paket (ZIP)',
-    exportFormatMultiHint:
-      'Bir zip indirir; açıp barındırınca aşamalı yükleme yapılır. Parola ve süre yalnızca tek dosyalı HTML için geçerlidir',
-    securitySingleOnlyHint:
-      'Parola ve geçerlilik yalnızca tek dosyalı HTML dışa aktarımında kullanılabilir.',
-    packageSection: 'Paket parçaları',
-    chunkSizeMiB: 'Parça boyutu (MiB)',
-    chunkSizeMiBHint:
-      'Her geometri veya OSNAP parçasının sıkıştırılmamış üst boyutu. Küçük parçalar daha erken boyanır; büyük parçalar daha az indirme demektir',
-    compressChunks: 'Parçaları sıkıştır',
-    compressChunksHint:
-      'Zip öncesi her parçayı gzip ile sıkıştır. Kapatırsanız ham ACEC/ACEO yazılır',
-    layersSection: 'Katmanlar',
-    exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
-    exportInvisibleLayersHint:
-      'Kapalı veya dondurulmuş katmanlardaki geometriyi dışa aktarılan dosyaya dahil et',
-    layoutsSection: 'Yerleşimler',
-    exportLayouts: 'Yerleşimleri dışa aktar',
-    exportLayoutsHint:
-      'Kağıt alanı yerleşimlerini dışa aktarılan dosyaya dahil et',
-    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
-    exportEmptyLayoutsHint:
-      'Çizim içeriği olmayan kağıt alanı yerleşimlerini de dahil et',
-    yes: 'Evet',
-    no: 'Hayır',
-    background: 'Arka plan',
-    backgroundBlack: 'Siyah',
-    backgroundBlackHint: 'Siyah tuval, açık renk çizim',
-    backgroundWhite: 'Beyaz',
-    backgroundWhiteHint: 'Beyaz tuval, koyu renk çizim',
-    backgroundSpace: 'Alana göre',
-    backgroundSpaceHint: 'Model alanda siyah, kağıt alanda beyaz',
-    initialView: 'Başlangıç görünümü',
-    initialViewExtents: 'Kapsam',
-    initialViewExtentsHint: 'HTML açıldığında çizim kapsamına yakınlaştır',
-    initialViewCurrent: 'Mevcut',
-    initialViewCurrentHint: 'Mevcut görünüm merkezini ve yakınlaştırmayı koru',
-    viewerMode: 'Görüntüleyici modu',
-    viewerModeView: 'Görüntüle',
-    viewerModeViewHint:
-      'Yalnızca kaydırma, yakınlaştırma ve katman kontrolleri',
-    viewerModeMeasure: 'Ölçüm ve İnceleme',
-    viewerModeMeasureHint:
-      'Görüntüleme araçlarına ek olarak ölçüm ve işaretleme',
-    expirySection: 'Geçerlilik',
-    expiry1Day: '1 gün',
-    expiry7Days: '7 gün',
-    expiry30Days: '30 gün',
-    expiryCustom: 'Özel',
-    expiryNever: 'Süresiz',
-    expiryCustomPlaceholder: 'Son geçerlilik tarihi ve saatini seçin',
-    expiryCustomRequired:
-      'Lütfen özel bir son geçerlilik tarihi ve saati seçin.',
-    expiryCustomPast: 'Özel son geçerlilik gelecekte olmalıdır.',
-    expiryHint:
-      'Geçerlilik süresi dolduktan sonra dışa aktarılan HTML artık açılamaz.',
-    passwordSection: 'Parola',
-    passwordPlaceholder: 'Parola yoksa boş bırakın',
-    passwordHint:
-      'Ayarlandığında HTML dosyasını açmak için doğru parola gerekir. Elle girin veya düğmeyle oluşturun.',
-    generatePassword: 'Oluştur',
-    copyPassword: 'Kopyala',
-    copyPasswordSuccess: 'Parola panoya kopyalandı.',
-    copyPasswordFailed: 'Parola panoya kopyalanamadı.'
-  },
-  exportPdfDlg: {
-    title: 'PDF\'e Dışa Aktar',
-    modelSpaceSection: 'Model alanı',
-    modelSpaceDisplay: 'Görüntü',
-    modelSpaceDisplayHint:
-      'Görünüm alanında şu an gösterilen içeriği dışa aktar',
-    modelSpaceExtents: 'Kapsam',
-    modelSpaceExtentsHint:
-      'Geçerli alandaki tüm nesnelerin kapsamını dışa aktar',
-    paperSpaceSection: 'Kağıt alanı',
-    exportLayouts: 'Yerleşimleri dışa aktar',
-    exportLayoutsHint:
-      'Kağıt alanı yerleşimlerini ek PDF sayfaları olarak dahil et',
-    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
-    exportEmptyLayoutsHint:
-      'Çizim içeriği olmayan kağıt alanı yerleşimlerini boş PDF sayfaları olarak dahil et',
-    textModeSection: 'Metin',
-    textMode: 'Metin işleme',
-    textModeText: 'Metin nesneleri',
-    textModeTextHint:
-      'Metni seçilebilir/aranabilir tutar ve dosyayı küçültür (SHX metin vektör kalır)',
-    textModeVector: 'Vektör konturlar',
-    textModeVectorHint:
-      'Metni çizgi ve dolguya dönüştürür, ekrana uygun, ancak dosya daha büyük',
-    colorModeSection: 'Renk',
-    colorModeColor: 'Renkli',
-    colorModeColorHint: 'Çizim renklerini ekrandaki gibi korur',
-    colorModeMonochrome: 'Siyah-beyaz',
-    colorModeMonochromeHint:
-      'Beyaz kâğıt, siyah çizgi ve metin; dolu alanlar gri basılır',
-    yes: 'Evet',
-    no: 'Hayır'
-  },
   quickSelectDlg: {
     title: 'Hızlı Seçim',
     applyTo: 'Uygulanacak yer',
@@ -431,10 +325,10 @@ export default {
       },
       justifyOptions: {
         center: 'Ortalanmış',
-        first: 'Uzatma Çizgisi 1\'de',
-        second: 'Uzatma Çizgisi 2\'de',
-        overFirst: 'Uzatma Çizgisi 1\'in Üstünde',
-        overSecond: 'Uzatma Çizgisi 2\'nin Üstünde'
+        first: "Uzatma Çizgisi 1'de",
+        second: "Uzatma Çizgisi 2'de",
+        overFirst: "Uzatma Çizgisi 1'in Üstünde",
+        overSecond: "Uzatma Çizgisi 2'nin Üstünde"
       },
       directionOptions: {
         ltr: 'Soldan Sağa',
@@ -779,7 +673,7 @@ export default {
   ucsManagerDlg: {
     title: 'UCS',
     tabs: {
-      named: 'Adlı UCS\'ler',
+      named: "Adlı UCS'ler",
       settings: 'Ayarlar'
     },
     currentUcs: 'Geçerli UCS: {name}',
@@ -797,8 +691,8 @@ export default {
     applyToAllViewports: 'Tüm etkin görüntü pencerelerine uygula',
     allowSelectingIcon: 'UCS simgesinin seçilmesine izin ver',
     ucsSettings: 'UCS ayarları',
-    saveWithViewport: 'UCS\'yi görüntü penceresiyle kaydet',
-    updateViewToPlan: 'UCS değiştiğinde görünümü Plan\'a güncelle'
+    saveWithViewport: "UCS'yi görüntü penceresiyle kaydet",
+    updateViewToPlan: "UCS değiştiğinde görünümü Plan'a güncelle"
   },
   ucsDetailsDlg: {
     title: 'UCS Ayrıntıları',

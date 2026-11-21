@@ -5,9 +5,6 @@ export default {
     drawingUnits: 'Drawing Units',
     exportMenu: 'Export',
     export: 'Export to DXF',
-    exportHtml: 'Export to HTML',
-    exportPdf: 'Export to PDF',
-    exportSvg: 'Export to SVG',
     exportImage: 'Export to Image',
     about: 'About'
   },
@@ -211,9 +208,6 @@ export default {
     },
     group: {
       smartBlocks: 'Smart Blocks',
-      agent: 'Agent',
-      aiModel: 'AI Model',
-      pdf: 'PDF',
       draw: 'Draw',
       dimension: 'Dimension',
       modify: 'Modify',
@@ -281,26 +275,11 @@ export default {
       ellipse: 'Ellipse',
       arc: 'Elliptical Arc'
     },
-    pdfText: {
-      auto: 'Auto'
-    },
     tooltip: {
       searchConvert:
         'Find all copies of the selected objects and convert them into blocks (BSEARCH).',
       detectConvert:
         'Find repeated objects anywhere in the drawing and convert them into blocks (BDETECT).',
-      importPdf:
-        'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (PDFIMPORT).',
-      pdfScale:
-        'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
-      pdfDim:
-        'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
-      pdfHatch:
-        'Turn the loose strokes of a PDF hatch back into a hatch with its pattern, scale and angle (PDFHATCH).',
-      pdfText:
-        'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
-      pdfTextAuto:
-        'Try every available OCR provider in order after the glyph dictionary (PDFTEXT).',
       line: 'Draw a single straight line segment.',
       polyline:
         'Draw a connected series of line or arc segments as one object.',
@@ -333,8 +312,6 @@ export default {
       mleader: 'Create a multileader annotation.',
       mleaderAdd: 'Add a leader line to an existing multileader.',
       mleaderRemove: 'Remove a leader line from an existing multileader.',
-      script:
-        'Open the CAD script console to run a script on the current drawing.',
       move: 'Move selected objects to a new position.',
       rotate: 'Rotate selected objects around a base point.',
       scale:
@@ -378,10 +355,6 @@ export default {
         'Open the Enhanced Attribute Editor to edit block attribute values and display properties (ATTEDIT).',
       defineAttribute:
         'Create an attribute definition for use in a block (ATTDEF).',
-      agent:
-        'Open the CAD Agent palette tab to draw geometry using natural language.',
-      llmSettings:
-        'Configure the AI model providers and API keys used by the CAD Agent and by PDF text recognition (OCR).',
       pan: 'Moves the view of the drawing without changing magnification.',
       zoom: 'Zooms the drawing display.',
       zoomExtents: 'Zooms to display the maximum extents of all entities.',
@@ -475,11 +448,6 @@ export default {
     command: {
       searchConvert: 'Search and\nConvert',
       detectConvert: 'Detect and\nConvert',
-      importPdf: 'Import\nPDF',
-      pdfScale: 'Calibrate\nScale',
-      pdfDim: 'Recover\nDims',
-      pdfHatch: 'Recover\nHatch',
-      pdfText: 'Recover\nText',
       line: 'Line',
       polyline: 'Polyline',
       circle: 'Circle',
@@ -515,7 +483,6 @@ export default {
       mleader: 'Multileader',
       mleaderAdd: 'Add Leader',
       mleaderRemove: 'Remove Leader',
-      script: 'Script',
       move: 'Move',
       rotate: 'Rotate',
       scale: 'Scale',
@@ -544,8 +511,6 @@ export default {
       insert: 'Insert',
       editAttributes: 'Edit\nAttributes',
       defineAttribute: 'Define\nAttribute',
-      agent: 'Agent',
-      llmSettings: 'Model\nSettings',
       pan: 'Pan',
       zoom: 'Zoom',
       zoomExtents: 'Extents',

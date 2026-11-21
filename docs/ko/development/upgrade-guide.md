@@ -6,6 +6,19 @@ title: 'cad-simple-viewer 및 cad-editor 업그레이드'
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info 플러그인 UI는 `AcApUiRegistry`에서 제공
+이 변경이 포함된 릴리스부터, 플러그인에 속한 리본 그룹, 파일 → 내보내기 항목, 심플 UI 도구 모음 버튼, 팔레트 탭은 해당 플러그인의 `/register` 모듈이 **`AcApUiRegistry`**에 선언합니다. 호스트는 등록된 항목만 그립니다. 설치되지 않은 패키지의 UI는 나타나지 않습니다.
+
+마이그레이션:
+
+- `@mlightcad/cad-editor`는 에이전트, 모델 설정, 스크립트, PDF, HTML, SVG 버튼을 더 이상 하드코딩하지 않습니다. `@mlightcad/cad-pdf-plugin/register`, `@mlightcad/cad-html-plugin/register`, `@mlightcad/cad-svg-plugin/register`를 에이전트 / LLM / 스크립트 / PaddleOCR과 같이 동적 `import()`로 불러옵니다. 에디터를 번들할 때 이 지정자는 external로 두세요.
+- `store.features` 플래그(`agentPlugin`, `llmPlugin`, `paddleOcrPlugin`, `scriptPlugin`)는 제거되었습니다.
+- 플러그인은 `/register`에서 `AcApUiRegistry.register`를 호출해 리본 그룹, `file.export` 메뉴 행, 팔레트 `mount`, 로캘 문구를 등록합니다. `/register`가 실행되면 버튼이 나타나고, 무거운 모듈은 명령 실행 때 불러옵니다.
+- 심플 UI의 내보내기 메뉴와 추가 도구 모음 버튼도 같은 레지스트리를 읽습니다. 손으로 넣은 에이전트 / 스크립트 버튼은 제거하세요.
+- `setAgentPaletteOpener`와 `setCadScriptPaletteOpener`는 레지스트리 팔레트 id를 열지 않는 호스트를 위해 남습니다. `cad-editor`와 심플 UI는 이 id를 직접 엽니다.
+- `chtml`과 `cpdf`는 `cad-html-plugin`과 `cad-pdf-plugin`에 있는 프레임워크 없는 대화상자를 엽니다. 브라우저에서는 `/register`가 이 명령을 등록하고, 확인 시 `-chtml` / `-cpdf`로 플러그인을 불러옵니다. 헤드리스 호스트는 `dialog: false`를 넘겨 `chtml`과 `cpdf`를 명령행 프롬프트로 유지합니다. Vue 대화상자 `MlExportHtmlDlg` / `MlExportPdfDlg`와 편집기 명령 클래스는 제거되었습니다.
+  :::
+
 ::: info 심플 UI가 `cad-simple-viewer`로 통합됨
 이 변경이 포함된 릴리스부터 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 툴바·도크 탭·기본 `AcApPaletteHost`는 **`@mlightcad/cad-simple-viewer`**에 있습니다. `simpleUi`(기본 켜짐)로 설정하고, `cad-editor`/CLI 등은 `simpleUi: false`로 끄세요. `@mlightcad/cad-simple-viewer/find` 서브경로는 제거되었으므로 찾기 API는 `@mlightcad/cad-simple-viewer`에서 import하세요. `/simple-ui`와 `/find` 서브경로는 제거되었습니다.
 :::

@@ -2,7 +2,8 @@ import {
   AcApDocManager,
   AcApLlmSettingsService,
   type AcApPluginManager,
-  AcApTextRecognitionService
+  AcApTextRecognitionService,
+  AcApUiRegistry
 } from '@mlightcad/cad-simple-viewer'
 
 import {
@@ -10,7 +11,8 @@ import {
   LLM_PLUGIN_TRIGGERS,
   LLM_SERVICE_ID
 } from './constants.js'
-import { llmT, registerLlmI18n } from './i18n/index.js'
+import { llmLocaleMessages, llmT, registerLlmI18n } from './i18n/index.js'
+import { LLM_SETTINGS_ICON } from './ui/icons.js'
 
 /** Loads the main bundle on first use. */
 const loadMain = () => import('@mlightcad/cad-llm-plugin')
@@ -33,6 +35,30 @@ const loadMain = () => import('@mlightcad/cad-llm-plugin')
  */
 export function registerLazyLlmPlugin(pluginManager: AcApPluginManager): void {
   registerLlmI18n()
+
+  AcApUiRegistry.register({
+    plugin: LLM_PLUGIN_NAME,
+    messages: llmLocaleMessages(),
+    ribbonGroups: [
+      {
+        id: 'ai-model',
+        tabId: 'ai',
+        titleKey: 'main.ribbon.group.aiModel',
+        placement: 'start',
+        order: 1,
+        items: [
+          {
+            id: 'cmd-llmsettings',
+            command: 'llmsettings',
+            labelKey: 'main.ribbon.command.llmSettings',
+            tooltipKey: 'main.ribbon.tooltip.llmSettings',
+            iconSvg: LLM_SETTINGS_ICON,
+            size: 'large'
+          }
+        ]
+      }
+    ]
+  })
 
   AcApTextRecognitionService.register({
     id: LLM_SERVICE_ID,

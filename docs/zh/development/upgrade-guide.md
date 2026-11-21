@@ -6,6 +6,19 @@ title: '升级 cad-simple-viewer 和 cad-editor'
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info 插件界面改由 `AcApUiRegistry` 提供
+从包含此变更的版本开始，属于插件的功能区组、文件 → 导出菜单、简易 UI 工具栏按钮和选项板标签，都由该插件的 `/register` 模块通过 **`AcApUiRegistry`** 声明。宿主只绘制已注册的内容。未安装的包不会出现对应界面。
+
+宿主与插件迁移：
+
+- `@mlightcad/cad-editor` 不再内置智能体、模型设置、脚本、PDF、HTML、SVG 按钮。它用动态 `import()` 加载 `@mlightcad/cad-pdf-plugin/register`、`@mlightcad/cad-html-plugin/register` 和 `@mlightcad/cad-svg-plugin/register`，与智能体、LLM、脚本、PaddleOCR 相同。打包 editor 时请把这些说明符标为 external。
+- `store.features` 标志（`agentPlugin`、`llmPlugin`、`paddleOcrPlugin`、`scriptPlugin`）已删除。
+- 插件在 `/register` 中调用 `AcApUiRegistry.register`，提供功能区组、`file.export` 菜单行、选项板 `mount` 和各语言文案。`/register` 执行后按钮即出现，重模块仍在命令触发时加载。
+- 简易 UI 的导出菜单和额外工具栏按钮也读这张注册表。请去掉手写的智能体和脚本工具栏按钮。
+- `setAgentPaletteOpener` 与 `setCadScriptPaletteOpener` 仍可供不处理注册表选项板 id 的宿主使用。`cad-editor` 和简易 UI 会自己打开这些 id。
+- `chtml` 和 `cpdf` 打开的是 `cad-html-plugin` 与 `cad-pdf-plugin` 里的无框架对话框。浏览器中由 `/register` 注册这两条命令，确定后通过 `-chtml` / `-cpdf` 加载插件。无界面宿主传入 `dialog: false`，`chtml` 和 `cpdf` 仍走命令行提示。Vue 对话框 `MlExportHtmlDlg` / `MlExportPdfDlg` 以及编辑器里的命令类已删除。
+  :::
+
 ::: info 简易 UI 已并入 `cad-simple-viewer`
 从包含此变更的版本开始，**`@mlightcad/cad-simple-ui-plugin` 已移除**。工具栏、停靠面板标签（图层 / 查找 / 审阅 / 测量）与默认 `AcApPaletteHost` 位于 **`@mlightcad/cad-simple-viewer`**。
 

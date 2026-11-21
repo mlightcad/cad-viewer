@@ -5,9 +5,6 @@ export default {
     drawingUnits: '도면 단위',
     exportMenu: '내보내기',
     export: 'DXF로 내보내기',
-    exportHtml: 'HTML로 내보내기',
-    exportPdf: 'PDF로 내보내기',
-    exportSvg: 'SVG로 내보내기',
     exportImage: '이미지로 내보내기',
     about: '정보'
   },
@@ -209,9 +206,6 @@ export default {
     },
     group: {
       smartBlocks: '스마트 블록',
-      agent: '에이전트',
-      aiModel: 'AI 모델',
-      pdf: 'PDF',
       draw: '그리기',
       dimension: '치수',
       modify: '수정',
@@ -279,25 +273,11 @@ export default {
       ellipse: '타원',
       arc: '타원형 호'
     },
-    pdfText: {
-      auto: '자동'
-    },
     tooltip: {
       searchConvert:
         '선택한 객체의 모든 사본을 찾아 블록으로 변환합니다(BSEARCH).',
       detectConvert:
         '도면 전체에서 반복 객체를 찾아 블록으로 변환합니다(BDETECT).',
-      importPdf:
-        'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (PDFIMPORT).',
-      pdfScale:
-        '알려진 거리의 두 점으로 가져온 PDF 형상의 축척을 조정합니다 (PDFSCALE).',
-      pdfDim:
-        'PDF에서 분해된 치수(화살표 또는 사선, 치수선, 치수 보조선, 문자)를 치수 객체로 되돌립니다 (PDFDIM).',
-      pdfHatch:
-        'PDF에서 선분으로 분해된 해치를 패턴, 축척, 각도를 가진 해치로 되돌립니다 (PDFHATCH).',
-      pdfText: 'PDF에서 분해된 문자 획을 문자 객체로 되돌립니다 (PDFTEXT).',
-      pdfTextAuto:
-        '글리프 사전 다음에 사용 가능한 OCR을 순서대로 시도합니다 (PDFTEXT).',
       line: '단일 직선 세그먼트를 그립니다.',
       polyline: '연결된 선 또는 호 세그먼트를 하나의 객체로 그립니다.',
       spline: '맞춤점 또는 조정점을 지나는 매끄러운 스플라인 곡선을 그립니다.',
@@ -329,7 +309,6 @@ export default {
       mleader: '다중 지시선 주석을 작성합니다.',
       mleaderAdd: '기존 다중 지시선에 지시선을 추가합니다.',
       mleaderRemove: '기존 다중 지시선에서 지시선을 제거합니다.',
-      script: '현재 도면에서 스크립트를 실행하는 CAD 스크립트 콘솔을 엽니다.',
       move: '선택한 객체를 새 위치로 이동합니다.',
       rotate: '선택한 객체를 기준점을 중심으로 회전합니다.',
       scale:
@@ -366,9 +345,6 @@ export default {
       editAttributes:
         '고급 속성 편집기를 열어 블록 속성 값과 표시 특성을 편집합니다(ATTEDIT).',
       defineAttribute: '블록에서 사용할 속성 정의를 작성합니다(ATTDEF).',
-      agent: 'CAD 에이전트 팔레트 탭을 열어 자연어로 형상을 그립니다.',
-      llmSettings:
-        'CAD 에이전트와 PDF 문자 인식(OCR)에 사용하는 AI 모델 공급자와 API 키를 설정합니다.',
       pan: '배율을 변경하지 않고 도면의 뷰를 이동합니다.',
       zoom: '도면 표시를 줌합니다.',
       zoomExtents: '모든 객체의 최대 범위를 표시하도록 줌합니다.',
@@ -446,11 +422,6 @@ export default {
     command: {
       searchConvert: '검색 및\n변환',
       detectConvert: '감지 및\n변환',
-      importPdf: 'PDF\n가져오기',
-      pdfScale: '축척\n보정',
-      pdfDim: '치수\n인식',
-      pdfHatch: '해치\n인식',
-      pdfText: '문자\n인식',
       line: '선',
       polyline: '폴리선',
       circle: '원',
@@ -486,7 +457,6 @@ export default {
       mleader: '다중 지시선',
       mleaderAdd: '지시선 추가',
       mleaderRemove: '지시선 제거',
-      script: '스크립트',
       move: '이동',
       rotate: '회전',
       scale: '축척',
@@ -515,8 +485,6 @@ export default {
       insert: '삽입',
       editAttributes: '속성\n편집',
       defineAttribute: '속성\n정의',
-      agent: '에이전트',
-      llmSettings: '모델\n설정',
       pan: '초점이동',
       zoom: '줌',
       zoomExtents: '범위',

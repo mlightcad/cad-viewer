@@ -6,6 +6,19 @@ title: 'cad-simple-viewer と cad-editor のアップグレード'
 
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
+::: info プラグイン UI は `AcApUiRegistry` から提供
+この変更を含むリリース以降、プラグインに属するリボン グループ、ファイル → 書き出し、シンプル UI のツールバー ボタン、パレット タブは、そのプラグインの `/register` モジュールが **`AcApUiRegistry`** に宣言します。ホストは登録されたものだけを描画します。インストールされていないパッケージの UI は出ません。
+
+移行:
+
+- `@mlightcad/cad-editor` はエージェント、モデル設定、スクリプト、PDF、HTML、SVG のボタンを内蔵しません。`@mlightcad/cad-pdf-plugin/register`、`@mlightcad/cad-html-plugin/register`、`@mlightcad/cad-svg-plugin/register` を、エージェント / LLM / スクリプト / PaddleOCR と同じ動的 `import()` で読み込みます。エディタをバンドルするときはこれらの指定子を external にしてください。
+- `store.features` のフラグ（`agentPlugin`、`llmPlugin`、`paddleOcrPlugin`、`scriptPlugin`）は削除されました。
+- プラグインは `/register` で `AcApUiRegistry.register` を呼び、リボングループ、`file.export` のメニュー行、パレットの `mount`、各言語の文言を渡します。`/register` の実行後にボタンが表示されます。重いモジュールはコマンド実行時に読み込まれます。
+- シンプル UI の書き出しメニューと追加のツールバー ボタンも同じレジストリを読みます。手書きのエージェント / スクリプト ボタンは外してください。
+- `setAgentPaletteOpener` と `setCadScriptPaletteOpener` は、レジストリのパレット id を開かないホスト向けに残します。`cad-editor` とシンプル UI はこれらの id を自ら開きます。
+- `chtml` と `cpdf` は `cad-html-plugin` と `cad-pdf-plugin` にあるフレームワーク非依存のダイアログを開きます。ブラウザでは `/register` がこれらのコマンドを登録し、確定時に `-chtml` / `-cpdf` でプラグインを読み込みます。ヘッドレスなホストは `dialog: false` を渡し、`chtml` と `cpdf` をコマンドラインのプロンプトのままにします。Vue ダイアログ `MlExportHtmlDlg` / `MlExportPdfDlg` とエディタ側のコマンドクラスは削除されました。
+  :::
+
 ::: info シンプル UI が `cad-simple-viewer` に統合
 この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。`@mlightcad/cad-simple-viewer/find` サブパスは削除済みのため、検索 API は `@mlightcad/cad-simple-viewer` から import してください。`/simple-ui` と `/find` サブパスは削除済みです。
 :::
