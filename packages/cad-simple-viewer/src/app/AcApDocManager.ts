@@ -107,6 +107,7 @@ import {
 } from '../command/index.js'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands.js'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands.js'
+import { AcApTxt2MtxtCmd } from '../command/modify/AcApTxt2MtxtCmd.js'
 import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
@@ -2111,13 +2112,8 @@ export class AcApDocManager {
     )
     addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
-    // Load after the DocManager module graph has finished initializing.
-    // A static barrel import leaves AcApTxt2MtxtCmd undefined under CJS.
-    const { AcApTxt2MtxtCmd } =
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('../command/modify/AcApTxt2MtxtCmd.js') as {
-        AcApTxt2MtxtCmd: new () => AcEdCommand
-      }
+    // Leaf import (not command/modify barrel): avoids a CJS cycle that left
+    // AcApTxt2MtxtCmd undefined, and stays browser-safe (no require()).
     addSystemCommand('txt2mtxt', 'txt2mtxt', new AcApTxt2MtxtCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('copyclip', 'copyclip', new AcApCopyClipCmd())
