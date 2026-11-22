@@ -1,5 +1,73 @@
 # @mlightcad/cad-viewer
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- 2ee892d: `BDETECT` opens on a ready panel with detection options (rotation, mirror, scale, same layer, text variations, min. instances, min. savings, max. objects) and a Detect button; searching starts only when Detect is clicked, and Detect again re-runs with the current options. Each option has an explanation: hover or click the mark beside its label. Stop returns to the ready state instead of ending the command. The detection default for `minInstances` is now `2` (was `3`).
+- 663c251: The Properties palette now edits entities in Write mode. Each value can be changed in place and the change is applied as one undoable "Properties" edit. Editing works for one entity, for one entity picked from a multi-selection, and for the properties shared by the whole selection. Layer, linetype, lineweight, transparency and color use dropdowns. Array items such as polyline vertices are edited one at a time, and the palette refreshes after undo, redo and commands. Entities on locked layers stay read-only. Adds `AcApEntityService.setEntityProperty`.
+- 0dd562b: feat(ui): let plugins register ribbon, export menus, and palette tabs
+
+  Plugin chrome (ribbon groups, File → Export rows, simple-UI toolbar buttons, and palette tabs) is declared by each plugin's `/register` module through `AcApUiRegistry`. The Vue editor and simple UI draw whatever is registered, so a package that is not installed contributes no buttons. `chtml` and `cpdf` open framework-free dialogs owned by the HTML and PDF plugins. `store.features` and the Vue export dialogs are removed. Headless hosts pass `dialog: false` so those commands stay prompts. See the upgrade guide.
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- b9af87c: feat(cad-paddleocr-plugin): add lazy local PaddleOCR provider for exploded text
+
+  Registers `paddleocr` in `AcApTextRecognitionService`. PDF import lists each
+  _available_ OCR option under “Recognize exploded text”: local PaddleOCR and
+  every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not
+  a single provider row; long labels stay inside the dialog. The AI ribbon PDF
+  “Recover Text” control is a dropdown so you can pick Auto or a specific model
+  for `pdftext`. Unavailable options are omitted. Demos copy ONNX Runtime wasm
+  to `vendor/onnxruntime/` and resolve that path against `document.baseURI` so
+  PaddleOCR works with Vite `base: './'`. Wasm and ONNX models load only on
+  first PaddleOCR use.
+
+- 0dd562b: fix(ui): open the palette tab chosen from the overflow menu
+
+  Choosing a palette tab from the overflow menu now makes that tab active and keeps it visible, including when it was already the active tab. The Find field uses the same 12px type as the other palette inputs.
+
+- 51b65c5: Bump `@mlightcad/ui-components` to 0.1.14 and drop the local overflow-tab patch. Bridge `AcApLocale` into ui-components packs (`en`/`zh`/`tr`/`cs`/`ar`, with `ja`/`ko` falling back to English), and keep Blocks palette source labels reading top-to-bottom with `text-orientation: sideways`.
+- Updated dependencies [64ca714]
+- Updated dependencies [8279755]
+- Updated dependencies [64ca714]
+- Updated dependencies [2ee892d]
+- Updated dependencies [206a3d2]
+- Updated dependencies [663c251]
+- Updated dependencies [e4d1399]
+- Updated dependencies [704af08]
+- Updated dependencies [9a09628]
+- Updated dependencies [67b0897]
+- Updated dependencies [b9af87c]
+- Updated dependencies [0dd562b]
+- Updated dependencies [4e7a21a]
+- Updated dependencies [0ff8b62]
+- Updated dependencies [7b6bac6]
+- Updated dependencies [43c3a93]
+- Updated dependencies [7b6bac6]
+- Updated dependencies [0dd562b]
+- Updated dependencies [0617037]
+- Updated dependencies
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.6
+  - @mlightcad/cad-llm-plugin@1.8.0-preview.6
+  - @mlightcad/cad-script-core@1.8.0-preview.6
+  - @mlightcad/cad-agent-core@1.8.0-preview.6
+  - @mlightcad/cad-script-plugin@1.8.0-preview.6
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.6
+  - @mlightcad/three-renderer@1.8.0-preview.6
+  - @mlightcad/cad-html-plugin@1.8.0-preview.6
+  - @mlightcad/cad-paddleocr-plugin@1.8.0-preview.6
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.6
+  - @mlightcad/cad-svg-plugin@1.8.0-preview.6
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.6
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.6
+  - @mlightcad/cad-pdf-core@1.8.0-preview.6
+  - @mlightcad/cad-svg-converter@1.8.0-preview.6
+  - @mlightcad/pdf-renderer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

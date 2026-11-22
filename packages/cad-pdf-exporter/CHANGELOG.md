@@ -1,5 +1,23 @@
 # @mlightcad/cad-pdf-exporter
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- 9a09628: Pin the default font CDN to `cad-data@main`, bump `@mlightcad/mtext-renderer` to 0.13.10 (catalog refresh + preferred-type glyph fallback), and give headless PDF/HTML export the same stale-`fonts.json` revalidation and GitHub raw fallback as the browser viewer.
+- Updated dependencies [206a3d2]
+- Updated dependencies [e4d1399]
+- Updated dependencies [9a09628]
+- Updated dependencies [43c3a93]
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.6
+  - @mlightcad/cad-pdf-core@1.8.0-preview.6
+  - @mlightcad/pdf-renderer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

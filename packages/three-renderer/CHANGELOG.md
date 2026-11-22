@@ -1,5 +1,22 @@
 # @mlightcad/three-renderer
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- 206a3d2: Fix jagged block linework at survey-scale coordinates (e.g. contour polylines at X ~ 3.36e7). Block-template compaction baked each leaf's absolute translation into float32 vertices before subtracting the bucket origin, and simple block lines were staged in a float32 buffer, so vertices snapped to a 4-unit grid. Both paths now rebase in float64 before storing float32.
+- e4d1399: Fix elevated geometry (e.g. survey contour polylines at elevation 1000+) being clipped out of plan views. The orthographic camera used a fixed depth band of WCS Z −500…500; it now grows to the Z extent of the drawing (`AcTrCamera.fitDepthRange`, `AcTrLayout.depthRange`) for the main view, paper-space viewports, the snap loupe and entity previews.
+- 9a09628: Pin the default font CDN to `cad-data@main`, bump `@mlightcad/mtext-renderer` to 0.13.10 (catalog refresh + preferred-type glyph fallback), and give headless PDF/HTML export the same stale-`fonts.json` revalidation and GitHub raw fallback as the browser viewer.
+- 43c3a93: Fix PDF import of labels drawn over white panels.
+  - PDF import honours the clip around an image: a full picture clipped down to a detail (e.g. a QR code) now imports as that detail only, instead of the whole picture.
+  - Overlapping solid hatches now draw in creation order, so a later fill covers an earlier one (a coloured drop on a white label panel) while every hatch stays under linework.
+  - Black PDF text and linework painted on a white fill keep a fixed black colour instead of ACI 7, so they stay readable on a dark canvas.
+  - Coloured fills that a different-coloured digit sits on (water-efficiency drops) are no longer removed as outlines of that digit.
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

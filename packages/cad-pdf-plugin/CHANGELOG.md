@@ -1,5 +1,105 @@
 # @mlightcad/cad-pdf-plugin
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- b9af87c: feat(cad-paddleocr-plugin): add lazy local PaddleOCR provider for exploded text
+
+  Registers `paddleocr` in `AcApTextRecognitionService`. PDF import lists each
+  _available_ OCR option under “Recognize exploded text”: local PaddleOCR and
+  every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not
+  a single provider row; long labels stay inside the dialog. The AI ribbon PDF
+  “Recover Text” control is a dropdown so you can pick Auto or a specific model
+  for `pdftext`. Unavailable options are omitted. Demos copy ONNX Runtime wasm
+  to `vendor/onnxruntime/` and resolve that path against `document.baseURI` so
+  PaddleOCR works with Vite `base: './'`. Wasm and ONNX models load only on
+  first PaddleOCR use.
+
+- 0ff8b62: feat(cad-pdf-plugin): recognize dimensions on PDF import
+
+  `PDFIMPORT` in recover mode now turns exploded AutoCAD dimensions back into
+  dimension entities on the `PDF_DIM` style. A new **Recognize dimensions**
+  option in the Import PDF dialog controls it (`recognizeDimensions` in
+  `AcApPdfImportOptions`; on by default in recover mode, off in visual mode).
+  - Recognition is evidence-scored: terminators (closed / open arrows, ticks,
+    dots), dimension and extension lines, value text, and agreement with the
+    drawing scale. Conflicting hypotheses are resolved best-first in two rounds;
+    the second uses the scale and sizes the confident ones agree on. Import uses
+    a strict profile, `pdfdim` keeps the lenient review profile.
+  - New kinds: aligned, arc length and ordinate dimensions, diameters with both
+    arrows, and radius callouts placed outside the circle.
+  - SHX stroke text is read beside each dimension line in that line's direction,
+    which is fast on whole sheets and reads rotated values. Rounded (romans /
+    isocp) digits, prefixes such as `Ø`, decimal points, and digits printed as
+    filled outlines are read too.
+  - Candidates carry `score` and `evidence`; the import stage is available as
+    `acapPdfRecognizeImportDimensions`.
+
+- 0dd562b: feat(ui): let plugins register ribbon, export menus, and palette tabs
+
+  Plugin chrome (ribbon groups, File → Export rows, simple-UI toolbar buttons, and palette tabs) is declared by each plugin's `/register` module through `AcApUiRegistry`. The Vue editor and simple UI draw whatever is registered, so a package that is not installed contributes no buttons. `chtml` and `cpdf` open framework-free dialogs owned by the HTML and PDF plugins. `store.features` and the Vue export dialogs are removed. Headless hosts pass `dialog: false` so those commands stay prompts. See the upgrade guide.
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- 4e7a21a: fix(cad-pdf-plugin): keep object lines under extension lines and recognize symbol-labelled dimensions on PDF import
+  - An object edge that an extension line is drawn over (for example a tube
+    wall under a Ø dimension) is no longer taken as the extension line. Such an
+    edge is never erased, and the real (often short) extension line wins. Edges
+    that stop short of the dimension line are no longer used either.
+  - Extension lines drawn twice over each other by neighbouring dimensions are
+    both replaced, so no copy is left behind.
+  - Text placed beyond the extension lines keeps its position, and the run of
+    dimension line out to it is replaced by the dimension (DIMTMOVE 0).
+  - Dimensions labelled with a symbol instead of a value (`a`, `e mini`,
+    `E maxi` in weld details), including spans shorter than their arrows, are
+    recognized when both terminators, the dimension line and both extension
+    lines are present. A text label becomes the dimension text; a label still
+    drawn as strokes stays as drawn and the dimension text is suppressed. In
+    `pdfdim`, typing a value for such a row replaces the label strokes.
+  - A diameter with outside arrows also replaces the stub behind its far arrow.
+  - Linear dimensions with outside arrows keep the dimension line drawn past
+    the arrows: the dim block now draws those tails, which were erased with
+    the source lines but never drawn again.
+
+- 7b6bac6: fix(cad-pdf-plugin): size imported TrueType text to capital-A height and drop outline twins
+  - PDF `fontSize` is the em square; CAD TrueType height is capital-A. Import now
+    divides mesh text height by the face scale factor before fitting width, and
+    recovered CJK outline text uses the same conversion so ideographs no longer
+    draw ~15–40% too tall.
+  - Many PDFs keep searchable text plus stroked/filled glyph paths. After native
+    TEXT is created, import removes closed glyph-like outlines (and non-arrow
+    hatches) whose mass sits in each text's baseline band — not open leaders or
+    3–4 vertex arrowheads, so dimension recognition beside labels is preserved.
+    Fill+stroke companion outlines are still dropped when a hatch becomes text.
+
+- 43c3a93: Fix PDF import of labels drawn over white panels.
+  - PDF import honours the clip around an image: a full picture clipped down to a detail (e.g. a QR code) now imports as that detail only, instead of the whole picture.
+  - Overlapping solid hatches now draw in creation order, so a later fill covers an earlier one (a coloured drop on a white label panel) while every hatch stays under linework.
+  - Black PDF text and linework painted on a white fill keep a fixed black colour instead of ACI 7, so they stay readable on a dark canvas.
+  - Coloured fills that a different-coloured digit sits on (water-efficiency drops) are no longer removed as outlines of that digit.
+
+- 7b6bac6: `pdftext` Auto no longer waits forever on a hung local OCR engine. Model CDN fetches time out, and unread lines still open in the review panel so the command can be used without PaddleOCR models cached.
+- Updated dependencies [2ee892d]
+- Updated dependencies [206a3d2]
+- Updated dependencies [663c251]
+- Updated dependencies [e4d1399]
+- Updated dependencies [704af08]
+- Updated dependencies [9a09628]
+- Updated dependencies [b9af87c]
+- Updated dependencies [0dd562b]
+- Updated dependencies [0ff8b62]
+- Updated dependencies [7b6bac6]
+- Updated dependencies [43c3a93]
+- Updated dependencies [0dd562b]
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.6
+  - @mlightcad/three-renderer@1.8.0-preview.6
+  - @mlightcad/cad-pdf-core@1.8.0-preview.6
+  - @mlightcad/pdf-renderer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

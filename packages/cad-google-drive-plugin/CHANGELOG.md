@@ -1,5 +1,26 @@
 # @mlightcad/cad-google-drive-plugin
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- Updated dependencies [2ee892d]
+- Updated dependencies [663c251]
+- Updated dependencies [e4d1399]
+- Updated dependencies [704af08]
+- Updated dependencies [9a09628]
+- Updated dependencies [b9af87c]
+- Updated dependencies [0dd562b]
+- Updated dependencies [0ff8b62]
+- Updated dependencies [7b6bac6]
+- Updated dependencies [0dd562b]
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

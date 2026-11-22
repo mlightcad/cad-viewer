@@ -1,5 +1,76 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- 663c251: The Properties palette now edits entities in Write mode. Each value can be changed in place and the change is applied as one undoable "Properties" edit. Editing works for one entity, for one entity picked from a multi-selection, and for the properties shared by the whole selection. Layer, linetype, lineweight, transparency and color use dropdowns. Array items such as polyline vertices are edited one at a time, and the palette refreshes after undo, redo and commands. Entities on locked layers stay read-only. Adds `AcApEntityService.setEntityProperty`.
+- b9af87c: feat(cad-paddleocr-plugin): add lazy local PaddleOCR provider for exploded text
+
+  Registers `paddleocr` in `AcApTextRecognitionService`. PDF import lists each
+  _available_ OCR option under “Recognize exploded text”: local PaddleOCR and
+  every configured vision-capable LLM **model** (e.g. `kkidc — model-id`), not
+  a single provider row; long labels stay inside the dialog. The AI ribbon PDF
+  “Recover Text” control is a dropdown so you can pick Auto or a specific model
+  for `pdftext`. Unavailable options are omitted. Demos copy ONNX Runtime wasm
+  to `vendor/onnxruntime/` and resolve that path against `document.baseURI` so
+  PaddleOCR works with Vite `base: './'`. Wasm and ONNX models load only on
+  first PaddleOCR use.
+
+- 0dd562b: feat(ui): let plugins register ribbon, export menus, and palette tabs
+
+  Plugin chrome (ribbon groups, File → Export rows, simple-UI toolbar buttons, and palette tabs) is declared by each plugin's `/register` module through `AcApUiRegistry`. The Vue editor and simple UI draw whatever is registered, so a package that is not installed contributes no buttons. `chtml` and `cpdf` open framework-free dialogs owned by the HTML and PDF plugins. `store.features` and the Vue export dialogs are removed. Headless hosts pass `dialog: false` so those commands stay prompts. See the upgrade guide.
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- 2ee892d: `BDETECT` opens on a ready panel with detection options (rotation, mirror, scale, same layer, text variations, min. instances, min. savings, max. objects) and a Detect button; searching starts only when Detect is clicked, and Detect again re-runs with the current options. Each option has an explanation: hover or click the mark beside its label. Stop returns to the ready state instead of ending the command. The detection default for `minInstances` is now `2` (was `3`).
+- e4d1399: Fix elevated geometry (e.g. survey contour polylines at elevation 1000+) being clipped out of plan views. The orthographic camera used a fixed depth band of WCS Z −500…500; it now grows to the Z extent of the drawing (`AcTrCamera.fitDepthRange`, `AcTrLayout.depthRange`) for the main view, paper-space viewports, the snap loupe and entity previews.
+- 704af08: Fix DWG files that opened blank and threw "block table record id ... doesn't exist" when switching back to the Model tab. The UCS icon's per-frame model-space check lazily created a placeholder `*Model_Space` while the file was still being read; the converter then reused it by name, so the Model layout pointed at an id the database rejected.
+- 9a09628: Pin the default font CDN to `cad-data@main`, bump `@mlightcad/mtext-renderer` to 0.13.10 (catalog refresh + preferred-type glyph fallback), and give headless PDF/HTML export the same stale-`fonts.json` revalidation and GitHub raw fallback as the browser viewer.
+- 0dd562b: fix(ui): open the palette tab chosen from the overflow menu
+
+  Choosing a palette tab from the overflow menu now makes that tab active and keeps it visible, including when it was already the active tab. The Find field uses the same 12px type as the other palette inputs.
+
+- 0ff8b62: feat(cad-pdf-plugin): recognize dimensions on PDF import
+
+  `PDFIMPORT` in recover mode now turns exploded AutoCAD dimensions back into
+  dimension entities on the `PDF_DIM` style. A new **Recognize dimensions**
+  option in the Import PDF dialog controls it (`recognizeDimensions` in
+  `AcApPdfImportOptions`; on by default in recover mode, off in visual mode).
+  - Recognition is evidence-scored: terminators (closed / open arrows, ticks,
+    dots), dimension and extension lines, value text, and agreement with the
+    drawing scale. Conflicting hypotheses are resolved best-first in two rounds;
+    the second uses the scale and sizes the confident ones agree on. Import uses
+    a strict profile, `pdfdim` keeps the lenient review profile.
+  - New kinds: aligned, arc length and ordinate dimensions, diameters with both
+    arrows, and radius callouts placed outside the circle.
+  - SHX stroke text is read beside each dimension line in that line's direction,
+    which is fast on whole sheets and reads rotated values. Rounded (romans /
+    isocp) digits, prefixes such as `Ø`, decimal points, and digits printed as
+    filled outlines are read too.
+  - Candidates carry `score` and `evidence`; the import stage is available as
+    `acapPdfRecognizeImportDimensions`.
+
+- 7b6bac6: fix(cad-pdf-plugin): size imported TrueType text to capital-A height and drop outline twins
+  - PDF `fontSize` is the em square; CAD TrueType height is capital-A. Import now
+    divides mesh text height by the face scale factor before fitting width, and
+    recovered CJK outline text uses the same conversion so ideographs no longer
+    draw ~15–40% too tall.
+  - Many PDFs keep searchable text plus stroked/filled glyph paths. After native
+    TEXT is created, import removes closed glyph-like outlines (and non-arrow
+    hatches) whose mass sits in each text's baseline band — not open leaders or
+    3–4 vertex arrowheads, so dimension recognition beside labels is preserved.
+    Fill+stroke companion outlines are still dropped when a hatch becomes text.
+
+- Updated dependencies [206a3d2]
+- Updated dependencies [e4d1399]
+- Updated dependencies [9a09628]
+- Updated dependencies [43c3a93]
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes

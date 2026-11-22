@@ -1,5 +1,85 @@
 # @mlightcad/cad-agent-plugin
 
+## 1.8.0-preview.6
+
+### Minor Changes
+
+- 8279755: feat(agent): evidence-tracked image redraw with `cad.redraw`
+
+  Port the image-to-CAD redraw workflow into the script runtime. Scripts build a
+  semantic spec (profile, units, per-view calibration, evidence levels,
+  constraints, entities, checks); `cad.redraw.validate` checks it,
+  `cad.redraw.draw` draws it in one undo group on standard layers (OBJECT,
+  HIDDEN, CENTER, DIM, TEXT, TABLE, BORDER, CONSTRUCTION, ASSUMPTION) with real
+  dimensions, leaders, text, and line-drawn tables, and `cad.redraw.inspect`
+  compares readable dimension values with the drawn geometry. Results carry a
+  `pass` / `pass_with_warnings` / `needs_review` / `blocked` / `fail` status.
+  Image pixel coordinates can be mapped through dimension-anchor, similarity,
+  affine, or homography calibrations. Drawing sets `INSUNITS` from the spec
+  units, uses a CJK-capable `REDRAW_TEXT` style for text and dimension text, and
+  falls back to lines + text (or a leader) when a dimension cannot be created.
+
+  Also add `tx.drawLeader` (LEADER with an associated MTEXT annotation),
+  `rotationDeg` / `width` on `tx.drawText`, and fix two drawing bugs: `drawText`
+  set an MTEXT height property that does not exist (text drew with height 0), and
+  `drawArc` passed degrees where radians are expected. The agent prompt gains an
+  IMAGE REDRAW section and a "Redraw image as editable CAD" suggested task, and
+  the MCP `execute_cad_script` description includes the spec reference.
+
+- 0dd562b: feat(ui): let plugins register ribbon, export menus, and palette tabs
+
+  Plugin chrome (ribbon groups, File → Export rows, simple-UI toolbar buttons, and palette tabs) is declared by each plugin's `/register` module through `AcApUiRegistry`. The Vue editor and simple UI draw whatever is registered, so a package that is not installed contributes no buttons. `chtml` and `cpdf` open framework-free dialogs owned by the HTML and PDF plugins. `store.features` and the Vue export dialogs are removed. Headless hosts pass `dialog: false` so those commands stay prompts. See the upgrade guide.
+
+- 0617037: feat(redraw): pixel-level comparison with the reference image
+
+  Add `cad.redraw.compare(spec, options?)`. It renders the drawing over the
+  reference image's CAD footprint, registers it into the image frame through the
+  spec calibration (similarity, affine, or homography), thins both to 1-pixel
+  centerlines, and measures them with distance transforms. The tool result's
+  `redrawCompare` reports a verdict (`aligned` / `offset` / `incomplete` /
+  `cluttered` / `mismatch`), coverage, precision, F1, mean and p95 distances in
+  pixels and CAD units, a suggested move for systematic offsets, and hotspot
+  regions, with an overlay and a difference image attached for the model.
+
+  The pure algorithms (`acexExtractInk`, `acexThinInk`, `acexDistanceTransform`,
+  `acexCompareInk`, overlay / difference rendering) live in
+  `@mlightcad/cad-script-core`; viewer sessions supply decoding, WebGL rendering,
+  and PNG encoding through the new `CadSession.redrawRaster` host
+  (`createViewerRedrawRasterHost`). The CAD agent registers the conversation's
+  attached images as references and iterates draw → inspect → compare.
+
+- feat: makes the Properties palette editable in Write mode, lets plugins register ribbon menus and palettes, and opens BDETECT with an options panel. Agent redraw adds evidence-tracked cad.redraw with pixel comparison plus a clearer busy and context meter. PDF import recognizes dimensions and exploded text via local PaddleOCR, honours image clips and hatch order, and HTML package zips include a drawing thumbnail. Also fixes elevated geometry clipping, block linework precision, and Model_Space placeholders while reading.
+
+### Patch Changes
+
+- 64ca714: Show Working/Thinking feedback while the CAD agent waits on the model, and make the context-usage meter honest when usage exceeds the local window estimate (optional per-model `contextWindow`, estimated-window note, percentages may exceed 100%).
+- 64ca714: fix(agent): require redraw.compare and gate sheet-frame questions
+
+  Strengthen the image-redraw prompts so the model finishes with
+  `cad.redraw.compare` (and a pixel↔CAD calibration). When an attached image
+  shows a title block / border and the user has not chosen yet, the first reply
+  must be a text-only question with no draw tools — do not silently omit the
+  frame.
+
+- Updated dependencies [64ca714]
+- Updated dependencies [8279755]
+- Updated dependencies [2ee892d]
+- Updated dependencies [663c251]
+- Updated dependencies [e4d1399]
+- Updated dependencies [704af08]
+- Updated dependencies [9a09628]
+- Updated dependencies [b9af87c]
+- Updated dependencies [0dd562b]
+- Updated dependencies [0ff8b62]
+- Updated dependencies [7b6bac6]
+- Updated dependencies [0dd562b]
+- Updated dependencies [0617037]
+- Updated dependencies
+  - @mlightcad/cad-llm-plugin@1.8.0-preview.6
+  - @mlightcad/cad-script-core@1.8.0-preview.6
+  - @mlightcad/cad-agent-core@1.8.0-preview.6
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.6
+
 ## 1.8.0-preview.5
 
 ### Minor Changes
