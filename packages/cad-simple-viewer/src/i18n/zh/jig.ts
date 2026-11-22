@@ -2284,5 +2284,10 @@ export default {
       '输入实际长度（测量值 {measured}；标注文字显示比例为 1:{scale}）',
     zeroDistance: '两点重合。',
     applied: '已按比例 {factor} 缩放 {count} 个对象。'
+  },
+  txt2mtxt: {
+    needTwo: '请至少选择两个单行文字或多行文字进行合并。',
+    mergeFailed: '无法合并所选文字。',
+    eraseFailed: '无法删除全部源文字，合并已取消。'
   }
 }

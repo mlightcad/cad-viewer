@@ -94,6 +94,7 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
+  AcApTxt2MtxtCmd,
   AcApUcsCmd,
   AcApUndoCmd,
   AcApUngroupCmd,
@@ -207,6 +208,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MLINE: ['ML'],
   MLEADEREDIT: ['MLE'],
   MTEXT: ['T'],
+  TXT2MTXT: ['T2M'],
   MOVE: ['M'],
   OFFSET: ['O'],
   COPY: ['CO'],
@@ -2110,6 +2112,7 @@ export class AcApDocManager {
     )
     addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
+    addSystemCommand('txt2mtxt', 'txt2mtxt', new AcApTxt2MtxtCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('copyclip', 'copyclip', new AcApCopyClipCmd())
     addSystemCommand('copybase', 'copybase', new AcApCopyBaseCmd())

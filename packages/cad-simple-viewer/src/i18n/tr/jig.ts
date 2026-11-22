@@ -2482,5 +2482,11 @@ export default {
       'Gerçek uzunluğu girin (ölçülen {measured}; ölçü metinleri 1:{scale} gösteriyor)',
     zeroDistance: 'İki nokta aynı.',
     applied: '{count} nesne {factor} faktörüyle ölçeklendi.'
+  },
+  txt2mtxt: {
+    needTwo: 'Birleştirmek için en az iki metin veya çoklu metin nesnesi seçin.',
+    mergeFailed: 'Seçili metin nesneleri birleştirilemedi.',
+    eraseFailed:
+      'Kaynak metinlerin tümü silinemedi. Birleştirme iptal edildi.'
   }
 }

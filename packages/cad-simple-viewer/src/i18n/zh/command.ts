@@ -419,6 +419,10 @@ export default {
     mtext: {
       description: '创建多行文本'
     },
+    txt2mtxt: {
+      description: '将选定的单行文字和多行文字合并为一个多行文字',
+      prompt: '选择单行文字或多行文字'
+    },
     open: {
       description: '打开图纸'
     },

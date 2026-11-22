@@ -2326,5 +2326,11 @@ export default {
       'Enter the real length (measured {measured}; dimension texts suggest 1:{scale})',
     zeroDistance: 'The two points are identical.',
     applied: 'Scaled {count} objects by a factor of {factor}.'
+  },
+  txt2mtxt: {
+    needTwo: 'Select at least two text or mtext entities to combine.',
+    mergeFailed: 'Could not combine the selected text entities.',
+    eraseFailed:
+      'Could not erase all source text entities. The combine was cancelled.'
   }
 }

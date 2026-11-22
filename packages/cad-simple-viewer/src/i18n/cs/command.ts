@@ -460,6 +460,11 @@ export default {
     mtext: {
       description: 'Vytvoří jeden objekt víceřádkového textu'
     },
+    txt2mtxt: {
+      description:
+        'Sloučí vybrané texty a víceřádkové texty do jednoho víceřádkového textu',
+      prompt: 'Vyberte texty nebo víceřádkové texty'
+    },
     open: {
       description: 'Otevře existující soubor výkresu'
     },

@@ -461,6 +461,11 @@ export default {
     mtext: {
       description: 'マルチ テキスト オブジェクトを作成します'
     },
+    txt2mtxt: {
+      description:
+        '選択した文字およびマルチ テキストを 1 つのマルチ テキストに結合します',
+      prompt: '文字またはマルチ テキストを選択'
+    },
     open: {
       description: '既存の図面ファイルを開きます'
     },

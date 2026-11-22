@@ -477,6 +477,11 @@ export default {
     mtext: {
       description: 'Bir çoklu metin varlığı oluşturur'
     },
+    txt2mtxt: {
+      description:
+        'Seçili metin ve çoklu metin nesnelerini tek bir çoklu metin nesnesinde birleştirir',
+      prompt: 'Metin veya çoklu metin nesnelerini seçin'
+    },
     open: {
       description: 'Mevcut bir çizim dosyasını açar'
     },

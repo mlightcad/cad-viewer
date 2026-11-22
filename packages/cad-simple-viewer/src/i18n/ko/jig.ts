@@ -2355,5 +2355,10 @@ export default {
       '실제 길이 입력 (측정값 {measured}, 치수 문자 기준 축척 1:{scale})',
     zeroDistance: '두 점이 같습니다.',
     applied: '{count}개 객체를 {factor} 배로 축척했습니다.'
+  },
+  txt2mtxt: {
+    needTwo: '결합하려면 문자 또는 여러 줄 문자를 둘 이상 선택하십시오.',
+    mergeFailed: '선택한 문자를 결합할 수 없습니다.',
+    eraseFailed: '원본 문자를 모두 지우지 못해 결합이 취소되었습니다.'
   }
 }

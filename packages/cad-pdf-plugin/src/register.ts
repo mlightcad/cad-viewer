@@ -14,7 +14,8 @@ import {
   PDF_ICON_HATCH,
   PDF_ICON_IMPORT,
   PDF_ICON_SCALE,
-  PDF_ICON_TEXT
+  PDF_ICON_TEXT,
+  PDF_ICON_TXT2MTXT
 } from './ui/icons.js'
 
 /** Lazy plugin name for PDF export/import. */
@@ -167,6 +168,14 @@ export function registerLazyPdfPlugin(
             size: 'large',
             invoke: () => runPdfText(),
             childrenProvider: pdfTextChildren
+          },
+          {
+            id: 'cmd-txt2mtxt',
+            command: 'txt2mtxt',
+            labelKey: 'main.ribbon.command.txt2mtxt',
+            tooltipKey: 'main.ribbon.tooltip.txt2mtxt',
+            iconSvg: PDF_ICON_TXT2MTXT,
+            size: 'large'
           },
           {
             id: 'cmd-pdfdim',
