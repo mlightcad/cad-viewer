@@ -64,14 +64,9 @@
             :key="`${row.id}:${commitVersion}`"
           >
             <!-- ===== Readonly ===== -->
+            <!-- Plain text only: no dropdown/editors (incl. disabled color). -->
             <template v-if="!isRowEditable(row)">
-              <ml-color-dropdown
-                v-if="row.type === 'color'"
-                :model-value="row.accessor.get()"
-                disabled
-              />
               <span
-                v-else
                 :title="formatDisplayValue(row)"
                 class="ml-readonly-value"
                 @dblclick="copyReadonlyValue(row)"
