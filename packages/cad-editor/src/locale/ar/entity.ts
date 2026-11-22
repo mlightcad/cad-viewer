@@ -59,6 +59,7 @@ export default {
     Frame: 'إطار',
     MLeader: 'خط توجيه متعدد',
     MLine: 'خطوط متعددة',
+    MInsertBlock: 'كتلة إدراج متعدد',
     PolyFaceMesh: 'شبكة متعددة الوجوه',
     PolygonMesh: 'شبكة مضلعة',
     ProxyEntity: 'كيان وكيل',
@@ -69,6 +70,15 @@ export default {
 
   enum: {
     ...enEntity.enum,
+    Aligned: 'محاذاة',
+    Middle: 'منتصف',
+    Baseline: 'خط الأساس',
+    NoColumns: 'بلا أعمدة',
+    Dynamic: 'ديناميكي',
+    SimplePoly: 'بسيطة',
+    FitCurvePoly: 'ملاءمة المنحنى',
+    QuadSplinePoly: 'شريحة تربيعية',
+    CubicSplinePoly: 'شريحة تكعيبية',
 
     AtLeast: 'على الأقل',
     Exactly: 'بالضبط',
@@ -132,6 +142,12 @@ export default {
 
   property: {
     ...enEntity.property,
+    constantWidth: 'العرض الكلي',
+    secondPointX: 'النقطة الثانية X',
+    secondPointY: 'النقطة الثانية Y',
+    secondPointZ: 'النقطة الثانية Z',
+    leaderLineColor: 'لون خط الإشارة',
+    textColor: 'لون النص',
 
     general: 'عام',
     geometry: 'الهندسة',
@@ -382,6 +398,7 @@ export default {
     closedM: 'مغلق M',
     closedN: 'مغلق N',
     columnAutoHeight: 'ارتفاع العمود التلقائي',
+    columns: 'الأعمدة',
     columnCount: 'عدد الأعمدة',
     columnFlowReversed: 'تدفق الأعمدة معكوس',
     columnGutter: 'هامش العمود',
@@ -470,6 +487,7 @@ export default {
     proxyEntityClassId: 'معرّف صنف الكيان الوكيل',
     renderMode: 'وضع التصيير',
     rightOffset: 'الإزاحة اليمنى',
+    rows: 'الصفوف',
     rowCount: 'عدد الصفوف',
     rowSpacing: 'تباعد الصفوف',
     satCache: 'ذاكرة SAT المؤقتة',

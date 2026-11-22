@@ -1,3 +1,4 @@
+import { acexHtmlBuildOsnapCatalog } from '@mlightcad/cad-html-core'
 import {
   AcDbAlignedDimension,
   AcDbAttribute,
@@ -7,8 +8,10 @@ import {
   AcDbDataGenerator,
   AcDbEllipse,
   AcDbHatch,
+  acdbHostApplicationServices,
   AcDbLeader,
   AcDbLine,
+  AcDbMInsertBlock,
   AcDbMLeader,
   AcDbMLeaderContentType,
   AcDbMLine,
@@ -28,11 +31,9 @@ import {
   AcGePoint2d,
   AcGePoint3d,
   AcGePolyline2d,
-  AcGeVector3d,
-  acdbHostApplicationServices
+  AcGeVector3d
 } from '@mlightcad/data-model'
 
-import { acexHtmlBuildOsnapCatalog } from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('acexHtmlBuildOsnapCatalog', () => {
@@ -260,11 +261,7 @@ describe('acexHtmlBuildOsnapCatalog', () => {
       -Math.tan(Math.PI / 16)
     )
     const second = new AcGeCircArc2d({ x: 40, y: 0 }, { x: 50, y: 0 }, 1)
-    const toward = (
-      curve: AcGeCircArc2d,
-      fromStart: boolean,
-      dist: number
-    ) => {
+    const toward = (curve: AcGeCircArc2d, fromStart: boolean, dist: number) => {
       const pts = curve.getPoints(16)
       const origin = fromStart ? pts[0]! : pts[pts.length - 1]!
       const inward = fromStart ? pts[1]! : pts[pts.length - 2]!
@@ -726,12 +723,8 @@ describe('acexHtmlBuildOsnapCatalog', () => {
     db.tables.blockTable.add(blockRecord)
     blockRecord.appendEntity(new AcDbPoint())
 
-    const insert = new AcDbBlockReference('MINSERT_BLOCK')
+    const insert = new AcDbMInsertBlock('MINSERT_BLOCK', 2, 2, 30, 20)
     insert.position = new AcGePoint3d(0, 0, 0)
-    insert.columnCount = 2
-    insert.rowCount = 2
-    insert.columnSpacing = 30
-    insert.rowSpacing = 20
     modelSpace.appendEntity(insert)
 
     const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
@@ -873,7 +866,9 @@ describe('acexHtmlBuildOsnapCatalog', () => {
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     expect(
-      catalog.primitives.some(p => p.kind === 'point' && p.x === 0 && p.y === 10)
+      catalog.primitives.some(
+        p => p.kind === 'point' && p.x === 0 && p.y === 10
+      )
     ).toBe(true)
   })
 })

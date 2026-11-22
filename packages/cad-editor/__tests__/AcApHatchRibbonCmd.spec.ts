@@ -48,6 +48,16 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     AcApI18n: {
       t: (key: string) => key
     },
+    AcApLayerService: {
+      isEntityOnLockedLayer: (
+        db: {
+          tables: {
+            layerTable: { getAt: (name: string) => { isLocked: boolean } }
+          }
+        },
+        entity: { layer: string } | undefined
+      ) => !!entity && !!db.tables.layerTable.getAt(entity.layer)?.isLocked
+    },
     acapRunDatabaseEdit: (_db: unknown, _label: string, fn: () => void) => {
       fn()
     },
@@ -174,6 +184,22 @@ describe('AcApHatchRibbonCmd fill type synchronization', () => {
 
     expect(hatch.hatchObjectType).toBe(AcDbHatchObjectType.GradientObject)
     expect(hatch.gradientName).toBe('SPHERICAL')
+  })
+
+  test('leaves preselected hatches on locked layers unchanged', () => {
+    const { command, database } = createCommandWithDatabase(
+      DEFAULT_HATCH_PATTERN_IMPERIAL
+    )
+    const hatch = new AcDbHatch()
+    database.tables.blockTable.modelSpace.appendEntity(hatch)
+    database.tables.layerTable.getAt('0')!.isLocked = true
+    mockDocManager.curView = {
+      selectionSet: { ids: [hatch.objectId] }
+    }
+
+    command.setPatternNameFromGallery('GR_SPHERICAL')
+
+    expect(hatch.hatchObjectType).not.toBe(AcDbHatchObjectType.GradientObject)
   })
 })
 

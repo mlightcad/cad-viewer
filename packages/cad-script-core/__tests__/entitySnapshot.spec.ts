@@ -13,6 +13,7 @@ import {
   AcDbHatch,
   AcDbLayerTableRecord,
   AcDbLine,
+  AcDbMInsertBlock,
   AcDbMText,
   AcDbOrdinateDimension,
   AcDbPolyline,
@@ -299,6 +300,17 @@ describe('entity snapshots', () => {
     expect((geometry.attributes as Array<{ tag: string }>)[0].tag).toBe('TAG1')
     expect((geometry.blockTransform as number[]).length).toBe(16)
     expect(geometry.rowCount).toBe(1)
+  })
+
+  test('reads MINSERT array counts and spacing', () => {
+    const minsert = new AcDbMInsertBlock('B1', 3, 2, 10, 5)
+
+    const geometry = geometryOf(add(minsert))
+
+    expect(geometry.columnCount).toBe(3)
+    expect(geometry.rowCount).toBe(2)
+    expect(geometry.columnSpacing).toBe(10)
+    expect(geometry.rowSpacing).toBe(5)
   })
 
   test('reads table cells, row heights and column widths', () => {

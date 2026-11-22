@@ -23,6 +23,7 @@ import {
   AcDbHatch,
   AcDbLeader,
   AcDbLine,
+  AcDbMInsertBlock,
   AcDbMLeader,
   AcDbMLine,
   AcDbMText,
@@ -631,6 +632,9 @@ function textGeometry(entity: AcDbText): Record<string, unknown> {
  */
 function insertGeometry(entity: AcDbBlockReference): Record<string, unknown> {
   const dynamic = readDynamicBlockInfo(entity)
+  // MINSERT array data lives on the AcDbMInsertBlock subclass; a plain INSERT
+  // is reported as a 1 x 1 array so the snapshot shape stays stable.
+  const minsert = entity instanceof AcDbMInsertBlock ? entity : undefined
   return {
     name: entity.blockName,
     effectiveName: dynamic.effectiveName,
@@ -638,10 +642,10 @@ function insertGeometry(entity: AcDbBlockReference): Record<string, unknown> {
     position: toSnapshotPoint(entity.position),
     rotation: entity.rotation,
     scale: toSnapshotPoint(entity.scaleFactors),
-    columnCount: entity.columnCount,
-    rowCount: entity.rowCount,
-    columnSpacing: entity.columnSpacing,
-    rowSpacing: entity.rowSpacing,
+    columnCount: minsert?.columns ?? 1,
+    rowCount: minsert?.rows ?? 1,
+    columnSpacing: minsert?.columnSpacing ?? 0,
+    rowSpacing: minsert?.rowSpacing ?? 0,
     blockTransform: readBlockTransform(entity),
     attributes: readBlockAttributes(entity)
   }

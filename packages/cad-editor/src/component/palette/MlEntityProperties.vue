@@ -58,21 +58,15 @@
       <!-- Value -->
       <el-table-column>
         <template #default="{ row }">
-          <div class="ml-cell-value" v-if="!row.isGroup">
+          <div
+            class="ml-cell-value"
+            v-if="!row.isGroup"
+            :key="`${row.id}:${commitVersion}`"
+          >
             <!-- ===== Readonly ===== -->
-            <template
-              v-if="
-                editsLocked ||
-                (!row.__isArrayIndex && (!editable || !row.editable))
-              "
-            >
-              <ml-color-dropdown
-                v-if="row.type === 'color'"
-                :model-value="row.accessor.get()"
-                disabled
-              />
+            <!-- Plain text only: no dropdown/editors (incl. disabled color). -->
+            <template v-if="!isRowEditable(row)">
               <span
-                v-else
                 :title="formatDisplayValue(row)"
                 class="ml-readonly-value"
                 @dblclick="copyReadonlyValue(row)"
@@ -86,11 +80,7 @@
               <ml-hatch-pattern-dropdown
                 v-if="isHatchPatternField(row)"
                 :model-value="String(row.accessor.get() ?? '')"
-                @update:modelValue="
-                  (v: string) => {
-                    onPropertyChange(row, v)
-                  }
-                "
+                @update:modelValue="(v: string) => onPropertyChange(row, v)"
               />
 
               <el-select
@@ -100,7 +90,7 @@
               >
                 <el-option
                   v-for="opt in row.options || []"
-                  :key="opt.value"
+                  :key="String(opt.value)"
                   :label="entityPropEnum(opt.label)"
                   :value="opt.value"
                 />
@@ -109,13 +99,60 @@
               <ml-color-dropdown
                 v-else-if="row.type === 'color'"
                 :model-value="row.accessor.get()"
-                @color-change="(v: AcCmColor) => onPropertyChange(row, v)"
+                @update:modelValue="
+                  (v: AcCmColor | undefined) => onPropertyChange(row, v)
+                "
               />
+
+              <el-select
+                v-else-if="row.type === 'layer'"
+                :model-value="row.accessor.get()"
+                filterable
+                @change="(v: string) => onPropertyChange(row, v)"
+              >
+                <el-option
+                  v-for="name in layerNames"
+                  :key="name"
+                  :label="name"
+                  :value="name"
+                />
+              </el-select>
+
+              <ml-line-type-select
+                v-else-if="row.type === 'linetype'"
+                :model-value="row.accessor.get()"
+                :options="lineTypeOptions"
+                @change="(v: string) => onPropertyChange(row, v)"
+              />
+
+              <ml-line-weight-select
+                v-else-if="row.type === 'lineweight'"
+                :model-value="row.accessor.get()"
+                @change="(v: AcGiLineWeight) => onPropertyChange(row, v)"
+              />
+
+              <el-select
+                v-else-if="row.type === 'transparency'"
+                :model-value="transparencyKey(row.accessor.get())"
+                filterable
+                allow-create
+                default-first-option
+                @change="(v: string) => onTransparencyChange(row, v)"
+              >
+                <el-option
+                  v-for="opt in transparencyOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
 
               <el-switch
                 v-else-if="row.type === 'boolean'"
-                :model-value="row.accessor.get()"
-                @change="(v: boolean) => onPropertyChange(row, v)"
+                :model-value="!!row.accessor.get()"
+                @change="
+                  (v: string | number | boolean) => onPropertyChange(row, !!v)
+                "
               />
 
               <el-input-number
@@ -127,9 +164,10 @@
                 :step="1"
                 :precision="0"
                 @change="
-                  (v: number) => {
+                  (v: number | undefined) => {
+                    if (v == null) return
                     if (row.__isArrayIndex) {
-                      if (!editsLocked) row.accessor.set?.(v)
+                      row.accessor.set?.(v)
                     } else {
                       onPropertyChange(row, v)
                     }
@@ -143,13 +181,21 @@
                 :model-value="row.accessor.get()"
                 :step="0.1"
                 :precision="3"
-                @change="(v: number) => onPropertyChange(row, v)"
+                @change="
+                  (v: number | undefined) => {
+                    if (v != null) onPropertyChange(row, v)
+                  }
+                "
               />
 
+              <!-- Commit on Enter/blur so one edit is one undo step. -->
               <el-input
                 v-else
-                :model-value="row.accessor.get()"
-                @input="(v: string) => onPropertyChange(row, v)"
+                :model-value="
+                  drafts[row.id] ?? String(row.accessor.get() ?? '')
+                "
+                @update:modelValue="(v: string) => (drafts[row.id] = v)"
+                @change="(v: string) => onPropertyChange(row, v)"
               />
             </template>
           </div>
@@ -185,11 +231,18 @@ import {
   ElTable,
   ElTableColumn
 } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { entityPropEnum, entityPropName } from '../../locale'
-import { MlColorDropdown, MlHatchPatternDropdown } from '../common'
+import { colorName, entityPropEnum, entityPropName } from '../../locale'
+import {
+  MlColorDropdown,
+  MlHatchPatternDropdown,
+  MlLineTypeSelect,
+  MlLineWeightSelect
+} from '../common'
+import type { LineTypeOption } from '../common/lineTypeOptions'
+import type { MlEntityPropertyUpdate } from './entityPropertyEdit'
 
 const { t } = useI18n()
 
@@ -197,6 +250,7 @@ const { t } = useI18n()
 
 const props = defineProps<{
   entityPropsList?: AcDbEntityProperties[] | null
+  /** Whether properties may be edited at all (the document is writable). */
   editable?: boolean
   /**
    * Lock state aligned with `entityPropsList`.
@@ -204,17 +258,14 @@ const props = defineProps<{
    * follows that entity.
    */
   entityLocked?: boolean[]
+  /** Layer names offered by the layer editor. */
+  layerNames?: string[]
+  /** Line types offered by the linetype editor. */
+  lineTypeOptions?: LineTypeOption[]
 }>()
 
 const emit = defineEmits<{
-  (
-    e: 'update-property',
-    payload: {
-      groupName: string
-      propertyName: string
-      newValue: unknown
-    }
-  ): void
+  (e: 'update-property', payload: MlEntityPropertyUpdate): void
 }>()
 
 /* ================= state ================= */
@@ -226,6 +277,18 @@ const arrayIndexMap = ref<Record<string, number>>({})
  * 🔑 Forces rebuild of array property rows
  */
 const arrayRebuildVersion = ref(0)
+
+/**
+ * Bumped after every committed edit so value editors remount and show what
+ * the entity really holds (an edit may be rejected or normalized).
+ */
+const commitVersion = ref(0)
+
+/** Uncommitted text of string editors, keyed by row id. */
+const drafts = reactive<Record<string, string | undefined>>({})
+
+const layerNames = computed(() => props.layerNames ?? [])
+const lineTypeOptions = computed(() => props.lineTypeOptions ?? [])
 
 const editsLocked = computed(() => {
   const flags = props.entityLocked
@@ -247,6 +310,18 @@ const activeEntityProperties = computed<AcDbEntityProperties | null>(() => {
       : findCommonProperties(list)
 })
 
+watch(
+  () => props.entityPropsList?.length ?? 0,
+  count => {
+    if (selectedIndex.value >= count) selectedIndex.value = -1
+  }
+)
+
+// Drafts belong to the rows of the entity they were typed for.
+watch([activeEntityProperties, selectedIndex], () => {
+  for (const key of Object.keys(drafts)) delete drafts[key]
+})
+
 /* ================= row types ================= */
 
 interface MlDisplayRowBase {
@@ -261,6 +336,11 @@ type MlDisplayPropertyRow = MlDisplayRowBase &
     __min?: number
     __max?: number
     __isArrayIndex?: boolean
+    /** Set on rows that edit one field of one array item. */
+    __arrayItem?: {
+      property: AcDbEntityRuntimeProperty
+      index: number
+    }
   }
 
 type MlDisplayGroupRow = MlDisplayRowBase & {
@@ -280,6 +360,64 @@ function arrayKey(group: string, prop: string) {
   return `${group}.${prop}`
 }
 
+/**
+ * Whether a row shows an editor. Array index rows only page through items,
+ * so they stay usable even when editing is not allowed.
+ */
+function isRowEditable(row: MlDisplayPropertyRow): boolean {
+  if (row.__isArrayIndex) return true
+  return (
+    !!props.editable &&
+    !editsLocked.value &&
+    row.editable !== false &&
+    (row.__arrayItem != null || row.accessor.set != null)
+  )
+}
+
+/** Stable comparison key used to find values shared by all entities. */
+function valueKey(value: unknown): unknown {
+  return value != null && typeof value === 'object' ? String(value) : value
+}
+
+/* ================= transparency ================= */
+
+const TRANSPARENCY_BY_LAYER = 'ByLayer'
+const TRANSPARENCY_BY_BLOCK = 'ByBlock'
+
+const transparencyOptions = computed(() => [
+  { value: TRANSPARENCY_BY_LAYER, label: colorName(TRANSPARENCY_BY_LAYER) },
+  { value: TRANSPARENCY_BY_BLOCK, label: colorName(TRANSPARENCY_BY_BLOCK) },
+  ...[0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map(value => ({
+    value: String(value),
+    label: String(value)
+  }))
+])
+
+/** Editor value of a transparency: ByLayer, ByBlock or a 0–90 percentage. */
+function transparencyKey(value: unknown): string {
+  const transparency = value as AcCmTransparency | undefined
+  if (!transparency || transparency.isByLayer) return TRANSPARENCY_BY_LAYER
+  if (transparency.isByBlock) return TRANSPARENCY_BY_BLOCK
+  return String(transparency.percentage ?? 0)
+}
+
+function onTransparencyChange(row: MlDisplayPropertyRow, value: string) {
+  const text = String(value).trim()
+  if (text === TRANSPARENCY_BY_LAYER || text === TRANSPARENCY_BY_BLOCK) {
+    onPropertyChange(row, AcCmTransparency.fromString(text))
+    return
+  }
+  const percentage = Number(text)
+  // AutoCAD accepts 0–90 percent.
+  if (!Number.isFinite(percentage) || percentage < 0 || percentage > 90) {
+    commitVersion.value++
+    return
+  }
+  const transparency = new AcCmTransparency()
+  transparency.percentage = Math.round(percentage)
+  onPropertyChange(row, transparency)
+}
+
 /* ================= formatting ================= */
 
 function getPropertyName(row: MlDisplayPropertyRow): string {
@@ -294,11 +432,15 @@ function formatDisplayValue(row: MlDisplayPropertyRow): string {
     case 'enum':
       return entityPropEnum(row.options?.find(o => o.value === v)?.label ?? '')
     case 'color':
-      return (v as AcCmColor).toString()
+      return v ? (v as AcCmColor).toString() : ''
     case 'lineweight':
       return AcGiLineWeight[v as number]
-    case 'transparency':
-      return (v as AcCmTransparency).toString()
+    case 'transparency': {
+      const key = transparencyKey(v)
+      return key === TRANSPARENCY_BY_LAYER || key === TRANSPARENCY_BY_BLOCK
+        ? colorName(key)
+        : key
+    }
     default:
       return v != null ? String(v) : ''
   }
@@ -394,10 +536,8 @@ function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
         }
       } as MlDisplayPropertyRow)
 
-      const element = arr[arrayIndexMap.value[key] - 1] as Record<
-        string,
-        unknown
-      >
+      const itemIndex = arrayIndexMap.value[key] - 1
+      const element = arr[itemIndex] as Record<string, unknown>
       if (!element) return
 
       /* ===== element property rows ===== */
@@ -407,14 +547,13 @@ function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
             id: `g-${gi}-p-${pi}-${itemProp.name}`,
             name: itemProp.name,
             type: itemProp.type,
-            editable: itemProp.editable,
+            options: itemProp.options,
+            editable: !!prop.accessor.set && itemProp.editable !== false,
             isGroup: false,
             __groupName: group.groupName,
+            __arrayItem: { property: prop, index: itemIndex },
             accessor: {
-              get: () => element[itemProp.name],
-              set: (v: unknown) => {
-                element[itemProp.name] = v
-              }
+              get: () => element[itemProp.name]
             }
           })
         }
@@ -442,16 +581,21 @@ function findCommonProperties(
     const props: AcDbEntityRuntimeProperty[] = []
 
     for (const p of g.properties) {
-      if (
-        list.every(ent => {
-          const gp = ent.groups
-            .find(x => x.groupName === g.groupName)
-            ?.properties.find(x => x.name === p.name)
-          return gp && gp.accessor.get() === p.accessor.get()
-        })
-      ) {
-        props.push(p)
-      }
+      // Arrays are per entity; editing them for a selection makes no sense.
+      if (p.type === 'array') continue
+      const value = valueKey(p.accessor.get())
+      const shared = list.every(ent => {
+        const gp = ent.groups
+          .find(x => x.groupName === g.groupName)
+          ?.properties.find(x => x.name === p.name)
+        return (
+          gp &&
+          gp.type === p.type &&
+          (gp.editable !== false) === (p.editable !== false) &&
+          valueKey(gp.accessor.get()) === value
+        )
+      })
+      if (shared) props.push(p)
     }
 
     if (props.length) groups.push({ groupName: g.groupName, properties: props })
@@ -477,15 +621,38 @@ const spanMethod = ({
 }
 
 /**
- * Handle property change (direct call to accessor.set)
+ * Emits an edit. The palette never writes to entities itself: the owner
+ * applies the change inside an undoable database edit.
  */
 function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
-  if (editsLocked.value || row.__isArrayIndex) return
+  delete drafts[row.id]
+  commitVersion.value++
+  if (!isRowEditable(row) || row.__isArrayIndex) return
+
+  const entityIndex =
+    (props.entityPropsList?.length ?? 0) > 1 ? selectedIndex.value : 0
+
+  const arrayItem = row.__arrayItem
+  if (arrayItem) {
+    const items = (arrayItem.property.accessor.get() as unknown[]).map(item =>
+      item != null && typeof item === 'object' ? { ...item } : item
+    ) as Record<string, unknown>[]
+    if (!items[arrayItem.index]) return
+    items[arrayItem.index][row.name] = newValue
+    emit('update-property', {
+      groupName: row.__groupName ?? '',
+      propertyName: arrayItem.property.name,
+      newValue: items,
+      entityIndex
+    })
+    return
+  }
 
   emit('update-property', {
     groupName: row.__groupName ?? '',
     propertyName: row.name,
-    newValue
+    newValue,
+    entityIndex
   })
 }
 </script>
