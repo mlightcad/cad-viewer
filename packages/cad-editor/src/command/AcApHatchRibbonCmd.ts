@@ -3,6 +3,7 @@ import {
   AcApDocManager,
   AcApHatchCmd,
   AcApI18n,
+  AcApLayerService,
   acapRunDatabaseEdit,
   AcEdPromptEntityOptions,
   AcEdPromptStatus,
@@ -357,7 +358,12 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const ids = new Set([...view.selectionSet.ids, ...this._activeHatchIds])
     return [...ids]
       .map(id => blockTable.getEntityById(id))
-      .filter((entity): entity is AcDbHatch => entity instanceof AcDbHatch)
+      .filter(
+        (entity): entity is AcDbHatch =>
+          entity instanceof AcDbHatch &&
+          // Pick-first may hold locked-layer hatches for viewing only.
+          !AcApLayerService.isEntityOnLockedLayer(db, entity)
+      )
   }
 
   private getFillPatternName() {

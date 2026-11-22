@@ -24,6 +24,10 @@
           <ml-entity-properties
             :entity-props-list="properties"
             :entity-locked="propertyEntityLocked"
+            :editable="propertiesEditable"
+            :layer-names="propertyLayerNames"
+            :line-type-options="propertyLineTypeOptions"
+            @update-property="handleUpdateProperty"
           />
         </div>
         <div
@@ -109,16 +113,21 @@
 import {
   AcApDocManager,
   AcApLayerService,
-  AcApUiRegistry
+  AcApUiRegistry,
+  AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbEntityProperties } from '@mlightcad/data-model'
+import {
+  AcDbDatabase,
+  AcDbEntityProperties,
+  AcDbObjectId
+} from '@mlightcad/data-model'
 import {
   type MlOverflowTab,
   MlOverflowTabs,
   MlToolPalette
 } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
@@ -127,8 +136,16 @@ import {
   mlPluginPaletteTitle,
   pluginUiRevision
 } from '../../app/pluginUi'
-import { useSelectionSet, useViewerRect } from '../../composable'
+import { useDocument, useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
+import {
+  buildLineTypeOptions,
+  type LineTypeOption
+} from '../common/lineTypeOptions'
+import {
+  type MlEntityPropertyUpdate,
+  mlResolvePropertyEditTargets
+} from './entityPropertyEdit'
 import MlBDetectPalette from './MlBDetectPalette.vue'
 import MlBlocksPalette from './MlBlocksPalette.vue'
 import MlBSearchPalette from './MlBSearchPalette.vue'
@@ -330,11 +347,61 @@ watch(
 )
 
 const { selectionSet } = useSelectionSet()
+const { openMode } = useDocument()
+
+/**
+ * Bumped when entities or layers change (palette edits, commands, undo) so
+ * the property list re-reads the live values.
+ */
+const databaseRevision = ref(0)
+let observedDatabase: AcDbDatabase | undefined
+const bumpDatabaseRevision = () => {
+  databaseRevision.value++
+}
+
+function observeDatabase(db?: AcDbDatabase) {
+  if (observedDatabase === db) return
+  if (observedDatabase) {
+    const events = observedDatabase.events
+    events.entityModified.removeEventListener(bumpDatabaseRevision)
+    events.entityErased.removeEventListener(bumpDatabaseRevision)
+    events.layerAppended.removeEventListener(bumpDatabaseRevision)
+    events.layerModified.removeEventListener(bumpDatabaseRevision)
+  }
+  observedDatabase = db
+  if (!db) return
+  db.events.entityModified.addEventListener(bumpDatabaseRevision)
+  db.events.entityErased.addEventListener(bumpDatabaseRevision)
+  db.events.layerAppended.addEventListener(bumpDatabaseRevision)
+  db.events.layerModified.addEventListener(bumpDatabaseRevision)
+}
+
+const handleDocumentActivated = () => {
+  observeDatabase(AcApDocManager.instance.curDocument?.database)
+  bumpDatabaseRevision()
+}
+
+onMounted(() => {
+  AcApDocManager.instance.events.documentActivated.addEventListener(
+    handleDocumentActivated
+  )
+  handleDocumentActivated()
+})
+
+onUnmounted(() => {
+  AcApDocManager.instance.events.documentActivated.removeEventListener(
+    handleDocumentActivated
+  )
+  observeDatabase(undefined)
+})
+
 const propertyRows = computed(() => {
+  databaseRevision.value
   const list: AcDbEntityProperties[] = []
   const locked: boolean[] = []
+  const ids: AcDbObjectId[] = []
   const db = AcApDocManager.instance.curDocument?.database
-  if (!db) return { list, locked }
+  if (!db) return { list, locked, ids }
   const blockTable = db.tables.blockTable
   for (const id of selectionSet.value) {
     // Use getEntityById which works for entities in any layout (model space or paper space)
@@ -342,11 +409,57 @@ const propertyRows = computed(() => {
     if (!entity) continue
     list.push(entity.properties)
     locked.push(AcApLayerService.isEntityOnLockedLayer(db, entity))
+    ids.push(id)
   }
-  return { list, locked }
+  return { list, locked, ids }
 })
 const properties = computed(() => propertyRows.value.list)
 const propertyEntityLocked = computed(() => propertyRows.value.locked)
+
+/** Editing follows the document mode, like grips. */
+const propertiesEditable = computed(() => openMode.value === AcEdOpenMode.Write)
+
+const propertyLayerNames = computed(() => {
+  databaseRevision.value
+  const db = AcApDocManager.instance.curDocument?.database
+  if (!db) return []
+  return Array.from(db.tables.layerTable.newIterator(), layer => layer.name)
+})
+
+/**
+ * Line types of the drawing plus the symbolic ByLayer/ByBlock values (and
+ * Continuous, which a new drawing may not list yet).
+ */
+const propertyLineTypeOptions = computed<LineTypeOption[]>(() => {
+  databaseRevision.value
+  const options = buildLineTypeOptions(
+    AcApDocManager.instance.curDocument?.database
+  )
+  const existing = new Set(options.map(option => option.value.toLowerCase()))
+  const specials = ['ByLayer', 'ByBlock', 'Continuous']
+    .filter(name => !existing.has(name.toLowerCase()))
+    .map(name => ({ value: name, label: name }))
+  return [...specials, ...options]
+})
+
+/**
+ * Applies a palette edit to the selected entities as one undoable edit.
+ */
+function handleUpdateProperty(update: MlEntityPropertyUpdate) {
+  if (!propertiesEditable.value) return
+  const doc = AcApDocManager.instance.curDocument
+  if (!doc) return
+  const ids = mlResolvePropertyEditTargets(propertyRows.value.ids, update)
+  if (ids.length === 0) return
+  doc.entityService.setEntityProperty(
+    ids,
+    update.groupName,
+    update.propertyName,
+    update.newValue
+  )
+  // Values the entity rejected or normalized must show as stored.
+  bumpDatabaseRevision()
+}
 </script>
 
 <style scoped>

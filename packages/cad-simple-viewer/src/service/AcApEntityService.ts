@@ -2,6 +2,7 @@ import {
   AcDbDatabase,
   AcDbDimension,
   AcDbEntity,
+  AcDbEntityRuntimeProperty,
   AcDbObjectId,
   AcGeMatrix3d,
   AcGePoint3dLike
@@ -45,6 +46,22 @@ export interface AcApTransformOptions {
  */
 function regenerateDimension(entity: AcDbEntity) {
   if (entity instanceof AcDbDimension) entity.recomputeDimBlock()
+}
+
+/** Undo label for property palette edits. */
+const ENTITY_PROPERTY_EDIT_LABEL = 'Properties'
+
+/**
+ * Finds a property (writable or not) of `entity` by group and name.
+ */
+function findEntityProperty(
+  entity: AcDbEntity,
+  groupName: string,
+  propertyName: string
+): AcDbEntityRuntimeProperty | undefined {
+  return entity.properties.groups
+    .find(group => group.groupName === groupName)
+    ?.properties.find(property => property.name === propertyName)
 }
 
 /**
@@ -291,6 +308,45 @@ export class AcApEntityService {
     })
 
     return { changedCount, alreadyCurrent, missing, currentLayerMissing: false }
+  }
+
+  /**
+   * Sets one property-palette property on entities, as one undoable edit.
+   *
+   * The property is looked up by group and name in each entity's
+   * {@link AcDbEntity.properties}, so the same edit applies to a mixed
+   * selection. Entities on locked layers, entities without that property and
+   * read-only properties are skipped. Dimensions get their block regenerated
+   * after a non-general property changes, like after a grip edit.
+   *
+   * @param objectIds - Entities to change.
+   * @param groupName - Property group, e.g. `general` or `geometry`.
+   * @param propertyName - Property name within the group.
+   * @param value - New value, of the type the property declares.
+   * @returns Number of entities changed.
+   */
+  setEntityProperty(
+    objectIds: AcDbObjectId[],
+    groupName: string,
+    propertyName: string,
+    value: unknown
+  ): number {
+    return this.runEdit(ENTITY_PROPERTY_EDIT_LABEL, () => {
+      let count = 0
+      new Set(objectIds).forEach(objectId => {
+        const existing = this.db.tables.blockTable.getEntityById(objectId)
+        if (!existing || isEntityOnLockedLayer(this.db, existing)) return
+        if (!findEntityProperty(existing, groupName, propertyName)) return
+        const entity = this.db.openEntityForWrite(objectId)
+        if (!entity) return
+        const property = findEntityProperty(entity, groupName, propertyName)
+        if (!property?.accessor.set) return
+        property.accessor.set(value)
+        if (groupName !== 'general') regenerateDimension(entity)
+        count++
+      })
+      return count
+    })
   }
 
   /**

@@ -1,5 +1,6 @@
 import {
   AcApContext,
+  AcApLayerService,
   AcEdCommand,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
@@ -63,6 +64,8 @@ export class AcApAttEditCmd extends AcEdCommand {
     if (selectionSet.count > 0) {
       for (const id of selectionSet.ids) {
         const entity = db.tables.blockTable.getEntityById(id)
+        // Pick-first may hold locked-layer entities for viewing only.
+        if (AcApLayerService.isEntityOnLockedLayer(db, entity)) continue
         const blockRef = resolveAttributedBlockReference(entity)
         if (blockRef) return blockRef
       }

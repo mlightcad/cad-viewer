@@ -17,6 +17,7 @@ import {
   acapFindGroupsContainingAny,
   acapGetGroupByName
 } from '../../service/AcApGroup.js'
+import { excludeLockedLayerIds } from '../../service/AcApLockedLayer.js'
 
 /**
  * UNGROUP — remove group definition(s); entities remain in the drawing.
@@ -35,7 +36,8 @@ export class AcApUngroupCmd extends AcEdCommand {
     const editor = AcApDocManager.instance.editor
     const db = context.doc.database
     const selectionSet = context.view.selectionSet
-    const preselectedIds = [...selectionSet.ids]
+    // Pick-first may hold locked-layer entities for viewing only.
+    const preselectedIds = excludeLockedLayerIds(db, [...selectionSet.ids]).ids
 
     // AutoCAD: select group first, then UNGROUP — no further pick.
     if (preselectedIds.length > 0) {

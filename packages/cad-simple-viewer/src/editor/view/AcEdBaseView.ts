@@ -246,10 +246,13 @@ export abstract class AcEdBaseView {
 
   /**
    * When true, pick and window selection may include entities on locked layers.
-   * Selection prompts set this from `allowObjectOnLockedLayer` for commands that
-   * only read entities, such as layer isolate and hatch boundaries.
+   *
+   * Idle (pick-first) selection allows them, as in AutoCAD, so the properties
+   * palette can show them read-only; grips, palette edits and modify commands
+   * still skip them. While a command prompts for objects, `getSelection` sets
+   * this from `allowObjectOnLockedLayer` and restores it afterwards.
    */
-  private _allowSelectOnLockedLayer = false
+  private _allowSelectOnLockedLayer = true
   /**
    * When false, {@link applySelection} skips selectable-group expansion even if
    * `PICKSTYLE` enables group selection. Selection prompts set this from
@@ -1307,6 +1310,8 @@ export abstract class AcEdBaseView {
 
   /**
    * Whether pick and window selection include entities on locked layers.
+   * Defaults to `true` for idle selection; command selection prompts override
+   * it for their duration.
    */
   get allowSelectOnLockedLayer() {
     return this._allowSelectOnLockedLayer

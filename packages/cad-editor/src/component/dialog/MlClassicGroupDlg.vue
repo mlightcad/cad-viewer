@@ -47,7 +47,10 @@
             >
               {{ t('dialog.classicGroupDlg.highlight') }}
             </el-button>
-            <el-checkbox v-model="includeUnnamed" @change="onIncludeUnnamedChange">
+            <el-checkbox
+              v-model="includeUnnamed"
+              @change="onIncludeUnnamedChange"
+            >
               {{ t('dialog.classicGroupDlg.includeUnnamed') }}
             </el-checkbox>
           </div>
@@ -141,6 +144,7 @@ import {
   acapExplodeGroup,
   acapFindGroupsContaining,
   acapIsUnnamedGroup,
+  AcApLayerService,
   acapListGroups,
   acapValidateGroupName,
   AcEdPromptEntityOptions,
@@ -224,9 +228,7 @@ const onSelectRow = (row: { group: AcDbGroup } | null) => {
   }
 }
 
-const withDialogHidden = async <T,>(
-  fn: () => Promise<T>
-): Promise<T> => {
+const withDialogHidden = async <T,>(fn: () => Promise<T>): Promise<T> => {
   toggleDialog('ClassicGroupDlg', false)
   try {
     return await fn()
@@ -269,7 +271,14 @@ const createGroup = async () => {
   await withDialogHidden(async () => {
     const editor = AcApDocManager.instance.editor
     const db = AcApDocManager.instance.curDocument.database
-    let ids = [...AcApDocManager.instance.curView.selectionSet.ids]
+    // Pick-first may hold locked-layer entities for viewing only.
+    let ids = [...AcApDocManager.instance.curView.selectionSet.ids].filter(
+      id =>
+        !AcApLayerService.isEntityOnLockedLayer(
+          db,
+          db.tables.blockTable.getEntityById(id)
+        )
+    )
     if (ids.length === 0) {
       const sel = await editor.getSelection(
         new AcEdPromptSelectionOptions(

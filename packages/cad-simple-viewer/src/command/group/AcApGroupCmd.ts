@@ -15,6 +15,7 @@ import {
   AcApGroupCreateError,
   acapValidateGroupName
 } from '../../service/AcApGroup.js'
+import { excludeLockedLayerIds } from '../../service/AcApLockedLayer.js'
 
 /**
  * GROUP — create a named or unnamed group from selected objects.
@@ -36,7 +37,11 @@ export class AcApGroupCmd extends AcEdCommand {
     let description = ''
     let unnamed = true
 
-    let entityIds: AcDbObjectId[] = [...context.view.selectionSet.ids]
+    // Pick-first may hold locked-layer entities for viewing only.
+    let entityIds: AcDbObjectId[] = excludeLockedLayerIds(
+      context.doc.database,
+      [...context.view.selectionSet.ids]
+    ).ids
 
     if (entityIds.length > 0) {
       // Noun-verb: optional Name / Description, Enter creates unnamed group.
@@ -149,18 +154,13 @@ export class AcApGroupCmd extends AcEdCommand {
     )
   }
 
-  private async promptName(
-    context: AcApContext
-  ): Promise<string | undefined> {
+  private async promptName(context: AcApContext): Promise<string | undefined> {
     const editor = AcApDocManager.instance.editor
     const namePrompt = new AcEdPromptStringOptions(
       AcApI18n.t('jig.group.enterName')
     )
     const nameResult = await editor.getString(namePrompt)
-    if (
-      nameResult.status !== AcEdPromptStatus.OK ||
-      !nameResult.stringResult
-    ) {
+    if (nameResult.status !== AcEdPromptStatus.OK || !nameResult.stringResult) {
       return undefined
     }
     const validated = acapValidateGroupName(nameResult.stringResult)
@@ -181,10 +181,7 @@ export class AcApGroupCmd extends AcEdCommand {
       AcApI18n.t('jig.group.enterDescription')
     )
     const descResult = await editor.getString(descPrompt)
-    if (
-      descResult.status === AcEdPromptStatus.OK &&
-      descResult.stringResult
-    ) {
+    if (descResult.status === AcEdPromptStatus.OK && descResult.stringResult) {
       return descResult.stringResult
     }
     return undefined

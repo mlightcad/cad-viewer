@@ -406,7 +406,11 @@ function syncHatchSelectionContext(db = getCurrentDatabase()) {
   const selectedEntities = getSelectedEntities(db)
   const isOnlyHatchSelection =
     selectedEntities.length === selectedEntityIds.value.length &&
-    selectedEntities.every(entity => entity instanceof AcDbHatch)
+    selectedEntities.every(
+      entity =>
+        entity instanceof AcDbHatch &&
+        !AcApLayerService.isEntityOnLockedLayer(db, entity)
+    )
   handleHatchSelectionContextChanged(isOnlyHatchSelection)
 }
 

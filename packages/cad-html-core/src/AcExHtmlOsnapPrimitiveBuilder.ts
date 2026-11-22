@@ -29,6 +29,7 @@ import {
   AcDbHatch,
   AcDbLeader,
   AcDbLine,
+  AcDbMInsertBlock,
   AcDbMLeader,
   type AcDbMLeaderLeader,
   type AcDbMLeaderLine,
@@ -301,10 +302,6 @@ type AcExBlockReferenceLike = AcDbEntity & {
   blockTableRecord: AcDbBlockTableRecord | undefined
   blockName?: string
   getFullInsertionTransform(): AcGeMatrix3d
-  columnCount?: number
-  rowCount?: number
-  columnSpacing?: number
-  rowSpacing?: number
   attributeIterator?: () => Iterable<AcDbEntity> & {
     toArray?: () => AcDbEntity[]
   }
@@ -1297,10 +1294,13 @@ function visitEntity(
     if (!block || blockStack.has(block.objectId)) return
     blockStack.add(block.objectId)
     const insertXform = entity.getFullInsertionTransform()
-    const cols = Math.max(1, entity.columnCount ?? 1)
-    const rows = Math.max(1, entity.rowCount ?? 1)
-    const colSp = entity.columnSpacing ?? 0
-    const rowSp = entity.rowSpacing ?? 0
+    // MINSERT array data lives on the AcDbMInsertBlock subclass only.
+    const source: AcDbEntity = entity
+    const minsert = source instanceof AcDbMInsertBlock ? source : undefined
+    const cols = Math.max(1, minsert?.columns ?? 1)
+    const rows = Math.max(1, minsert?.rows ?? 1)
+    const colSp = minsert?.columnSpacing ?? 0
+    const rowSp = minsert?.rowSpacing ?? 0
     const blockInsertLayer = effectiveLayer(entity.layer, insertLayer)
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
