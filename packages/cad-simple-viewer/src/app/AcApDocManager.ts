@@ -94,7 +94,6 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
-  AcApTxt2MtxtCmd,
   AcApUcsCmd,
   AcApUndoCmd,
   AcApUngroupCmd,
@@ -2112,6 +2111,13 @@ export class AcApDocManager {
     )
     addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
+    // Load after the DocManager module graph has finished initializing.
+    // A static barrel import leaves AcApTxt2MtxtCmd undefined under CJS.
+    const { AcApTxt2MtxtCmd } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('../command/modify/AcApTxt2MtxtCmd.js') as {
+        AcApTxt2MtxtCmd: new () => AcEdCommand
+      }
     addSystemCommand('txt2mtxt', 'txt2mtxt', new AcApTxt2MtxtCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('copyclip', 'copyclip', new AcApCopyClipCmd())

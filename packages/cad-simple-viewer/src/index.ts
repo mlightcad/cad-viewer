@@ -2,6 +2,9 @@ export * from './app/index.js'
 export * from './util/index.js'
 export * from './service/index.js'
 export * from './command/index.js'
+// Not re-exported from command/modify barrel: DocManager imports that barrel
+// while initializing, and a CJS cycle would leave the class undefined.
+export { AcApTxt2MtxtCmd } from './command/modify/AcApTxt2MtxtCmd.js'
 export * from './editor/index.js'
 export * from './find/index.js'
 export * from './i18n/index.js'

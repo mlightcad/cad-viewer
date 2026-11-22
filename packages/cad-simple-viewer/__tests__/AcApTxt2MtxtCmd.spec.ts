@@ -1,25 +1,20 @@
-jest.mock('../src/app', () => ({
-  AcApDocManager: {
-    instance: {
-      editor: {
-        showMessage: jest.fn()
-      }
-    }
-  }
-}))
+const showMessage = jest.fn()
 
-jest.mock('../src/editor', () => {
+jest.mock('../src/editor/command/AcEdCommand', () => {
   class AcEdCommand {
     mode: unknown
-  }
-
-  return {
-    AcEdCommand,
-    AcEdOpenMode: {
-      Write: 'Write'
+    showMessage(...args: unknown[]) {
+      showMessage(...args)
     }
   }
+  return { AcEdCommand }
 })
+
+jest.mock('../src/editor/view/AcEdOpenMode', () => ({
+  AcEdOpenMode: {
+    Write: 'Write'
+  }
+}))
 
 jest.mock('../src/i18n', () => ({
   AcApI18n: {
@@ -27,17 +22,18 @@ jest.mock('../src/i18n', () => ({
   }
 }))
 
-jest.mock('../src/service', () => ({
-  resolveSelectedEntities: jest.fn(),
+jest.mock('../src/service/AcApEntitySelection', () => ({
+  resolveSelectedEntities: jest.fn()
+}))
+
+jest.mock('../src/service/AcApEntityService', () => ({
   AcApEntityService: {
     copyDisplayTraits: jest.fn()
   }
 }))
 
-jest.mock('../src/util/AcApFontUtil', () => ({
-  AcApFontUtil: {
-    measureTextWidth: jest.fn(() => undefined)
-  }
+jest.mock('../src/util/AcApTextMeasure', () => ({
+  acapMeasureTextWidth: jest.fn(() => undefined)
 }))
 
 import {
@@ -48,9 +44,9 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../src/app'
 import { AcApTxt2MtxtCmd } from '../src/command/modify/AcApTxt2MtxtCmd'
-import { AcApEntityService, resolveSelectedEntities } from '../src/service'
+import { resolveSelectedEntities } from '../src/service/AcApEntitySelection'
+import { AcApEntityService } from '../src/service/AcApEntityService'
 
 function makePair() {
   const a = new AcDbText()
@@ -60,7 +56,7 @@ function makePair() {
   a.styleName = 'Standard'
   a.objectId = 'a'
   a.ownerId = 'ms'
-  a.layer = '0'
+  a.layer = 'ANN'
 
   const b = new AcDbText()
   b.textString = 'B'
@@ -117,7 +113,7 @@ describe('AcApTxt2MtxtCmd', () => {
     expect(AcApEntityService.copyDisplayTraits).toHaveBeenCalledWith(a, merged)
     expect(eraseEntities).toHaveBeenCalledWith(['a', 'b'])
     expect(clear).toHaveBeenCalled()
-    expect(AcApDocManager.instance.editor.showMessage).not.toHaveBeenCalled()
+    expect(showMessage).not.toHaveBeenCalled()
   })
 
   it('warns when fewer than two text entities remain after filtering', async () => {
@@ -144,10 +140,7 @@ describe('AcApTxt2MtxtCmd', () => {
       }
     } as never)
 
-    expect(AcApDocManager.instance.editor.showMessage).toHaveBeenCalledWith(
-      'jig.txt2mtxt.needTwo',
-      'warning'
-    )
+    expect(showMessage).toHaveBeenCalledWith('jig.txt2mtxt.needTwo', 'warning')
   })
 
   it('warns and aborts when source erase is incomplete', async () => {
@@ -180,7 +173,7 @@ describe('AcApTxt2MtxtCmd', () => {
     expect(appendEntity).toHaveBeenCalledTimes(1)
     expect(eraseEntities).toHaveBeenCalledWith(['a', 'b'])
     expect(clear).not.toHaveBeenCalled()
-    expect(AcApDocManager.instance.editor.showMessage).toHaveBeenCalledWith(
+    expect(showMessage).toHaveBeenCalledWith(
       'jig.txt2mtxt.eraseFailed',
       'warning'
     )
