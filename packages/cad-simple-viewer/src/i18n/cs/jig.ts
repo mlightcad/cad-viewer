@@ -2364,5 +2364,11 @@ export default {
       'Zadejte skutečnou délku (změřeno {measured}; texty kót naznačují 1:{scale})',
     zeroDistance: 'Oba body jsou totožné.',
     applied: 'Změněno měřítko {count} objektů faktorem {factor}.'
+  },
+  txt2mtxt: {
+    needTwo: 'Vyberte alespoň dva texty nebo víceřádkové texty ke sloučení.',
+    mergeFailed: 'Vybrané texty nelze sloučit.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny zdrojové texty. Sloučení bylo zrušeno.'
   }
 }

@@ -460,6 +460,11 @@ export default {
     mtext: {
       description: 'Creates one mtext entity'
     },
+    txt2mtxt: {
+      description:
+        'Combines selected text and mtext entities into one mtext entity',
+      prompt: 'Select text or mtext entities'
+    },
     open: {
       description: 'Opens an existing drawing file'
     },

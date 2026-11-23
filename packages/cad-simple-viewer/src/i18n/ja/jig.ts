@@ -2365,5 +2365,12 @@ export default {
       '実際の長さを入力（測定値 {measured}、寸法値から推定した尺度 1:{scale}）',
     zeroDistance: '2 点が同じ位置です。',
     applied: '{count} 個のオブジェクトを尺度 {factor} で変更しました。'
+  },
+  txt2mtxt: {
+    needTwo:
+      '結合するには、文字またはマルチ テキストを 2 つ以上選択してください。',
+    mergeFailed: '選択した文字を結合できませんでした。',
+    eraseFailed:
+      '元の文字をすべて削除できなかったため、結合は取り消されました。'
   }
 }

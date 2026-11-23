@@ -435,6 +435,10 @@ export default {
     mtext: {
       description: '여러 줄 문자 객체를 하나 작성합니다'
     },
+    txt2mtxt: {
+      description: '선택한 문자와 여러 줄 문자를 하나의 여러 줄 문자로 결합합니다',
+      prompt: '문자 또는 여러 줄 문자 선택'
+    },
     open: {
       description: '기존 도면 파일을 엽니다'
     },

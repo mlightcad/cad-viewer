@@ -17,3 +17,10 @@ export const PDF_ICON_DIM =
 /** Recover Hatch ribbon icon. */
 export const PDF_ICON_HATCH =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M1.8 5.6V3.1c0-.7.6-1.3 1.3-1.3h2.5M14.4 1.8h2.5c.7 0 1.3.6 1.3 1.3v2.5M18.2 14.4v2.5c0 .7-.6 1.3-1.3 1.3h-2.5M5.6 18.2H3.1c-.7 0-1.3-.6-1.3-1.3v-2.5"/><rect x="5.4" y="5.4" width="9.2" height="9.2" fill="none" stroke="currentColor" stroke-width="1.25"/><path fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" d="M5.4 8.4l3-3M5.4 11.6l6.2-6.2M5.8 14.4l8.6-8.6M8.6 14.6l6-6M11.8 14.6l2.8-2.8"/></svg>'
+
+/**
+ * Combine Text ribbon icon: separate single-line runs merge into one mtext
+ * block (TXT2MTXT).
+ */
+export const PDF_ICON_TXT2MTXT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M1.8 4.8h5.6M1.8 8.2h4.4M1.8 11.6h5.2"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M8.4 5v10M8.4 10h2.4M10.8 7.6 13.2 10l-2.4 2.4"/><rect x="13.6" y="4.2" width="4.6" height="11.6" rx="0.7" fill="none" stroke="currentColor" stroke-width="1.25"/><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M14.7 7h2.4M14.7 10h2.4M14.7 13h1.7"/></svg>'
