@@ -19,8 +19,11 @@ import {
 import { acapLlmModelLabel } from './storage/AcApLlmModelCatalog.js'
 import { acapLlmProviderLabel } from './ui/AcApLlmProviderLabels.js'
 
-/** Ids of per-model OCR recognizers currently registered by this module. */
-const registeredModelOcrIds = new Set<string>()
+/**
+ * Per-model OCR recognizers currently registered by this module, keyed by id,
+ * with the label they were registered under.
+ */
+const registeredModelOcr = new Map<string, string>()
 
 let unsubscribeConfig: (() => void) | undefined
 let syncing: Promise<void> | undefined
@@ -61,7 +64,19 @@ async function syncOcrRecognizers(): Promise<void> {
       const id = acapLlmOcrRecognizerId(provider.id, model.id)
       nextIds.add(id)
       const modelLabel = acapLlmModelLabel(model)
-      const label = () => `${providerLabel} — ${modelLabel}`
+      const text = `${providerLabel} — ${modelLabel}`
+      // Re-registering fires `AcApTextRecognitionService.events.changed`, and
+      // listeners (the PDF Recover Text dropdown) answer by calling
+      // `listAvailable()`, which runs this sync again. Registering an
+      // unchanged entry therefore looped forever: each pass re-decrypted API
+      // keys (PBKDF2) and rebuilt the ribbon, pinning a CPU core while idle.
+      if (
+        registeredModelOcr.get(id) === text &&
+        AcApTextRecognitionService.has(id)
+      ) {
+        continue
+      }
+      const label = () => text
       AcApTextRecognitionService.register({
         id,
         label,
@@ -85,14 +100,14 @@ async function syncOcrRecognizers(): Promise<void> {
             modelId: model.id
           })
       })
-      registeredModelOcrIds.add(id)
+      registeredModelOcr.set(id, text)
     }
   }
 
-  for (const id of [...registeredModelOcrIds]) {
+  for (const id of [...registeredModelOcr.keys()]) {
     if (nextIds.has(id)) continue
     AcApTextRecognitionService.unregister(id)
-    registeredModelOcrIds.delete(id)
+    registeredModelOcr.delete(id)
   }
 }
 

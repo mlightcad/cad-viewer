@@ -74,4 +74,35 @@ describe('AcApUcsIconOverlay', () => {
     overlay.dispose()
     host.remove()
   })
+
+  test('does not touch the DOM when the view is unchanged between frames', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const overlay = new AcApUcsIconOverlay(host)
+    let offsetX = 400
+    const view = createView({
+      hasLayoutView: true,
+      worldToScreen: p => new AcGePoint2d(offsetX + p.x, 300 - p.y)
+    })
+    overlay.update(view)
+
+    const records: MutationRecord[] = []
+    const observer = new MutationObserver(m => records.push(...m))
+    observer.observe(host, { subtree: true, attributes: true })
+
+    // update() runs on every animation frame; identical frames must be no-ops.
+    overlay.update(view)
+    overlay.update(view)
+    await Promise.resolve()
+    expect(records.concat(observer.takeRecords())).toHaveLength(0)
+
+    offsetX = 420
+    overlay.update(view)
+    await Promise.resolve()
+    expect(records.concat(observer.takeRecords()).length).toBeGreaterThan(0)
+
+    observer.disconnect()
+    overlay.dispose()
+    host.remove()
+  })
 })

@@ -11,6 +11,9 @@
       "@mlightcad/cad-simple-viewer": [
         "packages/cad-simple-viewer/src/index.ts"
       ],
+      "@mlightcad/cad-pdf-plugin": [
+        "packages/cad-pdf-plugin/src/index.ts"
+      ],
       "@mlightcad/cad-script-core": [
         "packages/cad-script-core/src/index.ts"
       ],

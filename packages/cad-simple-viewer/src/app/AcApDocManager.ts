@@ -122,7 +122,10 @@ import {
   acapResolveLayoutFrameBox
 } from '../util/AcApLayoutViewFraming.js'
 import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType.js'
-import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser.js'
+import {
+  isScriptQuitCommand,
+  parseScriptLines
+} from '../util/AcApScriptParser.js'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase.js'
 import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay.js'
 import type { AcTrLayout } from '../view/AcTrLayout.js'
@@ -132,7 +135,10 @@ import { AcApClipboard } from './AcApClipboard.js'
 import { acapBindCommandServices } from './AcApCommandServices.js'
 import { AcApContext } from './AcApContext.js'
 import { AcApDocSession } from './AcApDocSession.js'
-import { ACAP_DEFAULT_DOCS_BASE_URL, acapSetDocsBaseUrl } from './AcApDocsUrl.js'
+import {
+  ACAP_DEFAULT_DOCS_BASE_URL,
+  acapSetDocsBaseUrl
+} from './AcApDocsUrl.js'
 import { AcApDocument } from './AcApDocument.js'
 import { AcApFontLoader } from './AcApFontLoader.js'
 import { acapHealModelLayoutLink } from './acapHealModelLayoutLink.js'
@@ -474,7 +480,9 @@ export interface AcApDocManagerOptions {
    * - `false`: do not load (use for `cad-editor`, CLI, headless)
    * - object: enable with those {@link AcUiSimpleUiOptions}
    */
-  simpleUi?: boolean | import('../ui/AcUiSimpleUiOptions.js').AcUiSimpleUiOptions
+  simpleUi?:
+    | boolean
+    | import('../ui/AcUiSimpleUiOptions.js').AcUiSimpleUiOptions
 }
 
 /**
@@ -1794,7 +1802,10 @@ export class AcApDocManager {
     })
     const created = await this.ensureOpenSession()
     this.beginOpenProgress()
-    this.onBeforeOpenDocument(openOptions, !created)
+    // The blank template has no text. Eagerly loading the full font preset
+    // (including the multi-MB CJK `simsun.woff`) made an empty drawing pay
+    // seconds of parse CPU and tens of MB of heap for glyphs it never draws.
+    this.onBeforeOpenDocument(openOptions, !created, false)
     await this._openFileProgress.beginOpen(this.context.doc.database)
     const isSuccess = await this.context.doc.openUri(templateUrl, openOptions)
     if (isSuccess) {
@@ -2453,11 +2464,18 @@ export class AcApDocManager {
    * This protected method is called automatically before any document opening operation.
    * It clears the current view to prepare for the new document content.
    *
+   * @param options - Options of the document being opened.
+   * @param replaceCurrent - Whether the current view content is replaced.
+   * @param preloadPresetFonts - Start loading the default/symbol font preset
+   *   right away so it overlaps parsing. Pass `false` when the source is known
+   *   to contain no text (e.g. the blank new-drawing template): fonts then load
+   *   lazily the first time text is drawn.
    * @protected
    */
   protected onBeforeOpenDocument(
     options?: AcApOpenDatabaseOptions,
-    replaceCurrent = true
+    replaceCurrent = true,
+    preloadPresetFonts = true
   ) {
     this.events.documentToBeOpened.dispatch({
       doc: this.context.doc,
@@ -2498,8 +2516,10 @@ export class AcApDocManager {
     }
     // Preset fonts are drawing-independent — start immediately so download /
     // mesh parse overlaps db.read. Glyph finalize awaits the promise; linework
-    // convert does not.
-    void this.ensurePresetFontsForOpen()
+    // convert does not. Glyph finalize starts it on demand when skipped here.
+    if (preloadPresetFonts) {
+      void this.ensurePresetFontsForOpen()
+    }
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
   }
