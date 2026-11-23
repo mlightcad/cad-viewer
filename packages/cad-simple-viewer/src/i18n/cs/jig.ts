@@ -334,6 +334,14 @@ export default {
     notExplodable: 'Počet objektů, které nelze rozložit: {count}',
     minsert: 'Bloky vložené příkazem MINSERT nelze rozložit (počet: {count})'
   },
+  join: {
+    needTwo:
+      'Vyberte alespoň dvě úsečky, oblouky nebo křivky ke spojení.',
+    noneJoined: 'Žádné objekty nelze spojit.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny zdrojové objekty. Spojení bylo zrušeno.',
+    joined: 'Spojeno objektů: {count}.'
+  },
   hatch: {
     prompt: 'Vyberte objekt hranice nebo',
     pickPoint: 'Zadejte vnitřní bod (nebo stiskněte Enter pro dokončení)',
@@ -1306,6 +1314,26 @@ export default {
         local: 'Šířka',
         global: 'Width'
       }
+    }
+  },
+  mirror: {
+    firstPoint: 'Zadejte první bod osy zrcadlení',
+    secondPoint: 'Zadejte druhý bod osy zrcadlení',
+    eraseSource: 'Odstranit zdrojové objekty?',
+    keywords: {
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: 'Neplatná osa zrcadlení: body musí být různé.'
     }
   },
   rotate: {

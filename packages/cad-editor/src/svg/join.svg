@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AutoCAD-style JOIN: two collinear segments drawn together into one -->
+  <path
+    d="M2.5 14.5H9.2"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M14.8 14.5H21.5"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <!-- Gap bridge (joined span) -->
+  <path
+    d="M9.2 14.5H14.8"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    opacity="0.45"
+  />
+  <!-- Inward chevrons: join action -->
+  <path
+    d="M8.4 11.4L11.2 14.5L8.4 17.6"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M15.6 11.4L12.8 14.5L15.6 17.6"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Endpoint grips, matching draw-tool markers -->
+  <rect x="2" y="13.25" width="2.5" height="2.5" fill="var(--el-color-primary)" />
+  <rect x="19.5" y="13.25" width="2.5" height="2.5" fill="var(--el-color-primary)" />
+</svg>

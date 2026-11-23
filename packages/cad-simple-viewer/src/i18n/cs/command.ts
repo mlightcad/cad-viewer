@@ -187,6 +187,11 @@ export default {
       description: 'Rozloží složený objekt na jednotlivé objekty',
       prompt: 'Vyberte objekty k rozložení'
     },
+    join: {
+      description:
+        'Spojí koncové body úseček, oblouků a křivek do jednoho objektu',
+      prompt: 'Vyberte objekty ke spojení'
+    },
     group: {
       description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
     },
@@ -428,6 +433,14 @@ export default {
     },
     measurementcolor: {
       description: 'Nastaví barvu použitou pro překryvy měření'
+    },
+    mirrtext: {
+      description:
+        'Určuje, zda příkaz MIRROR skutečně zrcadlí text: 0 ponechá text čitelný, 1 text zrcadlí'
+    },
+    mirror: {
+      description: 'Vytvoří zrcadlenou kopii vybraných objektů',
+      prompt: 'Vyberte objekty'
     },
     modelbkcolor: {
       description: 'Nastaví barvu pozadí kreslicí oblasti modelového prostoru'

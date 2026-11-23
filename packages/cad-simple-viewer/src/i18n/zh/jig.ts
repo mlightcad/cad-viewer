@@ -287,6 +287,12 @@ export default {
     notExplodable: '{count} 个对象无法分解',
     minsert: '{count} 个用 MINSERT 插入的块无法分解'
   },
+  join: {
+    needTwo: '请至少选择两条直线、圆弧或多段线进行合并。',
+    noneJoined: '没有可合并的对象。',
+    eraseFailed: '无法删除全部源对象，合并已取消。',
+    joined: '已合并 {count} 个对象。'
+  },
   hatch: {
     prompt: '选择边界对象或',
     pickPoint: '指定内部点（或按 Enter 结束）',
@@ -1164,6 +1170,26 @@ export default {
     arcSecondPoint: '指定弧上的第二点',
     arcEndPoint: '指定弧的终点',
     arcRadius: '指定弧半径'
+  },
+  mirror: {
+    firstPoint: '指定镜像线的第一点',
+    secondPoint: '指定镜像线的第二点',
+    eraseSource: '是否删除源对象？',
+    keywords: {
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: '镜像线无效：两点必须不同。'
+    }
   },
   rotate: {
     basePoint: '指定基点',

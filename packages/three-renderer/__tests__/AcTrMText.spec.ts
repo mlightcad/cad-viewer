@@ -20,8 +20,10 @@ import {
 
 type GeometryHost = THREE.Object3D & {
   wcsBbox: THREE.Box3
+  _wcsBbox: THREE.Box3
   computeGeometryBox: () => THREE.Box3
   hasGeometry: (object: THREE.Object3D) => boolean
+  hasInkForSelection: () => boolean
 }
 
 type RaycastHost = THREE.Object3D & {
@@ -125,6 +127,28 @@ describe('AcTrMText wcsBbox', () => {
 
     expect(host.wcsBbox.min.toArray()).toEqual([100, 100, 0])
     expect(host.wcsBbox.max.toArray()).toEqual([101, 101, 0])
+  })
+
+  it('leaves an empty selection box for empty-string text with no ink', () => {
+    // Empty ATTRIB/TEXT still gets a logical layout box (height × 0 width) at
+    // the insertion point. Indexing that as an INSERT child breaks window
+    // selection when the ATTRIB sits far from its AttDef.
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: '', position: { x: -4560, y: 865, z: 0 } } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const logicalBox = new THREE.Box3(
+      new THREE.Vector3(-4560, 865, 0),
+      new THREE.Vector3(-4560, 868, 0)
+    )
+
+    privateMethods.attachRendered.call(entity, createMTextObject(logicalBox))
+
+    expect(entity.wcsBbox.isEmpty()).toBe(true)
   })
 
   it('keeps block-definition renderer boxes block-local under an INSERT', () => {
@@ -418,8 +442,10 @@ describe('AcTrMText', () => {
 function createGeometryHost(): GeometryHost {
   const host = new THREE.Object3D() as GeometryHost
   host.wcsBbox = new THREE.Box3()
+  host._wcsBbox = host.wcsBbox
   host.computeGeometryBox = privateMethods.computeGeometryBox
   host.hasGeometry = privateMethods.hasGeometry
+  host.hasInkForSelection = () => true
   return host
 }
 

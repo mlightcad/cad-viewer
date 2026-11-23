@@ -64,13 +64,15 @@ export const registerCmds = () => {
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'layer',
       'layer',
-      new AcApLayerStateCmd()
+      new AcApLayerStateCmd(),
+      AcApDocManager.instance.getResolvedCommandAliases('layer')
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'hatch',
       'hatch',
-      hatchRibbonCommand
+      hatchRibbonCommand,
+      AcApDocManager.instance.getResolvedCommandAliases('hatch')
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -82,7 +84,8 @@ export const registerCmds = () => {
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'xref',
       'xref',
-      new AcApXrefCmd()
+      new AcApXrefCmd(),
+      AcApDocManager.instance.getResolvedCommandAliases('xref')
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -100,13 +103,15 @@ export const registerCmds = () => {
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'units',
       'units',
-      new AcApDrawingUnitsCmd()
+      new AcApDrawingUnitsCmd(),
+      AcApDocManager.instance.getResolvedCommandAliases('units')
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'properties',
       'properties',
-      new AcApPropertiesCmd()
+      new AcApPropertiesCmd(),
+      AcApDocManager.instance.getResolvedCommandAliases('properties')
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

@@ -50,6 +50,7 @@ import {
   AcApImageAttachCmd,
   AcApInsertCmd,
   acapInstallMarkupSessionBootstrap,
+  AcApJoinCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -66,6 +67,7 @@ import {
   AcApLeaderCmd,
   AcApLineCmd,
   AcApLogCmd,
+  AcApMirrorCmd,
   AcApMLeaderCmd,
   AcApMLeaderEditCmd,
   AcApMLineCmd,
@@ -194,6 +196,9 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   ELLIPSE: ['EL'],
   ERASE: ['E'],
   EXPLODE: ['X'],
+  JOIN: ['J'],
+  GROUP: ['G'],
+  '-GROUP': ['-G'],
   DIMLINEAR: ['DLI'],
   DIMALIGNED: ['DAL', 'DIMALI'],
   DIMRADIUS: ['DRA', 'DIMRAD'],
@@ -206,32 +211,40 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MEASUREDISTANCE: ['DI', 'DIST'],
   MEASUREAREA: ['AA', 'AREA'],
   MEASUREANGLE: ['ANG'],
+  HATCH: ['H'],
   '-HATCH': ['-H'],
   IMAGEATTACH: ['IAT'],
-  '-INSERT': ['I'],
+  '-INSERT': ['I', '-I'],
   XATTACH: ['XA'],
+  XREF: ['XR'],
   LAYER: ['LA'],
   '-LAYER': ['-LA'],
   LINE: ['L'],
+  LEADER: ['LE'],
+  MLEADER: ['MLD'],
   MLINE: ['ML'],
   MLEADEREDIT: ['MLE'],
-  MTEXT: ['T'],
+  MTEXT: ['T', 'MT'],
   TXT2MTXT: ['T2M'],
   MOVE: ['M'],
   OFFSET: ['O'],
-  COPY: ['CO'],
+  COPY: ['CO', 'CP'],
+  COPYBASE: ['CB'],
+  PROPERTIES: ['PR', 'PROPS', 'CH', 'MO'],
+  MIRROR: ['MI'],
   ROTATE: ['RO'],
   SCALE: ['SC'],
-  OPEN: ['OP'],
+  // OPEN has no acad.pgp alias (Ctrl+O); OP is OPTIONS in AutoCAD.
   PAN: ['P'],
   POINT: ['PO'],
   POLYGON: ['POL'],
   PLINE: ['PL'],
-  RAY: ['RA'],
+  // RAY has no acad.pgp alias; RA is REDRAWALL in AutoCAD.
   RECTANG: ['REC'],
   REGEN: ['RE'],
-  SELECT: ['SE'],
+  // SELECT has no acad.pgp alias; SE is DSETTINGS in AutoCAD.
   SPLINE: ['SPL'],
+  UNITS: ['UN'],
   XLINE: ['XL'],
   ZOOM: ['Z'],
   UNDO: ['U'],
@@ -2049,14 +2062,12 @@ export class AcApDocManager {
       cmdLocalName: string,
       cmd: AcEdCommand
     ) => {
-      const defaults =
-        DEFAULT_COMMAND_ALIASES[cmdGlobalName.toUpperCase()] ?? []
       register.addCommand(
         AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
         cmdGlobalName,
         cmdLocalName,
         cmd,
-        this.resolveCommandAliases(cmdGlobalName, defaults)
+        this.getResolvedCommandAliases(cmdGlobalName)
       )
     }
 
@@ -2075,6 +2086,7 @@ export class AcApDocManager {
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('explode', 'explode', new AcApExplodeCmd())
+    addSystemCommand('join', 'join', new AcApJoinCmd())
     addSystemCommand('group', 'group', new AcApGroupCmd())
     addSystemCommand('-bsearch', '-bsearch', new AcApDashBSearchCmd())
     addSystemCommand('-group', '-group', new AcApDashGroupCmd())
@@ -2136,6 +2148,7 @@ export class AcApDocManager {
     addSystemCommand('pasteclip', 'pasteclip', new AcApPasteClipCmd())
     addSystemCommand('pasteorig', 'pasteorig', new AcApPasteOrigCmd())
     addSystemCommand('pasteblock', 'pasteblock', new AcApPasteBlockCmd())
+    addSystemCommand('mirror', 'mirror', new AcApMirrorCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
@@ -2226,6 +2239,23 @@ export class AcApDocManager {
     })
 
     return map
+  }
+
+  /**
+   * Resolved aliases for a command (user `commandAliases` overrides, else
+   * built-in AutoCAD-style defaults).
+   *
+   * Hosts that register commands outside the built-in system command set (for
+   * example `LAYER` / `HATCH` in the editor UI) should pass this list as the
+   * `addCommand` alias argument so overrides and defaults stay in sync.
+   *
+   * @param commandName - Command global name
+   * @returns Final aliases used for command registration
+   */
+  getResolvedCommandAliases(commandName: string): string[] {
+    const defaults =
+      DEFAULT_COMMAND_ALIASES[commandName.trim().toUpperCase()] ?? []
+    return this.resolveCommandAliases(commandName, defaults)
   }
 
   /**

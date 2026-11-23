@@ -3122,6 +3122,12 @@ export class AcTrView2d extends AcEdBaseView {
    * Attribute entities are drawn as part of their owning INSERT, so attribute
    * edits are remapped to the parent {@link AcDbBlockReference} before the
    * scene is updated.
+   *
+   * Multi-entity edits (MOVE, etc.) dispatch one `entityModified` per entity.
+   * Reconversion is enqueued through {@link enqueueConvert} /
+   * {@link drainConvertQueue} so those updates share one serial convert worker
+   * instead of launching parallel {@link batchConvert} runs that race on shared
+   * INSERT templates and hierarchical spatial indexes.
    */
   updateEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = this.resolveSceneUpdateEntities(
@@ -3157,10 +3163,12 @@ export class AcTrView2d extends AcEdBaseView {
       }
     }
 
-    // Reconvert through the same path as initial load so block references are
-    // split by layer correctly and deferred MTEXT/SHAPE geometry is drawn.
+    // Same serial convert path as addEntity / progressive open — not a
+    // per-call void batchConvert, which raced when MOVE flushed many
+    // entityModified events.
+    this.enqueueConvert(entities)
     void (async () => {
-      await this.batchConvert(entities)
+      await this.drainConvertQueue()
       await this.waitUntilDeferredGeometryIdle()
       if (selectedIds.length > 0) {
         this.highlight(selectedIds)

@@ -24,6 +24,20 @@ export function createRotationMatrix(
 }
 
 /**
+ * Builds a world-space reflection matrix about the XY line through two points.
+ *
+ * @param point1 - First point of the mirror line.
+ * @param point2 - Second point of the mirror line.
+ * @returns Composite transform that mirrors about the line.
+ */
+export function createMirrorMatrix(
+  point1: AcGePoint3dLike,
+  point2: AcGePoint3dLike
+) {
+  return new AcGeMatrix3d().setToMirroring(point1, point2)
+}
+
+/**
  * Builds a world-space uniform scale matrix around a given base point.
  *
  * @param basePoint - Scale origin, which stays fixed.

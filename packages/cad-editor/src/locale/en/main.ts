@@ -313,6 +313,7 @@ export default {
       mleaderAdd: 'Add a leader line to an existing multileader.',
       mleaderRemove: 'Remove a leader line from an existing multileader.',
       move: 'Move selected objects to a new position.',
+      mirror: 'Create a mirrored copy of selected objects.',
       rotate: 'Rotate selected objects around a base point.',
       scale:
         'Enlarge or reduce selected objects, keeping the proportions the same after scaling.',
@@ -329,6 +330,7 @@ export default {
       copyBase:
         'Copy the selected objects to the clipboard with a specified base point (COPYBASE).',
       explode: 'Break a compound object into its component objects.',
+      join: 'Join the endpoints of lines, arcs, and polylines to create a single object.',
       offset: 'Create a parallel copy of an object at a specified distance.',
       undo: 'Undo the last editing operation.',
       redo: 'Redo the last undone editing operation.',
@@ -485,6 +487,7 @@ export default {
       mleaderAdd: 'Add Leader',
       mleaderRemove: 'Remove Leader',
       move: 'Move',
+      mirror: 'Mirror',
       rotate: 'Rotate',
       scale: 'Scale',
       erase: 'Erase',
@@ -495,6 +498,7 @@ export default {
       copyClip: 'Copy',
       copyBase: 'Copy with Base Point',
       explode: 'Explode',
+      join: 'Join',
       offset: 'Offset',
       undo: 'Undo',
       redo: 'Redo',

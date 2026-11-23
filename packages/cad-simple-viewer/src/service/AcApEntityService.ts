@@ -1,4 +1,5 @@
 import {
+  AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbDimension,
   AcDbEntity,
@@ -19,7 +20,11 @@ import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit.js'
  * Options for {@link AcApEntityService.cloneAndTransform}.
  */
 export interface AcApCloneAndTransformOptions {
-  /** Append clones to model space. Default `true`. */
+  /**
+   * Append each clone to its source entity's owner block table record
+   * (model space, paper space, or another BTR). Falls back to model space
+   * when the owner cannot be resolved. Default `true`.
+   */
   append?: boolean
   /**
    * Regenerate the anonymous blocks of transformed dimensions. Default `false`.
@@ -193,7 +198,8 @@ export class AcApEntityService {
   }
 
   /**
-   * Clones entities, transforms them, and optionally appends to model space.
+   * Clones entities, transforms them, and optionally appends each clone to
+   * its source's owner block table record (not always model space).
    *
    * @param sourceEntities - Entities to clone.
    * @param matrix - Transform applied to each clone.
@@ -206,17 +212,33 @@ export class AcApEntityService {
     options: AcApCloneAndTransformOptions = {}
   ): AcDbEntity[] {
     const append = options.append ?? true
-    const clones = sourceEntities
-      .map(entity => entity.clone())
-      .filter((entity): entity is AcDbEntity => !!entity)
-
-    clones.forEach(entity => {
-      entity.transformBy(matrix)
-      if (options.regenerateDimensions) regenerateDimension(entity)
-    })
+    const clones: AcDbEntity[] = []
+    const sourcesForClones: AcDbEntity[] = []
+    for (const entity of sourceEntities) {
+      const clone = entity.getTransformedCopy(matrix)
+      if (!clone) continue
+      if (options.regenerateDimensions) regenerateDimension(clone)
+      clones.push(clone)
+      sourcesForClones.push(entity)
+    }
 
     if (append && clones.length > 0) {
-      this.db.tables.blockTable.modelSpace.appendEntity(clones)
+      const modelSpace = this.db.tables.blockTable.modelSpace
+      const byOwner = new Map<AcDbBlockTableRecord, AcDbEntity[]>()
+      for (let i = 0; i < clones.length; i++) {
+        const owner = this.db.getObjectById(sourcesForClones[i].ownerId)
+        const space =
+          owner instanceof AcDbBlockTableRecord ? owner : modelSpace
+        const bucket = byOwner.get(space)
+        if (bucket) {
+          bucket.push(clones[i])
+        } else {
+          byOwner.set(space, [clones[i]])
+        }
+      }
+      for (const [space, entities] of byOwner) {
+        space.appendEntity(entities)
+      }
     }
 
     return clones

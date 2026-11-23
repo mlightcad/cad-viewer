@@ -57,6 +57,7 @@ import * as THREE from 'three'
 
 import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
+import { AcTrRBushSpatialIndex } from '../src/spatialIndex/AcTrRBushSpatialIndex'
 
 describe('AcTrHierarchicalSpatialIndex', () => {
   test('does not pollute child index with root item when objectId is reused', () => {
@@ -296,6 +297,96 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     )
     expect(windowAllInside).toHaveLength(1)
     expect(windowAllInside[0].id).toBe(insertId)
+  })
+
+  test('window-selects INSERT when only real geometry children are indexed', () => {
+    // Empty ATTRIB strings used to contribute a far logical box as a child.
+    // After skipping those empty-ink boxes, a tight window around the stamp
+    // (e.g. a second MOVE after relocating title-block companions) still hits.
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-UB'
+
+    spatialIndex.insert({
+      minX: -90064,
+      minY: 11992,
+      maxX: -90050,
+      maxY: 11998,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      {
+        minX: -90064,
+        minY: 11992,
+        maxX: -90050,
+        maxY: 11998,
+        id: 'polyline-stamp'
+      }
+    ])
+
+    const windowHits = spatialIndex.search(
+      {
+        minX: -90070,
+        minY: 11990,
+        maxX: -90040,
+        maxY: 12000
+      },
+      { selectionMode: 'window' }
+    )
+    expect(windowHits.map(item => item.id)).toEqual([insertId])
+
+    // A far empty-ATTRIB child would still reject the same window — keep that
+    // regression visible so renderers do not start indexing empty ink again.
+    spatialIndex.ensureChildIndex(insertId, [
+      {
+        minX: -90064,
+        minY: 11992,
+        maxX: -90050,
+        maxY: 11998,
+        id: 'polyline-stamp'
+      },
+      {
+        minX: -94620,
+        minY: 12858,
+        maxX: -94620,
+        maxY: 12861,
+        id: 'empty-attrib'
+      }
+    ])
+    expect(
+      spatialIndex.search(
+        {
+          minX: -90070,
+          minY: 11990,
+          maxX: -90040,
+          maxY: 12000
+        },
+        { selectionMode: 'window' }
+      )
+    ).toHaveLength(0)
+  })
+
+  test('window-selects INSERT when child index has no finite boxes', () => {
+    // INSERT whose only children were empty-ink ATTRIB/TEXT boxes ends up with
+    // an empty child index; fall back to the root box instead of never hitting.
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-EMPTY-CHILDREN'
+
+    spatialIndex.insert({
+      minX: 0,
+      minY: 0,
+      maxX: 10,
+      maxY: 10,
+      id: insertId
+    })
+    const emptyChildren = new AcTrRBushSpatialIndex()
+    spatialIndex.setChildIndex(insertId, emptyChildren)
+
+    expect(
+      spatialIndex.search(
+        { minX: -1, minY: -1, maxX: 11, maxY: 11 },
+        { selectionMode: 'window' }
+      )
+    ).toEqual([expect.objectContaining({ id: insertId })])
   })
 
   test('keeps every multi-region hatch island pickable when child boxes share empty ids', () => {

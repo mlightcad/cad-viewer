@@ -331,6 +331,12 @@ export default {
     notExplodable: '{count} 個のオブジェクトは分解できませんでした',
     minsert: 'MINSERT で挿入された {count} 個のブロックは分解できません'
   },
+  join: {
+    needTwo: '結合するには、線分、円弧、またはポリラインを 2 つ以上選択してください。',
+    noneJoined: '結合できるオブジェクトがありません。',
+    eraseFailed: '元のオブジェクトをすべて削除できませんでした。結合は取り消されました。',
+    joined: '{count} 個のオブジェクトを結合しました。'
+  },
   hatch: {
     prompt: '境界オブジェクトを選択 または',
     pickPoint: '内側の点を指定 (Enter キーで終了)',
@@ -1307,6 +1313,26 @@ export default {
         local: '幅',
         global: 'Width'
       }
+    }
+  },
+  mirror: {
+    firstPoint: 'ミラー線の 1 点目を指定',
+    secondPoint: 'ミラー線の 2 点目を指定',
+    eraseSource: 'ソース オブジェクトを削除しますか?',
+    keywords: {
+      yes: {
+        display: 'はい(Y)',
+        local: 'はい',
+        global: 'Yes'
+      },
+      no: {
+        display: 'いいえ(N)',
+        local: 'いいえ',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: '無効なミラー線です。点は異なる位置である必要があります。'
     }
   },
   rotate: {

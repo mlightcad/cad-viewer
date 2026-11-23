@@ -389,6 +389,7 @@ export default {
       mleaderRemove:
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
       move: 'Posune vybrané objekty na novou pozici.',
+      mirror: 'Vytvoří zrcadlenou kopii vybraných objektů.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
       scale:
         'Zvětší nebo zmenší vybrané objekty se zachováním jejich proporcí.',
@@ -403,6 +404,7 @@ export default {
       copyBase:
         'Zkopíruje vybrané objekty do schránky se zadaným základním bodem (COPYBASE).',
       explode: 'Rozloží složený objekt na jednotlivé objekty.',
+      join: 'Spojí koncové body úseček, oblouků a křivek do jednoho objektu.',
       offset: 'Vytvoří rovnoběžnou kopii objektu v zadané vzdálenosti.',
       undo: 'Vrátí zpět poslední úpravu.',
       redo: 'Zopakuje poslední vrácenou úpravu.',
@@ -555,6 +557,7 @@ export default {
       mleaderAdd: 'Přidat odkaz',
       mleaderRemove: 'Odebrat odkaz',
       move: 'Posunout',
+      mirror: 'Zrcadlit',
       rotate: 'Otočit',
       scale: 'Měřítko',
       erase: 'Vymazat',
@@ -565,6 +568,7 @@ export default {
       copyClip: 'Kopírovat',
       copyBase: 'Kopírovat se základním bodem',
       explode: 'Rozložit',
+      join: 'Spojit',
       offset: 'Ekvidistanta',
       undo: 'Zpět',
       redo: 'Znovu',

@@ -187,6 +187,11 @@ export default {
       description: '複合オブジェクトを構成要素のオブジェクトに分解します',
       prompt: '分解するオブジェクトを選択'
     },
+    join: {
+      description:
+        '線分、円弧、ポリラインの端点を結合して 1 つのオブジェクトにします',
+      prompt: '結合するオブジェクトを選択'
+    },
     group: {
       description:
         'グループと呼ばれるオブジェクトの保存セットを作成および管理します'
@@ -430,6 +435,14 @@ export default {
     },
     measurementcolor: {
       description: '計測オーバーレイに使用する色を設定します'
+    },
+    mirrtext: {
+      description:
+        'MIRROR で文字を本当に鏡像化するかどうかを制御します。0 は読みやすさを維持、1 は文字を鏡像化します'
+    },
+    mirror: {
+      description: '選択したオブジェクトのミラーコピーを作成します',
+      prompt: 'オブジェクトを選択'
     },
     modelbkcolor: {
       description: 'モデル空間の作図領域の背景色を設定します'

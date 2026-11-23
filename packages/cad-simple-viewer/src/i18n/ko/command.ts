@@ -177,6 +177,10 @@ export default {
       description: '복합 객체를 구성 요소 객체로 분해합니다',
       prompt: '분해할 객체 선택'
     },
+    join: {
+      description: '선, 호, 폴리선의 끝점을 결합하여 단일 객체를 만듭니다',
+      prompt: '결합할 객체 선택'
+    },
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
     },
@@ -405,6 +409,14 @@ export default {
     },
     measurementcolor: {
       description: '측정 오버레이에 사용할 색상을 설정합니다'
+    },
+    mirrtext: {
+      description:
+        'MIRROR가 문자를 실제로 대칭할지 제어합니다. 0은 읽기 쉽게 유지, 1은 문자를 대칭합니다'
+    },
+    mirror: {
+      description: '선택한 객체의 대칭 복사본을 작성합니다',
+      prompt: '객체 선택'
     },
     modelbkcolor: {
       description: '모형 공간 도면 영역의 배경색을 설정합니다'

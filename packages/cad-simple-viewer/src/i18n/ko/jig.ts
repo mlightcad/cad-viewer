@@ -330,6 +330,12 @@ export default {
     notExplodable: '{count}개의 객체를 분해할 수 없습니다',
     minsert: 'MINSERT로 삽입된 블록 {count}개는 분해할 수 없습니다'
   },
+  join: {
+    needTwo: '결합하려면 선, 호 또는 폴리선을 두 개 이상 선택하십시오.',
+    noneJoined: '결합할 수 있는 객체가 없습니다.',
+    eraseFailed: '원본 객체를 모두 지울 수 없습니다. 결합이 취소되었습니다.',
+    joined: '{count}개의 객체를 결합했습니다.'
+  },
   hatch: {
     prompt: '경계 객체 선택 또는',
     pickPoint: '내부 점 지정 (또는 Enter 키를 눌러 완료)',
@@ -1301,6 +1307,26 @@ export default {
         local: '폭',
         global: 'Width'
       }
+    }
+  },
+  mirror: {
+    firstPoint: '대칭선의 첫 번째 점 지정',
+    secondPoint: '대칭선의 두 번째 점 지정',
+    eraseSource: '원본 객체를 지우시겠습니까?',
+    keywords: {
+      yes: {
+        display: '예(Y)',
+        local: '예',
+        global: 'Yes'
+      },
+      no: {
+        display: '아니요(N)',
+        local: '아니요',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: '잘못된 대칭선: 두 점은 서로 달라야 합니다.'
     }
   },
   rotate: {

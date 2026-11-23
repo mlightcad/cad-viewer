@@ -174,6 +174,10 @@ export default {
       description: '将复合对象分解为其部件对象',
       prompt: '选择要分解的对象'
     },
+    join: {
+      description: '将直线、圆弧和多段线的端点合并为单个对象',
+      prompt: '选择要合并的对象'
+    },
     group: {
       description: '创建和管理称为编组的对象集合'
     },
@@ -390,6 +394,13 @@ export default {
     },
     measurementcolor: {
       description: '设置测量标注覆盖图形使用的颜色'
+    },
+    mirrtext: {
+      description: '控制 MIRROR 是否真正镜像文字：0 保持可读，1 镜像文字'
+    },
+    mirror: {
+      description: '创建选定对象的镜像副本',
+      prompt: '选择对象'
     },
     modelbkcolor: {
       description: '设置模型空间绘图区域的背景颜色'

@@ -1098,7 +1098,8 @@ export class AcApSimpleUiChrome {
       group,
       'layer',
       'layer',
-      this.createLayerCommand()
+      this.createLayerCommand(),
+      AcApDocManager.instance.getResolvedCommandAliases('layer')
     )
     this.registeredCommands.push({ group, name: 'layer' })
   }
