@@ -48,6 +48,8 @@ const config: Config = {
       '<rootDir>/packages/cad-html-core/src/index.ts',
     '^@mlightcad/cad-html-plugin$':
       '<rootDir>/packages/cad-html-plugin/src/index.ts',
+    '^@mlightcad/cad-pdf-plugin$':
+      '<rootDir>/packages/cad-pdf-plugin/src/index.ts',
     '^@mlightcad/cad-agent-core$':
       '<rootDir>/packages/cad-agent-core/src/index.ts',
     '^@mlightcad/cad-llm-plugin$':

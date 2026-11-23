@@ -1,10 +1,7 @@
 import { AcGePoint2d, AcGePoint3d } from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
-import {
-  type AcApUcsFrame,
-  AcApUcsService
-} from '../service/AcApUcsService.js'
+import { type AcApUcsFrame, AcApUcsService } from '../service/AcApUcsService.js'
 
 const ICON_SIZE = 56
 const AXIS_LEN = 28
@@ -21,6 +18,12 @@ export class AcApUcsIconOverlay {
   private readonly _yLabel: SVGTextElement
   private readonly _wLabel: SVGTextElement
   private _disposed = false
+  /**
+   * Signature of the last state written to the DOM. `update` runs on every
+   * animation frame; rewriting identical SVG attributes still invalidates
+   * style/layout/paint each frame and kept an idle, empty drawing burning CPU.
+   */
+  private _lastState: string | null = null
 
   constructor(private readonly _host: HTMLElement) {
     const hostPosition = getComputedStyle(this._host).position
@@ -67,24 +70,23 @@ export class AcApUcsIconOverlay {
     if (this._disposed) return
     const icon = AcApUcsService.getIconSettings()
     if (!icon.on) {
-      this._el.style.display = 'none'
+      this.hide()
       return
     }
 
     // Without an active layout camera, worldToScreen is only an orientation
     // fallback — hide rather than flash a misplaced icon during open.
     if (!this.hasLayoutCamera(view)) {
-      this._el.style.display = 'none'
+      this.hide()
       return
     }
 
     const frame = AcApUcsService.getActiveFrame()
     const isWorld = AcApUcsService.isWorldFrame(frame)
-    this._wLabel.style.display = isWorld ? '' : 'none'
 
     const originScreen = this.resolveScreenPosition(view, frame, icon.atOrigin)
     if (!originScreen) {
-      this._el.style.display = 'none'
+      this.hide()
       return
     }
 
@@ -92,9 +94,30 @@ export class AcApUcsIconOverlay {
     const oy = ICON_SIZE * 0.72
     const xDir = this.screenAxisDirection(view, frame, 'x')
     const yDir = this.screenAxisDirection(view, frame, 'y')
+    const left = originScreen.x - ox
+    const top = originScreen.y - oy
 
-    this.setLine(this._xLine, ox, oy, ox + xDir.x * AXIS_LEN, oy + xDir.y * AXIS_LEN)
-    this.setLine(this._yLine, ox, oy, ox + yDir.x * AXIS_LEN, oy + yDir.y * AXIS_LEN)
+    const state = [isWorld ? 1 : 0, xDir.x, xDir.y, yDir.x, yDir.y, left, top]
+      .map(v => v.toFixed(2))
+      .join(',')
+    if (state === this._lastState) return
+    this._lastState = state
+
+    this._wLabel.style.display = isWorld ? '' : 'none'
+    this.setLine(
+      this._xLine,
+      ox,
+      oy,
+      ox + xDir.x * AXIS_LEN,
+      oy + xDir.y * AXIS_LEN
+    )
+    this.setLine(
+      this._yLine,
+      ox,
+      oy,
+      ox + yDir.x * AXIS_LEN,
+      oy + yDir.y * AXIS_LEN
+    )
     this.setLabel(
       this._xLabel,
       ox + xDir.x * (AXIS_LEN + 6),
@@ -108,8 +131,14 @@ export class AcApUcsIconOverlay {
     this.setLabel(this._wLabel, ox - 2, oy + 12)
 
     this._el.style.display = 'block'
-    this._el.style.left = `${originScreen.x - ox}px`
-    this._el.style.top = `${originScreen.y - oy}px`
+    this._el.style.left = `${left}px`
+    this._el.style.top = `${top}px`
+  }
+
+  private hide() {
+    if (this._lastState === 'hidden') return
+    this._lastState = 'hidden'
+    this._el.style.display = 'none'
   }
 
   dispose(): void {

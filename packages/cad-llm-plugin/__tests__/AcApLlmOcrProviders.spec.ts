@@ -12,14 +12,18 @@ const recognizers = new Map<
   }
 >()
 
+const registerCalls: string[] = []
+
 jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcApTextRecognitionService: {
+    has: (id: string) => recognizers.has(id),
     register: (recognizer: {
       id: string
       label: string | (() => string)
       auto?: boolean
       recognize: (request: { image: string }) => Promise<string | undefined>
     }) => {
+      registerCalls.push(recognizer.id)
       recognizers.set(recognizer.id, recognizer)
       return () => recognizers.delete(recognizer.id)
     },
@@ -90,12 +94,31 @@ jest.mock('../src/ui/AcApLlmProviderLabels', () => ({
     provider.displayName?.trim() || provider.id
 }))
 
-import { acapLlmOcrRecognizerId } from '../src/constants'
 import { acapLlmSyncOcrRecognizers } from '../src/AcApLlmOcrProviders'
+import { acapLlmOcrRecognizerId } from '../src/constants'
 
 describe('acapLlmSyncOcrRecognizers', () => {
   beforeEach(() => {
     recognizers.clear()
+    registerCalls.length = 0
+  })
+
+  it('does not re-register unchanged recognizers on a repeated sync', async () => {
+    await acapLlmSyncOcrRecognizers()
+    const first = registerCalls.length
+    expect(first).toBeGreaterThan(0)
+
+    // Each register fires `changed`; the PDF dropdown answers with
+    // `listAvailable()`, which syncs again. A no-op sync must stay silent or
+    // the two keep triggering each other forever.
+    await acapLlmSyncOcrRecognizers()
+    expect(registerCalls).toHaveLength(first)
+
+    // An entry removed elsewhere is registered again.
+    const id = acapLlmOcrRecognizerId('openai', 'gpt-4o')
+    recognizers.delete(id)
+    await acapLlmSyncOcrRecognizers()
+    expect(registerCalls.slice(first)).toEqual([id])
   })
 
   it('registers one picker entry per keyed vision model', async () => {

@@ -75,17 +75,33 @@ async function runPdfText(recognizerId?: string) {
 
 /** Rebuilds the Recover Text dropdown from the recognizers currently available. */
 async function refreshPdfTextOcrItems() {
+  let next: AcApUiRibbonItem[]
   try {
     const providers = await AcApTextRecognitionService.listAvailable()
-    pdfTextOcrItems = providers.map(provider => ({
+    next = providers.map(provider => ({
       id: `pdftext-ocr:${encodeURIComponent(provider.id)}`,
       label: provider.label,
       invoke: () => runPdfText(provider.id)
     }))
   } catch {
-    pdfTextOcrItems = []
+    next = []
   }
+  // `listAvailable()` may itself re-register recognizers and fire `changed`
+  // again. Rebuilding the ribbon only when the rows differ keeps that from
+  // turning into an endless refresh loop.
+  if (sameOcrItems(pdfTextOcrItems, next)) return
+  pdfTextOcrItems = next
   AcApUiRegistry.touch(PDF_PLUGIN_NAME)
+}
+
+function sameOcrItems(
+  a: readonly AcApUiRibbonItem[],
+  b: readonly AcApUiRibbonItem[]
+): boolean {
+  return (
+    a.length === b.length &&
+    a.every((item, i) => item.id === b[i].id && item.label === b[i].label)
+  )
 }
 
 /** Keeps the Recover Text dropdown in sync with OCR registrations. */
