@@ -1,5 +1,6 @@
 export * from './AcApCopyCmd.js'
 export * from './AcApEraseCmd.js'
+export * from './AcApExplodeCmd.js'
 export * from './AcApHideObjectsCmd.js'
 export * from './AcApMoveCmd.js'
 export * from './AcApOffsetCmd.js'

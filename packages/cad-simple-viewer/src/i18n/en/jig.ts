@@ -304,6 +304,10 @@ export default {
         'Invalid rotation input: resulting minor axis must be greater than 0.'
     }
   },
+  explode: {
+    notExplodable: '{count} object(s) could not be exploded',
+    minsert: '{count} block(s) inserted with MINSERT cannot be exploded'
+  },
   hatch: {
     prompt: 'Select boundary object or',
     pickPoint: 'Specify internal point (or press Enter to finish)',

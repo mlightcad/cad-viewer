@@ -173,6 +173,10 @@ export default {
       description: '선택한 객체를 도면에서 삭제합니다',
       prompt: '객체 선택'
     },
+    explode: {
+      description: '복합 객체를 구성 요소 객체로 분해합니다',
+      prompt: '분해할 객체 선택'
+    },
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
     },

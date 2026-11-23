@@ -328,6 +328,7 @@ export default {
         '選択したオブジェクトをクリップボードにコピーします (COPYCLIP)。',
       copyBase:
         '指定した基点で選択したオブジェクトをクリップボードにコピーします (COPYBASE)。',
+      explode: '複合オブジェクトを構成要素のオブジェクトに分解します。',
       offset: '指定した距離にオブジェクトの平行コピーを作成します。',
       undo: '直前の編集操作を元に戻します。',
       redo: '元に戻した直前の編集操作をやり直します。',
@@ -480,6 +481,7 @@ export default {
       cutClip: '切り取り',
       copyClip: 'コピー',
       copyBase: '基点コピー',
+      explode: '分解',
       offset: 'オフセット',
       undo: '元に戻す',
       redo: 'やり直し',

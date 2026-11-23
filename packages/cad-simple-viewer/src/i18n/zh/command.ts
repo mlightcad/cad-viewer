@@ -170,6 +170,10 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    explode: {
+      description: '将复合对象分解为其部件对象',
+      prompt: '选择要分解的对象'
+    },
     group: {
       description: '创建和管理称为编组的对象集合'
     },

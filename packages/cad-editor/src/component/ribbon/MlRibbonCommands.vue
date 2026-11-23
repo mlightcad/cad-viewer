@@ -149,6 +149,7 @@ import {
   editAttribute,
   ellipseArc,
   ellipseCenter,
+  explode,
   find,
   group,
   groupEdit,
@@ -1375,6 +1376,7 @@ const buildBaseTabs = (
     copyClip: t('main.ribbon.tooltip.copyClip'),
     copyBase: t('main.ribbon.tooltip.copyBase'),
     offset: t('main.ribbon.tooltip.offset'),
+    explode: t('main.ribbon.tooltip.explode'),
     undo: t('main.ribbon.tooltip.undo'),
     redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
@@ -2384,6 +2386,14 @@ const buildBaseTabs = (
                   tooltip: ribbonTooltips.offset,
                   size: 'small',
                   props: { icon: offset }
+                },
+                {
+                  id: 'cmd-explode',
+                  type: 'button',
+                  label: t('main.ribbon.command.explode'),
+                  tooltip: ribbonTooltips.explode,
+                  size: 'small',
+                  props: { icon: explode }
                 }
               ]
             }
@@ -3382,6 +3392,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-copyclip', 'copyclip')
   commandByItemId.set('cmd-copybase', 'copybase')
   commandByItemId.set('cmd-offset', 'offset')
+  commandByItemId.set('cmd-explode', 'explode')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-group', 'group')

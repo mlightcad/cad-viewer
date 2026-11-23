@@ -401,6 +401,10 @@ export default {
         'Geçersiz döndürme girişi: elde edilen küçük eksen 0\'dan büyük olmalıdır.'
     }
   },
+  explode: {
+    notExplodable: '{count} nesne patlatılamadı',
+    minsert: 'MINSERT ile eklenen {count} blok patlatılamaz'
+  },
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
     pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',

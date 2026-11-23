@@ -183,6 +183,10 @@ export default {
       description: 'Odstraní vybrané objekty z výkresu',
       prompt: 'Vyberte objekty'
     },
+    explode: {
+      description: 'Rozloží složený objekt na jednotlivé objekty',
+      prompt: 'Vyberte objekty k rozložení'
+    },
     group: {
       description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
     },

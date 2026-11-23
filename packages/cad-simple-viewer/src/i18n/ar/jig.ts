@@ -401,6 +401,10 @@ export default {
       rotation: 'الدوران غير صالح: يجب أن يكون المحور الأصغر الناتج أكبر من 0.'
     }
   },
+  explode: {
+    notExplodable: 'تعذر تفجير {count} من الكائنات',
+    minsert: 'لا يمكن تفجير {count} من الكتل المدرجة باستخدام MINSERT'
+  },
   hatch: {
     prompt: 'حدد عنصر حدود أو',
     pickPoint: 'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',

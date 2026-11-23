@@ -328,6 +328,7 @@ export default {
       copyClip: 'Copy the selected objects to the clipboard (COPYCLIP).',
       copyBase:
         'Copy the selected objects to the clipboard with a specified base point (COPYBASE).',
+      explode: 'Break a compound object into its component objects.',
       offset: 'Create a parallel copy of an object at a specified distance.',
       undo: 'Undo the last editing operation.',
       redo: 'Redo the last undone editing operation.',
@@ -493,6 +494,7 @@ export default {
       cutClip: 'Cut',
       copyClip: 'Copy',
       copyBase: 'Copy with Base Point',
+      explode: 'Explode',
       offset: 'Offset',
       undo: 'Undo',
       redo: 'Redo',
