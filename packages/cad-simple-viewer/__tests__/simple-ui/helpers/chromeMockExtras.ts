@@ -33,6 +33,7 @@ export function getChromeMockExtras() {
               removeEventListener: jest.fn()
             }
           },
+          getResolvedCommandAliases: jest.fn(() => []),
           sendStringToExecute: jest.fn()
         }
       },
