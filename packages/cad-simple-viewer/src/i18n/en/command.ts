@@ -186,6 +186,11 @@ export default {
       description: 'Breaks a compound object into its component objects',
       prompt: 'Select objects to explode'
     },
+    join: {
+      description:
+        'Joins the endpoints of lines, arcs, and polylines to create a single object',
+      prompt: 'Select objects to join'
+    },
     group: {
       description: 'Creates and manages saved sets of objects called groups'
     },
@@ -428,6 +433,14 @@ export default {
     },
     measurementcolor: {
       description: 'Sets the color used for measurement overlays'
+    },
+    mirrtext: {
+      description:
+        'Controls how MIRROR reflects TEXT and MTEXT: 0 keeps text readable, 1 mirrors text'
+    },
+    mirror: {
+      description: 'Creates a mirrored copy of selected objects',
+      prompt: 'Select objects'
     },
     modelbkcolor: {
       description: 'Sets the background color of the model-space drawing area'

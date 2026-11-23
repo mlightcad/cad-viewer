@@ -308,6 +308,13 @@ export default {
     notExplodable: '{count} object(s) could not be exploded',
     minsert: '{count} block(s) inserted with MINSERT cannot be exploded'
   },
+  join: {
+    needTwo: 'Select at least two lines, arcs, or polylines to join.',
+    noneJoined: 'No objects could be joined.',
+    eraseFailed:
+      'Could not erase all source objects. The join was cancelled.',
+    joined: 'Joined {count} objects.'
+  },
   hatch: {
     prompt: 'Select boundary object or',
     pickPoint: 'Specify internal point (or press Enter to finish)',
@@ -1272,12 +1279,32 @@ export default {
       }
     }
   },
+  mirror: {
+    firstPoint: 'Specify first point of mirror line',
+    secondPoint: 'Specify second point of mirror line',
+    eraseSource: 'Erase source objects?',
+    keywords: {
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: 'Invalid mirror line: points must be different.'
+    }
+  },
   rotate: {
     basePoint: 'Specify base point',
     rotationAngleOrOptions: 'Specify rotation angle or',
-    referenceAngleOrPoints: 'Specify reference angle or',
     firstReferencePoint: 'Specify first point of reference angle',
     secondReferencePoint: 'Specify second point',
+    referenceAngleOrPoints: 'Specify reference angle or',
     newAngle: 'Specify new angle',
     keywords: {
       copy: {

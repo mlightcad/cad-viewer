@@ -310,6 +310,7 @@ export default {
       mleaderAdd: '기존 다중 지시선에 지시선을 추가합니다.',
       mleaderRemove: '기존 다중 지시선에서 지시선을 제거합니다.',
       move: '선택한 객체를 새 위치로 이동합니다.',
+      mirror: '선택한 객체의 대칭 복사본을 작성합니다.',
       rotate: '선택한 객체를 기준점을 중심으로 회전합니다.',
       scale:
         '선택한 객체를 축척 후에도 비율이 유지되도록 확대 또는 축소합니다.',
@@ -324,6 +325,7 @@ export default {
       copyBase:
         '지정한 기준점을 사용하여 선택한 객체를 클립보드에 복사합니다(COPYBASE).',
       explode: '복합 객체를 구성 요소 객체로 분해합니다.',
+      join: '선, 호, 폴리선의 끝점을 결합하여 단일 객체를 만듭니다.',
       offset: '지정한 거리에 객체의 평행 사본을 작성합니다.',
       undo: '마지막 편집 작업을 명령 취소합니다.',
       redo: '마지막으로 취소한 편집 작업을 명령 복구합니다.',
@@ -459,6 +461,7 @@ export default {
       mleaderAdd: '지시선 추가',
       mleaderRemove: '지시선 제거',
       move: '이동',
+      mirror: '대칭',
       rotate: '회전',
       scale: '축척',
       erase: '지우기',
@@ -469,6 +472,7 @@ export default {
       copyClip: '복사',
       copyBase: '기준점을 사용하여 복사',
       explode: '분해',
+      join: '결합',
       offset: '간격띄우기',
       undo: '명령 취소',
       redo: '명령 복구',

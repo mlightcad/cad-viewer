@@ -65,6 +65,32 @@ describe('AcApEntityService', () => {
     expect(dim.measurement).toBeCloseTo(10)
   })
 
+  test('cloneAndTransform appends copies to the source owner space', () => {
+    const db = new AcDbDatabase()
+    acdbHostApplicationServices().workingDatabase = db
+    const paperSpace = new AcDbBlockTableRecord()
+    paperSpace.name = '*Paper_Space'
+    db.tables.blockTable.add(paperSpace)
+
+    const line = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0)
+    )
+    paperSpace.appendEntity(line)
+    const service = new AcApEntityService(db)
+
+    const [copy] = service.cloneAndTransform(
+      [line],
+      new AcGeMatrix3d().makeTranslation(0, 5, 0)
+    )
+
+    expect(copy.ownerId).toBe(paperSpace.objectId)
+    expect(
+      [...db.tables.blockTable.modelSpace.newIterator()].map(e => e.objectId)
+    ).not.toContain(copy.objectId)
+    expect([...paperSpace.newIterator()]).toContain(copy)
+  })
+
   test('copyDisplayTraits copies visual properties', () => {
     const source = {
       layer: 'A',

@@ -317,6 +317,7 @@ export default {
       mleaderAdd: 'Mevcut çoklu öndere bir önder çizgisi ekleyin.',
       mleaderRemove: 'Mevcut çoklu önderden bir önder çizgisini kaldırın.',
       move: 'Seçili nesneleri yeni bir konuma taşıyın.',
+      mirror: 'Seçili nesnelerin aynalanmış bir kopyasını oluşturur.',
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       scale:
         'Seçili nesneleri, ölçeklemeden sonra oranlarını koruyarak büyütün veya küçültün.',
@@ -331,6 +332,7 @@ export default {
       copyBase:
         'Seçili nesneleri belirtilen bir temel noktayla panoya kopyalar (COPYBASE).',
       explode: 'Bileşik bir nesneyi bileşen nesnelerine ayırır.',
+      join: 'Çizgi, yay ve çoklu çizgilerin uç noktalarını birleştirerek tek bir nesne oluşturur.',
       offset:
         'Bir nesnenin belirtilen mesafede paralel bir kopyasını oluşturun.',
       undo: 'Son düzenleme işlemini geri alın.',
@@ -491,6 +493,7 @@ export default {
       mleaderAdd: 'Önder Ekle',
       mleaderRemove: 'Önder Kaldır',
       move: 'Taşı',
+      mirror: 'Ayna',
       rotate: 'Döndür',
       scale: 'Ölçekle',
       erase: 'Sil',
@@ -501,6 +504,7 @@ export default {
       copyClip: 'Kopyala',
       copyBase: 'Temel Noktayla Kopyala',
       explode: 'Patlat',
+      join: 'Birleştir',
       offset: 'Ötele',
       undo: 'Geri Al',
       redo: 'Yinele',

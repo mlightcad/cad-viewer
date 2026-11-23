@@ -121,6 +121,15 @@ export class AcTrMText extends AcTrGlyphEntity {
   }
 
   /**
+   * Empty ATTRIB/TEXT strings have no ink; their logical insertion box must
+   * not become an INSERT spatial-index child (see {@link hasInkForSelection}).
+   */
+  protected override hasInkForSelection(): boolean {
+    const text = this._text.text
+    return typeof text === 'string' && text.trim().length > 0
+  }
+
+  /**
    * MTEXT payload for the active draw. Jig / transient overlays force
    * `meshGlyphOutputMode: 'merge'` so glyphs stay as local meshes — placement
    * mode only appears after InstancedMesh flush, which is wrong for previews

@@ -415,7 +415,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       typeof mtextRenderer.getMeshGlyphInstancing === 'function' &&
       mtextRenderer.getMeshGlyphInstancing()
     const skipInstancing = this.shouldSkipMeshGlyphInstancing()
-    if (!skipInstancing && meshGlyphInstancing && batchObjectId) {
+    const canEnqueueMeshGlyphs =
+      !skipInstancing && meshGlyphInstancing && !!batchObjectId
+    if (canEnqueueMeshGlyphs) {
       this.updateMatrixWorld(true)
       rendered.updateMatrixWorld(true)
       this.captureMeshGlyphSelectionBox(rendered)
@@ -429,6 +431,11 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
         ownerId: this.resolveMeshGlyphLayoutOwnerId(),
         visible: this.visible !== false
       })
+    } else {
+      // Placement mode stores CJK/TrueType glyphs only in userData — no Mesh
+      // children. Mirrored INSERT / jig skips must turn those placements into
+      // real meshes so the vertex-batch BackSide path can draw them.
+      this.materializeMeshGlyphPlacements(rendered)
     }
 
     const renderRoot = resolveMTextRenderRoot(rendered)
@@ -552,6 +559,11 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   /**
    * True when this glyph or an ancestor is a grip/jig transient that must not
    * enqueue into the scene-level mesh-glyph InstancedMesh batch.
+   *
+   * Also true under a mirrored INSERT (negative world-matrix determinant):
+   * InstancedMesh keeps {@link THREE.FrontSide} materials, so CJK mesh fonts
+   * would disappear. Callers must {@link materializeMeshGlyphPlacements} so
+   * the vertex-batch path can swap in BackSide materials.
    */
   protected shouldSkipMeshGlyphInstancing(): boolean {
     if (this.renderContext.skipMeshGlyphInstancing) {
@@ -568,7 +580,56 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       }
       node = node.parent
     }
-    return false
+    // Mirrored INSERT (negative world-matrix determinant) reverses triangle
+    // winding. The InstancedMesh glyph path keeps FrontSide materials, so CJK
+    // mesh fonts disappear until highlight uses another path. Fall back to the
+    // vertex-batch path, which swaps in BackSide materials.
+    if (this.matrixAutoUpdate) {
+      this.updateMatrix()
+    }
+    this.updateMatrixWorld(true)
+    return this.matrixWorld.determinant() < 0
+  }
+
+  /**
+   * Turns {@link MESH_GLYPH_PLACEMENTS_USERDATA} into Mesh children.
+   *
+   * `meshGlyphOutputMode: 'placement'` emits shared unit glyphs + matrices
+   * with no Mesh children. When InstancedMesh enqueue is skipped (mirrored
+   * INSERT, jig transient, missing batch id), those placements would otherwise
+   * never draw — CJK ATTRIB/TEXT under a mirrored block vanishes. Expanding
+   * them into meshes lets flatten + {@link AcTrBatchedGroup} use BackSide.
+   *
+   * @param rendered Rendered glyph object that may carry placement userData.
+   */
+  protected materializeMeshGlyphPlacements(rendered: MTextObject): void {
+    rendered.traverse(node => {
+      const placements = node.userData?.[MESH_GLYPH_PLACEMENTS_USERDATA] as
+        | MeshGlyphPlacement[]
+        | undefined
+      const material = node.userData?.meshGlyphMaterial as
+        | THREE.Material
+        | undefined
+      if (!placements?.length || !material) {
+        return
+      }
+      for (const placement of placements) {
+        const mesh = new THREE.Mesh(placement.geometry, material)
+        mesh.matrixAutoUpdate = false
+        mesh.matrix.fromArray(placement.matrixElements)
+        mesh.matrixWorldNeedsUpdate = true
+        mesh.userData.bboxIntersectionCheck = true
+        if (node.userData?.mtextColor != null) {
+          mesh.userData.mtextColor = node.userData.mtextColor
+        }
+        if (node.userData?.charBoxType != null) {
+          mesh.userData.charBoxType = node.userData.charBoxType
+        }
+        node.add(mesh)
+      }
+      delete node.userData[MESH_GLYPH_PLACEMENTS_USERDATA]
+      delete node.userData.meshGlyphMaterial
+    })
   }
 
   /**
@@ -618,6 +679,20 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   }
 
   /**
+   * Whether this glyph may contribute a selection AABB when it has no mesh ink.
+   *
+   * Empty TEXT/ATTRIB strings still get a logical layout box at the insertion
+   * point (height × zero width). Indexing that box as an INSERT child poisons
+   * window selection when an ATTRIB sits far from its AttDef — common in some
+   * drawings — so empty content stays out of the spatial index. Pending font
+   * loads keep {@link hasInkForSelection} true so the logical box remains a
+   * temporary selection target until glyphs arrive.
+   */
+  protected hasInkForSelection(): boolean {
+    return true
+  }
+
+  /**
    * Rebuilds the entity selection box used by the scene spatial index.
    *
    * The box exposed by the mtext renderer describes its logical layout, including
@@ -655,6 +730,10 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       _logicalBox.applyMatrix4(logicalToParent)
     }
     if (geometryBox.isEmpty()) {
+      if (!this.hasInkForSelection()) {
+        this._wcsBbox.makeEmpty()
+        return
+      }
       this.wcsBbox = _logicalBox.clone()
       return
     }

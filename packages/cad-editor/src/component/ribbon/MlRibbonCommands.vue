@@ -155,6 +155,7 @@ import {
   groupEdit,
   groupSelect,
   hatch,
+  join,
   layerCurrent,
   layerFreeze,
   layerIsolate,
@@ -166,6 +167,7 @@ import {
   layerUnisolate,
   layerUnlock,
   line,
+  mirror,
   mleader,
   mleaderAdd,
   mleaderRemove,
@@ -1366,6 +1368,7 @@ const buildBaseTabs = (
     mleaderAdd: t('main.ribbon.tooltip.mleaderAdd'),
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
     move: t('main.ribbon.tooltip.move'),
+    mirror: t('main.ribbon.tooltip.mirror'),
     rotate: t('main.ribbon.tooltip.rotate'),
     scale: t('main.ribbon.tooltip.scale'),
     erase: t('main.ribbon.tooltip.erase'),
@@ -1377,6 +1380,7 @@ const buildBaseTabs = (
     copyBase: t('main.ribbon.tooltip.copyBase'),
     offset: t('main.ribbon.tooltip.offset'),
     explode: t('main.ribbon.tooltip.explode'),
+    join: t('main.ribbon.tooltip.join'),
     undo: t('main.ribbon.tooltip.undo'),
     redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
@@ -2334,6 +2338,22 @@ const buildBaseTabs = (
           id: 'home-modify',
           title: t('main.ribbon.group.modify'),
           orientation: 'row',
+          footerMenuItems: [
+            {
+              id: 'cmd-mirror',
+              type: 'button',
+              label: t('main.ribbon.command.mirror'),
+              tooltip: ribbonTooltips.mirror,
+              props: { icon: mirror }
+            },
+            {
+              id: 'cmd-join',
+              type: 'button',
+              label: t('main.ribbon.command.join'),
+              tooltip: ribbonTooltips.join,
+              props: { icon: join }
+            }
+          ],
           collections: [
             {
               id: 'home-modify-main',
@@ -3381,6 +3401,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-dimstyle', 'dimstyle')
   commandByItemId.set('cmd-mleaderstyle', 'mleaderstyle')
   commandByItemId.set('cmd-move', 'move')
+  commandByItemId.set('cmd-mirror', 'mirror')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-scale', 'scale')
   commandByItemId.set('cmd-erase', 'erase')
@@ -3393,6 +3414,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-copybase', 'copybase')
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-explode', 'explode')
+  commandByItemId.set('cmd-join', 'join')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-group', 'group')

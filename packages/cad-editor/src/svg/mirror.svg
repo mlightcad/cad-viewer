@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <line
+    x1="10"
+    y1="2.5"
+    x2="10"
+    y2="17.5"
+    stroke="currentColor"
+    stroke-width=".7"
+    stroke-dasharray="1.2 1.2"
+  />
+  <polygon
+    points="3.5 6 8 6 8 14 3.5 14"
+    fill="none"
+    stroke="currentColor"
+    stroke-width=".7"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="16.5 6 12 6 12 14 16.5 14"
+    fill="none"
+    stroke="currentColor"
+    stroke-width=".7"
+    stroke-linejoin="round"
+  />
+</svg>

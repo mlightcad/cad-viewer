@@ -242,8 +242,10 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     }
 
     const allChildren = child.all().filter(isFiniteSpatialBBox)
+    // Empty child index (e.g. INSERT whose only children were empty
+    // ATTRIB/TEXT ink boxes) → fall back to the root box, same as no children.
     if (allChildren.length === 0) {
-      return false
+      return isSpatialBoxFullyInside(hit, bbox)
     }
 
     return allChildren.every(item => isSpatialBoxFullyInside(item, bbox))

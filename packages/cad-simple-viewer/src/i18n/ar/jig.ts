@@ -405,6 +405,13 @@ export default {
     notExplodable: 'تعذر تفجير {count} من الكائنات',
     minsert: 'لا يمكن تفجير {count} من الكتل المدرجة باستخدام MINSERT'
   },
+  join: {
+    needTwo:
+      'حدد خطين أو قوسين أو خطوط متعددة على الأقل للضم.',
+    noneJoined: 'تعذر ضم أي كائنات.',
+    eraseFailed: 'تعذر مسح جميع الكائنات المصدر. تم إلغاء الضم.',
+    joined: 'تم ضم {count} من الكائنات.'
+  },
   hatch: {
     prompt: 'حدد عنصر حدود أو',
     pickPoint: 'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',
@@ -1410,6 +1417,26 @@ export default {
         local: 'عرض المستطيل',
         global: 'Width'
       }
+    }
+  },
+  mirror: {
+    firstPoint: 'حدد النقطة الأولى لخط المرآة',
+    secondPoint: 'حدد النقطة الثانية لخط المرآة',
+    eraseSource: 'هل تريد مسح الكائنات المصدر؟',
+    keywords: {
+      yes: {
+        display: 'نعم(Y)',
+        local: 'نعم',
+        global: 'Yes'
+      },
+      no: {
+        display: 'لا(N)',
+        local: 'لا',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: 'خط مرآة غير صالح: يجب أن تكون النقطتان مختلفتين.'
     }
   },
   rotate: {

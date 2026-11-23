@@ -405,6 +405,14 @@ export default {
     notExplodable: '{count} nesne patlatılamadı',
     minsert: 'MINSERT ile eklenen {count} blok patlatılamaz'
   },
+  join: {
+    needTwo:
+      'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
+    noneJoined: 'Birleştirilebilecek nesne yok.',
+    eraseFailed:
+      'Kaynak nesnelerin tümü silinemedi. Birleştirme iptal edildi.',
+    joined: '{count} nesne birleştirildi.'
+  },
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
     pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',
@@ -1417,6 +1425,26 @@ export default {
         local: 'Genişlik',
         global: 'Width'
       }
+    }
+  },
+  mirror: {
+    firstPoint: 'Ayna çizgisinin birinci noktasını belirtin',
+    secondPoint: 'Ayna çizgisinin ikinci noktasını belirtin',
+    eraseSource: 'Kaynak nesneler silinsin mi?',
+    keywords: {
+      yes: {
+        display: 'Evet(Y)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(N)',
+        local: 'Hayır',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: 'Geçersiz ayna çizgisi: noktalar farklı olmalıdır.'
     }
   },
   rotate: {

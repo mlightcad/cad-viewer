@@ -191,6 +191,11 @@ export default {
       description: 'Bileşik bir nesneyi bileşen nesnelerine ayırır',
       prompt: 'Patlatılacak nesneleri seçin'
     },
+    join: {
+      description:
+        'Çizgi, yay ve çoklu çizgilerin uç noktalarını birleştirerek tek bir nesne oluşturur',
+      prompt: 'Birleştirilecek nesneleri seçin'
+    },
     group: {
       description:
         'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'
@@ -444,6 +449,14 @@ export default {
     },
     measurementcolor: {
       description: 'Ölçüm katmanları için kullanılan rengi ayarlar'
+    },
+    mirrtext: {
+      description:
+        'MIRROR komutunun yazıyı gerçekten aynalayıp aynalamayacağını denetler: 0 okunabilir bırakır, 1 yazıyı aynalar'
+    },
+    mirror: {
+      description: 'Seçili nesnelerin aynalanmış bir kopyasını oluşturur',
+      prompt: 'Nesneleri seçin'
     },
     modelbkcolor: {
       description: 'Model alanı çizim alanının arka plan rengini ayarlar'
