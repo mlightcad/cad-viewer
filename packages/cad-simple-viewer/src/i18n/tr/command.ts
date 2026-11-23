@@ -187,6 +187,10 @@ export default {
       description: 'Seçili varlıkları çizimden siler',
       prompt: 'Varlıkları seçin'
     },
+    explode: {
+      description: 'Bileşik bir nesneyi bileşen nesnelerine ayırır',
+      prompt: 'Patlatılacak nesneleri seçin'
+    },
     group: {
       description:
         'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'

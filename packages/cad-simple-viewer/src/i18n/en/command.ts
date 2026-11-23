@@ -182,6 +182,10 @@ export default {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
     },
+    explode: {
+      description: 'Breaks a compound object into its component objects',
+      prompt: 'Select objects to explode'
+    },
     group: {
       description: 'Creates and manages saved sets of objects called groups'
     },

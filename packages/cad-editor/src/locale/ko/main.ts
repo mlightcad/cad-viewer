@@ -323,6 +323,7 @@ export default {
       copyClip: '선택한 객체를 클립보드에 복사합니다(COPYCLIP).',
       copyBase:
         '지정한 기준점을 사용하여 선택한 객체를 클립보드에 복사합니다(COPYBASE).',
+      explode: '복합 객체를 구성 요소 객체로 분해합니다.',
       offset: '지정한 거리에 객체의 평행 사본을 작성합니다.',
       undo: '마지막 편집 작업을 명령 취소합니다.',
       redo: '마지막으로 취소한 편집 작업을 명령 복구합니다.',
@@ -467,6 +468,7 @@ export default {
       cutClip: '잘라내기',
       copyClip: '복사',
       copyBase: '기준점을 사용하여 복사',
+      explode: '분해',
       offset: '간격띄우기',
       undo: '명령 취소',
       redo: '명령 복구',

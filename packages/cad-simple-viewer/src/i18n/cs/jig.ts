@@ -330,6 +330,10 @@ export default {
         'Neplatný vstup otočení: výsledná vedlejší osa musí být větší než 0.'
     }
   },
+  explode: {
+    notExplodable: 'Počet objektů, které nelze rozložit: {count}',
+    minsert: 'Bloky vložené příkazem MINSERT nelze rozložit (počet: {count})'
+  },
   hatch: {
     prompt: 'Vyberte objekt hranice nebo',
     pickPoint: 'Zadejte vnitřní bod (nebo stiskněte Enter pro dokončení)',

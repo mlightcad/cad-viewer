@@ -326,6 +326,10 @@ export default {
       rotation: '잘못된 회전 입력: 결과 단축은 0보다 커야 합니다.'
     }
   },
+  explode: {
+    notExplodable: '{count}개의 객체를 분해할 수 없습니다',
+    minsert: 'MINSERT로 삽입된 블록 {count}개는 분해할 수 없습니다'
+  },
   hatch: {
     prompt: '경계 객체 선택 또는',
     pickPoint: '내부 점 지정 (또는 Enter 키를 눌러 완료)',

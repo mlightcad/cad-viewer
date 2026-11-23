@@ -402,6 +402,7 @@ export default {
       copyClip: 'Zkopíruje vybrané objekty do schránky (COPYCLIP).',
       copyBase:
         'Zkopíruje vybrané objekty do schránky se zadaným základním bodem (COPYBASE).',
+      explode: 'Rozloží složený objekt na jednotlivé objekty.',
       offset: 'Vytvoří rovnoběžnou kopii objektu v zadané vzdálenosti.',
       undo: 'Vrátí zpět poslední úpravu.',
       redo: 'Zopakuje poslední vrácenou úpravu.',
@@ -563,6 +564,7 @@ export default {
       cutClip: 'Vyjmout',
       copyClip: 'Kopírovat',
       copyBase: 'Kopírovat se základním bodem',
+      explode: 'Rozložit',
       offset: 'Ekvidistanta',
       undo: 'Zpět',
       redo: 'Znovu',

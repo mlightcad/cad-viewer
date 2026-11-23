@@ -327,6 +327,10 @@ export default {
         '無効な回転の入力: 結果の短軸は 0 より大きくする必要があります。'
     }
   },
+  explode: {
+    notExplodable: '{count} 個のオブジェクトは分解できませんでした',
+    minsert: 'MINSERT で挿入された {count} 個のブロックは分解できません'
+  },
   hatch: {
     prompt: '境界オブジェクトを選択 または',
     pickPoint: '内側の点を指定 (Enter キーで終了)',

@@ -42,6 +42,7 @@ import {
   AcApEllipseCmd,
   AcApEntityPreviewCmd,
   AcApEraseCmd,
+  AcApExplodeCmd,
   AcApGroupCmd,
   AcApGroupEditCmd,
   AcApHatchCmd,
@@ -186,6 +187,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   CIRCLE: ['C'],
   ELLIPSE: ['EL'],
   ERASE: ['E'],
+  EXPLODE: ['X'],
   DIMLINEAR: ['DLI'],
   DIMALIGNED: ['DAL', 'DIMALI'],
   DIMRADIUS: ['DRA', 'DIMRAD'],
@@ -2061,6 +2063,7 @@ export class AcApDocManager {
     addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
+    addSystemCommand('explode', 'explode', new AcApExplodeCmd())
     addSystemCommand('group', 'group', new AcApGroupCmd())
     addSystemCommand('-bsearch', '-bsearch', new AcApDashBSearchCmd())
     addSystemCommand('-group', '-group', new AcApDashGroupCmd())

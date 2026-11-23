@@ -330,6 +330,7 @@ export default {
       copyClip: 'Seçili nesneleri panoya kopyalar (COPYCLIP).',
       copyBase:
         'Seçili nesneleri belirtilen bir temel noktayla panoya kopyalar (COPYBASE).',
+      explode: 'Bileşik bir nesneyi bileşen nesnelerine ayırır.',
       offset:
         'Bir nesnenin belirtilen mesafede paralel bir kopyasını oluşturun.',
       undo: 'Son düzenleme işlemini geri alın.',
@@ -499,6 +500,7 @@ export default {
       cutClip: 'Kes',
       copyClip: 'Kopyala',
       copyBase: 'Temel Noktayla Kopyala',
+      explode: 'Patlat',
       offset: 'Ötele',
       undo: 'Geri Al',
       redo: 'Yinele',

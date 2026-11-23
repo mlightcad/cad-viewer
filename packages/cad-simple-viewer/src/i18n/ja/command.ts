@@ -183,6 +183,10 @@ export default {
       description: '選択したオブジェクトを図面から削除します',
       prompt: 'オブジェクトを選択'
     },
+    explode: {
+      description: '複合オブジェクトを構成要素のオブジェクトに分解します',
+      prompt: '分解するオブジェクトを選択'
+    },
     group: {
       description:
         'グループと呼ばれるオブジェクトの保存セットを作成および管理します'

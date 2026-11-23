@@ -283,6 +283,10 @@ export default {
       rotation: '旋转输入无效：计算得到的短轴必须大于 0。'
     }
   },
+  explode: {
+    notExplodable: '{count} 个对象无法分解',
+    minsert: '{count} 个用 MINSERT 插入的块无法分解'
+  },
   hatch: {
     prompt: '选择边界对象或',
     pickPoint: '指定内部点（或按 Enter 结束）',
