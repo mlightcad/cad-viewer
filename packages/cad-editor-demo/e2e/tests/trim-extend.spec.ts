@@ -186,8 +186,8 @@ test('TRIM cuts a line at the point where it touches a circle', async ({
   await enterInput(page, '5')
   await drawLine(page, '-10,0', '10,0')
   // Zoom to a window around the drawing instead of its extents: the line is
-  // the bottom edge of the extents, so after ZOOM E it can sit on the canvas
-  // border (under the command line) and the pick misses it.
+  // the bottom edge of the extents, so after ZOOM E it sits near the canvas
+  // bottom, where the pick reliably missed it in CI.
   await enterInput(page, 'zoom')
   await enterInput(page, '-15,-8')
   await enterInput(page, '15,13')
