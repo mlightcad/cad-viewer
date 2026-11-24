@@ -899,6 +899,156 @@ export default {
     invalidSelection: '所选对象不能偏移。',
     offsetFailed: '无法在指定侧创建偏移曲线。'
   },
+  fillet: {
+    currentSettings: '当前设置：模式 = {mode}，半径 = {radius}',
+    modeTrim: '修剪',
+    modeNoTrim: '不修剪',
+    selectFirst: '选择第一个对象或 [放弃(U)/多段线(P)/半径(R)/修剪(T)/多个(M)]',
+    selectSecond: '选择第二个对象，或按住 Shift 选择对象以应用角点或 [半径(R)]',
+    selectPolyline: '选择二维多段线',
+    specifyRadius: '指定圆角半径',
+    trimPrompt: '输入修剪模式选项 [修剪(T)/不修剪(N)]',
+    rejectObject: '无法对该对象进行圆角。',
+    rejectPolyline: '选定的对象不是二维多段线。',
+    invalidRadius: '圆角半径必须大于或等于零。',
+    eraseFailed: '无法删除全部转换后的对象，圆角已取消。',
+    nothingToUndo: '命令已完全放弃。',
+    polylineResult: '已对 {filleted} 个顶点圆角；跳过 {skipped} 个。',
+    keywords: {
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      },
+      trim: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '不修剪(N)',
+        local: '不修剪',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: '圆角半径无效。',
+      parallel: '直线平行，无法创建角点圆角。',
+      noIntersection: '对象不相交。',
+      radiusTooLarge: '圆角半径对于选定对象过大。',
+      noSolution: '无法为选定对象创建圆角。',
+      unsupported: '选定对象类型不支持圆角。'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '（{mode} 模式）当前倒角距离 Dist1 = {dist1}，Dist2 = {dist2}',
+    currentSettingsAngle:
+      '（{mode} 模式）当前倒角长度 = {length}，角度 = {angle}',
+    modeTrim: '修剪',
+    modeNoTrim: '不修剪',
+    selectFirst:
+      '选择第一条直线或 [放弃(U)/多段线(P)/距离(D)/角度(A)/修剪(T)/方式(E)/多个(M)]',
+    selectSecond:
+      '选择第二条直线，或按住 Shift 选择对象以应用角点或 [距离(D)/角度(A)/方式(E)]',
+    selectPolyline: '选择二维多段线',
+    specifyDist1: '指定第一个倒角距离',
+    specifyDist2: '指定第二个倒角距离',
+    specifyLength: '指定第一条直线上的倒角长度',
+    specifyAngle: '指定第一条直线的倒角角度',
+    trimPrompt: '输入修剪模式选项 [修剪(T)/不修剪(N)]',
+    methodPrompt: '输入倒角方式 [距离(D)/角度(A)]',
+    rejectObject: '无法对该对象进行倒角。',
+    rejectPolyline: '选定的对象不是二维多段线。',
+    eraseFailed: '无法删除全部转换后的对象，倒角已取消。',
+    nothingToUndo: '命令已完全放弃。',
+    polylineResult: '已对 {chamfered} 个顶点倒角；跳过 {skipped} 个。',
+    keywords: {
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      distance: {
+        display: '距离(D)',
+        local: '距离',
+        global: 'Distance'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      trim: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      method: {
+        display: '方式(E)',
+        local: '方式',
+        global: 'Method'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '不修剪(N)',
+        local: '不修剪',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: '距离(D)',
+        local: '距离',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: '倒角距离或角度无效。',
+      parallel: '直线平行，无法倒角。',
+      noIntersection: '对象不相交。',
+      distanceTooLarge: '倒角距离对于选定对象过大。',
+      noSolution: '无法为选定对象创建倒角。',
+      unsupported: '选定对象类型不支持倒角。'
+    }
+  },
   leader: {
     startPoint: '指定引线起点',
     nextPoint: '指定下一点',
@@ -1948,8 +2098,7 @@ export default {
   },
   pdfimport: {
     pageNumber: '输入页码 (1-{count})',
-    insertionPoint:
-      '指定插入点（比例 {scale}，模式 {mode}，文字 {text}）或',
+    insertionPoint: '指定插入点（比例 {scale}，模式 {mode}，文字 {text}）或',
     modePrompt: '选择导入方式',
     modeRecover: '复原图纸',
     modeVisual: '保留 PDF 视觉效果',

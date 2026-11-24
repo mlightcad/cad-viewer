@@ -406,11 +406,9 @@ export default {
     minsert: 'MINSERT ile eklenen {count} blok patlatılamaz'
   },
   join: {
-    needTwo:
-      'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
+    needTwo: 'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
     noneJoined: 'Birleştirilebilecek nesne yok.',
-    eraseFailed:
-      'Kaynak nesnelerin tümü silinemedi. Birleştirme iptal edildi.',
+    eraseFailed: 'Kaynak nesnelerin tümü silinemedi. Birleştirme iptal edildi.',
     joined: '{count} nesne birleştirildi.'
   },
   hatch: {
@@ -1023,6 +1021,160 @@ export default {
     invalidDistance: 'Öteleme mesafesi 0\'dan büyük olmalıdır.',
     invalidSelection: 'Seçilen nesne ötelenemez.',
     offsetFailed: 'Belirtilen taraf için bir öteleme eğrisi oluşturulamadı.'
+  },
+  fillet: {
+    currentSettings: 'Geçerli ayarlar: Mod = {mode}, Yarıçap = {radius}',
+    modeTrim: 'KIRP',
+    modeNoTrim: 'KIRPMA',
+    selectFirst:
+      'İlk nesneyi seçin veya [Geri Al(U)/Policizgi(P)/Yarıçap(R)/Kırp(T)/Çoklu(M)]',
+    selectSecond:
+      'İkinci nesneyi seçin veya köşe uygulamak için Shift ile seçin veya [Yarıçap(R)]',
+    selectPolyline: '2B policizgi seçin',
+    specifyRadius: 'Yuvarlama yarıçapını belirtin',
+    trimPrompt: 'Kırpma modu seçeneğini girin [Kırp(T)/Kırpma(N)]',
+    rejectObject: 'Nesne yuvarlanamaz.',
+    rejectPolyline: 'Seçilen nesne 2B policizgi değil.',
+    invalidRadius: 'Yuvarlama yarıçapı sıfır veya daha büyük olmalıdır.',
+    eraseFailed:
+      'Dönüştürülen nesnelerin tümü silinemedi. Yuvarlama iptal edildi.',
+    nothingToUndo: 'Komut tamamen geri alındı.',
+    polylineResult: '{filleted} köşe yuvarlandı; {skipped} atlandı.',
+    keywords: {
+      undo: {
+        display: 'Geri Al(U)',
+        local: 'Geri Al',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Policizgi(P)',
+        local: 'Policizgi',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'Yarıçap(R)',
+        local: 'Yarıçap',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'Çoklu(M)',
+        local: 'Çoklu',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Kırpma(N)',
+        local: 'Kırpma',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'Geçersiz yuvarlama yarıçapı.',
+      parallel: 'Çizgiler paralel; köşe yuvarlaması oluşturulamaz.',
+      noIntersection: 'Nesneler kesişmiyor.',
+      radiusTooLarge: 'Yuvarlama yarıçapı seçilen nesneler için çok büyük.',
+      noSolution: 'Seçilen nesneler için yuvarlama oluşturulamadı.',
+      unsupported: 'Seçilen nesne türü yuvarlamayı desteklemiyor.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '({mode} modu) Geçerli pah Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '({mode} modu) Geçerli pah Uzunluk = {length}, Açı = {angle}',
+    modeTrim: 'KIRP',
+    modeNoTrim: 'KIRPMA',
+    selectFirst:
+      'İlk çizgiyi seçin veya [Geri Al(U)/Policizgi(P)/Mesafe(D)/Açı(A)/Kırp(T)/Yöntem(E)/Çoklu(M)]',
+    selectSecond:
+      'İkinci çizgiyi seçin veya köşe uygulamak için Shift ile seçin veya [Mesafe(D)/Açı(A)/Yöntem(E)]',
+    selectPolyline: '2B policizgi seçin',
+    specifyDist1: 'İlk pah mesafesini belirtin',
+    specifyDist2: 'İkinci pah mesafesini belirtin',
+    specifyLength: 'İlk çizgideki pah uzunluğunu belirtin',
+    specifyAngle: 'İlk çizgiden pah açısını belirtin',
+    trimPrompt: 'Kırpma modu seçeneğini girin [Kırp(T)/Kırpma(N)]',
+    methodPrompt: 'Pah yöntemini girin [Mesafe(D)/Açı(A)]',
+    rejectObject: 'Nesne pahlanamaz.',
+    rejectPolyline: 'Seçilen nesne 2B policizgi değil.',
+    eraseFailed:
+      'Dönüştürülen nesnelerin tümü silinemedi. Pahlama iptal edildi.',
+    nothingToUndo: 'Komut tamamen geri alındı.',
+    polylineResult: '{chamfered} köşe pahlandı; {skipped} atlandı.',
+    keywords: {
+      undo: {
+        display: 'Geri Al(U)',
+        local: 'Geri Al',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Policizgi(P)',
+        local: 'Policizgi',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'Mesafe(D)',
+        local: 'Mesafe',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'Açı(A)',
+        local: 'Açı',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      method: {
+        display: 'Yöntem(E)',
+        local: 'Yöntem',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'Çoklu(M)',
+        local: 'Çoklu',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Kırpma(N)',
+        local: 'Kırpma',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'Mesafe(D)',
+        local: 'Mesafe',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'Açı(A)',
+        local: 'Açı',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'Geçersiz pah mesafesi veya açısı.',
+      parallel: 'Çizgiler paralel; pahlanamaz.',
+      noIntersection: 'Nesneler kesişmiyor.',
+      distanceTooLarge: 'Pah mesafesi seçilen nesneler için çok büyük.',
+      noSolution: 'Seçilen nesneler için pah oluşturulamadı.',
+      unsupported: 'Seçilen nesne türü pahı desteklemiyor.'
+    }
   },
   leader: {
     startPoint: 'Kılavuz başlangıç noktasını belirtin',
@@ -2516,9 +2668,9 @@ export default {
     applied: '{count} nesne {factor} faktörüyle ölçeklendi.'
   },
   txt2mtxt: {
-    needTwo: 'Birleştirmek için en az iki metin veya çoklu metin nesnesi seçin.',
+    needTwo:
+      'Birleştirmek için en az iki metin veya çoklu metin nesnesi seçin.',
     mergeFailed: 'Seçili metin nesneleri birleştirilemedi.',
-    eraseFailed:
-      'Kaynak metinlerin tümü silinemedi. Birleştirme iptal edildi.'
+    eraseFailed: 'Kaynak metinlerin tümü silinemedi. Birleştirme iptal edildi.'
   }
 }

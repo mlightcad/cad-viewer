@@ -127,6 +127,7 @@ import {
   attachImage,
   bdetect,
   bsearch,
+  chamfer,
   circleCenterDiameter,
   circleCenterRadius,
   circleTanTanRadius,
@@ -150,6 +151,7 @@ import {
   ellipseArc,
   ellipseCenter,
   explode,
+  fillet,
   find,
   group,
   groupEdit,
@@ -1381,6 +1383,8 @@ const buildBaseTabs = (
     offset: t('main.ribbon.tooltip.offset'),
     explode: t('main.ribbon.tooltip.explode'),
     join: t('main.ribbon.tooltip.join'),
+    fillet: t('main.ribbon.tooltip.fillet'),
+    chamfer: t('main.ribbon.tooltip.chamfer'),
     undo: t('main.ribbon.tooltip.undo'),
     redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
@@ -2352,6 +2356,20 @@ const buildBaseTabs = (
               label: t('main.ribbon.command.join'),
               tooltip: ribbonTooltips.join,
               props: { icon: join }
+            },
+            {
+              id: 'cmd-fillet',
+              type: 'button',
+              label: t('main.ribbon.command.fillet'),
+              tooltip: ribbonTooltips.fillet,
+              props: { icon: fillet }
+            },
+            {
+              id: 'cmd-chamfer',
+              type: 'button',
+              label: t('main.ribbon.command.chamfer'),
+              tooltip: ribbonTooltips.chamfer,
+              props: { icon: chamfer }
             }
           ],
           collections: [
@@ -3415,6 +3433,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-explode', 'explode')
   commandByItemId.set('cmd-join', 'join')
+  commandByItemId.set('cmd-fillet', 'fillet')
+  commandByItemId.set('cmd-chamfer', 'chamfer')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-group', 'group')
