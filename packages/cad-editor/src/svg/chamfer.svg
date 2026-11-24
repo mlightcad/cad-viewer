@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!--
+    AutoCAD-style CHAMFER ribbon glyph: L-corner with a clear 45° bevel cut,
+    same arm layout as FILLET for a paired Modify drop-down look.
+  -->
+  <path
+    d="M4.5 19.5V12.5L12.5 4.5H19.5"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

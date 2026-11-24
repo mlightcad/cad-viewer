@@ -944,6 +944,162 @@ export default {
     invalidSelection: '선택한 객체는 간격띄우기할 수 없습니다.',
     offsetFailed: '지정한 쪽에 간격띄우기 곡선을 만들 수 없습니다.'
   },
+  fillet: {
+    currentSettings: '현재 설정: 모드 = {mode}, 반지름 = {radius}',
+    modeTrim: '자르기',
+    modeNoTrim: '자르지 않음',
+    selectFirst:
+      '첫 번째 객체 선택 또는 [명령 취소(U)/폴리선(P)/반지름(R)/자르기(T)/다중(M)]',
+    selectSecond:
+      '두 번째 객체 선택 또는 Shift를 누른 채 선택하여 구석 적용 또는 [반지름(R)]',
+    selectPolyline: '2D 폴리선 선택',
+    specifyRadius: '필렛 반지름 지정',
+    trimPrompt: '자르기 모드 옵션 입력 [자르기(T)/자르지 않음(N)]',
+    rejectObject: '이 객체는 필렛할 수 없습니다.',
+    rejectPolyline: '선택한 객체가 2D 폴리선이 아닙니다.',
+    invalidRadius: '필렛 반지름은 0 이상이어야 합니다.',
+    eraseFailed:
+      '변환된 객체를 모두 지우지 못해 필렛이 취소되었습니다.',
+    nothingToUndo: '명령이 완전히 취소되었습니다.',
+    polylineResult:
+      '꼭짓점 {filleted}개를 필렛하고 {skipped}개를 건너뛰었습니다.',
+    keywords: {
+      undo: {
+        display: '명령 취소(U)',
+        local: '명령 취소',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '폴리선(P)',
+        local: '폴리선',
+        global: 'Polyline'
+      },
+      radius: {
+        display: '반지름(R)',
+        local: '반지름',
+        global: 'Radius'
+      },
+      trim: {
+        display: '자르기(T)',
+        local: '자르기',
+        global: 'Trim'
+      },
+      multiple: {
+        display: '다중(M)',
+        local: '다중',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '자르기(T)',
+        local: '자르기',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '자르지 않음(N)',
+        local: '자르지 않음',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: '필렛 반지름이 올바르지 않습니다.',
+      parallel: '선이 평행하여 구석 필렛을 만들 수 없습니다.',
+      noIntersection: '객체가 교차하지 않습니다.',
+      radiusTooLarge: '선택한 객체에 비해 필렛 반지름이 너무 큽니다.',
+      noSolution: '선택한 객체에 필렛을 만들 수 없습니다.',
+      unsupported: '선택한 객체 유형은 필렛을 지원하지 않습니다.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '({mode} 모드) 현재 모따기 Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '({mode} 모드) 현재 모따기 길이 = {length}, 각도 = {angle}',
+    modeTrim: '자르기',
+    modeNoTrim: '자르지 않음',
+    selectFirst:
+      '첫 번째 선 선택 또는 [명령 취소(U)/폴리선(P)/거리(D)/각도(A)/자르기(T)/방법(E)/다중(M)]',
+    selectSecond:
+      '두 번째 선 선택 또는 Shift를 누른 채 선택하여 구석 적용 또는 [거리(D)/각도(A)/방법(E)]',
+    selectPolyline: '2D 폴리선 선택',
+    specifyDist1: '첫 번째 모따기 거리 지정',
+    specifyDist2: '두 번째 모따기 거리 지정',
+    specifyLength: '첫 번째 선상의 모따기 길이 지정',
+    specifyAngle: '첫 번째 선에서의 모따기 각도 지정',
+    trimPrompt: '자르기 모드 옵션 입력 [자르기(T)/자르지 않음(N)]',
+    methodPrompt: '모따기 방법 입력 [거리(D)/각도(A)]',
+    rejectObject: '이 객체는 모따기할 수 없습니다.',
+    rejectPolyline: '선택한 객체가 2D 폴리선이 아닙니다.',
+    eraseFailed:
+      '변환된 객체를 모두 지우지 못해 모따기가 취소되었습니다.',
+    nothingToUndo: '명령이 완전히 취소되었습니다.',
+    polylineResult:
+      '꼭짓점 {chamfered}개를 모따기하고 {skipped}개를 건너뛰었습니다.',
+    keywords: {
+      undo: {
+        display: '명령 취소(U)',
+        local: '명령 취소',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '폴리선(P)',
+        local: '폴리선',
+        global: 'Polyline'
+      },
+      distance: {
+        display: '거리(D)',
+        local: '거리',
+        global: 'Distance'
+      },
+      angle: {
+        display: '각도(A)',
+        local: '각도',
+        global: 'Angle'
+      },
+      trim: {
+        display: '자르기(T)',
+        local: '자르기',
+        global: 'Trim'
+      },
+      method: {
+        display: '방법(E)',
+        local: '방법',
+        global: 'Method'
+      },
+      multiple: {
+        display: '다중(M)',
+        local: '다중',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '자르기(T)',
+        local: '자르기',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '자르지 않음(N)',
+        local: '자르지 않음',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: '거리(D)',
+        local: '거리',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: '각도(A)',
+        local: '각도',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: '모따기 거리 또는 각도가 올바르지 않습니다.',
+      parallel: '선이 평행하여 모따기할 수 없습니다.',
+      noIntersection: '객체가 교차하지 않습니다.',
+      distanceTooLarge: '선택한 객체에 비해 모따기 거리가 너무 큽니다.',
+      noSolution: '선택한 객체에 모따기를 만들 수 없습니다.',
+      unsupported: '선택한 객체 유형은 모따기를 지원하지 않습니다.'
+    }
+  },
   leader: {
     startPoint: '지시선 시작점 지정',
     nextPoint: '다음 점 지정',
@@ -2013,8 +2169,7 @@ export default {
   },
   pdfimport: {
     pageNumber: '페이지 번호 입력 (1-{count})',
-    insertionPoint:
-      '삽입점 지정 (축척 {scale}, 모드 {mode}, 문자 {text}) 또는',
+    insertionPoint: '삽입점 지정 (축척 {scale}, 모드 {mode}, 문자 {text}) 또는',
     modePrompt: '가져오기 방식 선택',
     modeRecover: '도면 복원',
     modeVisual: 'PDF 모양 유지',

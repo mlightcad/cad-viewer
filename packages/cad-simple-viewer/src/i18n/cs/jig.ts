@@ -335,8 +335,7 @@ export default {
     minsert: 'Bloky vložené příkazem MINSERT nelze rozložit (počet: {count})'
   },
   join: {
-    needTwo:
-      'Vyberte alespoň dvě úsečky, oblouky nebo křivky ke spojení.',
+    needTwo: 'Vyberte alespoň dvě úsečky, oblouky nebo křivky ke spojení.',
     noneJoined: 'Žádné objekty nelze spojit.',
     eraseFailed:
       'Nepodařilo se smazat všechny zdrojové objekty. Spojení bylo zrušeno.',
@@ -951,6 +950,161 @@ export default {
     invalidDistance: 'Vzdálenost offsetu musí být větší než 0.',
     invalidSelection: 'Vybraný objekt nelze offsetovat.',
     offsetFailed: 'Nelze vytvořit offsetovou křivku na zadané straně.'
+  },
+  fillet: {
+    currentSettings: 'Aktuální nastavení: Režim = {mode}, Poloměr = {radius}',
+    modeTrim: 'OŘÍZNOUT',
+    modeNoTrim: 'NEOŘÍZNOUT',
+    selectFirst:
+      'Vyberte první objekt nebo [Zpět(U)/Křivka(P)/Poloměr(R)/Oříznout(T)/Více(M)]',
+    selectSecond:
+      'Vyberte druhý objekt nebo se Shiftem použijte roh, nebo [Poloměr(R)]',
+    selectPolyline: 'Vyberte 2D křivku',
+    specifyRadius: 'Zadejte poloměr zaoblení',
+    trimPrompt: 'Zadejte režim oříznutí [Oříznout(T)/Neoříznout(N)]',
+    rejectObject: 'Objekt nelze zaoblit.',
+    rejectPolyline: 'Vybraný objekt není 2D křivka.',
+    invalidRadius: 'Poloměr zaoblení musí být nula nebo větší.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny převedené objekty. Zaoblení bylo zrušeno.',
+    nothingToUndo: 'Příkaz byl zcela vrácen.',
+    polylineResult: 'Zaobleno {filleted} vrcholů; přeskočeno {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'Poloměr(R)',
+        local: 'Poloměr',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'Více(M)',
+        local: 'Více',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Neoříznout(N)',
+        local: 'Neoříznout',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'Neplatný poloměr zaoblení.',
+      parallel: 'Úsečky jsou rovnoběžné a nelze vytvořit rohové zaoblení.',
+      noIntersection: 'Objekty se neprotínají.',
+      radiusTooLarge: 'Poloměr zaoblení je pro vybrané objekty příliš velký.',
+      noSolution: 'Nelze vytvořit zaoblení pro vybrané objekty.',
+      unsupported: 'Vybraný typ objektu nepodporuje zaoblení.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '(režim {mode}) Aktuální zkosení Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '(režim {mode}) Aktuální zkosení Délka = {length}, Úhel = {angle}',
+    modeTrim: 'OŘÍZNOUT',
+    modeNoTrim: 'NEOŘÍZNOUT',
+    selectFirst:
+      'Vyberte první úsečku nebo [Zpět(U)/Křivka(P)/Vzdálenost(D)/Úhel(A)/Oříznout(T)/Metoda(E)/Více(M)]',
+    selectSecond:
+      'Vyberte druhou úsečku nebo se Shiftem použijte roh, nebo [Vzdálenost(D)/Úhel(A)/Metoda(E)]',
+    selectPolyline: 'Vyberte 2D křivku',
+    specifyDist1: 'Zadejte první vzdálenost zkosení',
+    specifyDist2: 'Zadejte druhou vzdálenost zkosení',
+    specifyLength: 'Zadejte délku zkosení na první úsečce',
+    specifyAngle: 'Zadejte úhel zkosení od první úsečky',
+    trimPrompt: 'Zadejte režim oříznutí [Oříznout(T)/Neoříznout(N)]',
+    methodPrompt: 'Zadejte metodu zkosení [Vzdálenost(D)/Úhel(A)]',
+    rejectObject: 'Objekt nelze zkosit.',
+    rejectPolyline: 'Vybraný objekt není 2D křivka.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny převedené objekty. Zkosení bylo zrušeno.',
+    nothingToUndo: 'Příkaz byl zcela vrácen.',
+    polylineResult: 'Zkoseno {chamfered} vrcholů; přeskočeno {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'Vzdálenost(D)',
+        local: 'Vzdálenost',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      method: {
+        display: 'Metoda(E)',
+        local: 'Metoda',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'Více(M)',
+        local: 'Více',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Neoříznout(N)',
+        local: 'Neoříznout',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'Vzdálenost(D)',
+        local: 'Vzdálenost',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'Neplatná vzdálenost nebo úhel zkosení.',
+      parallel: 'Úsečky jsou rovnoběžné a nelze je zkosit.',
+      noIntersection: 'Objekty se neprotínají.',
+      distanceTooLarge:
+        'Vzdálenost zkosení je pro vybrané objekty příliš velká.',
+      noSolution: 'Nelze vytvořit zkosení pro vybrané objekty.',
+      unsupported: 'Vybraný typ objektu nepodporuje zkosení.'
+    }
   },
   leader: {
     startPoint: 'Zadejte počáteční bod odkazu',

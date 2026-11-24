@@ -311,8 +311,7 @@ export default {
   join: {
     needTwo: 'Select at least two lines, arcs, or polylines to join.',
     noneJoined: 'No objects could be joined.',
-    eraseFailed:
-      'Could not erase all source objects. The join was cancelled.',
+    eraseFailed: 'Could not erase all source objects. The join was cancelled.',
     joined: 'Joined {count} objects.'
   },
   hatch: {
@@ -922,6 +921,160 @@ export default {
     invalidDistance: 'Offset distance must be greater than 0.',
     invalidSelection: 'Selected object cannot be offset.',
     offsetFailed: 'Unable to create an offset curve for the specified side.'
+  },
+  fillet: {
+    currentSettings: 'Current settings: Mode = {mode}, Radius = {radius}',
+    modeTrim: 'TRIM',
+    modeNoTrim: 'NO TRIM',
+    selectFirst: 'Select first object or [Undo/Polyline/Radius/Trim/Multiple]',
+    selectSecond:
+      'Select second object or shift-select to apply corner or [Radius]',
+    selectPolyline: 'Select 2D polyline',
+    specifyRadius: 'Specify fillet radius',
+    trimPrompt: 'Enter trim mode option [Trim/No trim]',
+    rejectObject: 'Object cannot be filleted.',
+    rejectPolyline: 'Selected object is not a 2D polyline.',
+    invalidRadius: 'Fillet radius must be zero or greater.',
+    eraseFailed:
+      'Could not erase all converted objects. The fillet was cancelled.',
+    nothingToUndo: 'Command has been completely undone.',
+    polylineResult: 'Filleted {filleted} vertex/vertices; skipped {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Polyline(P)',
+        local: 'Polyline',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'Radius(R)',
+        local: 'Radius',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'Trim(T)',
+        local: 'Trim',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'Multiple(M)',
+        local: 'Multiple',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Trim(T)',
+        local: 'Trim',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'No trim(N)',
+        local: 'No trim',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'Invalid fillet radius.',
+      parallel: 'Lines are parallel and cannot form a corner fillet.',
+      noIntersection: 'Objects do not intersect.',
+      radiusTooLarge: 'Fillet radius is too large for the selected objects.',
+      noSolution: 'Unable to create fillet for the selected objects.',
+      unsupported: 'Selected object type is not supported for fillet.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '({mode} mode) Current chamfer Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '({mode} mode) Current chamfer Length = {length}, Angle = {angle}',
+    modeTrim: 'TRIM',
+    modeNoTrim: 'NO TRIM',
+    selectFirst:
+      'Select first line or [Undo/Polyline/Distance/Angle/Trim/mEthod/Multiple]',
+    selectSecond:
+      'Select second line or shift-select to apply corner or [Distance/Angle/Method]',
+    selectPolyline: 'Select 2D polyline',
+    specifyDist1: 'Specify first chamfer distance',
+    specifyDist2: 'Specify second chamfer distance',
+    specifyLength: 'Specify chamfer length on the first line',
+    specifyAngle: 'Specify chamfer angle from the first line',
+    trimPrompt: 'Enter trim mode option [Trim/No trim]',
+    methodPrompt: 'Enter chamfer method [Distance/Angle]',
+    rejectObject: 'Object cannot be chamfered.',
+    rejectPolyline: 'Selected object is not a 2D polyline.',
+    eraseFailed:
+      'Could not erase all converted objects. The chamfer was cancelled.',
+    nothingToUndo: 'Command has been completely undone.',
+    polylineResult: 'Chamfered {chamfered} vertex/vertices; skipped {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Polyline(P)',
+        local: 'Polyline',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'Distance(D)',
+        local: 'Distance',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'Angle(A)',
+        local: 'Angle',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'Trim(T)',
+        local: 'Trim',
+        global: 'Trim'
+      },
+      method: {
+        display: 'mEthod(E)',
+        local: 'mEthod',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'Multiple(M)',
+        local: 'Multiple',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Trim(T)',
+        local: 'Trim',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'No trim(N)',
+        local: 'No trim',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'Distance(D)',
+        local: 'Distance',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'Angle(A)',
+        local: 'Angle',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'Invalid chamfer distance or angle.',
+      parallel: 'Lines are parallel and cannot be chamfered.',
+      noIntersection: 'Objects do not intersect.',
+      distanceTooLarge:
+        'Chamfer distance is too large for the selected objects.',
+      noSolution: 'Unable to create chamfer for the selected objects.',
+      unsupported: 'Selected object type is not supported for chamfer.'
+    }
   },
   leader: {
     startPoint: 'Specify leader start point',

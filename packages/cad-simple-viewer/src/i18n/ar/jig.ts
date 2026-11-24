@@ -406,8 +406,7 @@ export default {
     minsert: 'لا يمكن تفجير {count} من الكتل المدرجة باستخدام MINSERT'
   },
   join: {
-    needTwo:
-      'حدد خطين أو قوسين أو خطوط متعددة على الأقل للضم.',
+    needTwo: 'حدد خطين أو قوسين أو خطوط متعددة على الأقل للضم.',
     noneJoined: 'تعذر ضم أي كائنات.',
     eraseFailed: 'تعذر مسح جميع الكائنات المصدر. تم إلغاء الضم.',
     joined: 'تم ضم {count} من الكائنات.'
@@ -1020,6 +1019,159 @@ export default {
     invalidDistance: 'يجب أن تكون مسافة الإزاحة أكبر من 0.',
     invalidSelection: 'لا يمكن إنشاء إزاحة للعنصر المحدد.',
     offsetFailed: 'تعذر إنشاء منحنى إزاحة في الجهة المحددة.'
+  },
+  fillet: {
+    currentSettings: 'الإعدادات الحالية: الوضع = {mode}، نصف القطر = {radius}',
+    modeTrim: 'قص',
+    modeNoTrim: 'بدون قص',
+    selectFirst:
+      'حدد الكائن الأول أو [تراجع(U)/خط متعدد(P)/نصف القطر(R)/قص(T)/متعدد(M)]',
+    selectSecond:
+      'حدد الكائن الثاني أو اضغط Shift للتطبيق كزاوية أو [نصف القطر(R)]',
+    selectPolyline: 'حدد خطًا متعددًا ثنائي الأبعاد',
+    specifyRadius: 'حدد نصف قطر الشطف الدائري',
+    trimPrompt: 'أدخل خيار وضع القص [قص(T)/بدون قص(N)]',
+    rejectObject: 'لا يمكن شطف هذا الكائن دائريًا.',
+    rejectPolyline: 'الكائن المحدد ليس خطًا متعددًا ثنائي الأبعاد.',
+    invalidRadius: 'يجب أن يكون نصف قطر الشطف صفرًا أو أكبر.',
+    eraseFailed:
+      'تعذر مسح جميع الكائنات المحوّلة. تم إلغاء الشطف الدائري.',
+    nothingToUndo: 'تم التراجع عن الأمر بالكامل.',
+    polylineResult: 'تم شطف {filleted} رأسًا دائريًا؛ وتخطي {skipped}.',
+    keywords: {
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'خط متعدد(P)',
+        local: 'خط متعدد',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'نصف القطر(R)',
+        local: 'نصف القطر',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'قص(T)',
+        local: 'قص',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'متعدد(M)',
+        local: 'متعدد',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'قص(T)',
+        local: 'قص',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'بدون قص(N)',
+        local: 'بدون قص',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'نصف قطر الشطف غير صالح.',
+      parallel: 'الخطوط متوازية ولا يمكن إنشاء شطف زاوية.',
+      noIntersection: 'الكائنات غير متقاطعة.',
+      radiusTooLarge: 'نصف قطر الشطف كبير جدًا للكائنات المحددة.',
+      noSolution: 'تعذر إنشاء شطف للكائنات المحددة.',
+      unsupported: 'نوع الكائن المحدد لا يدعم الشطف الدائري.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '(وضع {mode}) الشطبة الحالية Dist1 = {dist1}، Dist2 = {dist2}',
+    currentSettingsAngle:
+      '(وضع {mode}) الشطبة الحالية الطول = {length}، الزاوية = {angle}',
+    modeTrim: 'قص',
+    modeNoTrim: 'بدون قص',
+    selectFirst:
+      'حدد الخط الأول أو [تراجع(U)/خط متعدد(P)/مسافة(D)/زاوية(A)/قص(T)/طريقة(E)/متعدد(M)]',
+    selectSecond:
+      'حدد الخط الثاني أو اضغط Shift للتطبيق كزاوية أو [مسافة(D)/زاوية(A)/طريقة(E)]',
+    selectPolyline: 'حدد خطًا متعددًا ثنائي الأبعاد',
+    specifyDist1: 'حدد مسافة الشطبة الأولى',
+    specifyDist2: 'حدد مسافة الشطبة الثانية',
+    specifyLength: 'حدد طول الشطبة على الخط الأول',
+    specifyAngle: 'حدد زاوية الشطبة من الخط الأول',
+    trimPrompt: 'أدخل خيار وضع القص [قص(T)/بدون قص(N)]',
+    methodPrompt: 'أدخل طريقة الشطب [مسافة(D)/زاوية(A)]',
+    rejectObject: 'لا يمكن شطب هذا الكائن.',
+    rejectPolyline: 'الكائن المحدد ليس خطًا متعددًا ثنائي الأبعاد.',
+    eraseFailed: 'تعذر مسح جميع الكائنات المحوّلة. تم إلغاء الشطبة.',
+    nothingToUndo: 'تم التراجع عن الأمر بالكامل.',
+    polylineResult: 'تم شطب {chamfered} رأسًا؛ وتخطي {skipped}.',
+    keywords: {
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'خط متعدد(P)',
+        local: 'خط متعدد',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'مسافة(D)',
+        local: 'مسافة',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'قص(T)',
+        local: 'قص',
+        global: 'Trim'
+      },
+      method: {
+        display: 'طريقة(E)',
+        local: 'طريقة',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'متعدد(M)',
+        local: 'متعدد',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'قص(T)',
+        local: 'قص',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'بدون قص(N)',
+        local: 'بدون قص',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'مسافة(D)',
+        local: 'مسافة',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'مسافة أو زاوية الشطبة غير صالحة.',
+      parallel: 'الخطوط متوازية ولا يمكن شطبها.',
+      noIntersection: 'الكائنات غير متقاطعة.',
+      distanceTooLarge: 'مسافة الشطبة كبيرة جدًا للكائنات المحددة.',
+      noSolution: 'تعذر إنشاء شطبة للكائنات المحددة.',
+      unsupported: 'نوع الكائن المحدد لا يدعم الشطبة.'
+    }
   },
   leader: {
     startPoint: 'حدد نقطة بداية خط الإشارة',

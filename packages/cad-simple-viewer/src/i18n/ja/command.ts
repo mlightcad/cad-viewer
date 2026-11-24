@@ -88,6 +88,27 @@ export default {
       description:
         'ユーザ インタフェースのカラー テーマ (ダークまたはライト) をコントロールします'
     },
+    commandpreview: {
+      description:
+        '特定のコマンドの実行結果プレビューを表示するかどうかをコントロールします'
+    },
+    comparehatch: {
+      description: '図面比較にハッチング オブジェクトを含めるかどうかをコントロールします'
+    },
+    compareprops: {
+      description:
+        '図面間の差分として認識する非ジオメトリ プロパティの変更をコントロールします'
+    },
+    comparercmargin: {
+      description:
+        '比較図面で変更セット境界とリビジョン雲の間のオフセットを設定します'
+    },
+    comparetext: {
+      description: '図面比較に文字オブジェクトを含めるかどうかをコントロールします'
+    },
+    comparetolerance: {
+      description: '2 つの図面を比較するときの小数点以下の許容差を設定します'
+    },
     copy: {
       description: '選択したオブジェクトを新しい位置に複写します',
       prompt: 'オブジェクトを選択'
@@ -195,6 +216,10 @@ export default {
     group: {
       description:
         'グループと呼ばれるオブジェクトの保存セットを作成および管理します'
+    },
+    groupdisplaymode: {
+      description:
+        'グループ選択がオンでグループ メンバが選択されているときのグリップ表示をコントロールします'
     },
     '-bsearch': {
       description:
@@ -472,6 +497,35 @@ export default {
         '選択した異尺度対応オブジェクトのサポートする注釈尺度を追加または削除します',
       prompt: '異尺度対応オブジェクトを選択'
     },
+    fillet: {
+      description: 'オブジェクトのエッジをフィレットします'
+    },
+    filletpolyarc: {
+      description:
+        'FILLET のポリライン オプションで円弧セグメントをフィレットするかどうかをコントロールします'
+    },
+    filletrad: {
+      description: '2D オブジェクトの現在のフィレット半径を格納します'
+    },
+    chamfer: {
+      description: 'オブジェクトのエッジを面取りします'
+    },
+    chamfera: {
+      description: 'CHAMMODE が 0 のときの 1 番目の面取り距離を設定します'
+    },
+    chamferb: {
+      description: 'CHAMMODE が 0 のときの 2 番目の面取り距離を設定します'
+    },
+    chamferc: {
+      description: 'CHAMMODE が 1 のときの面取りの長さを設定します'
+    },
+    chamferd: {
+      description: 'CHAMMODE が 1 のときの面取りの角度を設定します'
+    },
+    chammode: {
+      description:
+        'CHAMFER の入力方法を設定します: 0 = 2 つの距離、1 = 長さと角度'
+    },
     offset: {
       description: '指定した距離に平行な曲線、ポリライン、円を作成します'
     },
@@ -517,6 +571,9 @@ export default {
       description:
         'オブジェクトを選択するときに使用する選択ボックスのサイズ (ピクセル単位) を設定します'
     },
+    pickstyle: {
+      description: 'グループ選択と関連付けハッチング選択をコントロールします'
+    },
     pline: {
       description: '複数の点を指定してポリラインを作成します'
     },
@@ -536,6 +593,9 @@ export default {
     polarmode: {
       description:
         '極トラッキングとオブジェクト スナップ トラッキングの設定をコントロールします'
+    },
+    projmode: {
+      description: 'トリムまたは延長の現在の投影モードを設定します'
     },
     polygon: {
       description:
@@ -626,6 +686,14 @@ export default {
     },
     textstyle: {
       description: '現在の文字スタイルの名前を設定します'
+    },
+    tilemode: {
+      description:
+        'モデル タブとペーパー空間レイアウトのどちらをアクティブにするかをコントロールします'
+    },
+    trimmode: {
+      description:
+        '面取りおよびフィレットで選択したエッジをトリムするかどうかをコントロールします'
     },
     unitmode: {
       description:

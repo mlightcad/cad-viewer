@@ -84,6 +84,26 @@ export default {
       description:
         '사용자 인터페이스의 색상 테마(어둡게 또는 밝게)를 조정합니다'
     },
+    commandpreview: {
+      description: '특정 명령의 결과 미리보기를 표시할지 여부를 제어합니다'
+    },
+    comparehatch: {
+      description: '도면 비교에 해치 객체를 포함할지 여부를 제어합니다'
+    },
+    compareprops: {
+      description:
+        '도면 간 차이로 식별할 비기하 특성 변경을 제어합니다'
+    },
+    comparercmargin: {
+      description:
+        '비교 도면에서 변경 세트 경계와 개정 구름 사이의 간격을 설정합니다'
+    },
+    comparetext: {
+      description: '도면 비교에 문자 객체를 포함할지 여부를 제어합니다'
+    },
+    comparetolerance: {
+      description: '두 도면을 비교할 때 사용하는 소수 자릿수 허용오차를 설정합니다'
+    },
     copy: {
       description: '선택한 객체를 새 위치에 복제하여 복사합니다',
       prompt: '객체 선택'
@@ -183,6 +203,10 @@ export default {
     },
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
+    },
+    groupdisplaymode: {
+      description:
+        '그룹 선택이 켜져 있고 그룹 구성원이 선택된 경우 그립 표시 방식을 제어합니다'
     },
     '-bsearch': {
       description: '동일한 형상을 찾아 블록으로 변환합니다(명령행)',
@@ -445,6 +469,35 @@ export default {
         '선택한 주석 객체에 지원되는 주석 축척을 추가하거나 삭제합니다',
       prompt: '주석 객체 선택'
     },
+    fillet: {
+      description: '객체의 모서리를 필렛합니다'
+    },
+    filletpolyarc: {
+      description:
+        'FILLET의 폴리선 옵션이 호 세그먼트를 필렛할지 여부를 제어합니다'
+    },
+    filletrad: {
+      description: '2D 객체의 현재 필렛 반지름을 저장합니다'
+    },
+    chamfer: {
+      description: '객체의 모서리를 모따기합니다'
+    },
+    chamfera: {
+      description: 'CHAMMODE가 0일 때 첫 번째 모따기 거리를 설정합니다'
+    },
+    chamferb: {
+      description: 'CHAMMODE가 0일 때 두 번째 모따기 거리를 설정합니다'
+    },
+    chamferc: {
+      description: 'CHAMMODE가 1일 때 모따기 길이를 설정합니다'
+    },
+    chamferd: {
+      description: 'CHAMMODE가 1일 때 모따기 각도를 설정합니다'
+    },
+    chammode: {
+      description:
+        'CHAMFER 입력 방법을 설정합니다: 0 = 두 거리, 1 = 길이와 각도'
+    },
     offset: {
       description: '지정한 거리에 평행한 곡선, 폴리선 또는 원을 작성합니다'
     },
@@ -452,7 +505,8 @@ export default {
       description: '여러 줄 문자 객체를 하나 작성합니다'
     },
     txt2mtxt: {
-      description: '선택한 문자와 여러 줄 문자를 하나의 여러 줄 문자로 결합합니다',
+      description:
+        '선택한 문자와 여러 줄 문자를 하나의 여러 줄 문자로 결합합니다',
       prompt: '문자 또는 여러 줄 문자 선택'
     },
     open: {
@@ -487,6 +541,9 @@ export default {
     pickbox: {
       description: '객체 선택에 사용하는 선택 상자의 크기(픽셀)를 설정합니다'
     },
+    pickstyle: {
+      description: '그룹 선택 및 연관 해치 선택을 제어합니다'
+    },
     pline: {
       description: '여러 점을 지정하여 폴리선을 작성합니다'
     },
@@ -505,6 +562,9 @@ export default {
     },
     polarmode: {
       description: '극좌표 및 객체 스냅 추적 설정을 조정합니다'
+    },
+    projmode: {
+      description: '자르기 또는 연장의 현재 투영 모드를 설정합니다'
     },
     polygon: {
       description: '중심/반지름 또는 한 모서리로 정다각형을 작성합니다'
@@ -593,6 +653,12 @@ export default {
     },
     textstyle: {
       description: '현재 문자 스타일의 이름을 설정합니다'
+    },
+    tilemode: {
+      description: '모형 탭과 도면 공간 배치 중 어느 것이 활성인지 제어합니다'
+    },
+    trimmode: {
+      description: '모따기 및 필렛에서 선택한 모서리를 자를지 여부를 제어합니다'
     },
     unitmode: {
       description: 'LUNITS가 건축 또는 분수일 때 좌표의 분수 표시를 조정합니다'

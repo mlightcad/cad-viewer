@@ -395,10 +395,10 @@ export default {
       }
     },
     invalid: {
-      axis: 'Geçersiz eksen girişi: eksen uzunluğu 0\'dan büyük olmalıdır.',
-      otherAxis: 'Geçersiz diğer eksen girişi: mesafe 0\'dan büyük olmalıdır.',
+      axis: "Geçersiz eksen girişi: eksen uzunluğu 0'dan büyük olmalıdır.",
+      otherAxis: "Geçersiz diğer eksen girişi: mesafe 0'dan büyük olmalıdır.",
       rotation:
-        'Geçersiz döndürme girişi: elde edilen küçük eksen 0\'dan büyük olmalıdır.'
+        "Geçersiz döndürme girişi: elde edilen küçük eksen 0'dan büyük olmalıdır."
     }
   },
   explode: {
@@ -406,16 +406,14 @@ export default {
     minsert: 'MINSERT ile eklenen {count} blok patlatılamaz'
   },
   join: {
-    needTwo:
-      'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
+    needTwo: 'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
     noneJoined: 'Birleştirilebilecek nesne yok.',
-    eraseFailed:
-      'Kaynak nesnelerin tümü silinemedi. Birleştirme iptal edildi.',
+    eraseFailed: 'Kaynak nesnelerin tümü silinemedi. Birleştirme iptal edildi.',
     joined: '{count} nesne birleştirildi.'
   },
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
-    pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',
+    pickPoint: "İç noktayı belirtin (bitirmek için Enter'a basın)",
     select: 'Tarama yapılacak nesneleri seçin',
     patternName: 'Tarama deseni adını girin',
     scale: 'Tarama deseni ölçeğini belirtin',
@@ -913,7 +911,7 @@ export default {
     invalidPoints: 'Üç nokta doğrusal ve bir yay tanımlamıyor.',
     pickArc: 'Bir daire, yay veya çoklu çizgi yayı seçin',
     noArc:
-      'Burada daire veya yay yok. Bir eğriye tıklayın ya da Üç Nokta\'yı seçin.',
+      "Burada daire veya yay yok. Bir eğriye tıklayın ya da Üç Nokta'yı seçin.",
     keywords: {
       threePoint: {
         display: 'ÜçNokta(T)',
@@ -924,7 +922,7 @@ export default {
   },
   measureArea: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)'
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)"
   },
   measureDistance: {
     firstPoint: 'İlk noktayı belirtin',
@@ -932,7 +930,7 @@ export default {
   },
   measureContinuous: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)'
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)"
   },
   measurePoint: {
     point: 'Noktayı belirtin'
@@ -1018,11 +1016,165 @@ export default {
   },
   offset: {
     distance: 'Öteleme mesafesini belirtin',
-    selectObject: 'Ötelenecek nesneyi seçin veya bitirmek için Enter\'a basın',
+    selectObject: "Ötelenecek nesneyi seçin veya bitirmek için Enter'a basın",
     sidePoint: 'Ötelenecek tarafta bir nokta belirtin',
-    invalidDistance: 'Öteleme mesafesi 0\'dan büyük olmalıdır.',
+    invalidDistance: "Öteleme mesafesi 0'dan büyük olmalıdır.",
     invalidSelection: 'Seçilen nesne ötelenemez.',
     offsetFailed: 'Belirtilen taraf için bir öteleme eğrisi oluşturulamadı.'
+  },
+  fillet: {
+    currentSettings: 'Geçerli ayarlar: Mod = {mode}, Yarıçap = {radius}',
+    modeTrim: 'KIRP',
+    modeNoTrim: 'KIRPMA',
+    selectFirst:
+      'İlk nesneyi seçin veya [Geri Al(U)/Policizgi(P)/Yarıçap(R)/Kırp(T)/Çoklu(M)]',
+    selectSecond:
+      'İkinci nesneyi seçin veya köşe uygulamak için Shift ile seçin veya [Yarıçap(R)]',
+    selectPolyline: '2B policizgi seçin',
+    specifyRadius: 'Yuvarlama yarıçapını belirtin',
+    trimPrompt: 'Kırpma modu seçeneğini girin [Kırp(T)/Kırpma(N)]',
+    rejectObject: 'Nesne yuvarlanamaz.',
+    rejectPolyline: 'Seçilen nesne 2B policizgi değil.',
+    invalidRadius: 'Yuvarlama yarıçapı sıfır veya daha büyük olmalıdır.',
+    eraseFailed:
+      'Dönüştürülen nesnelerin tümü silinemedi. Yuvarlama iptal edildi.',
+    nothingToUndo: 'Komut tamamen geri alındı.',
+    polylineResult: '{filleted} köşe yuvarlandı; {skipped} atlandı.',
+    keywords: {
+      undo: {
+        display: 'Geri Al(U)',
+        local: 'Geri Al',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Policizgi(P)',
+        local: 'Policizgi',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'Yarıçap(R)',
+        local: 'Yarıçap',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'Çoklu(M)',
+        local: 'Çoklu',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Kırpma(N)',
+        local: 'Kırpma',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'Geçersiz yuvarlama yarıçapı.',
+      parallel: 'Çizgiler paralel; köşe yuvarlaması oluşturulamaz.',
+      noIntersection: 'Nesneler kesişmiyor.',
+      radiusTooLarge: 'Yuvarlama yarıçapı seçilen nesneler için çok büyük.',
+      noSolution: 'Seçilen nesneler için yuvarlama oluşturulamadı.',
+      unsupported: 'Seçilen nesne türü yuvarlamayı desteklemiyor.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '({mode} modu) Geçerli pah Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '({mode} modu) Geçerli pah Uzunluk = {length}, Açı = {angle}',
+    modeTrim: 'KIRP',
+    modeNoTrim: 'KIRPMA',
+    selectFirst:
+      'İlk çizgiyi seçin veya [Geri Al(U)/Policizgi(P)/Mesafe(D)/Açı(A)/Kırp(T)/Yöntem(E)/Çoklu(M)]',
+    selectSecond:
+      'İkinci çizgiyi seçin veya köşe uygulamak için Shift ile seçin veya [Mesafe(D)/Açı(A)/Yöntem(E)]',
+    selectPolyline: '2B policizgi seçin',
+    specifyDist1: 'İlk pah mesafesini belirtin',
+    specifyDist2: 'İkinci pah mesafesini belirtin',
+    specifyLength: 'İlk çizgideki pah uzunluğunu belirtin',
+    specifyAngle: 'İlk çizgiden pah açısını belirtin',
+    trimPrompt: 'Kırpma modu seçeneğini girin [Kırp(T)/Kırpma(N)]',
+    methodPrompt: 'Pah yöntemini girin [Mesafe(D)/Açı(A)]',
+    rejectObject: 'Nesne pahlanamaz.',
+    rejectPolyline: 'Seçilen nesne 2B policizgi değil.',
+    eraseFailed:
+      'Dönüştürülen nesnelerin tümü silinemedi. Pahlama iptal edildi.',
+    nothingToUndo: 'Komut tamamen geri alındı.',
+    polylineResult: '{chamfered} köşe pahlandı; {skipped} atlandı.',
+    keywords: {
+      undo: {
+        display: 'Geri Al(U)',
+        local: 'Geri Al',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Policizgi(P)',
+        local: 'Policizgi',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'Mesafe(D)',
+        local: 'Mesafe',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'Açı(A)',
+        local: 'Açı',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      method: {
+        display: 'Yöntem(E)',
+        local: 'Yöntem',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'Çoklu(M)',
+        local: 'Çoklu',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Kırp(T)',
+        local: 'Kırp',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Kırpma(N)',
+        local: 'Kırpma',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'Mesafe(D)',
+        local: 'Mesafe',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'Açı(A)',
+        local: 'Açı',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'Geçersiz pah mesafesi veya açısı.',
+      parallel: 'Çizgiler paralel; pahlanamaz.',
+      noIntersection: 'Nesneler kesişmiyor.',
+      distanceTooLarge: 'Pah mesafesi seçilen nesneler için çok büyük.',
+      noSolution: 'Seçilen nesneler için pah oluşturulamadı.',
+      unsupported: 'Seçilen nesne türü pahı desteklemiyor.'
+    }
   },
   leader: {
     startPoint: 'Kılavuz başlangıç noktasını belirtin',
@@ -1212,7 +1364,7 @@ export default {
     arrowheadOrRemove:
       'Kılavuz ok ucu konumunu belirtin veya [Kılavuzları kaldır]',
     selectLeaderToRemove:
-      'Kaldırılacak bir kılavuz belirtin veya bitirmek için Enter\'a basın',
+      "Kaldırılacak bir kılavuz belirtin veya bitirmek için Enter'a basın",
     cannotRemoveLast: 'Bu çoklu kılavuzdan son kılavuz kaldırılamaz.',
     noLeaderAtPoint: 'Bu noktada kılavuz bulunamadı.',
     keywords: {
@@ -1295,13 +1447,13 @@ export default {
     },
     invalid: {
       sides: 'Geçersiz kenar sayısı. 3 ile 1024 arasında bir tam sayı girin.',
-      radius: 'Geçersiz yarıçap. Yarıçap 0\'dan büyük olmalıdır.',
-      edge: 'Geçersiz kenar. Kenar uzunluğu 0\'dan büyük olmalıdır.'
+      radius: "Geçersiz yarıçap. Yarıçap 0'dan büyük olmalıdır.",
+      edge: "Geçersiz kenar. Kenar uzunluğu 0'dan büyük olmalıdır."
     }
   },
   polyline: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)',
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)",
     nextPointWithOptions: 'Sonraki noktayı belirtin veya',
     nextPointWithArcOptions: 'Sonraki noktayı belirtin veya',
     keywords: {
@@ -1369,7 +1521,7 @@ export default {
     areaValue: 'Dikdörtgen alanını belirtin',
     areaLengthOrWidth: 'Dikdörtgen uzunluğunu belirtin',
     areaSpecifyWidth: 'Dikdörtgen genişliğini belirtin',
-    invalidPositive: 'Geçersiz giriş. Lütfen 0\'dan büyük bir değer girin.',
+    invalidPositive: "Geçersiz giriş. Lütfen 0'dan büyük bir değer girin.",
     invalidRect:
       'Dikdörtgen oluşturulamadı. Lütfen geçerli köşeler veya boyutlar belirtin.',
     thicknessNotSupported:
@@ -1517,7 +1669,7 @@ export default {
     selectObject: 'Nesne seçin',
     style: 'Revizyon bulutu yay stilini girin',
     reverseDirection: 'Yönü ters çevir',
-    invalidArcLength: 'Yay uzunluğu 0\'dan büyük olmalıdır.',
+    invalidArcLength: "Yay uzunluğu 0'dan büyük olmalıdır.",
     invalidObject: 'Seçilen nesne revizyon bulutuna dönüştürülemez.',
     keywords: {
       arcLength: {
@@ -1621,7 +1773,7 @@ export default {
   },
   spline: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)',
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)",
     firstPointWithOptions: 'İlk noktayı belirtin veya',
     nextPointWithFitOptions: 'Sonraki noktayı belirtin veya',
     nextPointWithCvOptions: 'Sonraki kontrol noktasını belirtin veya',
@@ -1890,10 +2042,10 @@ export default {
     rotationAngle: '{axis} ekseni etrafındaki döndürme açısını belirtin',
     zAxisOrigin: 'Yeni orijin noktasını belirtin',
     pointOnZAxis: 'Z ekseninin pozitif kısmında nokta belirtin',
-    selectObject: 'UCS\'nin hizalanacağı nesneyi seçin',
+    selectObject: "UCS'nin hizalanacağı nesneyi seçin",
     namedOption: 'Bir seçenek girin',
-    enterName: 'Geri yüklenecek UCS\'nin adını girin veya [?]',
-    saveName: 'Geçerli UCS\'yi kaydetmek için ad girin',
+    enterName: "Geri yüklenecek UCS'nin adını girin veya [?]",
+    saveName: "Geçerli UCS'yi kaydetmek için ad girin",
     deleteName: 'Silinecek UCS ad(lar)ını girin',
     noPrevious: 'Bu oturumda önceki UCS yok.',
     noNamed: 'Adlı UCS tanımı yok.',
@@ -2516,9 +2668,9 @@ export default {
     applied: '{count} nesne {factor} faktörüyle ölçeklendi.'
   },
   txt2mtxt: {
-    needTwo: 'Birleştirmek için en az iki metin veya çoklu metin nesnesi seçin.',
+    needTwo:
+      'Birleştirmek için en az iki metin veya çoklu metin nesnesi seçin.',
     mergeFailed: 'Seçili metin nesneleri birleştirilemedi.',
-    eraseFailed:
-      'Kaynak metinlerin tümü silinemedi. Birleştirme iptal edildi.'
+    eraseFailed: 'Kaynak metinlerin tümü silinemedi. Birleştirme iptal edildi.'
   }
 }

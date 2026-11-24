@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!--
+    AutoCAD-style FILLET ribbon glyph: L-corner with a large quarter-circle
+    fillet so the rounded transition reads clearly against CHAMFER.
+  -->
+  <path
+    d="M4.5 19.5V12.5A8 8 0 0 1 12.5 4.5H19.5"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

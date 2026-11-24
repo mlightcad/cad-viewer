@@ -85,6 +85,26 @@ export default {
     colortheme: {
       description: 'التحكم في سمة ألوان واجهة المستخدم بين الوضع الداكن والفاتح'
     },
+    commandpreview: {
+      description: 'التحكم في عرض معاينة للنتيجة المحتملة لأوامر معينة'
+    },
+    comparehatch: {
+      description: 'التحكم في تضمين كائنات التظليل عند مقارنة الرسومات'
+    },
+    compareprops: {
+      description:
+        'التحكم في تغييرات الخصائص غير الهندسية التي تُعرَّف كفروق بين الرسومات'
+    },
+    comparercmargin: {
+      description:
+        'تعيين الإزاحة بين حد مجموعة التغييرات وسحابة المراجعة في رسم المقارنة'
+    },
+    comparetext: {
+      description: 'التحكم في تضمين كائنات النص عند مقارنة الرسومات'
+    },
+    comparetolerance: {
+      description: 'تعيين تسامح المنازل العشرية المستخدم عند مقارنة رسمين'
+    },
     copy: {
       description: 'نسخ العناصر المحددة إلى مواضع جديدة',
       prompt: 'حدد العناصر'
@@ -186,6 +206,10 @@ export default {
     },
     group: {
       description: 'إنشاء مجموعات كائنات محفوظة وإدارتها'
+    },
+    groupdisplaymode: {
+      description:
+        'التحكم في كيفية عرض المقابض عند تفعيل اختيار المجموعة وتحديد عضو من المجموعة'
     },
     '-bsearch': {
       description: 'يبحث عن الأشكال المتطابقة ويحولها إلى كتل (سطر الأوامر)',
@@ -446,6 +470,35 @@ export default {
         'إضافة مقاييس التعليقات التوضيحية المدعومة أو حذفها للكائنات التوضيحية المحددة',
       prompt: 'حدد الكائنات التوضيحية'
     },
+    fillet: {
+      description: 'يقوم بتقويس حواف الكائنات'
+    },
+    filletpolyarc: {
+      description:
+        'التحكم في ما إذا كان خيار الخطوط المتعددة في FILLET يقوم بتقويس مقاطع القوس'
+    },
+    filletrad: {
+      description: 'تخزين نصف قطر التقويس الحالي للكائنات ثنائية الأبعاد'
+    },
+    chamfer: {
+      description: 'يقوم بشطبة حواف الكائنات'
+    },
+    chamfera: {
+      description: 'تعيين مسافة الشطبة الأولى عندما يكون CHAMMODE بقيمة 0'
+    },
+    chamferb: {
+      description: 'تعيين مسافة الشطبة الثانية عندما يكون CHAMMODE بقيمة 0'
+    },
+    chamferc: {
+      description: 'تعيين طول الشطبة عندما يكون CHAMMODE بقيمة 1'
+    },
+    chamferd: {
+      description: 'تعيين زاوية الشطبة عندما يكون CHAMMODE بقيمة 1'
+    },
+    chammode: {
+      description:
+        'تعيين طريقة الإدخال لأمر CHAMFER: 0 = مسافتان، 1 = طول وزاوية'
+    },
     offset: {
       description:
         'إنشاء منحنيات أو خطوط متعددة أو دوائر موازية على مسافة محددة'
@@ -488,6 +541,9 @@ export default {
     pickbox: {
       description: 'تحديد حجم مربع التحديد المستخدم لاختيار العناصر بالبكسل'
     },
+    pickstyle: {
+      description: 'التحكم في اختيار المجموعة واختيار التظليل المرتبط'
+    },
     pline: {
       description: 'إنشاء متعدد خطوط باستخدام عدة نقاط'
     },
@@ -506,6 +562,9 @@ export default {
     },
     polarmode: {
       description: 'التحكم في إعدادات التتبع القطبي وتتبع Object Snap'
+    },
+    projmode: {
+      description: 'تعيين وضع الإسقاط الحالي للقص أو التمديد'
     },
     polygon: {
       description:
@@ -595,6 +654,12 @@ export default {
     },
     textstyle: {
       description: 'تحديد اسم نمط النص الحالي'
+    },
+    tilemode: {
+      description: 'التحكم في تفعيل علامة تبويب النموذج أو تخطيط مساحة الورق'
+    },
+    trimmode: {
+      description: 'التحكم في قص الحواف المحددة للشطبة والتقويس'
     },
     unitmode: {
       description:

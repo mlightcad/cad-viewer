@@ -18,7 +18,7 @@ export default {
         'Geçerli açıklama ölçeğini desteklemeyen açıklamalı nesnelerin görüntülenip görüntülenmeyeceğini denetler'
     },
     angbase: {
-      description: 'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
+      description: "Geçerli KKS'ye göre 0 açı temel yönünü ayarlar"
     },
     angdir: {
       description:
@@ -70,7 +70,7 @@ export default {
     },
     cachefont: {
       description:
-        'Metin işleme için yerel bir yazı tipi dosyasını IndexedDB\'ye önbelleğe alır'
+        "Metin işleme için yerel bir yazı tipi dosyasını IndexedDB'ye önbelleğe alır"
     },
     circle: {
       description: 'Merkez ve yarıçapa göre bir daire oluşturur'
@@ -91,6 +91,30 @@ export default {
     colortheme: {
       description:
         'Kullanıcı arayüzünün renk temasını denetler (koyu veya açık)'
+    },
+    commandpreview: {
+      description:
+        'Belirli komutların olası sonucunun önizlemesinin görüntülenip görüntülenmeyeceğini denetler'
+    },
+    comparehatch: {
+      description:
+        'Çizim karşılaştırmasına tarama nesnelerinin dahil edilip edilmeyeceğini denetler'
+    },
+    compareprops: {
+      description:
+        'Çizimler arasında fark olarak tanımlanan geometrik olmayan özellik değişikliklerini denetler'
+    },
+    comparercmargin: {
+      description:
+        'Karşılaştırma çiziminde değişiklik kümesi sınırı ile revizyon bulutu arasındaki ofseti ayarlar'
+    },
+    comparetext: {
+      description:
+        'Çizim karşılaştırmasına metin nesnelerinin dahil edilip edilmeyeceğini denetler'
+    },
+    comparetolerance: {
+      description:
+        'İki çizimi karşılaştırırken kullanılan ondalık basamak toleransını ayarlar'
     },
     copy: {
       description: 'Seçili varlıkları klonlayarak yeni konumlara kopyalar',
@@ -120,7 +144,7 @@ export default {
         'Panodaki nesneleri özgün çizimin koordinatlarını kullanarak yapıştırır'
     },
     csvg: {
-      description: 'Geçerli çizimi SVG\'ye dönüştürür'
+      description: "Geçerli çizimi SVG'ye dönüştürür"
     },
     chtml: {
       description:
@@ -128,7 +152,7 @@ export default {
     },
     '-chtml': {
       description:
-        'Komut satırı seçeneklerini kullanarak geçerli çizimi HTML\'e dışa aktarır'
+        "Komut satırı seçeneklerini kullanarak geçerli çizimi HTML'e dışa aktarır"
     },
     dimlinear: {
       description: 'Doğrusal ölçülendirmeler oluşturur'
@@ -199,6 +223,10 @@ export default {
     group: {
       description:
         'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'
+    },
+    groupdisplaymode: {
+      description:
+        'Grup seçimi açıkken ve bir grup üyesi seçildiğinde tutamaçların nasıl görüntüleneceğini denetler'
     },
     '-bsearch': {
       description:
@@ -352,7 +380,7 @@ export default {
       description: 'Bir katmanı ve o katmandaki tüm nesneleri siler'
     },
     layerclose: {
-      description: 'Katman Özellikleri Yöneticisi\'ni kapatır'
+      description: "Katman Özellikleri Yöneticisi'ni kapatır"
     },
     layerp: {
       description:
@@ -487,6 +515,35 @@ export default {
         'Seçili açıklamalı nesneler için desteklenen açıklama ölçeklerini ekler veya siler',
       prompt: 'Açıklamalı nesneleri seçin'
     },
+    fillet: {
+      description: 'Nesnelerin kenarlarını yuvarlar'
+    },
+    filletpolyarc: {
+      description:
+        'FILLET Polyline seçeneğinin çoklu çizgilerdeki yay segmentlerini yuvarlayıp yuvarlamayacağını denetler'
+    },
+    filletrad: {
+      description: '2B nesneler için geçerli yuvarlama yarıçapını saklar'
+    },
+    chamfer: {
+      description: 'Nesnelerin kenarlarını pahlar'
+    },
+    chamfera: {
+      description: 'CHAMMODE 0 olduğunda birinci pah mesafesini ayarlar'
+    },
+    chamferb: {
+      description: 'CHAMMODE 0 olduğunda ikinci pah mesafesini ayarlar'
+    },
+    chamferc: {
+      description: 'CHAMMODE 1 olduğunda pah uzunluğunu ayarlar'
+    },
+    chamferd: {
+      description: 'CHAMMODE 1 olduğunda pah açısını ayarlar'
+    },
+    chammode: {
+      description:
+        'CHAMFER giriş yöntemini ayarlar: 0 = iki mesafe, 1 = uzunluk ve açı'
+    },
     offset: {
       description:
         'Belirtilen bir mesafede paralel eğriler, çoklu çizgiler veya daireler oluşturur'
@@ -535,6 +592,9 @@ export default {
       description:
         'Nesneleri seçmek için kullanılan seçim kutusunun boyutunu (piksel cinsinden) ayarlar'
     },
+    pickstyle: {
+      description: 'Grup seçimini ve ilişkili tarama seçimini denetler'
+    },
     pline: {
       description: 'Birden çok nokta belirterek bir çoklu çizgi oluşturur'
     },
@@ -553,6 +613,9 @@ export default {
     },
     polarmode: {
       description: 'Kutupsal ve nesne yakalama izleme ayarlarını denetler'
+    },
+    projmode: {
+      description: 'Kırpma veya uzatma için geçerli izdüşüm modunu ayarlar'
     },
     polygon: {
       description:
@@ -645,6 +708,14 @@ export default {
     textstyle: {
       description: 'Geçerli metin stilinin adını ayarlar'
     },
+    tilemode: {
+      description:
+        'Model sekmesinin mi yoksa kağıt alanı yerleşiminin mi etkin olduğunu denetler'
+    },
+    trimmode: {
+      description:
+        'Pah ve yuvarlama için seçilen kenarların kırpılıp kırpılmayacağını denetler'
+    },
     unitmode: {
       description:
         'LUNITS Mimari veya Kesirli olduğunda koordinatların kesirli görüntülenmesini denetler'
@@ -677,7 +748,7 @@ export default {
     },
     view: {
       description:
-        'Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi\'ni açar'
+        "Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi'ni açar"
     },
     newview: {
       description:

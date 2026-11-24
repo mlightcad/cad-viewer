@@ -332,9 +332,11 @@ export default {
     minsert: 'MINSERT で挿入された {count} 個のブロックは分解できません'
   },
   join: {
-    needTwo: '結合するには、線分、円弧、またはポリラインを 2 つ以上選択してください。',
+    needTwo:
+      '結合するには、線分、円弧、またはポリラインを 2 つ以上選択してください。',
     noneJoined: '結合できるオブジェクトがありません。',
-    eraseFailed: '元のオブジェクトをすべて削除できませんでした。結合は取り消されました。',
+    eraseFailed:
+      '元のオブジェクトをすべて削除できませんでした。結合は取り消されました。',
     joined: '{count} 個のオブジェクトを結合しました。'
   },
   hatch: {
@@ -838,7 +840,8 @@ export default {
     lockedEndPoint: '円弧の終点を指定 (Ctrl キーで優弧/劣弧を切り替え)',
     invalidPoints: '3 点が同一直線上にあるため、円弧を定義できません。',
     pickArc: '円、円弧、またはポリライン円弧を選択',
-    noArc: 'ここに円または円弧はありません。曲線をクリックするか、3 点を選択してください。',
+    noArc:
+      'ここに円または円弧はありません。曲線をクリックするか、3 点を選択してください。',
     keywords: {
       threePoint: {
         display: '3点(T)',
@@ -948,6 +951,164 @@ export default {
     invalidDistance: 'オフセット距離は 0 より大きくする必要があります。',
     invalidSelection: '選択したオブジェクトはオフセットできません。',
     offsetFailed: '指定した側にオフセット曲線を作成できません。'
+  },
+  fillet: {
+    currentSettings: '現在の設定: モード = {mode}、半径 = {radius}',
+    modeTrim: 'トリム',
+    modeNoTrim: 'トリムなし',
+    selectFirst:
+      '1 つ目のオブジェクトを選択または [元に戻す(U)/ポリライン(P)/半径(R)/トリム(T)/複数(M)]',
+    selectSecond:
+      '2 つ目のオブジェクトを選択、または Shift を押しながら選択してコーナーを適用、または [半径(R)]',
+    selectPolyline: '2D ポリラインを選択',
+    specifyRadius: 'フィレット半径を指定',
+    trimPrompt: 'トリム モード オプションを入力 [トリム(T)/トリムなし(N)]',
+    rejectObject: 'このオブジェクトはフィレットできません。',
+    rejectPolyline: '選択したオブジェクトは 2D ポリラインではありません。',
+    invalidRadius: 'フィレット半径は 0 以上である必要があります。',
+    eraseFailed:
+      '変換後のオブジェクトをすべて消去できませんでした。フィレットは取り消されました。',
+    nothingToUndo: 'コマンドは完全に元に戻されました。',
+    polylineResult:
+      '{filleted} 個の頂点をフィレットし、{skipped} 個をスキップしました。',
+    keywords: {
+      undo: {
+        display: '元に戻す(U)',
+        local: '元に戻す',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'ポリライン(P)',
+        local: 'ポリライン',
+        global: 'Polyline'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'トリム(T)',
+        local: 'トリム',
+        global: 'Trim'
+      },
+      multiple: {
+        display: '複数(M)',
+        local: '複数',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'トリム(T)',
+        local: 'トリム',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'トリムなし(N)',
+        local: 'トリムなし',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'フィレット半径が無効です。',
+      parallel: '線分が平行なためコーナー フィレットを作成できません。',
+      noIntersection: 'オブジェクトが交差しません。',
+      radiusTooLarge:
+        '選択したオブジェクトに対してフィレット半径が大きすぎます。',
+      noSolution: '選択したオブジェクトのフィレットを作成できません。',
+      unsupported: '選択したオブジェクト タイプはフィレットに対応していません。'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '({mode} モード) 現在の面取り Dist1 = {dist1}、Dist2 = {dist2}',
+    currentSettingsAngle:
+      '({mode} モード) 現在の面取り 長さ = {length}、角度 = {angle}',
+    modeTrim: 'トリム',
+    modeNoTrim: 'トリムなし',
+    selectFirst:
+      '1 本目の線分を選択または [元に戻す(U)/ポリライン(P)/距離(D)/角度(A)/トリム(T)/方式(E)/複数(M)]',
+    selectSecond:
+      '2 本目の線分を選択、または Shift を押しながら選択してコーナーを適用、または [距離(D)/角度(A)/方式(E)]',
+    selectPolyline: '2D ポリラインを選択',
+    specifyDist1: '1 つ目の面取り距離を指定',
+    specifyDist2: '2 つ目の面取り距離を指定',
+    specifyLength: '1 本目の線分上の面取り長さを指定',
+    specifyAngle: '1 本目の線分からの面取り角度を指定',
+    trimPrompt: 'トリム モード オプションを入力 [トリム(T)/トリムなし(N)]',
+    methodPrompt: '面取り方法を入力 [距離(D)/角度(A)]',
+    rejectObject: 'このオブジェクトは面取りできません。',
+    rejectPolyline: '選択したオブジェクトは 2D ポリラインではありません。',
+    eraseFailed:
+      '変換後のオブジェクトをすべて消去できませんでした。面取りは取り消されました。',
+    nothingToUndo: 'コマンドは完全に元に戻されました。',
+    polylineResult:
+      '{chamfered} 個の頂点を面取りし、{skipped} 個をスキップしました。',
+    keywords: {
+      undo: {
+        display: '元に戻す(U)',
+        local: '元に戻す',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'ポリライン(P)',
+        local: 'ポリライン',
+        global: 'Polyline'
+      },
+      distance: {
+        display: '距離(D)',
+        local: '距離',
+        global: 'Distance'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'トリム(T)',
+        local: 'トリム',
+        global: 'Trim'
+      },
+      method: {
+        display: '方式(E)',
+        local: '方式',
+        global: 'Method'
+      },
+      multiple: {
+        display: '複数(M)',
+        local: '複数',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'トリム(T)',
+        local: 'トリム',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'トリムなし(N)',
+        local: 'トリムなし',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: '距離(D)',
+        local: '距離',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: '面取り距離または角度が無効です。',
+      parallel: '線分が平行なため面取りできません。',
+      noIntersection: 'オブジェクトが交差しません。',
+      distanceTooLarge:
+        '選択したオブジェクトに対して面取り距離が大きすぎます。',
+      noSolution: '選択したオブジェクトの面取りを作成できません。',
+      unsupported: '選択したオブジェクト タイプは面取りに対応していません。'
+    }
   },
   leader: {
     startPoint: '引出線の始点を指定',

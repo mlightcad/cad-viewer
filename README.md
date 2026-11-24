@@ -285,7 +285,7 @@ Legend:
 * [ ] Extend
 * [x] Offset
 * [ ] Explode
-* [ ] Join / fillet / chamfer (2D)
+* [x] Join / fillet / chamfer (2D)
 
 ### Drawing & Creation Tools
 

@@ -17,6 +17,7 @@ import {
   AcApArcCmd,
   acapBindMarkupSession,
   AcApCacheFontCmd,
+  AcApChamferCmd,
   AcApCircleCmd,
   AcApCloseCmd,
   AcApConvertToBmpCmd,
@@ -43,6 +44,7 @@ import {
   AcApEntityPreviewCmd,
   AcApEraseCmd,
   AcApExplodeCmd,
+  AcApFilletCmd,
   AcApGroupCmd,
   AcApGroupEditCmd,
   AcApHatchCmd,
@@ -196,6 +198,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   ELLIPSE: ['EL'],
   ERASE: ['E'],
   EXPLODE: ['X'],
+  FILLET: ['F'],
+  CHAMFER: ['CHA'],
   JOIN: ['J'],
   GROUP: ['G'],
   '-GROUP': ['-G'],
@@ -2086,6 +2090,8 @@ export class AcApDocManager {
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('explode', 'explode', new AcApExplodeCmd())
+    addSystemCommand('fillet', 'fillet', new AcApFilletCmd())
+    addSystemCommand('chamfer', 'chamfer', new AcApChamferCmd())
     addSystemCommand('join', 'join', new AcApJoinCmd())
     addSystemCommand('group', 'group', new AcApGroupCmd())
     addSystemCommand('-bsearch', '-bsearch', new AcApDashBSearchCmd())

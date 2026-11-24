@@ -89,6 +89,30 @@ export default {
       description:
         'Controls the color theme of the user interface (dark or light)'
     },
+    commandpreview: {
+      description:
+        'Controls whether a preview of the possible outcome of certain commands is displayed'
+    },
+    comparehatch: {
+      description:
+        'Controls whether hatch objects are included in drawing comparison'
+    },
+    compareprops: {
+      description:
+        'Controls which non-geometric property changes are identified as differences between drawings'
+    },
+    comparercmargin: {
+      description:
+        'Sets the offset between a change-set boundary and the revision cloud in a comparison drawing'
+    },
+    comparetext: {
+      description:
+        'Controls whether text objects are included in drawing comparison'
+    },
+    comparetolerance: {
+      description:
+        'Sets the decimal-place tolerance used when comparing two drawings'
+    },
     copy: {
       description: 'Copies selected entities by cloning them to new positions',
       prompt: 'Select entities'
@@ -166,7 +190,7 @@ export default {
       description: 'Opens or closes the layer manager dock panel'
     },
     loginname: {
-      description: 'Displays the user\'s login name (read-only)'
+      description: "Displays the user's login name (read-only)"
     },
     dynmode: {
       description: 'Controls Dynamic Input settings at the cursor'
@@ -193,6 +217,10 @@ export default {
     },
     group: {
       description: 'Creates and manages saved sets of objects called groups'
+    },
+    groupdisplaymode: {
+      description:
+        'Controls how grips are displayed when group selection is on and a group member is selected'
     },
     '-bsearch': {
       description:
@@ -470,6 +498,35 @@ export default {
         'Adds or deletes supported annotation scales for selected annotative objects',
       prompt: 'Select annotative objects'
     },
+    fillet: {
+      description: 'Rounds and fillets the edges of objects'
+    },
+    filletpolyarc: {
+      description:
+        'Controls whether the FILLET Polyline option fillets arc segments in polylines'
+    },
+    filletrad: {
+      description: 'Stores the current fillet radius for 2D objects'
+    },
+    chamfer: {
+      description: 'Bevels the edges of objects'
+    },
+    chamfera: {
+      description: 'Sets the first chamfer distance when CHAMMODE is set to 0'
+    },
+    chamferb: {
+      description: 'Sets the second chamfer distance when CHAMMODE is set to 0'
+    },
+    chamferc: {
+      description: 'Sets the chamfer length when CHAMMODE is set to 1'
+    },
+    chamferd: {
+      description: 'Sets the chamfer angle when CHAMMODE is set to 1'
+    },
+    chammode: {
+      description:
+        'Sets the input method for CHAMFER: 0 = two distances, 1 = length and angle'
+    },
     offset: {
       description:
         'Creates parallel curves, polylines, or circles at a specified distance'
@@ -518,6 +575,9 @@ export default {
       description:
         'Sets the size (in pixels) of the selection box used to pick objects'
     },
+    pickstyle: {
+      description: 'Controls group selection and associative hatch selection'
+    },
     pline: {
       description: 'Creates a polyline by specifying multiple points'
     },
@@ -536,6 +596,9 @@ export default {
     },
     polarmode: {
       description: 'Controls polar and object snap tracking settings'
+    },
+    projmode: {
+      description: 'Sets the current Projection mode for trimming or extending'
     },
     polygon: {
       description:
@@ -627,6 +690,14 @@ export default {
     },
     textstyle: {
       description: 'Sets the name of the current text style'
+    },
+    tilemode: {
+      description:
+        'Controls whether the Model tab or a paper-space layout is active'
+    },
+    trimmode: {
+      description:
+        'Controls whether selected edges for chamfers and fillets are trimmed'
     },
     unitmode: {
       description:

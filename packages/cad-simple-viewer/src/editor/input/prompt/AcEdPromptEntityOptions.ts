@@ -1,10 +1,14 @@
+import type { AcEdEntityHoverSample } from './AcEdEntityHoverSample.js'
 import { AcEdPromptOptions } from './AcEdPromptOptions.js'
 
 /**
  * Represents prompt options for selecting a single entity.
  * Mirrors `Autodesk.AutoCAD.EditorInput.PromptEntityOptions`.
+ *
+ * The prompt jig type is {@link AcEdEntityHoverSample} so COMMANDPREVIEW-style
+ * result previews can update while hovering candidate entities.
  */
-export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
+export class AcEdPromptEntityOptions extends AcEdPromptOptions<AcEdEntityHoverSample> {
   /** Whether ENTER (no selection) is allowed */
   private _allowNone = false
 
