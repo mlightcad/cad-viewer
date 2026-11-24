@@ -334,6 +334,125 @@ export default {
     notExplodable: 'Počet objektů, které nelze rozložit: {count}',
     minsert: 'Bloky vložené příkazem MINSERT nelze rozložit (počet: {count})'
   },
+  trim: {
+    selectObject: 'Vyberte objekt k oříznutí nebo se Shift k prodloužení nebo',
+    selectEdges: 'Vyberte řezné hrany nebo <vybrat vše>',
+    modePrompt: 'Zadejte možnost režimu oříznutí'
+  },
+  extend: {
+    selectObject: 'Vyberte objekt k prodloužení nebo se Shift k oříznutí nebo',
+    selectEdges: 'Vyberte hraniční hrany nebo <vybrat vše>',
+    modePrompt: 'Zadejte možnost režimu prodloužení'
+  },
+  trimExtend: {
+    currentSettings:
+      'Aktuální nastavení: Promítání={projection}, Hrana={edge}, Režim={mode}',
+    settingValue: {
+      none: 'Žádné',
+      ucs: 'UCS',
+      view: 'Pohled',
+      extend: 'Prodloužit',
+      noExtend: 'Žádné',
+      quick: 'Rychlý',
+      standard: 'Standardní'
+    },
+    projectPrompt: 'Zadejte možnost promítání',
+    edgePrompt: 'Zadejte režim prodloužení implicitní hrany',
+    fenceFirst: 'Určete první bod plotu',
+    fenceNext: 'Určete další bod plotu',
+    crossingFirst: 'Určete první roh',
+    crossingSecond: 'Určete protější roh',
+    erasePrompt: 'Vyberte objekty k vymazání nebo <konec>',
+    noObject: 'Nebyl nalezen žádný objekt.',
+    noIntersection: 'Objekt neprotíná žádnou hranu.',
+    noEdgeInDirection: 'V tomto směru není žádná hrana.',
+    cannotTrim: 'Tento objekt nelze oříznout.',
+    cannotExtend: 'Tento objekt nelze prodloužit.',
+    lockedLayer: 'Objekt je v uzamčené hladině.',
+    nothingToUndo: 'Všechny operace byly vráceny zpět.',
+    keywords: {
+      cuttingEdges: {
+        display: 'Řezné hrany(T)',
+        local: 'Řezné hrany',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: 'Hraniční hrany(B)',
+        local: 'Hraniční hrany',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'Plot(F)',
+        local: 'Plot',
+        global: 'Fence'
+      },
+      crossing: {
+        display: 'Křížení(C)',
+        local: 'Křížení',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'Režim(O)',
+        local: 'Režim',
+        global: 'mOde'
+      },
+      project: {
+        display: 'Promítání(P)',
+        local: 'Promítání',
+        global: 'Project'
+      },
+      edge: {
+        display: 'Hrana(E)',
+        local: 'Hrana',
+        global: 'Edge'
+      },
+      erase: {
+        display: 'Vymazat(R)',
+        local: 'Vymazat',
+        global: 'eRase'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'Rychlý(Q)',
+        local: 'Rychlý',
+        global: 'Quick'
+      },
+      standard: {
+        display: 'Standardní(S)',
+        local: 'Standardní',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'Žádné(N)',
+        local: 'Žádné',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'Pohled(V)',
+        local: 'Pohled',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: 'Prodloužit(E)',
+        local: 'Prodloužit',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: 'Neprodlužovat(N)',
+        local: 'Neprodlužovat',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: 'Vyberte alespoň dvě úsečky, oblouky nebo křivky ke spojení.',
     noneJoined: 'Žádné objekty nelze spojit.',

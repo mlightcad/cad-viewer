@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AutoCAD-style TRIM: a line crossing two cutting edges; the span
+       between the edges is removed (dashed) -->
+  <!-- Cutting edges -->
+  <path
+    d="M7 3V21"
+    stroke="var(--el-color-primary)"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M17 3V21"
+    stroke="var(--el-color-primary)"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <!-- Kept parts of the crossing line -->
+  <path
+    d="M2.5 15H7"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M17 15H21.5"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <!-- Trimmed part -->
+  <path
+    d="M7 15H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-dasharray="1.5 1.5"
+    opacity="0.45"
+  />
+  <!-- Scissors glyph above the removed span -->
+  <circle cx="10" cy="9.5" r="1.4" stroke="currentColor" stroke-width="1.1" />
+  <circle cx="14" cy="9.5" r="1.4" stroke="currentColor" stroke-width="1.1" />
+  <path
+    d="M10.9 8.4L13.6 4.5M13.1 8.4L10.4 4.5"
+    stroke="currentColor"
+    stroke-width="1.1"
+    stroke-linecap="round"
+  />
+</svg>

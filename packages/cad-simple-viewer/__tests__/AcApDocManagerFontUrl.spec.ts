@@ -230,6 +230,7 @@ jest.mock('../src/command', () => {
     'AcApObjectScaleCmd',
     'AcApEraseCmd',
     'AcApExplodeCmd',
+    'AcApExtendCmd',
     'AcApFilletCmd',
     'AcApChamferCmd',
     'AcApJoinCmd',
@@ -304,6 +305,7 @@ jest.mock('../src/command', () => {
     'AcApSplineCmd',
     'AcApSwitchBgCmd',
     'AcApSysVarCmd',
+    'AcApTrimCmd',
     'AcApUcsCmd',
     'AcApUndoCmd',
     'AcApUngroupCmd',
@@ -351,6 +353,8 @@ jest.mock('@mlightcad/data-model', () => ({
   AcDbSysVarManager: {
     instance: jest.fn(() => ({
       getAllDescriptors: jest.fn(() => []),
+      getDescriptor: jest.fn(() => undefined),
+      registerVar: jest.fn(),
       events: {
         sysVarChanged: {
           addEventListener: jest.fn(),

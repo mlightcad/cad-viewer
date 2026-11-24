@@ -215,6 +215,12 @@ export default {
         'Joins the endpoints of lines, arcs, and polylines to create a single object',
       prompt: 'Select objects to join'
     },
+    extend: {
+      description: 'Extends objects to meet the edges of other objects'
+    },
+    trim: {
+      description: 'Trims objects to meet the edges of other objects'
+    },
     group: {
       description: 'Creates and manages saved sets of objects called groups'
     },
@@ -599,6 +605,18 @@ export default {
     },
     projmode: {
       description: 'Sets the current Projection mode for trimming or extending'
+    },
+    edgemode: {
+      description:
+        'Controls whether cutting and boundary edges are extended to their natural geometry when trimming or extending'
+    },
+    trimedges: {
+      description:
+        'Controls whether hatch pattern lines act as cutting edges in Quick mode of TRIM and EXTEND'
+    },
+    trimextendmode: {
+      description:
+        'Controls whether TRIM and EXTEND use Quick mode or Standard mode'
     },
     polygon: {
       description:

@@ -287,6 +287,124 @@ export default {
     notExplodable: '{count} 个对象无法分解',
     minsert: '{count} 个用 MINSERT 插入的块无法分解'
   },
+  trim: {
+    selectObject: '选择要修剪的对象，或按住 Shift 键选择要延伸的对象，或',
+    selectEdges: '选择剪切边或 <全部选择>',
+    modePrompt: '输入修剪模式选项'
+  },
+  extend: {
+    selectObject: '选择要延伸的对象，或按住 Shift 键选择要修剪的对象，或',
+    selectEdges: '选择边界边或 <全部选择>',
+    modePrompt: '输入延伸模式选项'
+  },
+  trimExtend: {
+    currentSettings: '当前设置：投影={projection}，边={edge}，模式={mode}',
+    settingValue: {
+      none: '无',
+      ucs: 'UCS',
+      view: '视图',
+      extend: '延伸',
+      noExtend: '无',
+      quick: '快速',
+      standard: '标准'
+    },
+    projectPrompt: '输入投影选项',
+    edgePrompt: '输入隐含边延伸模式',
+    fenceFirst: '指定第一个栏选点',
+    fenceNext: '指定下一个栏选点',
+    crossingFirst: '指定第一个角点',
+    crossingSecond: '指定对角点',
+    erasePrompt: '选择要删除的对象或 <退出>',
+    noObject: '未找到对象。',
+    noIntersection: '对象未与边相交。',
+    noEdgeInDirection: '该方向上没有边。',
+    cannotTrim: '无法修剪此对象。',
+    cannotExtend: '无法延伸此对象。',
+    lockedLayer: '对象位于锁定的图层上。',
+    nothingToUndo: '已放弃所有操作。',
+    keywords: {
+      cuttingEdges: {
+        display: '剪切边(T)',
+        local: '剪切边',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: '边界边(B)',
+        local: '边界边',
+        global: 'Boundary'
+      },
+      fence: {
+        display: '栏选(F)',
+        local: '栏选',
+        global: 'Fence'
+      },
+      crossing: {
+        display: '窗交(C)',
+        local: '窗交',
+        global: 'Crossing'
+      },
+      mode: {
+        display: '模式(O)',
+        local: '模式',
+        global: 'mOde'
+      },
+      project: {
+        display: '投影(P)',
+        local: '投影',
+        global: 'Project'
+      },
+      edge: {
+        display: '边(E)',
+        local: '边',
+        global: 'Edge'
+      },
+      erase: {
+        display: '删除(R)',
+        local: '删除',
+        global: 'eRase'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      quick: {
+        display: '快速(Q)',
+        local: '快速',
+        global: 'Quick'
+      },
+      standard: {
+        display: '标准(S)',
+        local: '标准',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: '视图(V)',
+        local: '视图',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: '延伸(E)',
+        local: '延伸',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: '不延伸(N)',
+        local: '不延伸',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: '请至少选择两条直线、圆弧或多段线进行合并。',
     noneJoined: '没有可合并的对象。',

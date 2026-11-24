@@ -91,8 +91,7 @@ export default {
       description: '도면 비교에 해치 객체를 포함할지 여부를 제어합니다'
     },
     compareprops: {
-      description:
-        '도면 간 차이로 식별할 비기하 특성 변경을 제어합니다'
+      description: '도면 간 차이로 식별할 비기하 특성 변경을 제어합니다'
     },
     comparercmargin: {
       description:
@@ -102,7 +101,8 @@ export default {
       description: '도면 비교에 문자 객체를 포함할지 여부를 제어합니다'
     },
     comparetolerance: {
-      description: '두 도면을 비교할 때 사용하는 소수 자릿수 허용오차를 설정합니다'
+      description:
+        '두 도면을 비교할 때 사용하는 소수 자릿수 허용오차를 설정합니다'
     },
     copy: {
       description: '선택한 객체를 새 위치에 복제하여 복사합니다',
@@ -200,6 +200,12 @@ export default {
     join: {
       description: '선, 호, 폴리선의 끝점을 결합하여 단일 객체를 만듭니다',
       prompt: '결합할 객체 선택'
+    },
+    extend: {
+      description: '다른 객체의 모서리까지 객체를 연장합니다'
+    },
+    trim: {
+      description: '다른 객체의 모서리에 맞게 객체를 자릅니다'
     },
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
@@ -565,6 +571,18 @@ export default {
     },
     projmode: {
       description: '자르기 또는 연장의 현재 투영 모드를 설정합니다'
+    },
+    edgemode: {
+      description:
+        '자르기 또는 연장 시 절단 모서리와 경계 모서리를 자연스러운 형상까지 연장할지 여부를 조정합니다'
+    },
+    trimedges: {
+      description:
+        'TRIM 및 EXTEND의 빠른 모드에서 해치 패턴 선을 절단 모서리로 사용할지 여부를 조정합니다'
+    },
+    trimextendmode: {
+      description:
+        'TRIM 및 EXTEND에서 빠른 모드와 표준 모드 중 무엇을 사용할지 조정합니다'
     },
     polygon: {
       description: '중심/반지름 또는 한 모서리로 정다각형을 작성합니다'

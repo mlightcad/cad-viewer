@@ -331,6 +331,124 @@ export default {
     notExplodable: '{count} 個のオブジェクトは分解できませんでした',
     minsert: 'MINSERT で挿入された {count} 個のブロックは分解できません'
   },
+  trim: {
+    selectObject: 'トリムするオブジェクトを選択 または Shift を押して延長するオブジェクトを選択 または',
+    selectEdges: '切り取りエッジを選択 または <すべて選択>',
+    modePrompt: 'トリム モードのオプションを入力'
+  },
+  extend: {
+    selectObject: '延長するオブジェクトを選択 または Shift を押してトリムするオブジェクトを選択 または',
+    selectEdges: '境界エッジを選択 または <すべて選択>',
+    modePrompt: '延長モードのオプションを入力'
+  },
+  trimExtend: {
+    currentSettings: '現在の設定: 投影={projection}, エッジ={edge}, モード={mode}',
+    settingValue: {
+      none: 'なし',
+      ucs: 'UCS',
+      view: 'ビュー',
+      extend: '延長',
+      noExtend: 'なし',
+      quick: 'クイック',
+      standard: '標準'
+    },
+    projectPrompt: '投影のオプションを入力',
+    edgePrompt: '暗黙のエッジ延長モードを入力',
+    fenceFirst: '最初のフェンス点を指定',
+    fenceNext: '次のフェンス点を指定',
+    crossingFirst: '1 点目のコーナーを指定',
+    crossingSecond: 'もう一方のコーナーを指定',
+    erasePrompt: '削除するオブジェクトを選択 または <終了>',
+    noObject: 'オブジェクトが見つかりません。',
+    noIntersection: 'オブジェクトがエッジと交差していません。',
+    noEdgeInDirection: 'その方向にエッジがありません。',
+    cannotTrim: 'このオブジェクトはトリムできません。',
+    cannotExtend: 'このオブジェクトは延長できません。',
+    lockedLayer: 'オブジェクトはロックされた画層上にあります。',
+    nothingToUndo: 'すべての操作が元に戻されました。',
+    keywords: {
+      cuttingEdges: {
+        display: '切り取りエッジ(T)',
+        local: '切り取りエッジ',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: '境界エッジ(B)',
+        local: '境界エッジ',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'フェンス(F)',
+        local: 'フェンス',
+        global: 'Fence'
+      },
+      crossing: {
+        display: '交差(C)',
+        local: '交差',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'モード(O)',
+        local: 'モード',
+        global: 'mOde'
+      },
+      project: {
+        display: '投影(P)',
+        local: '投影',
+        global: 'Project'
+      },
+      edge: {
+        display: 'エッジ(E)',
+        local: 'エッジ',
+        global: 'Edge'
+      },
+      erase: {
+        display: '削除(R)',
+        local: '削除',
+        global: 'eRase'
+      },
+      undo: {
+        display: '元に戻す(U)',
+        local: '元に戻す',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'クイック(Q)',
+        local: 'クイック',
+        global: 'Quick'
+      },
+      standard: {
+        display: '標準(S)',
+        local: '標準',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'なし(N)',
+        local: 'なし',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'ビュー(V)',
+        local: 'ビュー',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: '延長(E)',
+        local: '延長',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: '延長しない(N)',
+        local: '延長しない',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo:
       '結合するには、線分、円弧、またはポリラインを 2 つ以上選択してください。',

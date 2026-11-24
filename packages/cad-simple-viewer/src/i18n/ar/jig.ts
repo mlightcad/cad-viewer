@@ -405,6 +405,125 @@ export default {
     notExplodable: 'تعذر تفجير {count} من الكائنات',
     minsert: 'لا يمكن تفجير {count} من الكتل المدرجة باستخدام MINSERT'
   },
+  trim: {
+    selectObject: 'حدد الكائن المراد قصه أو اضغط Shift وحدد للتمديد أو',
+    selectEdges: 'حدد حواف القطع أو <تحديد الكل>',
+    modePrompt: 'أدخل خيار وضع القص'
+  },
+  extend: {
+    selectObject: 'حدد الكائن المراد تمديده أو اضغط Shift وحدد للقص أو',
+    selectEdges: 'حدد الحواف الحدودية أو <تحديد الكل>',
+    modePrompt: 'أدخل خيار وضع التمديد'
+  },
+  trimExtend: {
+    currentSettings:
+      'الإعدادات الحالية: الإسقاط={projection}، الحافة={edge}، الوضع={mode}',
+    settingValue: {
+      none: 'لا شيء',
+      ucs: 'UCS',
+      view: 'العرض',
+      extend: 'تمديد',
+      noExtend: 'لا شيء',
+      quick: 'سريع',
+      standard: 'قياسي'
+    },
+    projectPrompt: 'أدخل خيار الإسقاط',
+    edgePrompt: 'أدخل وضع تمديد الحافة الضمني',
+    fenceFirst: 'حدد نقطة السياج الأولى',
+    fenceNext: 'حدد نقطة السياج التالية',
+    crossingFirst: 'حدد الركن الأول',
+    crossingSecond: 'حدد الركن المقابل',
+    erasePrompt: 'حدد الكائنات المراد مسحها أو <خروج>',
+    noObject: 'لم يتم العثور على كائن.',
+    noIntersection: 'الكائن لا يتقاطع مع حافة.',
+    noEdgeInDirection: 'لا توجد حافة في هذا الاتجاه.',
+    cannotTrim: 'لا يمكن قص هذا الكائن.',
+    cannotExtend: 'لا يمكن تمديد هذا الكائن.',
+    lockedLayer: 'الكائن موجود على طبقة مقفلة.',
+    nothingToUndo: 'تم التراجع عن جميع العمليات.',
+    keywords: {
+      cuttingEdges: {
+        display: 'حواف القطع(T)',
+        local: 'حواف القطع',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: 'الحواف الحدودية(B)',
+        local: 'الحواف الحدودية',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'سياج(F)',
+        local: 'سياج',
+        global: 'Fence'
+      },
+      crossing: {
+        display: 'تقاطع(C)',
+        local: 'تقاطع',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'الوضع(O)',
+        local: 'الوضع',
+        global: 'mOde'
+      },
+      project: {
+        display: 'إسقاط(P)',
+        local: 'إسقاط',
+        global: 'Project'
+      },
+      edge: {
+        display: 'حافة(E)',
+        local: 'حافة',
+        global: 'Edge'
+      },
+      erase: {
+        display: 'مسح(R)',
+        local: 'مسح',
+        global: 'eRase'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'سريع(Q)',
+        local: 'سريع',
+        global: 'Quick'
+      },
+      standard: {
+        display: 'قياسي(S)',
+        local: 'قياسي',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'لا شيء(N)',
+        local: 'لا شيء',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'العرض(V)',
+        local: 'العرض',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: 'تمديد(E)',
+        local: 'تمديد',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: 'بدون تمديد(N)',
+        local: 'بدون تمديد',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: 'حدد خطين أو قوسين أو خطوط متعددة على الأقل للضم.',
     noneJoined: 'تعذر ضم أي كائنات.',

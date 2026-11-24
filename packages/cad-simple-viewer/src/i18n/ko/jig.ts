@@ -330,6 +330,124 @@ export default {
     notExplodable: '{count}개의 객체를 분해할 수 없습니다',
     minsert: 'MINSERT로 삽입된 블록 {count}개는 분해할 수 없습니다'
   },
+  trim: {
+    selectObject: '자를 객체 선택 또는 Shift 키를 누른 채 선택하여 연장 또는',
+    selectEdges: '절단 모서리 선택 또는 <모두 선택>',
+    modePrompt: '자르기 모드 옵션 입력'
+  },
+  extend: {
+    selectObject: '연장할 객체 선택 또는 Shift 키를 누른 채 선택하여 자르기 또는',
+    selectEdges: '경계 모서리 선택 또는 <모두 선택>',
+    modePrompt: '연장 모드 옵션 입력'
+  },
+  trimExtend: {
+    currentSettings: '현재 설정: 투영={projection}, 모서리={edge}, 모드={mode}',
+    settingValue: {
+      none: '없음',
+      ucs: 'UCS',
+      view: '뷰',
+      extend: '연장',
+      noExtend: '없음',
+      quick: '빠른 작업',
+      standard: '표준'
+    },
+    projectPrompt: '투영 옵션 입력',
+    edgePrompt: '암시적 모서리 연장 모드 입력',
+    fenceFirst: '첫 번째 울타리 점 지정',
+    fenceNext: '다음 울타리 점 지정',
+    crossingFirst: '첫 번째 구석 지정',
+    crossingSecond: '반대 구석 지정',
+    erasePrompt: '지울 객체 선택 또는 <종료>',
+    noObject: '객체를 찾을 수 없습니다.',
+    noIntersection: '객체가 모서리와 교차하지 않습니다.',
+    noEdgeInDirection: '해당 방향에 모서리가 없습니다.',
+    cannotTrim: '이 객체는 자를 수 없습니다.',
+    cannotExtend: '이 객체는 연장할 수 없습니다.',
+    lockedLayer: '객체가 잠긴 도면층에 있습니다.',
+    nothingToUndo: '모든 작업이 취소되었습니다.',
+    keywords: {
+      cuttingEdges: {
+        display: '절단 모서리(T)',
+        local: '절단 모서리',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: '경계 모서리(B)',
+        local: '경계 모서리',
+        global: 'Boundary'
+      },
+      fence: {
+        display: '울타리(F)',
+        local: '울타리',
+        global: 'Fence'
+      },
+      crossing: {
+        display: '걸치기(C)',
+        local: '걸치기',
+        global: 'Crossing'
+      },
+      mode: {
+        display: '모드(O)',
+        local: '모드',
+        global: 'mOde'
+      },
+      project: {
+        display: '투영(P)',
+        local: '투영',
+        global: 'Project'
+      },
+      edge: {
+        display: '모서리(E)',
+        local: '모서리',
+        global: 'Edge'
+      },
+      erase: {
+        display: '지우기(R)',
+        local: '지우기',
+        global: 'eRase'
+      },
+      undo: {
+        display: '명령 취소(U)',
+        local: '명령 취소',
+        global: 'Undo'
+      },
+      quick: {
+        display: '빠른 작업(Q)',
+        local: '빠른 작업',
+        global: 'Quick'
+      },
+      standard: {
+        display: '표준(S)',
+        local: '표준',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: '없음(N)',
+        local: '없음',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: '뷰(V)',
+        local: '뷰',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: '연장(E)',
+        local: '연장',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: '연장 안 함(N)',
+        local: '연장 안 함',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: '결합하려면 선, 호 또는 폴리선을 두 개 이상 선택하십시오.',
     noneJoined: '결합할 수 있는 객체가 없습니다.',
