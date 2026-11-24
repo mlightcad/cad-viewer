@@ -196,6 +196,12 @@ export default {
       description: '将直线、圆弧和多段线的端点合并为单个对象',
       prompt: '选择要合并的对象'
     },
+    extend: {
+      description: '延伸对象以与其他对象的边相接'
+    },
+    trim: {
+      description: '修剪对象以与其他对象的边相接'
+    },
     group: {
       description: '创建和管理称为编组的对象集合'
     },
@@ -539,6 +545,15 @@ export default {
     },
     projmode: {
       description: '设置修剪或延伸的当前投影模式'
+    },
+    edgemode: {
+      description: '控制修剪和延伸时剪切边和边界边是否延伸到其自然几何图形'
+    },
+    trimedges: {
+      description: '控制在 TRIM 和 EXTEND 的快速模式下填充图案线是否用作剪切边'
+    },
+    trimextendmode: {
+      description: '控制 TRIM 和 EXTEND 使用快速模式还是标准模式'
     },
     polygon: {
       description: '通过中心和半径或指定一条边创建正多边形'

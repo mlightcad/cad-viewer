@@ -308,6 +308,125 @@ export default {
     notExplodable: '{count} object(s) could not be exploded',
     minsert: '{count} block(s) inserted with MINSERT cannot be exploded'
   },
+  trim: {
+    selectObject: 'Select object to trim or shift-select to extend or',
+    selectEdges: 'Select cutting edges or <select all>',
+    modePrompt: 'Enter a trim mode option'
+  },
+  extend: {
+    selectObject: 'Select object to extend or shift-select to trim or',
+    selectEdges: 'Select boundary edges or <select all>',
+    modePrompt: 'Enter an extend mode option'
+  },
+  trimExtend: {
+    currentSettings:
+      'Current settings: Projection={projection}, Edge={edge}, Mode={mode}',
+    settingValue: {
+      none: 'None',
+      ucs: 'UCS',
+      view: 'View',
+      extend: 'Extend',
+      noExtend: 'None',
+      quick: 'Quick',
+      standard: 'Standard'
+    },
+    projectPrompt: 'Enter a projection option',
+    edgePrompt: 'Enter an implied edge extension mode',
+    fenceFirst: 'Specify first fence point',
+    fenceNext: 'Specify next fence point',
+    crossingFirst: 'Specify first corner',
+    crossingSecond: 'Specify opposite corner',
+    erasePrompt: 'Select objects to erase or <exit>',
+    noObject: 'No object found.',
+    noIntersection: 'Object does not intersect an edge.',
+    noEdgeInDirection: 'No edge in that direction.',
+    cannotTrim: 'Cannot trim this object.',
+    cannotExtend: 'Cannot extend this object.',
+    lockedLayer: 'The object is on a locked layer.',
+    nothingToUndo: 'All operations have been undone.',
+    keywords: {
+      cuttingEdges: {
+        display: 'cuTting edges(T)',
+        local: 'cuTting',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: 'Boundary edges(B)',
+        local: 'Boundary',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'Fence(F)',
+        local: 'Fence',
+        global: 'Fence'
+      },
+      crossing: {
+        display: 'Crossing(C)',
+        local: 'Crossing',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'mOde(O)',
+        local: 'mOde',
+        global: 'mOde'
+      },
+      project: {
+        display: 'Project(P)',
+        local: 'Project',
+        global: 'Project'
+      },
+      edge: {
+        display: 'Edge(E)',
+        local: 'Edge',
+        global: 'Edge'
+      },
+      erase: {
+        display: 'eRase(R)',
+        local: 'eRase',
+        global: 'eRase'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'Quick(Q)',
+        local: 'Quick',
+        global: 'Quick'
+      },
+      standard: {
+        display: 'Standard(S)',
+        local: 'Standard',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'None(N)',
+        local: 'None',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'Ucs(U)',
+        local: 'Ucs',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'View(V)',
+        local: 'View',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: 'Extend(E)',
+        local: 'Extend',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: 'No extend(N)',
+        local: 'No',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: 'Select at least two lines, arcs, or polylines to join.',
     noneJoined: 'No objects could be joined.',

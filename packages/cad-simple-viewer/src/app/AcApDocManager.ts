@@ -44,6 +44,7 @@ import {
   AcApEntityPreviewCmd,
   AcApEraseCmd,
   AcApExplodeCmd,
+  AcApExtendCmd,
   AcApFilletCmd,
   AcApGroupCmd,
   AcApGroupEditCmd,
@@ -99,6 +100,7 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
+  AcApTrimCmd,
   AcApUcsCmd,
   AcApUndoCmd,
   AcApUngroupCmd,
@@ -112,6 +114,7 @@ import {
 } from '../command/index.js'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands.js'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands.js'
+import { acapRegisterTrimExtendSysVars } from '../command/modify/AcApTrimExtendSysVars.js'
 import { AcApTxt2MtxtCmd } from '../command/modify/AcApTxt2MtxtCmd.js'
 import {
   AcEdCalculateSizeCallback,
@@ -201,6 +204,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   FILLET: ['F'],
   CHAMFER: ['CHA'],
   JOIN: ['J'],
+  EXTEND: ['EX'],
+  TRIM: ['TR'],
   GROUP: ['G'],
   '-GROUP': ['-G'],
   DIMLINEAR: ['DLI'],
@@ -2092,6 +2097,7 @@ export class AcApDocManager {
     addSystemCommand('explode', 'explode', new AcApExplodeCmd())
     addSystemCommand('fillet', 'fillet', new AcApFilletCmd())
     addSystemCommand('chamfer', 'chamfer', new AcApChamferCmd())
+    addSystemCommand('extend', 'extend', new AcApExtendCmd())
     addSystemCommand('join', 'join', new AcApJoinCmd())
     addSystemCommand('group', 'group', new AcApGroupCmd())
     addSystemCommand('-bsearch', '-bsearch', new AcApDashBSearchCmd())
@@ -2159,6 +2165,7 @@ export class AcApDocManager {
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('scale', 'scale', new AcApScaleCmd())
+    addSystemCommand('trim', 'trim', new AcApTrimCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('objectscale', 'objectscale', new AcApObjectScaleCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
@@ -2193,6 +2200,7 @@ export class AcApDocManager {
     addSystemCommand('ucs', 'ucs', new AcApUcsCmd())
 
     // Register system variables as commands
+    acapRegisterTrimExtendSysVars()
     const sysVars = AcDbSysVarManager.instance().getAllDescriptors()
     sysVars.forEach(sysVar => {
       register.addCommand(

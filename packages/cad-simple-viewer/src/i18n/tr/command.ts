@@ -220,6 +220,12 @@ export default {
         'Çizgi, yay ve çoklu çizgilerin uç noktalarını birleştirerek tek bir nesne oluşturur',
       prompt: 'Birleştirilecek nesneleri seçin'
     },
+    extend: {
+      description: 'Nesneleri diğer nesnelerin kenarlarına kadar uzatır'
+    },
+    trim: {
+      description: 'Nesneleri diğer nesnelerin kenarlarına kadar kırpar'
+    },
     group: {
       description:
         'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'
@@ -616,6 +622,18 @@ export default {
     },
     projmode: {
       description: 'Kırpma veya uzatma için geçerli izdüşüm modunu ayarlar'
+    },
+    edgemode: {
+      description:
+        'Kırpma veya uzatma sırasında kesme ve sınır kenarlarının doğal geometrilerine kadar uzatılıp uzatılmayacağını denetler'
+    },
+    trimedges: {
+      description:
+        'TRIM ve EXTEND hızlı modunda tarama deseni çizgilerinin kesme kenarı olarak kullanılıp kullanılmayacağını denetler'
+    },
+    trimextendmode: {
+      description:
+        'TRIM ve EXTEND komutlarının hızlı modu mu yoksa standart modu mu kullanacağını denetler'
     },
     polygon: {
       description:

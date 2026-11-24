@@ -314,6 +314,8 @@ export default {
       mleaderRemove: 'Remove a leader line from an existing multileader.',
       move: 'Move selected objects to a new position.',
       mirror: 'Create a mirrored copy of selected objects.',
+      trim: 'Trims objects to meet the edges of other objects.',
+      extend: 'Extends objects to meet the edges of other objects.',
       rotate: 'Rotate selected objects around a base point.',
       scale:
         'Enlarge or reduce selected objects, keeping the proportions the same after scaling.',
@@ -490,6 +492,8 @@ export default {
       mleaderRemove: 'Remove Leader',
       move: 'Move',
       mirror: 'Mirror',
+      trim: 'Trim',
+      extend: 'Extend',
       rotate: 'Rotate',
       scale: 'Scale',
       erase: 'Erase',

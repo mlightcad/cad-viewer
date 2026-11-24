@@ -405,6 +405,127 @@ export default {
     notExplodable: '{count} nesne patlatılamadı',
     minsert: 'MINSERT ile eklenen {count} blok patlatılamaz'
   },
+  trim: {
+    selectObject:
+      'Kırpılacak nesneyi seçin veya uzatmak için Shift ile seçin veya',
+    selectEdges: 'Kesme kenarlarını seçin veya <tümünü seç>',
+    modePrompt: 'Bir kırpma modu seçeneği girin'
+  },
+  extend: {
+    selectObject:
+      'Uzatılacak nesneyi seçin veya kırpmak için Shift ile seçin veya',
+    selectEdges: 'Sınır kenarlarını seçin veya <tümünü seç>',
+    modePrompt: 'Bir uzatma modu seçeneği girin'
+  },
+  trimExtend: {
+    currentSettings:
+      'Geçerli ayarlar: İzdüşüm={projection}, Kenar={edge}, Mod={mode}',
+    settingValue: {
+      none: 'Yok',
+      ucs: 'UCS',
+      view: 'Görünüm',
+      extend: 'Uzat',
+      noExtend: 'Yok',
+      quick: 'Hızlı',
+      standard: 'Standart'
+    },
+    projectPrompt: 'Bir izdüşüm seçeneği girin',
+    edgePrompt: 'Örtük kenar uzatma modunu girin',
+    fenceFirst: 'İlk çit noktasını belirtin',
+    fenceNext: 'Sonraki çit noktasını belirtin',
+    crossingFirst: 'İlk köşeyi belirtin',
+    crossingSecond: 'Karşı köşeyi belirtin',
+    erasePrompt: 'Silinecek nesneleri seçin veya <çıkış>',
+    noObject: 'Nesne bulunamadı.',
+    noIntersection: 'Nesne bir kenarla kesişmiyor.',
+    noEdgeInDirection: 'Bu yönde kenar yok.',
+    cannotTrim: 'Bu nesne kırpılamaz.',
+    cannotExtend: 'Bu nesne uzatılamaz.',
+    lockedLayer: 'Nesne kilitli bir katmanda.',
+    nothingToUndo: 'Tüm işlemler geri alındı.',
+    keywords: {
+      cuttingEdges: {
+        display: 'Kesme kenarları(T)',
+        local: 'Kesme kenarları',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: 'Sınır kenarları(B)',
+        local: 'Sınır kenarları',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'Çit(F)',
+        local: 'Çit',
+        global: 'Fence'
+      },
+      crossing: {
+        display: 'Kesişen(C)',
+        local: 'Kesişen',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'Mod(O)',
+        local: 'Mod',
+        global: 'mOde'
+      },
+      project: {
+        display: 'İzdüşüm(P)',
+        local: 'İzdüşüm',
+        global: 'Project'
+      },
+      edge: {
+        display: 'Kenar(E)',
+        local: 'Kenar',
+        global: 'Edge'
+      },
+      erase: {
+        display: 'Sil(R)',
+        local: 'Sil',
+        global: 'eRase'
+      },
+      undo: {
+        display: 'Geri al(U)',
+        local: 'Geri al',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'Hızlı(Q)',
+        local: 'Hızlı',
+        global: 'Quick'
+      },
+      standard: {
+        display: 'Standart(S)',
+        local: 'Standart',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'Yok(N)',
+        local: 'Yok',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'Görünüm(V)',
+        local: 'Görünüm',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: 'Uzat(E)',
+        local: 'Uzat',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: 'Uzatma(N)',
+        local: 'Uzatma',
+        global: 'No'
+      }
+    }
+  },
   join: {
     needTwo: 'Birleştirmek için en az iki çizgi, yay veya çoklu çizgi seçin.',
     noneJoined: 'Birleştirilebilecek nesne yok.',

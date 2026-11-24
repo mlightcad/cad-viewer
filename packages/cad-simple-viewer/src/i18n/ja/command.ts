@@ -93,7 +93,8 @@ export default {
         '特定のコマンドの実行結果プレビューを表示するかどうかをコントロールします'
     },
     comparehatch: {
-      description: '図面比較にハッチング オブジェクトを含めるかどうかをコントロールします'
+      description:
+        '図面比較にハッチング オブジェクトを含めるかどうかをコントロールします'
     },
     compareprops: {
       description:
@@ -104,7 +105,8 @@ export default {
         '比較図面で変更セット境界とリビジョン雲の間のオフセットを設定します'
     },
     comparetext: {
-      description: '図面比較に文字オブジェクトを含めるかどうかをコントロールします'
+      description:
+        '図面比較に文字オブジェクトを含めるかどうかをコントロールします'
     },
     comparetolerance: {
       description: '2 つの図面を比較するときの小数点以下の許容差を設定します'
@@ -212,6 +214,13 @@ export default {
       description:
         '線分、円弧、ポリラインの端点を結合して 1 つのオブジェクトにします',
       prompt: '結合するオブジェクトを選択'
+    },
+    extend: {
+      description: '他のオブジェクトのエッジまでオブジェクトを延長します'
+    },
+    trim: {
+      description:
+        '他のオブジェクトのエッジに合わせてオブジェクトをトリムします'
     },
     group: {
       description:
@@ -596,6 +605,18 @@ export default {
     },
     projmode: {
       description: 'トリムまたは延長の現在の投影モードを設定します'
+    },
+    edgemode: {
+      description:
+        'トリムまたは延長時に切り取りエッジと境界エッジを自然なジオメトリまで延長するかどうかを制御します'
+    },
+    trimedges: {
+      description:
+        'TRIM と EXTEND のクイック モードでハッチング パターンの線を切り取りエッジとして使用するかどうかを制御します'
+    },
+    trimextendmode: {
+      description:
+        'TRIM と EXTEND でクイック モードと標準モードのどちらを使用するかを制御します'
     },
     polygon: {
       description:

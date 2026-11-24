@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AutoCAD-style EXTEND: a line lengthened to meet a boundary edge -->
+  <!-- Boundary edge -->
+  <path
+    d="M20 3V21"
+    stroke="var(--el-color-primary)"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <!-- Original line -->
+  <path
+    d="M2.5 12H10"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <!-- Extension up to the boundary -->
+  <path
+    d="M10 12H16.5"
+    stroke="var(--el-color-primary)"
+    stroke-width="1.5"
+    stroke-dasharray="1.5 1.5"
+  />
+  <!-- Arrowhead touching the boundary -->
+  <path
+    d="M16 9L19.25 12L16 15Z"
+    fill="var(--el-color-primary)"
+    stroke="var(--el-color-primary)"
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+</svg>

@@ -390,6 +390,8 @@ export default {
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
       move: 'Posune vybrané objekty na novou pozici.',
       mirror: 'Vytvoří zrcadlenou kopii vybraných objektů.',
+      trim: 'Ořízne objekty tak, aby se setkaly s hranami jiných objektů.',
+      extend: 'Prodlouží objekty tak, aby se setkaly s hranami jiných objektů.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
       scale:
         'Zvětší nebo zmenší vybrané objekty se zachováním jejich proporcí.',
@@ -560,6 +562,8 @@ export default {
       mleaderRemove: 'Odebrat odkaz',
       move: 'Posunout',
       mirror: 'Zrcadlit',
+      trim: 'Oříznout',
+      extend: 'Prodloužit',
       rotate: 'Otočit',
       scale: 'Měřítko',
       erase: 'Vymazat',

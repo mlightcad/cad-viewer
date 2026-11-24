@@ -216,6 +216,13 @@ export default {
         'Spojí koncové body úseček, oblouků a křivek do jednoho objektu',
       prompt: 'Vyberte objekty ke spojení'
     },
+    extend: {
+      description:
+        'Prodlouží objekty tak, aby se setkaly s hranami jiných objektů'
+    },
+    trim: {
+      description: 'Ořízne objekty tak, aby se setkaly s hranami jiných objektů'
+    },
     group: {
       description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
     },
@@ -598,7 +605,20 @@ export default {
         'Řídí nastavení polárního sledování a sledování uchopení objektů'
     },
     projmode: {
-      description: 'Nastaví aktuální režim projekce pro oříznutí nebo prodloužení'
+      description:
+        'Nastaví aktuální režim projekce pro oříznutí nebo prodloužení'
+    },
+    edgemode: {
+      description:
+        'Určuje, zda se při oříznutí nebo prodloužení řezné a hraniční hrany prodlužují na svou přirozenou geometrii'
+    },
+    trimedges: {
+      description:
+        'Určuje, zda čáry šrafovacího vzoru slouží v rychlém režimu příkazů TRIM a EXTEND jako řezné hrany'
+    },
+    trimextendmode: {
+      description:
+        'Určuje, zda příkazy TRIM a EXTEND používají rychlý, nebo standardní režim'
     },
     polygon: {
       description:
@@ -695,8 +715,7 @@ export default {
         'Řídí, zda je aktivní karta Model, nebo rozvržení výkresového prostoru'
     },
     trimmode: {
-      description:
-        'Řídí, zda se vybrané hrany pro zkosení a zaoblení oříznou'
+      description: 'Řídí, zda se vybrané hrany pro zkosení a zaoblení oříznou'
     },
     unitmode: {
       description:

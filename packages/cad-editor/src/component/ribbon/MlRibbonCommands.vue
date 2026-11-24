@@ -151,6 +151,7 @@ import {
   ellipseArc,
   ellipseCenter,
   explode,
+  extend,
   fillet,
   find,
   group,
@@ -195,6 +196,7 @@ import {
   setting,
   splineFitPoints,
   textStyle,
+  trim,
   ucs,
   ucsObject,
   ucsOrigin,
@@ -1371,6 +1373,8 @@ const buildBaseTabs = (
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
     move: t('main.ribbon.tooltip.move'),
     mirror: t('main.ribbon.tooltip.mirror'),
+    trim: t('main.ribbon.tooltip.trim'),
+    extend: t('main.ribbon.tooltip.extend'),
     rotate: t('main.ribbon.tooltip.rotate'),
     scale: t('main.ribbon.tooltip.scale'),
     erase: t('main.ribbon.tooltip.erase'),
@@ -2343,6 +2347,20 @@ const buildBaseTabs = (
           title: t('main.ribbon.group.modify'),
           orientation: 'row',
           footerMenuItems: [
+            {
+              id: 'cmd-trim',
+              type: 'button',
+              label: t('main.ribbon.command.trim'),
+              tooltip: ribbonTooltips.trim,
+              props: { icon: trim }
+            },
+            {
+              id: 'cmd-extend',
+              type: 'button',
+              label: t('main.ribbon.command.extend'),
+              tooltip: ribbonTooltips.extend,
+              props: { icon: extend }
+            },
             {
               id: 'cmd-mirror',
               type: 'button',
@@ -3420,6 +3438,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-mleaderstyle', 'mleaderstyle')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-mirror', 'mirror')
+  commandByItemId.set('cmd-trim', 'trim')
+  commandByItemId.set('cmd-extend', 'extend')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-scale', 'scale')
   commandByItemId.set('cmd-erase', 'erase')
