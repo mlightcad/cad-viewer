@@ -1050,6 +1050,21 @@ export default {
       chooseFile: 'Vyberte sidecar JSON soubor poznámek'
     }
   },
+  stretch: {
+    crossingFirst: 'Určete první roh křížového okna',
+    crossingSecond: 'Určete protilehlý roh',
+    basePointOrDisplacement: 'Určete základní bod nebo',
+    secondPointOrDisplacement: 'Určete druhý bod nebo',
+    displacement: 'Určete posunutí',
+    nothingStretched: 'Nebyly nataženy žádné objekty.',
+    keywords: {
+      displacement: {
+        display: 'Posunutí(D)',
+        local: 'Posunutí',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: 'Zadejte základní bod nebo',
     secondPointOrDisplacement: 'Zadejte druhý bod nebo',

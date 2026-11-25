@@ -495,6 +495,10 @@ export default {
     mline: {
       description: 'Creates multiple parallel lines as one multiline object'
     },
+    stretch: {
+      description: 'Stretches objects crossed by a selection window',
+      prompt: 'Select objects to stretch by crossing-window'
+    },
     move: {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'

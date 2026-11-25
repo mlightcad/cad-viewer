@@ -160,6 +160,61 @@ export class AcApEntityService {
   }
 
   /**
+   * Applies STRETCH to entities: full translate or local
+   * {@link AcDbEntity.subMoveStretchPointsAt}.
+   *
+   * Each target carries its own entity-space `offset` so paper-space viewport
+   * selections can map layout displacement per viewport before calling this.
+   *
+   * @param targets - Per-entity stretch plan from the STRETCH command.
+   * @returns Number of entities successfully stretched or moved.
+   */
+  stretchEntities(
+    targets: ReadonlyArray<{
+      entity: AcDbEntity
+      indices: number[]
+      fullyEnclosed: boolean
+      offset: AcGePoint3dLike
+    }>
+  ): number {
+    return this.runEntityEdit(() => {
+      let count = 0
+      for (const target of targets) {
+        if (isEntityOnLockedLayer(this.db, target.entity)) continue
+        const opened = this.db.openEntityForWrite(target.entity)
+        if (!opened) continue
+
+        const stretchCount = opened.subGetStretchPoints().length
+        // Entities with no stretch points (e.g. 3D solids) are never modified
+        // by STRETCH, even when fully enclosed — matching AutoCAD.
+        if (stretchCount === 0) continue
+
+        const offset = target.offset
+        const moveWhole =
+          target.fullyEnclosed || target.indices.length >= stretchCount
+
+        if (moveWhole) {
+          opened.transformBy(
+            new AcGeMatrix3d().makeTranslation(
+              offset.x,
+              offset.y,
+              offset.z ?? 0
+            )
+          )
+        } else if (target.indices.length > 0) {
+          opened.subMoveStretchPointsAt(target.indices, offset)
+        } else {
+          continue
+        }
+
+        regenerateDimension(opened)
+        count++
+      }
+      return count
+    })
+  }
+
+  /**
    * Rotates entities around a base point.
    *
    * @param entities - Entities to rotate.
@@ -227,8 +282,7 @@ export class AcApEntityService {
       const byOwner = new Map<AcDbBlockTableRecord, AcDbEntity[]>()
       for (let i = 0; i < clones.length; i++) {
         const owner = this.db.getObjectById(sourcesForClones[i].ownerId)
-        const space =
-          owner instanceof AcDbBlockTableRecord ? owner : modelSpace
+        const space = owner instanceof AcDbBlockTableRecord ? owner : modelSpace
         const bucket = byOwner.get(space)
         if (bucket) {
           bucket.push(clones[i])

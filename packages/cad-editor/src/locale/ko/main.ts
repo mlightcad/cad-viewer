@@ -327,6 +327,7 @@ export default {
       copyBase:
         '지정한 기준점을 사용하여 선택한 객체를 클립보드에 복사합니다(COPYBASE).',
       explode: '복합 객체를 구성 요소 객체로 분해합니다.',
+      stretch: '교차 창으로 선택한 객체를 신축합니다.',
       join: '선, 호, 폴리선의 끝점을 결합하여 단일 객체를 만듭니다.',
       fillet: '객체의 모서리를 필렛합니다.',
       chamfer: '객체의 모서리를 모따기합니다.',
@@ -478,6 +479,7 @@ export default {
       copyClip: '복사',
       copyBase: '기준점을 사용하여 복사',
       explode: '분해',
+      stretch: '신축',
       join: '결합',
       fillet: '필렛',
       chamfer: '모따기',

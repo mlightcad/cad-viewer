@@ -1119,6 +1119,21 @@ export default {
       chooseFile: 'اختر ملف JSON جانبيًا يحتوي على علامات المراجعة'
     }
   },
+  stretch: {
+    crossingFirst: 'حدد الركن الأول لإطار التقاطع',
+    crossingSecond: 'حدد الزاوية المقابلة',
+    basePointOrDisplacement: 'حدد نقطة الأساس أو',
+    secondPointOrDisplacement: 'حدد النقطة الثانية أو',
+    displacement: 'حدد الإزاحة',
+    nothingStretched: 'لم يتم تمديد أي كائنات.',
+    keywords: {
+      displacement: {
+        display: 'إزاحة(D)',
+        local: 'إزاحة',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: 'حدد نقطة الأساس أو',
     secondPointOrDisplacement: 'حدد النقطة الثانية أو',

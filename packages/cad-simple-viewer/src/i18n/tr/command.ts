@@ -512,6 +512,10 @@ export default {
       description:
         'Tek bir çoklu çizgi nesnesi olarak birden çok paralel çizgi oluşturur'
     },
+    stretch: {
+      description: 'Kesişen seçim penceresiyle nesneleri gerer',
+      prompt: 'Germek için nesneleri kesişen pencererle seçin'
+    },
     move: {
       description: 'Seçili varlıkları bir yer değiştirme vektörüne göre taşır',
       prompt: 'Varlıkları seçin'

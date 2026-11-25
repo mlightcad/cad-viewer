@@ -308,6 +308,13 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH`는 엔티티별 기하 편집을 하드코딩하지 않습니다. 윈도우 또는 교차 창으로 신축 점 인덱스를 선택한 뒤 명령은
+`AcDbEntity.subMoveStretchPointsAt`를 호출합니다(엔티티가 완전히 둘러싸인 경우 `transformBy`).
+명령 트랜잭션에서는 엔티티를 임시로 열지 말고 `AcApEntityService.stretchEntities`를 우선 사용하세요.
+활성 배치가 용지 공간일 때는 서비스를 호출하기 전에, 해당 엔티티를 선택한 뷰포트를 통해 신축 점과 변위를 매핑합니다.
+
 ### 예제: 리본 색상 변경
 
 ```typescript

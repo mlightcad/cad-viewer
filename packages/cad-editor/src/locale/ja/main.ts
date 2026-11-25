@@ -332,6 +332,7 @@ export default {
       copyBase:
         '指定した基点で選択したオブジェクトをクリップボードにコピーします (COPYBASE)。',
       explode: '複合オブジェクトを構成要素のオブジェクトに分解します。',
+      stretch: '交差ウィンドウで選択したオブジェクトをストレッチします。',
       join: '線分、円弧、ポリラインの端点を結合して 1 つのオブジェクトにします。',
       fillet: 'オブジェクトのエッジをフィレットします。',
       chamfer: 'オブジェクトのエッジを面取りします。',
@@ -491,6 +492,7 @@ export default {
       copyClip: 'コピー',
       copyBase: '基点コピー',
       explode: '分解',
+      stretch: 'ストレッチ',
       join: '結合',
       fillet: 'フィレット',
       chamfer: '面取り',

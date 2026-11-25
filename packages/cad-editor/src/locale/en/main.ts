@@ -332,6 +332,7 @@ export default {
       copyBase:
         'Copy the selected objects to the clipboard with a specified base point (COPYBASE).',
       explode: 'Break a compound object into its component objects.',
+      stretch: 'Stretch objects crossed by a selection window.',
       join: 'Join the endpoints of lines, arcs, and polylines to create a single object.',
       fillet: 'Round and fillet the edges of objects.',
       chamfer: 'Bevel the edges of objects.',
@@ -504,6 +505,7 @@ export default {
       copyClip: 'Copy',
       copyBase: 'Copy with Base Point',
       explode: 'Explode',
+      stretch: 'Stretch',
       join: 'Join',
       fillet: 'Fillet',
       chamfer: 'Chamfer',

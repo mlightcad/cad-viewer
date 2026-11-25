@@ -1123,6 +1123,21 @@ export default {
       chooseFile: 'Bir işaret sidecar JSON dosyası seçin'
     }
   },
+  stretch: {
+    crossingFirst: 'Kesişen pencerenin ilk köşesini belirtin',
+    crossingSecond: 'Karşı köşeyi belirtin',
+    basePointOrDisplacement: 'Temel noktayı belirtin veya',
+    secondPointOrDisplacement: 'İkinci noktayı belirtin veya',
+    displacement: 'Yer değiştirmeyi belirtin',
+    nothingStretched: 'Hiçbir nesne gerilmedi.',
+    keywords: {
+      displacement: {
+        display: 'YerDeğiştirme(D)',
+        local: 'YerDeğiştirme',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: 'Temel noktayı belirtin veya',
     secondPointOrDisplacement: 'İkinci noktayı belirtin veya',

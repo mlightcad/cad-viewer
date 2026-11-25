@@ -1042,6 +1042,21 @@ export default {
       chooseFile: '마크업 사이드카 JSON 파일 선택'
     }
   },
+  stretch: {
+    crossingFirst: '교차 창의 첫 번째 구석 지정',
+    crossingSecond: '반대쪽 구석 지정',
+    basePointOrDisplacement: '기준점 지정 또는',
+    secondPointOrDisplacement: '두 번째 점 지정 또는',
+    displacement: '변위 지정',
+    nothingStretched: '신축된 객체가 없습니다.',
+    keywords: {
+      displacement: {
+        display: '변위(D)',
+        local: '변위',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: '기준점 지정 또는',
     secondPointOrDisplacement: '두 번째 점 지정 또는',

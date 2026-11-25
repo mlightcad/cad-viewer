@@ -308,6 +308,16 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH` does not hard-code per-entity geometry edits. After a window or
+crossing box selects stretch-point indices, the command calls
+`AcDbEntity.subMoveStretchPointsAt` (or `transformBy` when the entity is
+fully enclosed). Prefer `AcApEntityService.stretchEntities` from the command
+transaction rather than opening entities ad hoc. When the active layout is
+paper space, map stretch points and displacement through the viewport the
+entity was selected in before calling the service.
+
 ### Example: ribbon color change
 
 ```typescript

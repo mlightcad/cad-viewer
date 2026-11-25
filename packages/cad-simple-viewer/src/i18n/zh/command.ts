@@ -447,6 +447,10 @@ export default {
     mline: {
       description: '创建由多条平行线组成的多线对象'
     },
+    stretch: {
+      description: '拉伸与选择窗口相交的对象',
+      prompt: '用窗交选择要拉伸的对象'
+    },
     move: {
       description: '通过位移向量移动所选图元',
       prompt: '选择对象'

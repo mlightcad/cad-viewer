@@ -308,6 +308,13 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH`, varlık başına geometri düzenlemelerini sabit kodlamaz. Bir pencere veya kesişen kutu gerdirme noktası dizinlerini seçtikten sonra komut
+`AcDbEntity.subMoveStretchPointsAt` çağırır (varlık tamamen kapsanmışsa `transformBy`).
+Komut işleminde varlıkları geçici açmak yerine `AcApEntityService.stretchEntities` tercih edin.
+Etkin düzen kağıt alanı olduğunda, hizmeti çağırmadan önce gerdirme noktalarını ve yer değiştirmeyi varlığın seçildiği görünüm penceresi üzerinden eşleyin.
+
 ### Örnek: şerit rengi değişikliği
 
 ```typescript

@@ -9,8 +9,8 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 overrides:
-  '@mlightcad/data-model': '1.16.3'
-  '@mlightcad/libredwg-converter': '3.16.3'
+  '@mlightcad/data-model': '1.16.4'
+  '@mlightcad/libredwg-converter': '3.16.4'
   '@mlightcad/mtext-input-box': '0.3.10'
   '@mlightcad/mtext-parser': '1.5.7'
   '@mlightcad/mtext-renderer': '0.13.10'

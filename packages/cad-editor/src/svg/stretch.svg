@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AutoCAD-style STRETCH: box with right edge pulled out -->
+  <path
+    d="M4 6H12V18H4V6Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M12 6H18V18H12"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-dasharray="2.2 1.6"
+    opacity="0.55"
+  />
+  <path
+    d="M14.5 12H21"
+    stroke="currentColor"
+    stroke-width="1.35"
+    stroke-linecap="round"
+  />
+  <path
+    d="M18.2 9.2L21.2 12L18.2 14.8"
+    stroke="currentColor"
+    stroke-width="1.35"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <rect x="3.25" y="5.25" width="2.2" height="2.2" fill="var(--el-color-primary)" />
+  <rect x="3.25" y="16.55" width="2.2" height="2.2" fill="var(--el-color-primary)" />
+  <rect x="16.9" y="5.25" width="2.2" height="2.2" fill="var(--el-color-primary)" />
+  <rect x="16.9" y="16.55" width="2.2" height="2.2" fill="var(--el-color-primary)" />
+</svg>

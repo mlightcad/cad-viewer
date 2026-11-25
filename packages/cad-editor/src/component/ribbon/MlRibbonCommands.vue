@@ -195,6 +195,7 @@ import {
   scale,
   setting,
   splineFitPoints,
+  stretch,
   textStyle,
   trim,
   ucs,
@@ -1387,6 +1388,7 @@ const buildBaseTabs = (
     offset: t('main.ribbon.tooltip.offset'),
     explode: t('main.ribbon.tooltip.explode'),
     join: t('main.ribbon.tooltip.join'),
+    stretch: t('main.ribbon.tooltip.stretch'),
     fillet: t('main.ribbon.tooltip.fillet'),
     chamfer: t('main.ribbon.tooltip.chamfer'),
     undo: t('main.ribbon.tooltip.undo'),
@@ -2270,6 +2272,13 @@ const buildBaseTabs = (
           title: t('main.ribbon.group.modify'),
           orientation: 'row',
           footerMenuItems: [
+            {
+              id: 'cmd-stretch',
+              type: 'button',
+              label: t('main.ribbon.command.stretch'),
+              tooltip: ribbonTooltips.stretch,
+              props: { icon: stretch }
+            },
             {
               id: 'cmd-join',
               type: 'button',
@@ -3490,6 +3499,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-explode', 'explode')
   commandByItemId.set('cmd-join', 'join')
+  commandByItemId.set('cmd-stretch', 'stretch')
   commandByItemId.set('cmd-fillet-chamfer', 'fillet')
   commandByItemId.set('cmd-fillet', 'fillet')
   commandByItemId.set('fillet', 'fillet')
