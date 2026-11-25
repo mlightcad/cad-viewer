@@ -1092,6 +1092,17 @@ export abstract class AcEdBaseView {
   }
 
   /**
+   * Collects entity ids that a window or crossing box would select.
+   *
+   * Used by STRETCH and other commands that need box hits without applying a
+   * selection action. Crossing results are refined the same way as interactive
+   * box selection (AABB hits that miss curve geometry are dropped).
+   */
+  collectSelectionIdsForBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
+    return this.collectSelectionIdsByBox(box, mode)
+  }
+
+  /**
    * Collects ids using window or crossing selection rules.
    *
    * Crossing hits come from entity AABBs in the spatial index. Long polylines
@@ -1099,6 +1110,7 @@ export abstract class AcEdBaseView {
    * Subclasses with access to the drawing database should override
    * {@link refineCrossingSelectionHits} to drop those false positives.
    */
+
   protected collectSelectionIdsByBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
     const results = this.search(box, { selectionMode: mode }).filter(
       isEffectiveSpatialQueryHit

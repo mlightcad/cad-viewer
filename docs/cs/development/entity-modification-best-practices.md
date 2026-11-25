@@ -308,6 +308,13 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH` nehardcoduje geometrické úpravy po entitách. Po výběru indexů bodů natažení oknem nebo křížovým oknem příkaz volá
+`AcDbEntity.subMoveStretchPointsAt` (nebo `transformBy`, pokud je entita zcela uzavřena).
+V transakci příkazu preferujte `AcApEntityService.stretchEntities` místo ad hoc otevírání entit.
+Když je aktivní výkresový prostor, před voláním služby mapujte body natažení a posunutí přes viewport, ve kterém byla entita vybrána.
+
 ### Příklad: Změna barvy na Ribbonu
 
 ```typescript

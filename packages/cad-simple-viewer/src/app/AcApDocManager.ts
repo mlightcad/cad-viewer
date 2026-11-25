@@ -98,6 +98,7 @@ import {
   AcApSelectCmd,
   AcApSketchCmd,
   AcApSplineCmd,
+  AcApStretchCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
   AcApTrimCmd,
@@ -243,6 +244,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MIRROR: ['MI'],
   ROTATE: ['RO'],
   SCALE: ['SC'],
+  STRETCH: ['S'],
   // OPEN has no acad.pgp alias (Ctrl+O); OP is OPTIONS in AutoCAD.
   PAN: ['P'],
   POINT: ['PO'],
@@ -2165,6 +2167,7 @@ export class AcApDocManager {
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('scale', 'scale', new AcApScaleCmd())
+    addSystemCommand('stretch', 'stretch', new AcApStretchCmd())
     addSystemCommand('trim', 'trim', new AcApTrimCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('objectscale', 'objectscale', new AcApObjectScaleCmd())

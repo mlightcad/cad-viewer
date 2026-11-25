@@ -308,6 +308,13 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH` はエンティティごとの幾何編集をハードコードしません。ウィンドウまたは交差ウィンドウでストレッチ点のインデックスを選んだ後、コマンドは
+`AcDbEntity.subMoveStretchPointsAt` を呼び出します（エンティティが完全に囲まれている場合は `transformBy`）。
+コマンドのトランザクションからは `AcApEntityService.stretchEntities` を優先し、都度エンティティを開かないでください。
+アクティブなレイアウトがペーパー空間の場合は、サービスを呼ぶ前に、そのエンティティを選択したビューポート経由でストレッチ点と変位を変換します。
+
 ### 例：リボンからの色変更
 
 ```typescript

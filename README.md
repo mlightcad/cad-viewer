@@ -280,7 +280,7 @@ Legend:
 #### Geometry Editing
 
 * [x] Grip points
-* [ ] Stretch
+* [x] Stretch
 * [ ] Trim
 * [ ] Extend
 * [x] Offset

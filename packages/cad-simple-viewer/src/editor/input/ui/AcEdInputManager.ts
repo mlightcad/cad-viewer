@@ -2146,6 +2146,8 @@ export class AcEdInputManager {
 
     const drawPreview = (pos: AcGePoint2dLike) => {
       const cwcsP2 = this.view.worldToScreen(pos)
+      const mode = this.view.getSelectionMode(cwcsP1, cwcsP2)
+      const style = this.view.getSelectionPreviewStyle(mode, 'add')
       const left = Math.min(cwcsP2.x, cwcsP1.x)
       const top = Math.min(cwcsP2.y, cwcsP1.y)
       const width = Math.abs(cwcsP2.x - cwcsP1.x)
@@ -2155,8 +2157,11 @@ export class AcEdInputManager {
         left: `${left}px`,
         top: `${top}px`,
         width: `${width}px`,
-        height: `${height}px`
+        height: `${height}px`,
+        borderStyle: style.borderStyle,
+        background: style.background
       })
+      previewEl.style.setProperty('--line-color', style.lineColor)
     }
 
     const message2 =
@@ -2170,7 +2175,11 @@ export class AcEdInputManager {
     const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
     const box = new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
-    return new AcEdPromptBoxResult(AcEdPromptStatus.OK, box)
+    const mode = this.view.getSelectionMode(
+      cwcsP1,
+      this.view.worldToScreen(p2)
+    )
+    return new AcEdPromptBoxResult(AcEdPromptStatus.OK, box, undefined, mode)
   }
 
   /**
@@ -2260,8 +2269,9 @@ export class AcEdInputManager {
         const box = new AcGeBox2d()
           .expandByPoint(startWcs)
           .expandByPoint(endWcs)
+        const mode = this.view.getSelectionMode(startCanvas, endCanvas)
         cleanup()
-        resolve(new AcEdPromptBoxResult(AcEdPromptStatus.OK, box))
+        resolve(new AcEdPromptBoxResult(AcEdPromptStatus.OK, box, undefined, mode))
         return true
       }
 

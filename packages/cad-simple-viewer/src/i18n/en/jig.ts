@@ -1021,6 +1021,21 @@ export default {
       chooseFile: 'Choose a markup sidecar JSON file'
     }
   },
+  stretch: {
+    crossingFirst: 'Specify first corner of crossing window',
+    crossingSecond: 'Specify opposite corner',
+    basePointOrDisplacement: 'Specify base point or',
+    secondPointOrDisplacement: 'Specify second point or',
+    displacement: 'Specify displacement',
+    nothingStretched: 'No objects were stretched.',
+    keywords: {
+      displacement: {
+        display: 'Displacement(D)',
+        local: 'Displacement',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: 'Specify base point or',
     secondPointOrDisplacement: 'Specify second point or',

@@ -997,6 +997,21 @@ export default {
       chooseFile: '选择批注 sidecar JSON 文件'
     }
   },
+  stretch: {
+    crossingFirst: '指定窗交的第一个角点',
+    crossingSecond: '指定对角点',
+    basePointOrDisplacement: '指定基点或',
+    secondPointOrDisplacement: '指定第二个点或',
+    displacement: '指定位移',
+    nothingStretched: '没有对象被拉伸。',
+    keywords: {
+      displacement: {
+        display: '位移(D)',
+        local: '位移',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: '指定基点或',
     secondPointOrDisplacement: '指定第二个点或',

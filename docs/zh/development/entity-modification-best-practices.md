@@ -308,6 +308,13 @@ acapRunDatabaseEdit(db, 'Grip Edit', () => {
 })
 ```
 
+### STRETCH
+
+`STRETCH` 不会硬编码按实体的几何编辑。窗口或窗交选择拉伸点索引后，命令调用
+`AcDbEntity.subMoveStretchPointsAt`（实体被完全包围时则调用 `transformBy`）。
+请在命令事务中优先使用 `AcApEntityService.stretchEntities`，而不是临时打开实体。
+当活动布局为图纸空间时，在调用服务之前，应通过选中该实体时的视口映射拉伸点与位移。
+
 ### 示例：功能区颜色变更
 
 ```typescript

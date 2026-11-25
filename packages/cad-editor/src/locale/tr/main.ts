@@ -334,6 +334,7 @@ export default {
       copyBase:
         'Seçili nesneleri belirtilen bir temel noktayla panoya kopyalar (COPYBASE).',
       explode: 'Bileşik bir nesneyi bileşen nesnelerine ayırır.',
+      stretch: 'Kesişen seçim penceresiyle nesneleri gerer.',
       join: 'Çizgi, yay ve çoklu çizgilerin uç noktalarını birleştirerek tek bir nesne oluşturur.',
       fillet: 'Nesnelerin kenarlarını yuvarlar.',
       chamfer: 'Nesnelerin kenarlarını pahlar.',
@@ -510,6 +511,7 @@ export default {
       copyClip: 'Kopyala',
       copyBase: 'Temel Noktayla Kopyala',
       explode: 'Patlat',
+      stretch: 'Ger',
       join: 'Birleştir',
       fillet: 'Yuvarla',
       chamfer: 'Pahla',

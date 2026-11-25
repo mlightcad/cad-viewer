@@ -406,6 +406,7 @@ export default {
       copyBase:
         'Zkopíruje vybrané objekty do schránky se zadaným základním bodem (COPYBASE).',
       explode: 'Rozloží složený objekt na jednotlivé objekty.',
+      stretch: 'Roztáhne objekty protnuté výběrovým oknem.',
       join: 'Spojí koncové body úseček, oblouků a křivek do jednoho objektu.',
       fillet: 'Zaoblí hrany objektů.',
       chamfer: 'Zkosí hrany objektů.',
@@ -574,6 +575,7 @@ export default {
       copyClip: 'Kopírovat',
       copyBase: 'Kopírovat se základním bodem',
       explode: 'Rozložit',
+      stretch: 'Roztáhnout',
       join: 'Spojit',
       fillet: 'Zaoblení',
       chamfer: 'Zkosení',

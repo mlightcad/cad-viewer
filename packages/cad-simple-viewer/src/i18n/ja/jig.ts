@@ -1050,6 +1050,21 @@ export default {
       chooseFile: 'マークアップのサイドカー JSON ファイルを選択'
     }
   },
+  stretch: {
+    crossingFirst: '交差ウィンドウの 1 点目のコーナーを指定',
+    crossingSecond: 'もう一方のコーナーを指定',
+    basePointOrDisplacement: '基点を指定 または',
+    secondPointOrDisplacement: '2 点目を指定 または',
+    displacement: '変位を指定',
+    nothingStretched: 'ストレッチされたオブジェクトはありません。',
+    keywords: {
+      displacement: {
+        display: '変位(D)',
+        local: '変位',
+        global: 'Displacement'
+      }
+    }
+  },
   move: {
     basePointOrDisplacement: '基点を指定 または',
     secondPointOrDisplacement: '2 点目を指定 または',

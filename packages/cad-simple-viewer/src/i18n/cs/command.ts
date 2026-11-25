@@ -496,6 +496,10 @@ export default {
       description:
         'Vytvoří několik rovnoběžných čar jako jeden objekt multičáry'
     },
+    stretch: {
+      description: 'Roztáhne objekty protnuté výběrovým oknem',
+      prompt: 'Vyberte objekty k roztažení křížovým oknem'
+    },
     move: {
       description: 'Posune vybrané objekty o vektor přemístění',
       prompt: 'Vyberte objekty'

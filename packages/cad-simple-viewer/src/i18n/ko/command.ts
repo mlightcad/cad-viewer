@@ -466,6 +466,10 @@ export default {
     mline: {
       description: '여러 개의 평행선을 하나의 여러 줄 객체로 작성합니다'
     },
+    stretch: {
+      description: '교차 창으로 선택한 객체를 신축합니다',
+      prompt: '교차 창으로 신축할 객체 선택'
+    },
     move: {
       description: '선택한 객체를 변위 벡터만큼 이동합니다',
       prompt: '객체 선택'
