@@ -30,6 +30,13 @@ export interface AcApUiRibbonItem {
   iconSvg?: string
   /** Ribbon button size. Hosts choose a default when omitted. */
   size?: 'large' | 'small'
+  /** When true, the host shows only the icon (tooltip still uses the label). */
+  hideLabel?: boolean
+  /**
+   * When merging into a host group, insert this item immediately after the
+   * host item with this id. Falls back to appending when the id is missing.
+   */
+  after?: string
   /**
    * Called instead of {@link command} when the item needs work the command
    * line cannot express (choosing an OCR provider, for example).

@@ -48,13 +48,49 @@ export function mlApplyPluginRibbon(tabs: RibbonTabModel[]): {
       }),
       createGroup: source => ribbonGroup(source, actions),
       appendItems: (group, source) => {
-        const items = source.items.map(item => ribbonItem(item, actions))
-        const collection = group.collections?.[0]
-        if (collection) {
-          collection.items.push(...items)
+        const collections = group.collections ?? []
+        if (collections.length === 0) {
+          group.collections = [
+            {
+              id: `${group.id}-plugin`,
+              layout: 'row',
+              items: source.items.map(item => ribbonItem(item, actions))
+            }
+          ]
           return
         }
-        group.collections = [{ id: `${group.id}-plugin`, layout: 'row', items }]
+
+        // Last item inserted for each `after` anchor in this merge pass, so
+        // multiple items sharing the same anchor keep registration order.
+        const lastAfterId = new Map<string, string>()
+        for (const sourceItem of source.items) {
+          const mapped = ribbonItem(sourceItem, actions)
+          let placed = false
+          if (sourceItem.after) {
+            const relativeTo =
+              lastAfterId.get(sourceItem.after) ?? sourceItem.after
+            for (const collection of collections) {
+              const idx = collection.items.findIndex(
+                entry => entry.id === relativeTo
+              )
+              if (idx >= 0) {
+                collection.items.splice(idx + 1, 0, mapped)
+                lastAfterId.set(sourceItem.after, mapped.id)
+                placed = true
+                break
+              }
+            }
+          }
+          if (placed) continue
+
+          const target =
+            collections.find(
+              collection =>
+                collection.id.endsWith('-secondary') ||
+                collection.id.endsWith('-plugin')
+            ) ?? collections[0]
+          target.items.push(mapped)
+        }
       }
     }
   )
@@ -140,6 +176,7 @@ function ribbonItem(
       type: 'dropdown',
       label,
       tooltip,
+      hideLabel: item.hideLabel === true,
       size,
       props: {
         icon,
@@ -161,6 +198,7 @@ function ribbonItem(
     type: 'button',
     label,
     tooltip,
+    hideLabel: item.hideLabel === true,
     size,
     props: {
       icon,
