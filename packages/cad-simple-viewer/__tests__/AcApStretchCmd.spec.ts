@@ -1,4 +1,4 @@
-jest.mock('../src/app', () => ({
+jest.mock('../src/app/AcApDocManager', () => ({
   AcApDocManager: {
     instance: {
       editor: {
@@ -9,12 +9,19 @@ jest.mock('../src/app', () => ({
   }
 }))
 
-jest.mock('../src/editor', () => {
+jest.mock('../src/editor/command/AcEdCommand', () => {
   class AcEdCommand {
     mode: unknown
     showMessage = jest.fn()
   }
+  return { AcEdCommand }
+})
 
+jest.mock('../src/editor/view/AcEdOpenMode', () => ({
+  AcEdOpenMode: { Write: 'Write' }
+}))
+
+jest.mock('../src/editor/input/prompt/AcEdPromptPointOptions', () => {
   class MockKeywordCollection {
     readonly items: string[] = []
     add(_display: string, global: string) {
@@ -31,7 +38,10 @@ jest.mock('../src/editor', () => {
     jig: unknown
     constructor(readonly message: string) {}
   }
+  return { AcEdPromptPointOptions }
+})
 
+jest.mock('../src/editor/input/prompt/AcEdPromptBoxOptions', () => {
   class AcEdPromptBoxOptions {
     allowNone = false
     constructor(
@@ -39,7 +49,19 @@ jest.mock('../src/editor', () => {
       readonly secondCornerMessage: string
     ) {}
   }
+  return { AcEdPromptBoxOptions }
+})
 
+jest.mock('../src/editor/input/prompt/AcEdPromptStatus', () => ({
+  AcEdPromptStatus: {
+    OK: 'OK',
+    Keyword: 'Keyword',
+    Cancel: 'Cancel',
+    None: 'None'
+  }
+}))
+
+jest.mock('../src/editor/input/AcEdPromptStateMachine', () => {
   class AcEdPromptStateMachine {
     private state: {
       buildPrompt: () => unknown
@@ -62,20 +84,7 @@ jest.mock('../src/editor', () => {
       }
     }
   }
-
-  return {
-    AcEdCommand,
-    AcEdOpenMode: { Write: 'Write' },
-    AcEdPromptPointOptions,
-    AcEdPromptBoxOptions,
-    AcEdPromptStateMachine,
-    AcEdPromptStatus: {
-      OK: 'OK',
-      Keyword: 'Keyword',
-      Cancel: 'Cancel',
-      None: 'None'
-    }
-  }
+  return { AcEdPromptStateMachine }
 })
 
 jest.mock('../src/i18n', () => ({
@@ -94,10 +103,11 @@ jest.mock('../src/command/modify/AcApStretchPreviewJig', () => ({
 
 import { AcGeBox2d, AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../src/app'
+import type { AcApContext } from '../src/app/AcApContext'
+import { AcApDocManager } from '../src/app/AcApDocManager'
 import { AcApStretchCmd } from '../src/command/modify/AcApStretchCmd'
 import { acapStretchLayoutDeltaToEntitySpace } from '../src/command/modify/acapStretchCoords'
-import { AcEdPromptStatus } from '../src/editor'
+import { AcEdPromptStatus } from '../src/editor/input/prompt/AcEdPromptStatus'
 import type { AcEdBaseView } from '../src/editor/view/AcEdBaseView'
 
 const editor = AcApDocManager.instance.editor as unknown as {

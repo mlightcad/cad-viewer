@@ -5,30 +5,29 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app/index.js'
+import type { AcApContext } from '../../app/AcApContext.js'
+import { AcApDocManager } from '../../app/AcApDocManager.js'
+import { AcEdCommand } from '../../editor/command/AcEdCommand.js'
 import {
-  AcEdCommand,
-  AcEdOpenMode,
-  AcEdPromptBoxOptions,
-  AcEdPromptPointOptions,
-  AcEdPromptPointResult,
-  AcEdPromptState,
+  type AcEdPromptState,
   AcEdPromptStateMachine,
-  AcEdPromptStateStep,
-  AcEdPromptStatus,
-  type AcEdSelectionMode,
-  type AcEdViewportCoordinateMapper
-} from '../../editor/index.js'
+  type AcEdPromptStateStep
+} from '../../editor/input/AcEdPromptStateMachine.js'
+import { AcEdPromptBoxOptions } from '../../editor/input/prompt/AcEdPromptBoxOptions.js'
+import { AcEdPromptPointOptions } from '../../editor/input/prompt/AcEdPromptPointOptions.js'
+import { AcEdPromptPointResult } from '../../editor/input/prompt/AcEdPromptPointResult.js'
+import { AcEdPromptStatus } from '../../editor/input/prompt/AcEdPromptStatus.js'
+import type {
+  AcEdSelectionMode,
+  AcEdViewportCoordinateMapper
+} from '../../editor/view/AcEdBaseView.js'
+import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode.js'
 import { AcApI18n } from '../../i18n/index.js'
-import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer.js'
 import {
   acapStretchLayoutDeltaToEntitySpace,
   acapStretchPointToLayout
 } from './acapStretchCoords.js'
-import {
-  AcApStretchPreviewJig,
-  AcApStretchPreviewTarget
-} from './AcApStretchPreviewJig.js'
+import type { AcApStretchPreviewTarget } from './AcApStretchPreviewJig.js'
 
 /**
  * STRETCH plan for one entity from the selection window.
@@ -48,6 +47,11 @@ interface AcApStretchTarget {
  * entities (window selection, or every stretch point selected) are translated
  * via {@link AcDbEntity.transformBy}. Model entities selected through a
  * paper-space viewport map points and displacement through that viewport.
+ *
+ * Imports stay on leaf modules (not `app/index` / `editor/index`), and
+ * locked-layer / preview jig helpers load lazily, so registration from
+ * `AcApDocManager` does not hit a CJS cycle that leaves this class
+ * undefined (or pull `AcApLockedLayer`'s prototype patch too early).
  */
 export class AcApStretchCmd extends AcEdCommand {
   constructor() {
@@ -62,6 +66,10 @@ export class AcApStretchCmd extends AcEdCommand {
       selectionSet.clear()
       return
     }
+
+    const { AcApStretchPreviewJig } = await import(
+      './AcApStretchPreviewJig.js'
+    )
 
     const previewTargets: AcApStretchPreviewTarget[] = targets.map(t => ({
       entity: t.entity,
@@ -246,6 +254,9 @@ export class AcApStretchCmd extends AcEdCommand {
 
     const box = result.value
     const mode: AcEdSelectionMode = result.mode ?? 'crossing'
+    const { isEntityOnLockedLayer } = await import(
+      '../../service/AcApLockedLayer.js'
+    )
     const byId = new Map<AcDbObjectId, AcApStretchTarget>()
     const ids = context.view.collectSelectionIdsForBox(box, mode)
     selectionSet.clear()

@@ -98,7 +98,6 @@ import {
   AcApSelectCmd,
   AcApSketchCmd,
   AcApSplineCmd,
-  AcApStretchCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
   AcApTrimCmd,
@@ -115,6 +114,7 @@ import {
 } from '../command/index.js'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands.js'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands.js'
+import { AcApStretchCmd } from '../command/modify/AcApStretchCmd.js'
 import { acapRegisterTrimExtendSysVars } from '../command/modify/AcApTrimExtendSysVars.js'
 import { AcApTxt2MtxtCmd } from '../command/modify/AcApTxt2MtxtCmd.js'
 import {
@@ -2167,6 +2167,8 @@ export class AcApDocManager {
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('scale', 'scale', new AcApScaleCmd())
+    // Leaf import (not command barrel): avoids a CJS cycle that left
+    // AcApStretchCmd undefined, and stays browser-safe (no require()).
     addSystemCommand('stretch', 'stretch', new AcApStretchCmd())
     addSystemCommand('trim', 'trim', new AcApTrimCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
