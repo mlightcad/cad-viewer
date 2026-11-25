@@ -11,6 +11,9 @@ jest.mock('../src/app', () => ({
       searchCommandsByPrefix: jest.fn(() => []),
       searchLazyCommandsByPrefix: jest.fn(() => []),
       isLazyPluginCommand: jest.fn(() => false),
+      commandManager: {
+        getCommandAliases: jest.fn(() => [])
+      },
       editor: {
         events: {
           commandWillStart: {
@@ -50,6 +53,10 @@ import { AcEdCommandLine } from '../src/editor/input/ui/AcEdCommandLine'
 
 const sendStringToExecute = AcApDocManager.instance
   .sendStringToExecute as jest.Mock
+const searchCommandsByPrefix = AcApDocManager.instance
+  .searchCommandsByPrefix as jest.Mock
+const searchLazyCommandsByPrefix = AcApDocManager.instance
+  .searchLazyCommandsByPrefix as jest.Mock
 
 function press(target: Element, key: string): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
@@ -76,6 +83,10 @@ describe('AcEdCommandLine keyboard', () => {
 
   beforeEach(() => {
     sendStringToExecute.mockClear()
+    searchCommandsByPrefix.mockReset()
+    searchCommandsByPrefix.mockReturnValue([])
+    searchLazyCommandsByPrefix.mockReset()
+    searchLazyCommandsByPrefix.mockReturnValue([])
     container = document.createElement('div')
     container.tabIndex = -1
     document.body.appendChild(container)
@@ -175,5 +186,123 @@ describe('AcEdCommandLine keyboard', () => {
     press(input, 'Escape')
 
     expect(document.activeElement).toBe(container)
+  })
+
+  it('highlights the matching auto-complete item when arrowing', () => {
+    searchCommandsByPrefix.mockReturnValue([
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'LINE', localName: 'LINE' }
+      },
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'LAYER', localName: 'LAYER' }
+      }
+    ])
+
+    input.focus()
+    input.value = 'L'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+
+    press(input, 'ArrowDown')
+    const items = Array.from(
+      container.querySelectorAll('.ml-cli-cmd-popup .item')
+    )
+    expect(items[0].classList.contains('selected')).toBe(true)
+    expect(items[1].classList.contains('selected')).toBe(false)
+    expect(input.value).toBe('LINE')
+
+    press(input, 'ArrowDown')
+    expect(items[0].classList.contains('selected')).toBe(false)
+    expect(items[1].classList.contains('selected')).toBe(true)
+    expect(input.value).toBe('LAYER')
+  })
+
+  it('executes a command when an auto-complete item is clicked', () => {
+    searchCommandsByPrefix.mockReturnValue([
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'CIRCLE', localName: 'CIRCLE' }
+      }
+    ])
+
+    input.focus()
+    input.value = 'C'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+
+    const item = container.querySelector(
+      '.ml-cli-cmd-popup .item'
+    ) as HTMLElement
+    item.click()
+
+    expect(sendStringToExecute).toHaveBeenCalledWith('CIRCLE')
+    expect(
+      container.querySelector('.ml-cli-cmd-popup')?.classList.contains(
+        'ml-cli-hidden'
+      )
+    ).toBe(true)
+  })
+
+  it('fills but does not execute when a suggestion is clicked during a prompt', async () => {
+    searchCommandsByPrefix.mockReturnValue([
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'LINE', localName: 'LINE' }
+      }
+    ])
+    const pending = cli.getPromptInput<number>(
+      new AcEdPromptKeywordOptions('Specify radius'),
+      text => (Number.isFinite(Number(text)) ? Number(text) : null),
+      { mode: 'geometric', allowNone: false }
+    )
+
+    input.value = 'L'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    const item = container.querySelector(
+      '.ml-cli-cmd-popup .item'
+    ) as HTMLElement
+    item.click()
+
+    expect(input.value).toBe('LINE')
+    expect(sendStringToExecute).not.toHaveBeenCalled()
+
+    input.value = '3'
+    press(input, 'Enter')
+    await expect(pending).resolves.toEqual({ kind: 'value', value: 3 })
+  })
+
+  it('resets arrow navigation when opening command history', () => {
+    searchCommandsByPrefix.mockReturnValue([
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'LINE', localName: 'LINE' }
+      },
+      {
+        commandGroup: 'ACAD',
+        command: { globalName: 'LAYER', localName: 'LAYER' }
+      }
+    ])
+    cli.executeCommand('CIRCLE')
+    sendStringToExecute.mockClear()
+
+    input.focus()
+    input.value = 'L'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    press(input, 'ArrowDown')
+    press(input, 'ArrowDown')
+
+    // Close autocomplete without resetting the caret, then open history.
+    document.body.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+    const downBtn = container.querySelector('.ml-cli-down') as HTMLButtonElement
+    downBtn.click()
+
+    press(input, 'ArrowDown')
+    const items = Array.from(
+      container.querySelectorAll('.ml-cli-cmd-popup .item')
+    )
+    expect(items[0].classList.contains('selected')).toBe(true)
+    expect(input.value).toBe('CIRCLE')
   })
 })

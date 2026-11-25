@@ -1,5 +1,6 @@
 import { AcGePoint2d, AcGePoint3d } from '@mlightcad/data-model'
 
+import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout.js'
 import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
 import { type AcApUcsFrame, AcApUcsService } from '../service/AcApUcsService.js'
 
@@ -36,7 +37,8 @@ export class AcApUcsIconOverlay {
     this._el.style.cssText = [
       'position:absolute',
       'pointer-events:none',
-      'z-index:5',
+      // Same band as CSS2D capsules — below the floating command line.
+      `z-index:${ML_UI_Z_CANVAS_HTML_OVERLAY}`,
       `width:${ICON_SIZE}px`,
       `height:${ICON_SIZE}px`,
       'display:none'

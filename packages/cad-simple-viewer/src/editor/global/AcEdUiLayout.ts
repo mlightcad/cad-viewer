@@ -36,12 +36,22 @@ export const ML_UI_SESSION_PANEL_MAX_WIDTH = `calc(100vw - ${ML_UI_SESSION_PANEL
 export const ML_UI_Z_CANVAS_HTML_STROKE = 1
 
 /**
- * Z-index for world-anchored HTML labels (CSS2D measure / markup capsules).
+ * Z-index for world-anchored HTML labels (CSS2D measure / markup capsules)
+ * and the UCS triad overlay.
  *
  * Above stroke canvases ({@link ML_UI_Z_CANVAS_HTML_STROKE}); below command
  * line, mobile chrome, draw-style toolbar, and modal dialogs.
  */
 export const ML_UI_Z_CANVAS_HTML_OVERLAY = 2
+
+/**
+ * Z-index for the desktop floating command line.
+ *
+ * Above canvas HTML overlays ({@link ML_UI_Z_CANVAS_HTML_OVERLAY}) so the UCS
+ * triad never paints over the command bar; below mobile chrome / session
+ * accessories (`40`+).
+ */
+export const ML_UI_Z_COMMAND_LINE = 5
 
 /**
  * Z-index for the desktop draw-style toolbar overlay.

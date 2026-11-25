@@ -3,6 +3,7 @@
  */
 import { AcGePoint2d } from '@mlightcad/data-model'
 
+import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../src/editor/global/AcEdUiLayout'
 import type { AcEdBaseView } from '../src/editor/view/AcEdBaseView'
 import { AcApUcsIconOverlay } from '../src/view/AcApUcsIconOverlay'
 
@@ -39,6 +40,17 @@ function createView(options: {
 }
 
 describe('AcApUcsIconOverlay', () => {
+  test('stays below the floating command line in the stacking order', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const overlay = new AcApUcsIconOverlay(host)
+    const el = host.querySelector('.ml-ucs-icon') as HTMLElement
+
+    expect(el.style.zIndex).toBe(String(ML_UI_Z_CANVAS_HTML_OVERLAY))
+    overlay.dispose()
+    host.remove()
+  })
+
   test('hides when the view has no active layout camera', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
