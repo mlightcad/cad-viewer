@@ -1,6 +1,7 @@
 import {
   AcDbDatabase,
   AcDbGroup,
+  AcDbHatch,
   AcDbObjectId,
   AcDbSystemVariables,
   AcDbSysVarManager
@@ -21,8 +22,8 @@ const NAMED_GROUP_RE = /^[A-Z0-9$_-]{1,31}$/
  * Returns whether group selection is enabled for the current `PICKSTYLE`.
  *
  * AutoCAD values `1` and `3` enable group selection. Associative-hatch
- * co-selection (`2` / `3`) is registered but not expanded here because hatch
- * boundary soft-pointers are not yet modeled on `AcDbHatch`.
+ * co-selection (`2` / `3`) is handled by
+ * {@link acapExpandSelectionByAssociativeHatches}.
  */
 export function acapIsGroupSelectionEnabled(database?: AcDbDatabase): boolean {
   const raw = AcDbSysVarManager.instance().getVar(
@@ -37,7 +38,7 @@ export function acapIsGroupSelectionEnabled(database?: AcDbDatabase): boolean {
 /**
  * Returns whether `PICKSTYLE` requests associative hatch co-selection.
  *
- * Currently unused for expansion (no boundary refs); kept for ribbon/sysvar UI.
+ * AutoCAD values `2` and `3` enable hatch ↔ boundary co-selection.
  */
 export function acapIsAssociativeHatchSelectionEnabled(
   database?: AcDbDatabase
@@ -200,6 +201,43 @@ export function acapExpandSelectionByGroups(
       for (const memberId of group.entityIds) {
         if (isMemberSelectable(db, memberId)) out.add(memberId)
       }
+    }
+  }
+  return [...out]
+}
+
+/**
+ * Expands picked ids by associative hatch ↔ boundary soft-pointers when
+ * `PICKSTYLE` bit 2 is set.
+ *
+ * Selecting an associative hatch adds its path source boundary ids.
+ * Selecting a boundary adds every associative hatch that references it.
+ */
+export function acapExpandSelectionByAssociativeHatches(
+  db: AcDbDatabase,
+  ids: readonly AcDbObjectId[]
+): AcDbObjectId[] {
+  if (!acapIsAssociativeHatchSelectionEnabled(db) || ids.length === 0) {
+    return [...ids]
+  }
+
+  const index = db.hatchAssociationIndex
+  index.attachListeners()
+
+  const out = new Set<AcDbObjectId>(ids)
+  for (const id of ids) {
+    const entity = db.getObjectById(id)
+    if (entity instanceof AcDbHatch && entity.associative) {
+      for (const sources of entity.allPathSourceIds) {
+        for (const sourceId of sources) {
+          if (isMemberSelectable(db, sourceId)) out.add(sourceId)
+        }
+      }
+      continue
+    }
+
+    for (const hatchId of index.hatchesForBoundary(id)) {
+      if (isMemberSelectable(db, hatchId)) out.add(hatchId)
     }
   }
   return [...out]

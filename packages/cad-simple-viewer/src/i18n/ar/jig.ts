@@ -533,23 +533,52 @@ export default {
   hatch: {
     prompt: 'حدد عنصر حدود أو',
     pickPoint: 'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',
+    originPoint: 'حدد نقطة أصل نمط التهشير',
     select: 'حدد العناصر المطلوب تهشيرها',
     patternName: 'أدخل اسم نمط التهشير',
     scale: 'حدد مقياس نمط التهشير',
     angle: 'حدد زاوية نمط التهشير',
     style: 'أدخل نمط التهشير',
     associative: 'حدد حالة الترابط',
+    separate: 'هل تريد إنشاء تفقيسات منفصلة؟',
+    nothingToUndo: 'لا يوجد تفقيس للتراجع عنه.',
+    remove: 'حدد العناصر المراد إزالتها من الحدود',
+    nothingToRemove: 'لا توجد عناصر حدود لإزالتها.',
+    recreateType: 'أدخل نوع عنصر الحدود',
+    recreateAssociate: 'هل تريد ربط التهشير بالحد الجديد؟',
+    nothingToRecreate: 'لم يتم تحديد تهشير لإعادة إنشاء حدوده.',
+    regionUnsupported: 'حدود المنطقة غير مدعومة بعد؛ سيتم إنشاء خط متعدد بدلاً من ذلك.',
     invalidBoundary: 'العناصر المحددة لا تكوّن حدودًا مغلقة.',
     keywords: {
       pick: {
-        display: 'اختيار نقاط(P)',
+        display: 'التقاط نقاط(PP)',
         local: 'اختيار نقاط',
         global: 'PickPoints'
       },
       select: {
-        display: 'تحديد كائنات(S)',
+        display: 'تحديد كائنات(SO)',
         local: 'تحديد كائنات',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: 'إزالة الحدود(R)',
+        local: 'إزالة الحدود',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: 'خط متعدد(P)',
+        local: 'خط متعدد',
+        global: 'Polyline'
+      },
+      region: {
+        display: 'منطقة(R)',
+        local: 'منطقة',
+        global: 'Region'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
       },
       cancel: {
         display: 'إلغاء(C)',
@@ -572,7 +601,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: 'أسلوب(T)',
+        display: 'النمط(HS)',
         local: 'أسلوب',
         global: 'HatchStyle'
       },
@@ -580,6 +609,11 @@ export default {
         display: 'ترابطي(AS)',
         local: 'ترابطي',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: 'منفصل(SE)',
+        local: 'منفصل',
+        global: 'SEparate'
       },
       normal: {
         display: 'عادي(N)',

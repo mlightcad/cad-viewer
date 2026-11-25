@@ -111,7 +111,11 @@ The old names still work as deprecated aliases. Text strings moved from the feat
 ::: info AutoCAD groups (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **GROUP**, **-GROUP**, **UNGROUP**, and **GROUPEDIT**, expands selection when `PICKSTYLE` is `1` or `3`, and applies `GROUPDISPLAYMODE` grips for selectable groups. `@mlightcad/cad-editor` adds **CLASSICGROUP** (Object Grouping dialog) and a Home → Groups ribbon panel.
 
-Requires `@mlightcad/data-model` that registers `PICKSTYLE` (0–3, default `1`) and `GROUPDISPLAYMODE` (0–2, default `2`). Associative hatch co-selection (`PICKSTYLE` 2/3) remains a no-op until hatch boundary soft-pointers exist on `AcDbHatch`.
+Requires `@mlightcad/data-model` that registers `PICKSTYLE` (0–3, default `1`) and `GROUPDISPLAYMODE` (0–2, default `2`). Associative hatch co-selection (`PICKSTYLE` 2/3) expands hatch ↔ boundary soft-pointers (DXF 97/330) stored on `AcDbHatch`.
+:::
+
+::: info Associative hatch soft-pointers (DXF 71 / 97 / 330)
+Starting with the release that includes this change, `@mlightcad/data-model` stores per-path source boundary object ids on `AcDbHatch` (`pathSourceIds` / `setPathSourceIds`), round-trips them through DXF groups **71**, **97**, and **330**, and rebuilds hatch loops when a linked boundary is modified (or disassociates when the last source is erased) via `AcDbDatabase.hatchAssociationIndex`. `AcApHatchCmd` attaches source ids when creating associative hatches from selected boundaries; pick-points without recoverable sources stay non-associative.
 :::
 
 ::: info `cad.view.capturePreview` selection preview

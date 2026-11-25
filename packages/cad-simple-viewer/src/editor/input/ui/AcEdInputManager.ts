@@ -1510,8 +1510,11 @@ export class AcEdInputManager {
           this.entitySelectionActive = true
           const previousAllowLocked = this.view.allowSelectOnLockedLayer
           const previousAllowGroup = this.view.allowGroupSelection
+          const previousAllowHatchAssoc = this.view.allowAssociativeHatchSelection
           this.view.allowSelectOnLockedLayer = options.allowObjectOnLockedLayer
           this.view.allowGroupSelection = options.allowGroupSelection
+          this.view.allowAssociativeHatchSelection =
+            options.allowAssociativeHatchSelection
           const keywordSession = this.startKeywordSession(options, true)
           if (!keywordSession) {
             this._commandLine.setPrompt(options.message)
@@ -1595,6 +1598,7 @@ export class AcEdInputManager {
             this.view.setNavigationEnabled(true)
             this.view.allowSelectOnLockedLayer = previousAllowLocked
             this.view.allowGroupSelection = previousAllowGroup
+            this.view.allowAssociativeHatchSelection = previousAllowHatchAssoc
 
             document.removeEventListener('keydown', keyHandler)
             this.view.canvas.removeEventListener('mousedown', mouseDown)
@@ -2862,10 +2866,18 @@ export class AcEdInputManager {
         basePoint = promptDefaults.basePoint
       }
 
+      const disableTracking =
+        'disableTracking' in options.promptOptions &&
+        Boolean(
+          (options.promptOptions as { disableTracking?: boolean })
+            .disableTracking
+        )
       const orthoReferencePoint =
         promptDefaults.useBasePoint && promptDefaults.basePoint
           ? promptDefaults.basePoint
-          : (this.lastPoint ?? undefined)
+          : disableTracking
+            ? undefined
+            : (this.lastPoint ?? undefined)
       const allowNone =
         'allowNone' in options.promptOptions
           ? (options.promptOptions as { allowNone: boolean }).allowNone

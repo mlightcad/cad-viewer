@@ -103,7 +103,11 @@ registerLazyAgentPlugin(pluginManager)
 ::: info AutoCAD 그룹(`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **GROUP**, **-GROUP**, **UNGROUP**, **GROUPEDIT**를 등록하고, `PICKSTYLE`이 `1` 또는 `3`일 때 선택을 확장하며, 선택 가능한 그룹에 `GROUPDISPLAYMODE` 그립을 적용합니다. `@mlightcad/cad-editor`는 **CLASSICGROUP**(객체 그룹화 대화상자)과 홈 → 그룹 리본 패널을 추가합니다.
 
-`PICKSTYLE`(0–3, 기본 `1`)과 `GROUPDISPLAYMODE`(0–2, 기본 `2`)가 등록된 `@mlightcad/data-model`이 필요합니다. 연관 해치 동시 선택(`PICKSTYLE` 2/3)은 `AcDbHatch`에 경계 soft-pointer가 생길 때까지 no-op입니다.
+`PICKSTYLE`(0–3, 기본 `1`)과 `GROUPDISPLAYMODE`(0–2, 기본 `2`)가 등록된 `@mlightcad/data-model`이 필요합니다. 연관 해치 동시 선택(`PICKSTYLE` 2/3)은 `AcDbHatch`의 해치 ↔ 경계 soft-pointer(DXF 97/330)를 확장합니다.
+:::
+
+::: info 연관 해치 soft-pointer (DXF 71 / 97 / 330)
+이 변경이 포함된 릴리스부터 `@mlightcad/data-model`은 `AcDbHatch`에 경로별 소스 경계 id(`pathSourceIds` / `setPathSourceIds`)를 저장하고 DXF 그룹 **71** / **97** / **330**으로 왕복하며, 연결된 경계가 수정되면 `AcDbDatabase.hatchAssociationIndex`로 루프를 재구축합니다(마지막 소스가 삭제되면 연관 해제). `AcApHatchCmd`는 선택한 경계로 연관 해치를 만들 때 소스 id를 붙입니다. 소스를 복구할 수 없는 픽 포인트 생성은 비연관으로 유지됩니다.
 :::
 
 ::: info `cad.view.capturePreview` 선택 미리보기

@@ -103,7 +103,11 @@ registerLazyAgentPlugin(pluginManager)
 ::: info مجموعات AutoCAD (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` أوامر **GROUP** و**-GROUP** و**UNGROUP** و**GROUPEDIT**، ويوسّع التحديد عندما يكون `PICKSTYLE` بقيمة `1` أو `3`، ويطبّق مقابض `GROUPDISPLAYMODE` للمجموعات القابلة للتحديد. يضيف `@mlightcad/cad-editor` أمر **CLASSICGROUP** (مربع حوار تجميع الكائنات) ولوحة الشريط الرئيسية → المجموعات.
 
-يتطلب `@mlightcad/data-model` الذي يسجّل `PICKSTYLE` (0–3، الافتراضي `1`) و`GROUPDISPLAYMODE` (0–2، الافتراضي `2`). يبقى التحديد المشترك للتهشير الارتباطي (`PICKSTYLE` 2/3) بدون تنفيذ حتى تتوفر مؤشرات حدود ناعمة على `AcDbHatch`.
+يتطلب `@mlightcad/data-model` الذي يسجّل `PICKSTYLE` (0–3، الافتراضي `1`) و`GROUPDISPLAYMODE` (0–2، الافتراضي `2`). يوسّع التحديد المشترك للتهشير الارتباطي (`PICKSTYLE` 2/3) مؤشرات التهشير ↔ الحدود الناعمة (DXF 97/330) المخزّنة على `AcDbHatch`.
+:::
+
+::: info مؤشرات التهشير الارتباطي الناعمة (DXF 71 / 97 / 330)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يخزّن `@mlightcad/data-model` معرّفات كائنات الحدود المصدرية لكل مسار على `AcDbHatch` (`pathSourceIds` / `setPathSourceIds`)، ويعيد تمريرها عبر مجموعات DXF **71** و**97** و**330**، ويعيد بناء حلقات التهشير عند تعديل حد مرتبط عبر `AcDbDatabase.hatchAssociationIndex` (أو يلغي الارتباط عند حذف آخر مصدر). يرفق `AcApHatchCmd` معرّفات المصدر عند إنشاء تهشير ارتباطي من حدود محددة؛ ويبقى وضع انتقاء النقاط دون مصادر قابلة للاستعادة غير ارتباطي.
 :::
 
 ::: info معاينة التحديد في `cad.view.capturePreview`

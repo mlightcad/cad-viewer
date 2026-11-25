@@ -2,15 +2,20 @@
  * @jest-environment node
  */
 import {
+  acdbHostApplicationServices,
   AcDbDatabase,
+  AcDbHatch,
   AcDbLine,
+  AcDbPolyline,
   AcDbSystemVariables,
   AcDbSysVarManager,
-  AcGePoint3d
+  AcGePoint3d,
+  AcGePolyline2d
 } from '@mlightcad/data-model'
 
 import {
   acapCreateGroup,
+  acapExpandSelectionByAssociativeHatches,
   acapExpandSelectionByGroups,
   acapExplodeGroup,
   acapFindGroupsContaining,
@@ -139,5 +144,51 @@ describe('AcApGroup', () => {
       expect(error).toBeInstanceOf(AcApGroupCreateError)
       expect((error as AcApGroupCreateError).code).toBe('nameExists')
     }
+  })
+
+  test('expands selection for associative hatch boundaries when PICKSTYLE bit 2 is set', () => {
+    manager.setVar(AcDbSystemVariables.PICKSTYLE, 2, db)
+    acdbHostApplicationServices().workingDatabase = db
+
+    const boundary = new AcDbPolyline()
+    boundary.closed = true
+    ;[
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 }
+    ].forEach((p, i) => boundary.addVertexAt(i, p as never))
+    db.tables.blockTable.modelSpace.appendEntity(boundary)
+
+    const hatch = new AcDbHatch()
+    hatch.database = db
+    hatch.associative = true
+    hatch.isSolidFill = true
+    hatch.add(
+      new AcGePolyline2d(
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 10 },
+          { x: 0, y: 10 }
+        ],
+        true
+      )
+    )
+    hatch.setPathSourceIds(0, [boundary.objectId])
+    db.tables.blockTable.modelSpace.appendEntity(hatch)
+    db.hatchAssociationIndex.refresh(hatch)
+
+    expect(acapExpandSelectionByAssociativeHatches(db, [hatch.objectId])).toEqual(
+      expect.arrayContaining([hatch.objectId, boundary.objectId])
+    )
+    expect(
+      acapExpandSelectionByAssociativeHatches(db, [boundary.objectId])
+    ).toEqual(expect.arrayContaining([hatch.objectId, boundary.objectId]))
+
+    manager.setVar(AcDbSystemVariables.PICKSTYLE, 0, db)
+    expect(acapExpandSelectionByAssociativeHatches(db, [hatch.objectId])).toEqual(
+      [hatch.objectId]
+    )
   })
 })

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1"/>
+  <path fill="none" stroke="currentColor" stroke-width=".55" d="M2.2 4h15.6M2.2 6.5h15.6M2.2 9h15.6M2.2 11.5h15.6M2.2 14h15.6M2.2 16.5h15.6"/>
+  <rect x="5" y="5" width="10" height="10" fill="none" stroke="currentColor" stroke-width=".85" stroke-dasharray="1.6 1.2"/>
+  <rect x="7.5" y="7.5" width="5" height="5" fill="none" stroke="currentColor" stroke-width=".85" stroke-dasharray="1.4 1.1"/>
+  <path fill="none" stroke="currentColor" stroke-width=".5" d="M5.8 7.2h8.4M5.8 9h8.4M5.8 10.8h8.4M5.8 12.6h8.4"/>
+</svg>

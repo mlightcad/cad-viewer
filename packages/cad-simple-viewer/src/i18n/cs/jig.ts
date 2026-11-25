@@ -463,23 +463,52 @@ export default {
   hatch: {
     prompt: 'Vyberte objekt hranice nebo',
     pickPoint: 'Zadejte vnitřní bod (nebo stiskněte Enter pro dokončení)',
+    originPoint: 'Zadejte počáteční bod vzoru šrafování',
     select: 'Vyberte objekty k šrafování',
     patternName: 'Zadejte název vzoru šrafování',
     scale: 'Zadejte měřítko vzoru šrafování',
     angle: 'Zadejte úhel vzoru šrafování',
     style: 'Zadejte styl šrafování',
     associative: 'Zadejte asociativitu',
+    separate: 'Vytvořit samostatné šrafy?',
+    nothingToUndo: 'Žádná šrafa k vrácení.',
+    remove: 'Vyberte objekty k odstranění z hranice',
+    nothingToRemove: 'Nejsou žádné hraniční objekty k odstranění.',
+    recreateType: 'Zadejte typ objektu hranice',
+    recreateAssociate: 'Asociovat šrafování s novou hranicí?',
+    nothingToRecreate: 'Není vybráno šrafování pro znovuvytvoření hranice.',
+    regionUnsupported: 'Hranice typu oblast zatím nejsou podporovány; místo toho se vytvoří křivka.',
     invalidBoundary: 'Vybrané objekty netvoří uzavřenou hranici.',
     keywords: {
       pick: {
-        display: 'Vybrat body(P)',
+        display: 'Vybrat body(PP)',
         local: 'Vybrat body',
         global: 'PickPoints'
       },
       select: {
-        display: 'Vybrat objekty(S)',
+        display: 'Vybrat objekty(SO)',
         local: 'Vybrat objekty',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: 'Odstranit hranice(R)',
+        local: 'Odstranit hranice',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      region: {
+        display: 'Oblast(R)',
+        local: 'Oblast',
+        global: 'Region'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
       },
       cancel: {
         display: 'Zrušit(C)',
@@ -502,7 +531,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: 'Styl(T)',
+        display: 'Styl(HS)',
         local: 'Styl',
         global: 'HatchStyle'
       },
@@ -510,6 +539,11 @@ export default {
         display: 'Asociativní(AS)',
         local: 'Asociativní',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: 'Samostatně(SE)',
+        local: 'Samostatně',
+        global: 'SEparate'
       },
       normal: {
         display: 'Normální(N)',

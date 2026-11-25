@@ -2,17 +2,14 @@ import {
   AcApContext,
   AcApDocManager,
   AcApHatchCmd,
-  AcApI18n,
   AcApLayerService,
   acapRunDatabaseEdit,
-  AcEdPromptEntityOptions,
-  AcEdPromptStatus,
   type HatchSettings
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcCmTransparency,
-  type AcDbEntityEventArgs,
+  type AcDbDatabase,
   type AcDbGradientName,
   AcDbHatch,
   AcDbHatchObjectType,
@@ -26,7 +23,9 @@ import {
 } from '@mlightcad/data-model'
 import { reactive } from 'vue'
 
-export type HatchRibbonStyle = 'Normal' | 'Outer' | 'Ignore'
+export type HatchRibbonStyle = 'Normal' | 'Outer' | 'Ignore' | 'None'
+/** AutoCAD HPORIGINMODE values used by the Origin ribbon panel. */
+export type HatchOriginMode = 0 | 1 | 2 | 3 | 4 | 5
 export type HatchFillType = 'solid' | 'pattern' | 'gradient'
 
 export interface HatchRibbonState {
@@ -35,6 +34,8 @@ export interface HatchRibbonState {
   patternScale: number
   patternAngle: number
   style: HatchRibbonStyle
+  /** HPORIGINMODE — 0 uses HPORIGIN; 1–5 use boundary extents. */
+  originMode: HatchOriginMode
   associative: boolean
   fillType: HatchFillType
   fillColor: string
@@ -43,7 +44,13 @@ export interface HatchRibbonState {
   opacity: number
 }
 
-type HatchRibbonAction = 'pickPoints' | 'selectObjects' | 'close'
+type HatchRibbonAction =
+  | 'pickPoints'
+  | 'selectObjects'
+  | 'removeBoundaries'
+  | 'recreateBoundary'
+  | 'setOrigin'
+  | 'close'
 type HatchColorInput = string | AcCmColor
 
 const DEFAULT_HATCH_FILL_COLOR = new AcCmColor().setByLayer().toString()
@@ -72,6 +79,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     patternScale: 1,
     patternAngle: 0,
     style: 'Normal',
+    originMode: 0,
     associative: true,
     fillType: 'solid',
     fillColor: DEFAULT_HATCH_FILL_COLOR,
@@ -119,6 +127,8 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     )
     this._state.associative =
       Number(sysVarManager.getVar(AcDbSystemVariables.HPASSOC, database)) !== 0
+    this._state.style = this.readRibbonStyle(database)
+    this._state.originMode = this.readOriginMode(database)
     this._state.fillColor = this.normalizeColorString(
       sysVarManager.getVar(AcDbSystemVariables.HPCOLOR, database),
       DEFAULT_HATCH_FILL_COLOR
@@ -147,7 +157,11 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
             case 'patternAngleDeg':
               return this._state.patternAngle
             case 'style':
-              return this.keywordToStyle(this._state.style)
+              return this.keywordToStyle(
+                this._state.style === 'None' ? 'Ignore' : this._state.style
+              )
+            case 'islandDetectionEnabled':
+              return this._state.style !== 'None'
             case 'associative':
               return this._state.associative
           }
@@ -179,8 +193,21 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
               sysVarManager.getVar(AcDbSystemVariables.HPASSOC, database)
             )
           case 'style':
-            // Style is stored in local state since there's no dedicated system variable
-            return this.keywordToStyle(this._state.style)
+            return this.styleFromIslandDetection(
+              sysVarManager.getVar(
+                AcDbSystemVariables.HPISLANDDETECTION,
+                database
+              )
+            )
+          case 'islandDetectionEnabled':
+            return (
+              Number(
+                sysVarManager.getVar(
+                  AcDbSystemVariables.HPISLANDDETECTIONMODE,
+                  database
+                )
+              ) !== 0
+            )
           default:
             return undefined
         }
@@ -213,6 +240,28 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
           case 'style':
             if (typeof value === 'number') {
               this._state.style = this.styleToKeyword(value) as HatchRibbonStyle
+              sysVarManager.setVar(
+                AcDbSystemVariables.HPISLANDDETECTIONMODE,
+                1,
+                database
+              )
+              sysVarManager.setVar(
+                AcDbSystemVariables.HPISLANDDETECTION,
+                this.islandDetectionFromStyle(value),
+                database
+              )
+            }
+            break
+          case 'islandDetectionEnabled':
+            if (typeof value === 'boolean') {
+              sysVarManager.setVar(
+                AcDbSystemVariables.HPISLANDDETECTIONMODE,
+                value ? 1 : 0,
+                database
+              )
+              if (!value) {
+                this._state.style = 'None'
+              }
             }
             break
           case 'associative':
@@ -228,6 +277,31 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
         return true
       }
     })
+  }
+
+  private readRibbonStyle(database: AcDbDatabase): HatchRibbonStyle {
+    const sysVarManager = AcDbSysVarManager.instance()
+    const mode = Number(
+      sysVarManager.getVar(AcDbSystemVariables.HPISLANDDETECTIONMODE, database)
+    )
+    if (mode === 0) return 'None'
+    return this.styleToKeyword(
+      this.styleFromIslandDetection(
+        sysVarManager.getVar(AcDbSystemVariables.HPISLANDDETECTION, database)
+      )
+    ) as HatchRibbonStyle
+  }
+
+  private readOriginMode(database: AcDbDatabase): HatchOriginMode {
+    const mode = Math.trunc(
+      Number(
+        AcDbSysVarManager.instance().getVar(
+          AcDbSystemVariables.HPORIGINMODE,
+          database
+        )
+      )
+    )
+    return (mode >= 0 && mode <= 5 ? mode : 0) as HatchOriginMode
   }
 
   private initializeSysVarListener() {
@@ -251,6 +325,19 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
         )
       } else if (varName === AcDbSystemVariables.HPASSOC.toLowerCase()) {
         this._state.associative = Number(args.newVal) !== 0
+      } else if (
+        varName === AcDbSystemVariables.HPISLANDDETECTION.toLowerCase() ||
+        varName === AcDbSystemVariables.HPISLANDDETECTIONMODE.toLowerCase()
+      ) {
+        const database = AcApDocManager.instance.curDocument?.database
+        if (database) {
+          this._state.style = this.readRibbonStyle(database)
+        }
+      } else if (varName === AcDbSystemVariables.HPORIGINMODE.toLowerCase()) {
+        const mode = Math.trunc(Number(args.newVal))
+        this._state.originMode = (
+          mode >= 0 && mode <= 5 ? mode : 0
+        ) as HatchOriginMode
       } else if (varName === AcDbSystemVariables.HPCOLOR.toLowerCase()) {
         this._state.fillColor = this.normalizeColorString(
           args.newVal,
@@ -440,7 +527,10 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
       hatch.patternType = AcDbHatchPatternType.Predefined
       hatch.patternScale = this._state.patternScale
       hatch.patternAngle = (this._state.patternAngle * Math.PI) / 180
-      hatch.hatchStyle = this.keywordToStyle(this._state.style)
+      hatch.hatchStyle =
+        this._state.style === 'None'
+          ? this.keywordToStyle('Ignore')
+          : this.keywordToStyle(this._state.style)
       hatch.isSolidFill = isSolidFill
     }
     hatch.hatchObjectType = this._state.hatchObjectType
@@ -454,6 +544,8 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
         ? this.toAcCmColor(this._state.backgroundColor)
         : undefined
     hatch.transparency = this.createTransparency(opacity)
+    hatch.associative =
+      this._state.associative && hatch.hasAnyPathSourceIds()
   }
 
   setPatternName(value: string) {
@@ -514,8 +606,134 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   }
 
   setStyle(value: HatchRibbonStyle) {
+    const db = AcApDocManager.instance.curDocument?.database
     this._state.style = value
+    if (db) {
+      const sysVarManager = AcDbSysVarManager.instance()
+      if (value === 'None') {
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPISLANDDETECTIONMODE,
+          0,
+          db
+        )
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPISLANDDETECTION,
+          this.islandDetectionFromStyle(this.keywordToStyle('Ignore')),
+          db
+        )
+      } else {
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPISLANDDETECTIONMODE,
+          1,
+          db
+        )
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPISLANDDETECTION,
+          this.islandDetectionFromStyle(this.keywordToStyle(value)),
+          db
+        )
+      }
+    }
     this.applyStateToSelectedHatches()
+  }
+
+  /**
+   * Applies an explicit hatch origin point (AutoCAD Set Origin).
+   * Sets HPORIGINMODE to 0 and updates HPORIGIN.
+   */
+  applyOriginPoint(point: { x: number; y: number }) {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+
+    const sysVarManager = AcDbSysVarManager.instance()
+    sysVarManager.setVar(AcDbSystemVariables.HPORIGINMODE, 0, db)
+    sysVarManager.setVar(
+      AcDbSystemVariables.HPORIGIN,
+      { x: point.x, y: point.y, z: 0 },
+      db
+    )
+    this._state.originMode = 0
+    this.applyOriginToHatches(point)
+  }
+
+  /**
+   * Sets HPORIGINMODE and refreshes hatch origins from extents or HPORIGIN.
+   */
+  setOriginMode(mode: HatchOriginMode) {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPORIGINMODE,
+      mode,
+      db
+    )
+    this._state.originMode = mode
+
+    const hatches = this.getEditableHatches()
+    if (hatches.length === 0) return
+
+    acapRunDatabaseEdit(db, 'Hatch Origin', () => {
+      hatches.forEach(hatch => {
+        const opened = db.openEntityForWrite(hatch)
+        if (!opened || !(opened instanceof AcDbHatch)) return
+        opened.originPoint =
+          mode === 0
+            ? this.getHatchOriginSysVar(db)
+            : this.originFromExtents(opened, mode)
+      })
+    })
+  }
+
+  /**
+   * Stores the current hatch origin (or HPORIGIN) as the default HPORIGIN.
+   */
+  storeDefaultOrigin() {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+
+    const hatches = this.getEditableHatches()
+    const origin =
+      hatches.length > 0
+        ? {
+            x: hatches[0].originPoint.x,
+            y: hatches[0].originPoint.y
+          }
+        : this.getHatchOriginSysVar(db)
+
+    const sysVarManager = AcDbSysVarManager.instance()
+    sysVarManager.setVar(
+      AcDbSystemVariables.HPORIGIN,
+      { x: origin.x, y: origin.y, z: 0 },
+      db
+    )
+    sysVarManager.setVar(AcDbSystemVariables.HPORIGINMODE, 0, db)
+    this._state.originMode = 0
+  }
+
+  private applyOriginToHatches(point: { x: number; y: number }) {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+    const hatches = this.getEditableHatches()
+    if (hatches.length === 0) return
+
+    acapRunDatabaseEdit(db, 'Hatch Origin', () => {
+      hatches.forEach(hatch => {
+        const opened = db.openEntityForWrite(hatch)
+        if (!opened || !(opened instanceof AcDbHatch)) return
+        opened.originPoint = point
+      })
+    })
+  }
+
+  /**
+   * Session hatches while HATCH is active; otherwise the current selection.
+   */
+  private getEditableHatches() {
+    if (this._isActive && this.sessionHatches.length > 0) {
+      return [...this.sessionHatches]
+    }
+    return this.getSelectedHatches()
   }
 
   setAssociative(value: boolean) {
@@ -524,6 +742,9 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
 
     const sysVarManager = AcDbSysVarManager.instance()
     sysVarManager.setVar(AcDbSystemVariables.HPASSOC, value ? 1 : 0, db)
+    this._state.associative = value
+    // Re-apply so session / selected hatches pick up the flag when sources exist.
+    this.applyStateToSelectedHatches()
   }
 
   setFillType(value: HatchFillType) {
@@ -626,6 +847,43 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     this.requestAction('selectObjects')
   }
 
+  /**
+   * Starts Remove Boundaries (session hatches while HATCH is active; selected
+   * hatches in Hatch Editor selection context).
+   */
+  requestRemoveBoundaries() {
+    if (this._isActive) {
+      this.requestAction('removeBoundaries')
+      return
+    }
+    void this.runRemoveOutsideCommand()
+  }
+
+  /**
+   * Starts Recreate Boundary on the current hatch selection.
+   *
+   * Disabled during Hatch Creation in the ribbon; selection-context editing
+   * calls this outside the HATCH command.
+   */
+  requestRecreateBoundary() {
+    if (this._isActive) {
+      this.requestAction('recreateBoundary')
+      return
+    }
+    void this.runRecreateOutsideCommand()
+  }
+
+  /**
+   * Starts Set Origin: prompts for a point, then applies it to hatches.
+   */
+  requestSetOrigin() {
+    if (this._isActive) {
+      this.requestAction('setOrigin')
+      return
+    }
+    void this.runSetOriginOutsideCommand()
+  }
+
   close() {
     this.requestAction('close')
   }
@@ -638,21 +896,22 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     this.applyStateToHatch(hatch)
   }
 
+  protected override onSessionHatchCreated(hatch: AcDbHatch) {
+    super.onSessionHatchCreated(hatch)
+    // Track immediately — entityAppended is deferred until the outer command
+    // transaction commits, so mid-session ribbon property edits need this id.
+    this._activeHatchIds.add(hatch.objectId)
+  }
+
+  protected override onSessionHatchRemoved(hatch: AcDbHatch) {
+    this._activeHatchIds.delete(hatch.objectId)
+  }
+
   async execute(context: AcApContext) {
     this.syncStateFromSysVars()
     this._isActive = true
     this._activeHatchIds.clear()
-    const entityAppendedListener = (args: AcDbEntityEventArgs) => {
-      const entities = Array.isArray(args.entity) ? args.entity : [args.entity]
-      for (const entity of entities) {
-        if (entity instanceof AcDbHatch) {
-          this._activeHatchIds.add(entity.objectId)
-        }
-      }
-    }
-    context.doc.database.events.entityAppended.addEventListener(
-      entityAppendedListener
-    )
+    this.beginSession()
     try {
       let running = true
       while (running) {
@@ -662,34 +921,24 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
           continue
         }
 
-        const result = await AcApDocManager.instance.editor.getEntity(
-          this.createBoundaryPrompt()
-        )
+        // AutoCAD Hatch Creation defaults to pick-points (with HPQUICKPREVIEW).
+        const outcome = await this.doPickPoints(context)
+        // Ribbon Close / Pick / Select cancel the active prompt via Escape and
+        // queue an action. Prefer that action over treating Escape as discard.
         const actionAfterPrompt = this.consumeQueuedAction()
         if (actionAfterPrompt) {
           running = await this.runRibbonAction(context, actionAfterPrompt)
           continue
         }
 
-        if (result.status === AcEdPromptStatus.OK && result.objectId) {
-          const loops = this.collectLoopsFromIds(context, [result.objectId])
-          if (loops.length) {
-            this.appendHatch(context, loops)
-          }
-          continue
+        if (outcome === AcApHatchCmd.BRANCH_CANCEL) {
+          this.markDiscardSession()
         }
-
-        if (result.status === AcEdPromptStatus.Keyword) {
-          running = await this.runKeyword(context, result.stringResult ?? '')
-          continue
-        }
-
+        // Enter ends Hatch Creation (keeps session hatches); ESC discards above.
         running = false
       }
     } finally {
-      context.doc.database.events.entityAppended.removeEventListener(
-        entityAppendedListener
-      )
+      this.finishSession(context)
       this._activeHatchIds.clear()
       this._queuedAction = undefined
       this._isActive = false
@@ -715,55 +964,75 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     context: AcApContext,
     action: HatchRibbonAction
   ) {
+    // Close accepts session hatches (AutoCAD: exit Hatch Creation).
     if (action === 'close') return false
     if (action === 'pickPoints') {
-      await this.doPickPoints(context)
-    } else {
-      await this.doSelectObjects(context)
+      if ((await this.doPickPoints(context)) === AcApHatchCmd.BRANCH_CANCEL) {
+        this.markDiscardSession()
+        return false
+      }
+      return true
+    }
+    if (action === 'selectObjects') {
+      if (
+        (await this.doSelectObjects(context)) === AcApHatchCmd.BRANCH_CANCEL
+      ) {
+        this.markDiscardSession()
+        return false
+      }
+      return true
+    }
+    if (action === 'removeBoundaries') {
+      if (
+        (await this.doRemoveBoundaries(context, this.sessionHatches)) ===
+        AcApHatchCmd.BRANCH_CANCEL
+      ) {
+        this.markDiscardSession()
+        return false
+      }
+      return true
+    }
+    if (action === 'recreateBoundary') {
+      const hatches = this.getSelectedHatches()
+      if (
+        (await this.doRecreateBoundary(context, hatches, {
+          databaseEdit: true
+        })) === AcApHatchCmd.BRANCH_CANCEL
+      ) {
+        this.markDiscardSession()
+        return false
+      }
+      return true
+    }
+    if (action === 'setOrigin') {
+      await this.runSetOriginPrompt()
+      return true
     }
     return true
   }
 
-  private async runKeyword(
-    context: AcApContext,
-    keyword: string
-  ): Promise<boolean> {
-    if (keyword === 'PickPoints') {
-      await this.doPickPoints(context)
-      return true
-    } else if (keyword === 'SelectObjects') {
-      await this.doSelectObjects(context)
-      return true
-    } else if (keyword === 'Cancel') {
-      return false
-    }
-    return true
+  private async runRemoveOutsideCommand() {
+    const context = AcApDocManager.instance.context
+    if (!context) return
+    const hatches = this.getSelectedHatches()
+    await this.doRemoveBoundaries(context, hatches, { databaseEdit: true })
   }
 
-  private createBoundaryPrompt() {
-    const options = new AcEdPromptEntityOptions(AcApI18n.t('jig.hatch.prompt'))
-    options.allowNone = true
-    options.setRejectMessage(AcApI18n.t('jig.hatch.invalidBoundary'))
-    options.addAllowedClass('Polyline')
-    options.addAllowedClass('Circle')
-    options.addAllowedClass('Arc')
-    options.addAllowedClass('Line')
-    options.keywords.add(
-      AcApI18n.t('jig.hatch.keywords.pick.display'),
-      AcApI18n.t('jig.hatch.keywords.pick.global'),
-      AcApI18n.t('jig.hatch.keywords.pick.local')
-    )
-    options.keywords.add(
-      AcApI18n.t('jig.hatch.keywords.select.display'),
-      AcApI18n.t('jig.hatch.keywords.select.global'),
-      AcApI18n.t('jig.hatch.keywords.select.local')
-    )
-    options.keywords.add(
-      AcApI18n.t('jig.hatch.keywords.cancel.display'),
-      AcApI18n.t('jig.hatch.keywords.cancel.global'),
-      AcApI18n.t('jig.hatch.keywords.cancel.local')
-    )
-    return options
+  private async runRecreateOutsideCommand() {
+    const context = AcApDocManager.instance.context
+    if (!context) return
+    const hatches = this.getSelectedHatches()
+    await this.doRecreateBoundary(context, hatches, { databaseEdit: true })
+  }
+
+  private async runSetOriginOutsideCommand() {
+    await this.runSetOriginPrompt()
+  }
+
+  private async runSetOriginPrompt() {
+    const point = await this.promptHatchOriginPoint()
+    if (!point) return
+    this.applyOriginPoint(point)
   }
 
   private cancelActivePrompt() {

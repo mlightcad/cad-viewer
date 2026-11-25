@@ -103,7 +103,11 @@ Staré názvy fungují dál jako zastaralé aliasy. Text se přesunul z `kind` d
 ::: info AutoCAD skupiny (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 Od vydání, které obsahuje tuto změnu, `@mlightcad/cad-simple-viewer` registruje **GROUP**, **-GROUP**, **UNGROUP** a **GROUPEDIT**, rozšiřuje výběr při `PICKSTYLE` `1` nebo `3` a uplatňuje úchyty `GROUPDISPLAYMODE` u volitelných skupin. `@mlightcad/cad-editor` přidává **CLASSICGROUP** (dialog Seskupování objektů) a panel Domů → Skupiny na pásu karet.
 
-Vyžaduje `@mlightcad/data-model` se systémovými proměnnými `PICKSTYLE` (0–3, výchozí `1`) a `GROUPDISPLAYMODE` (0–2, výchozí `2`). Sdílený výběr asociativní šrafy (`PICKSTYLE` 2/3) zůstává no-op, dokud `AcDbHatch` nezíská soft-pointery hranic.
+Vyžaduje `@mlightcad/data-model` se systémovými proměnnými `PICKSTYLE` (0–3, výchozí `1`) a `GROUPDISPLAYMODE` (0–2, výchozí `2`). Sdílený výběr asociativní šrafy (`PICKSTYLE` 2/3) rozšiřuje soft-pointery šrafa ↔ hranice (DXF 97/330) uložené na `AcDbHatch`.
+:::
+
+::: info Soft-pointery asociativní šrafy (DXF 71 / 97 / 330)
+Od vydání s touto změnou `@mlightcad/data-model` ukládá na `AcDbHatch` id zdrojových hranic podle cest (`pathSourceIds` / `setPathSourceIds`), prochází je DXF skupinami **71** / **97** / **330** a při úpravě propojené hranice přestaví smyčky přes `AcDbDatabase.hatchAssociationIndex` (po smazání posledního zdroje zruší asociaci). `AcApHatchCmd` při vytváření asociativní šrafy z vybraných hranic připojí zdrojová id; režim výběru bodů bez obnovitelných zdrojů zůstává neasociativní.
 :::
 
 ::: info Náhled výběru v `cad.view.capturePreview`

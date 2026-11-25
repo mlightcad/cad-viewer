@@ -352,6 +352,14 @@ export default {
       description:
         'Controls whether one or separate hatch objects are created for multiple boundaries'
     },
+    hpquickpreview: {
+      description:
+        'Controls whether a hatch preview is displayed when specifying a hatch area'
+    },
+    hpquickprevtimeout: {
+      description:
+        'Sets the maximum time in seconds for a hatch preview to generate before it is cancelled'
+    },
     hptransparency: {
       description:
         'Sets the default transparency for newly created hatches and fills'

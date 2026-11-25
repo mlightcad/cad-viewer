@@ -355,6 +355,12 @@ export default {
       description:
         'Řídí, zda se pro více hranic vytvoří jeden nebo samostatné objekty šrafování'
     },
+    hpquickpreview: {
+      description: 'Určuje, zda se při zadávání oblasti šrafování zobrazí náhled šrafování'
+    },
+    hpquickprevtimeout: {
+      description: 'Nastaví maximální dobu ve vteřinách pro generování náhledu šrafování, než bude zrušen'
+    },
     hptransparency: {
       description:
         'Nastaví výchozí průhlednost pro nově vytvářená šrafování a výplně'

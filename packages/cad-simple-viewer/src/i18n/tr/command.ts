@@ -366,6 +366,12 @@ export default {
       description:
         'Birden çok sınır için tek mi yoksa ayrı tarama nesneleri mi oluşturulacağını denetler'
     },
+    hpquickpreview: {
+      description: 'Bir tarama alanı belirtilirken tarama önizlemesinin görüntülenip görüntülenmeyeceğini denetler'
+    },
+    hpquickprevtimeout: {
+      description: 'Tarama önizlemesinin iptal edilmeden önce oluşturulması için maksimum süreyi (saniye) ayarlar'
+    },
     hptransparency: {
       description:
         'Yeni oluşturulan taramalar ve dolgular için varsayılan saydamlığı ayarlar'

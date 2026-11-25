@@ -105,7 +105,11 @@ registerLazyAgentPlugin(pluginManager)
 ::: info AutoCAD 编组（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
 自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **GROUP**、**-GROUP**、**UNGROUP**、**GROUPEDIT**；当 `PICKSTYLE` 为 `1` 或 `3` 时扩展选择；并对可选编组应用 `GROUPDISPLAYMODE` 夹点。`@mlightcad/cad-editor` 增加 **CLASSICGROUP**（对象编组对话框）以及「开始 → 编组」功能区面板。
 
-需要已注册 `PICKSTYLE`（0–3，默认 `1`）和 `GROUPDISPLAYMODE`（0–2，默认 `2`）的 `@mlightcad/data-model`。关联填充共选（`PICKSTYLE` 2/3）在 `AcDbHatch` 具备边界软指针之前仍为 no-op。
+需要已注册 `PICKSTYLE`（0–3，默认 `1`）和 `GROUPDISPLAYMODE`（0–2，默认 `2`）的 `@mlightcad/data-model`。关联填充共选（`PICKSTYLE` 2/3）会展开 `AcDbHatch` 上的填充 ↔ 边界软指针（DXF 97/330）。
+:::
+
+::: info 关联填充软指针（DXF 71 / 97 / 330）
+自包含此变更的版本起，`@mlightcad/data-model` 在 `AcDbHatch` 上按边界路径存储源对象 id（`pathSourceIds` / `setPathSourceIds`），通过 DXF 组码 **71**、**97**、**330** 往返，并在关联边界被修改时通过 `AcDbDatabase.hatchAssociationIndex` 重建填充环（最后一个源被删除时解除关联）。`AcApHatchCmd` 在从所选边界创建关联填充时写入源 id；无法恢复源映射的拾取点模式保持非关联。
 :::
 
 ::: info `cad.view.capturePreview` 选中预览出图

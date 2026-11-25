@@ -304,7 +304,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (!this.view.hasCursorPos) return
     if (acedShouldIgnoreCompatMouse()) return
     const wcsPos = this.view.screenToWorld(this.view.viewportToCanvas(pos))
-    this.updateDynamicPreview(wcsPos)
+    // Seed rubber-band / input fields only — never drawPreview/jig here.
+    // showAt often runs with a stale canvas cursor (ribbon-started HATCH), and
+    // a following viewResize would requestPreviewRefresh the same point into
+    // HPQUICKPREVIEW if we recorded lastDynamicPoint.
+    const defaults = this.getDynamicValue(wcsPos)
+    this.inputs?.setValue(defaults.raw)
+    this.rubberBand?.update(wcsPos)
   }
 
   private injectInputCSS() {
