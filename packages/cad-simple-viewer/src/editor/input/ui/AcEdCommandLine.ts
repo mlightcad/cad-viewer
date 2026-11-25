@@ -1,5 +1,6 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app/index.js'
 import { AcApI18n } from '../../../i18n/index.js'
+import { ML_UI_Z_COMMAND_LINE } from '../../global/AcEdUiLayout.js'
 import { AcEdPromptKeywordOptions } from '../prompt/index.js'
 import {
   AcEdCommandLineSessionControl,
@@ -356,7 +357,7 @@ export class AcEdCommandLine {
         box-sizing: border-box;
         user-select: none;
         max-width: calc(100% - 20px);
-        z-index: 5;
+        z-index: ${ML_UI_Z_COMMAND_LINE};
       }
 
       .ml-cli-bar {
@@ -521,7 +522,8 @@ export class AcEdCommandLine {
         font-size: 14px;
       }
 
-      .ml-cli-cmd-popup .item:hover {
+      .ml-cli-cmd-popup .item:hover,
+      .ml-cli-cmd-popup .item.selected {
         background: var(--ml-ui-border, #444);
       }
 
@@ -754,11 +756,15 @@ export class AcEdCommandLine {
       'click',
       e => {
         const item = (e.target as HTMLElement).closest('.item') as HTMLElement
-        if (item) {
-          this.setInputText(item.dataset.value || '')
-          this.centerEl.focus()
-          this.updatePopups({ showCmd: false, showMsg: false })
-        }
+        const value = item?.dataset.value
+        if (!value) return
+        this.setInputText(value)
+        this.updatePopups({ showCmd: false, showMsg: false })
+        // Idle: AutoCAD runs the picked command immediately. During an
+        // active prompt, only fill so a history/command row is not forced
+        // through handleEnter (e.g. "LINE" as a radius).
+        if (!this.activeSession) this.confirmInput()
+        else this.textInput.focus()
       },
       { signal: domSignal }
     )
@@ -925,7 +931,10 @@ export class AcEdCommandLine {
 
     const selected = items[this.autoCompleteIndex]
     if (selected) {
+      // Keep the typed prefix's match list; only mirror the highlighted
+      // suggestion into the input (do not re-filter via `input` events).
       this.setInputText(selected.dataset.value ?? '')
+      selected.scrollIntoView?.({ block: 'nearest' })
     }
   }
 
@@ -1063,6 +1072,8 @@ export class AcEdCommandLine {
 
   /** Show command history popup */
   private showCommandHistoryPopup() {
+    // Drop any autocomplete caret so ArrowUp/Down start at the first row.
+    this.autoCompleteIndex = -1
     this.cmdPopup.innerHTML = ''
     if (!this.history.length) {
       const empty = document.createElement('div')

@@ -18,6 +18,7 @@ import {
   ML_UI_SESSION_PANEL_WIDTH,
   ML_UI_Z_CANVAS_HTML_OVERLAY,
   ML_UI_Z_CANVAS_HTML_STROKE,
+  ML_UI_Z_COMMAND_LINE,
   ML_UI_Z_DRAW_STYLE_TOOLBAR
 } from '../src/editor/global/AcEdUiLayout'
 
@@ -73,11 +74,13 @@ describe('AcEdUiLayout', () => {
     expect(ML_UI_SESSION_PANEL_MAX_WIDTH).toBe('calc(100vw - 24px)')
     expect(ML_UI_Z_CANVAS_HTML_STROKE).toBe(1)
     expect(ML_UI_Z_CANVAS_HTML_OVERLAY).toBe(2)
+    expect(ML_UI_Z_COMMAND_LINE).toBe(5)
     expect(ML_UI_Z_DRAW_STYLE_TOOLBAR).toBe(45)
     expect(ML_UI_Z_CANVAS_HTML_STROKE).toBeLessThan(
       ML_UI_Z_CANVAS_HTML_OVERLAY
     )
-    expect(ML_UI_Z_CANVAS_HTML_OVERLAY).toBeLessThan(ML_UI_Z_DRAW_STYLE_TOOLBAR)
+    expect(ML_UI_Z_CANVAS_HTML_OVERLAY).toBeLessThan(ML_UI_Z_COMMAND_LINE)
+    expect(ML_UI_Z_COMMAND_LINE).toBeLessThan(ML_UI_Z_DRAW_STYLE_TOOLBAR)
   })
 
   it('exports compact layout constants', () => {
