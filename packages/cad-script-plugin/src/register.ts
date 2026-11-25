@@ -54,7 +54,9 @@ export function registerLazyCadScriptPlugin(
             labelKey: 'main.ribbon.command.script',
             tooltipKey: 'main.ribbon.tooltip.script',
             iconSvg: SCRIPT_ICON,
-            size: 'large',
+            size: 'small',
+            hideLabel: true,
+            after: 'cmd-countlist',
             toolbar: { after: 'layout' }
           }
         ]
