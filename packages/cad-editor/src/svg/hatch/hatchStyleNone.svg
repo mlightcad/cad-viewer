@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1"/>
+  <path fill="none" stroke="currentColor" stroke-width=".55" d="M2.2 4h15.6M2.2 6.5h15.6M2.2 9h15.6M2.2 11.5h15.6M2.2 14h15.6M2.2 16.5h15.6"/>
+  <rect x="6.5" y="6.5" width="7" height="7" fill="var(--ml-ribbon-bg, #2b2b2b)" stroke="currentColor" stroke-width="1"/>
+  <circle cx="13.2" cy="13.2" r="3.1" fill="#c62828" stroke="#fff" stroke-width=".6"/>
+  <path d="M11.4 13.2h3.6" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

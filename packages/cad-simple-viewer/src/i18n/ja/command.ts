@@ -356,6 +356,12 @@ export default {
       description:
         '複数の境界に対して 1 つのハッチング オブジェクトを作成するか、個別のハッチング オブジェクトを作成するかをコントロールします'
     },
+    hpquickpreview: {
+      description: 'ハッチング領域を指定するときにプレビューを表示するかどうかをコントロールします'
+    },
+    hpquickprevtimeout: {
+      description: 'ハッチング プレビューの生成を自動キャンセルするまでの最大時間（秒）を設定します'
+    },
     hptransparency: {
       description:
         '新しく作成するハッチングと塗り潰しの既定の透過性を設定します'

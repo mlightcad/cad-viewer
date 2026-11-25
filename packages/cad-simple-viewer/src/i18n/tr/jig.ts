@@ -535,23 +535,52 @@ export default {
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
     pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',
+    originPoint: 'Tarama deseni için başlangıç noktasını belirtin',
     select: 'Tarama yapılacak nesneleri seçin',
     patternName: 'Tarama deseni adını girin',
     scale: 'Tarama deseni ölçeğini belirtin',
     angle: 'Tarama deseni açısını belirtin',
     style: 'Tarama stilini girin',
     associative: 'İlişkiselliği belirtin',
+    separate: 'Ayrı tarama nesneleri oluşturulsun mu?',
+    nothingToUndo: 'Geri alınacak tarama yok.',
+    remove: 'Sınırdan kaldırılacak nesneleri seçin',
+    nothingToRemove: 'Kaldırılacak sınır nesnesi yok.',
+    recreateType: 'Sınır nesnesi türünü girin',
+    recreateAssociate: 'Tarama yeni sınırla ilişkilendirilsin mi?',
+    nothingToRecreate: 'Sınırı yeniden oluşturulacak tarama seçilmedi.',
+    regionUnsupported: 'Bölge sınırları henüz desteklenmiyor; bunun yerine çoklu çizgi oluşturuluyor.',
     invalidBoundary: 'Seçilen nesneler kapalı bir sınır oluşturmuyor.',
     keywords: {
       pick: {
-        display: 'Nokta seç(N)',
+        display: 'Nokta seç(PP)',
         local: 'Nokta seç',
         global: 'PickPoints'
       },
       select: {
-        display: 'Nesne seç(S)',
+        display: 'Nesneleri seç(SO)',
         local: 'Nesne seç',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: 'Sınırları kaldır(R)',
+        local: 'Sınırları kaldır',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: 'Çoklu çizgi(P)',
+        local: 'Çoklu çizgi',
+        global: 'Polyline'
+      },
+      region: {
+        display: 'Bölge(R)',
+        local: 'Bölge',
+        global: 'Region'
+      },
+      undo: {
+        display: 'Geri al(U)',
+        local: 'Geri al',
+        global: 'Undo'
       },
       cancel: {
         display: 'İptal(İ)',
@@ -574,7 +603,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: 'Stil(T)',
+        display: 'Stil(HS)',
         local: 'Stil',
         global: 'HatchStyle'
       },
@@ -582,6 +611,11 @@ export default {
         display: 'İlişkisel(İL)',
         local: 'İlişkisel',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: 'Ayrı(SE)',
+        local: 'Ayrı',
+        global: 'SEparate'
       },
       normal: {
         display: 'Normal(N)',

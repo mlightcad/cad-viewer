@@ -414,23 +414,52 @@ export default {
   hatch: {
     prompt: '选择边界对象或',
     pickPoint: '指定内部点（或按 Enter 结束）',
+    originPoint: '指定填充图案的原点',
     select: '选择要填充的对象',
     patternName: '输入填充图案名称',
     scale: '指定填充图案比例',
     angle: '指定填充图案角度',
     style: '输入填充样式',
     associative: '指定关联性',
+    separate: '是否创建独立的填充？',
+    nothingToUndo: '没有可撤销的填充。',
+    remove: '选择要从边界中删除的对象',
+    nothingToRemove: '没有可删除的边界对象。',
+    recreateType: '输入边界对象类型',
+    recreateAssociate: '是否将填充与新边界关联？',
+    nothingToRecreate: '没有可重建边界的填充。',
+    regionUnsupported: '暂不支持面域边界，将改为创建多段线。',
     invalidBoundary: '所选对象无法构成闭合边界。',
     keywords: {
       pick: {
-        display: '拾取点(P)',
+        display: '拾取点(PP)',
         local: '拾取点',
         global: 'PickPoints'
       },
       select: {
-        display: '选择对象(S)',
+        display: '选择对象(SO)',
         local: '选择对象',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: '删除边界(R)',
+        local: '删除边界',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      region: {
+        display: '面域(R)',
+        local: '面域',
+        global: 'Region'
+      },
+      undo: {
+        display: '撤销(U)',
+        local: '撤销',
+        global: 'Undo'
       },
       cancel: {
         display: '放弃(C)',
@@ -453,7 +482,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: '样式(T)',
+        display: '样式(HS)',
         local: '样式',
         global: 'HatchStyle'
       },
@@ -461,6 +490,11 @@ export default {
         display: '关联(AS)',
         local: '关联',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: '独立(SE)',
+        local: '独立',
+        global: 'SEparate'
       },
       normal: {
         display: '普通(N)',

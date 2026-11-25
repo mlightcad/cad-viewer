@@ -24,19 +24,24 @@ export default {
         boundary: 'Sınırlar',
         pattern: 'Desen',
         properties: 'Özellikler',
+        origin: 'Başlangıç',
         options: 'Seçenekler',
         close: 'Kapat'
       },
       command: {
         pickPoints: 'Nokta Seç',
-        selectObjects: 'Nesne Seç',
+        select: 'Seç',
+        remove: 'Kaldır',
+        recreate: 'Yeniden Oluştur',
+        setOrigin: 'Başlangıç Noktası\nAyarla',
+        storeOrigin: 'Varsayılan Başlangıç Olarak Sakla',
         close: 'Kapat'
       },
       field: {
         pattern: 'Desen',
         scale: 'Ölçek',
         angle: 'Açı',
-        style: 'Stil',
+        style: 'Ada Algılama',
         associative: 'İlişkisel',
         fillType: 'Dolgu Türü',
         fillColor: 'Renk',
@@ -48,9 +53,10 @@ export default {
         imageScale: 'Görüntü Ölçeği'
       },
       style: {
-        normal: 'Normal',
-        outer: 'Dış',
-        ignore: 'Yoksay'
+        normal: 'Normal Ada Algılama',
+        outer: 'Dış Ada Algılama',
+        ignore: 'Ada Algılamayı Yoksay',
+        none: 'Ada Algılama Yok'
       },
       fillType: {
         solid: 'Düz',
@@ -63,11 +69,32 @@ export default {
       },
       tooltip: {
         pickPoints: 'Tarama bölgeleri oluşturmak için iç noktalar seçin.',
-        selectObjects: 'Taranacak kapalı sınır nesnelerini seçin.',
+        select:
+          'Taranacak kapalı sınır nesnelerini seçin. İç adalar otomatik algılanmaz.',
+        remove:
+          'Geçerli tarama sınır tanımından daha önce eklenen sınır nesnelerini veya tarama desenlerini kaldırır.',
+        recreate:
+          'Seçili taramanın çevresinde bir çoklu çizgi oluşturur ve isteğe bağlı olarak taramayı yeni sınırla ilişkilendirir.',
         pattern: 'Tarama deseni adını seçin.',
         scale: 'Tarama deseni ölçeğini ayarlayın.',
         angle: 'Tarama deseni açısını derece cinsinden ayarlayın.',
-        style: 'Tarama oluşturma için ada tespit stilini kontrol edin.',
+        style: 'Tarama oluşturma için ada algılama stilini denetler.',
+        styleNormal:
+          'Dış sınırdan içeri doldurur; iç adada dolguyu kapatır, adanın içindeki adada yeniden açar.',
+        styleOuter:
+          'Dış sınırdan içeri doldurur ancak yalnızca en dış adalara kadar gider.',
+        styleIgnore:
+          'İç nesneleri yoksayar ve dış sınırın içindeki tüm alanı doldurur.',
+        styleNone: 'Geleneksel stil; etkisi Yoksay’a benzer.',
+        setOrigin: 'Yeni bir tarama deseni başlangıç noktası belirtin.',
+        originBL: 'Başlangıcı tarama sınırlarının sol altına ayarlar.',
+        originBR: 'Başlangıcı tarama sınırlarının sağ altına ayarlar.',
+        originTR: 'Başlangıcı tarama sınırlarının sağ üstüne ayarlar.',
+        originTL: 'Başlangıcı tarama sınırlarının sol üstüne ayarlar.',
+        originCenter: 'Başlangıcı tarama sınırlarının merkezine ayarlar.',
+        originCurrent: 'Geçerli tarama başlangıcını (HPORIGIN) kullanır.',
+        storeOrigin:
+          'Geçerli tarama başlangıcını varsayılan HPORIGIN olarak saklar.',
         associative: 'İlişkisel tarama modunu aç/kapat.',
         fillType: 'Dolgu türünü seçin: düz, desen veya geçiş.',
         fillColor: 'Dolgu rengini seçin.',

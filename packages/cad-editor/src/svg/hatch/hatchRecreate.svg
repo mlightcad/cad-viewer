@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <rect x="1.5" y="12.6" width="13" height=".7" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="1.5" y="3.6" width="13" height=".7" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="3.3" y="1.8" width=".7" height="13" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="12" y="1.8" width=".7" height="13" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="4.7" y="7.9" width="6.4" height=".55" transform="translate(-3.2 7.9) rotate(-45)" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="5" y="6.2" width="2.6" height=".55" transform="translate(-2.5 6.3) rotate(-45)" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <rect x="8" y="9.6" width="3.2" height=".55" transform="translate(-3.9 9.7) rotate(-45)" stroke="currentColor" stroke-width=".4" stroke-linejoin="round"></rect>
+  <circle cx="16.1" cy="4.2" r="2.35" fill="none" stroke="currentColor" stroke-width=".9"></circle>
+  <circle cx="16.1" cy="4.2" r=".7" fill="currentColor"></circle>
+  <path
+    fill="currentColor"
+    d="M16.1 1.35l.35 1.05h1.1l-.9.65.35 1.05-.9-.65-.9.65.35-1.05-.9-.65h1.1z"
+  ></path>
+  <rect
+    x="13.7"
+    y="14.1"
+    width="4.6"
+    height="3.5"
+    fill="none"
+    stroke="currentColor"
+    stroke-width=".9"
+    rx=".3"
+  ></rect>
+</svg>

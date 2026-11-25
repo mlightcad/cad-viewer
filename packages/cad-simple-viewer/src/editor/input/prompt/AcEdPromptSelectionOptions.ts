@@ -18,6 +18,14 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
    */
   private _allowGroupSelection = true
 
+  /**
+   * Whether picking an associative hatch or its path-source boundary expands
+   * to the hatch ↔ boundary set (`PICKSTYLE` bit 2). Hatch Remove Boundaries
+   * turns this off so a single island boundary can be picked without also
+   * selecting the hatch (which would erase a session hatch).
+   */
+  private _allowAssociativeHatchSelection = true
+
   constructor(message: string, globalKeywords?: string) {
     super(message, globalKeywords)
   }
@@ -55,5 +63,17 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
 
   set allowGroupSelection(value: boolean) {
     this._allowGroupSelection = value
+  }
+
+  /**
+   * Gets or sets whether associative hatch ↔ boundary co-selection runs during
+   * this prompt. Defaults to `true`.
+   */
+  get allowAssociativeHatchSelection(): boolean {
+    return this._allowAssociativeHatchSelection
+  }
+
+  set allowAssociativeHatchSelection(value: boolean) {
+    this._allowAssociativeHatchSelection = value
   }
 }

@@ -436,23 +436,53 @@ export default {
   hatch: {
     prompt: 'Select boundary object or',
     pickPoint: 'Specify internal point (or press Enter to finish)',
+    originPoint: 'Specify origin point for hatch pattern',
     select: 'Select objects to hatch',
     patternName: 'Enter hatch pattern name',
     scale: 'Specify hatch pattern scale',
     angle: 'Specify hatch pattern angle',
     style: 'Enter hatch style',
     associative: 'Specify associativity',
+    separate: 'Create separate hatches?',
+    nothingToUndo: 'No hatch to undo.',
+    remove: 'Select objects to remove from boundary',
+    nothingToRemove: 'No boundary objects to remove.',
+    recreateType: 'Enter type of boundary object',
+    recreateAssociate: 'Associate hatch with new boundary?',
+    nothingToRecreate: 'No hatch selected to recreate boundary.',
+    regionUnsupported:
+      'Region boundaries are not supported yet; creating a polyline instead.',
     invalidBoundary: 'Selected objects do not form a closed boundary.',
     keywords: {
       pick: {
-        display: 'Pick points(P)',
+        display: 'Pick points(PP)',
         local: 'Pick points',
         global: 'PickPoints'
       },
       select: {
-        display: 'Select objects(S)',
+        display: 'Select objects(SO)',
         local: 'Select objects',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: 'Remove boundaries(R)',
+        local: 'Remove boundaries',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: 'Polyline(P)',
+        local: 'Polyline',
+        global: 'Polyline'
+      },
+      region: {
+        display: 'Region(R)',
+        local: 'Region',
+        global: 'Region'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
       },
       cancel: {
         display: 'Cancel(C)',
@@ -475,7 +505,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: 'Style(T)',
+        display: 'Style(HS)',
         local: 'Style',
         global: 'HatchStyle'
       },
@@ -483,6 +513,11 @@ export default {
         display: 'Associative(AS)',
         local: 'Associative',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: 'Separate(SE)',
+        local: 'Separate',
+        global: 'SEparate'
       },
       normal: {
         display: 'Normal(N)',

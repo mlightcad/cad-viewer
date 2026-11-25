@@ -103,7 +103,11 @@ registerLazyAgentPlugin(pluginManager)
 ::: info AutoCAD グループ（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
 この変更を含むリリースから、`@mlightcad/cad-simple-viewer` は **GROUP**、**-GROUP**、**UNGROUP**、**GROUPEDIT** を登録し、`PICKSTYLE` が `1` または `3` のとき選択を拡張し、選択可能なグループに `GROUPDISPLAYMODE` グリップを適用します。`@mlightcad/cad-editor` は **CLASSICGROUP**（オブジェクトグループ化ダイアログ）とホーム → グループのリボンパネルを追加します。
 
-`PICKSTYLE`（0–3、既定 `1`）と `GROUPDISPLAYMODE`（0–2、既定 `2`）を登録した `@mlightcad/data-model` が必要です。連想ハッチの同時選択（`PICKSTYLE` 2/3）は、`AcDbHatch` に境界ソフトポインタが追加されるまで no-op のままです。
+`PICKSTYLE`（0–3、既定 `1`）と `GROUPDISPLAYMODE`（0–2、既定 `2`）を登録した `@mlightcad/data-model` が必要です。連想ハッチの同時選択（`PICKSTYLE` 2/3）は、`AcDbHatch` 上のハッチ ↔ 境界ソフトポインタ（DXF 97/330）を展開します。
+:::
+
+::: info 連想ハッチのソフトポインタ（DXF 71 / 97 / 330）
+この変更を含むリリース以降、`@mlightcad/data-model` は `AcDbHatch` にパス単位の境界ソース id（`pathSourceIds` / `setPathSourceIds`）を保持し、DXF グループ **71** / **97** / **330** で往復し、リンク先境界の変更時に `AcDbDatabase.hatchAssociationIndex` でループを再構築します（最後のソース削除時は連想解除）。`AcApHatchCmd` は選択境界から連想ハッチを作成するときにソース id を付けます。ソースを復元できないピックポイント作成は非連想のままです。
 :::
 
 ::: info `cad.view.capturePreview` の選択プレビュー

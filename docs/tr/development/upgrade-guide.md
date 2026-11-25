@@ -103,7 +103,11 @@ Eski adlar kullanımdan kalkmış diğer adlar olarak çalışmaya devam eder. M
 ::: info AutoCAD grupları (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **GROUP**, **-GROUP**, **UNGROUP** ve **GROUPEDIT** komutlarını kaydeder; `PICKSTYLE` `1` veya `3` iken seçimi genişletir; seçilebilir gruplar için `GROUPDISPLAYMODE` tutamaçlarını uygular. `@mlightcad/cad-editor` **CLASSICGROUP** (Nesne Gruplama iletişim kutusu) ve Giriş → Gruplar şerit panelini ekler.
 
-`PICKSTYLE` (0–3, varsayılan `1`) ve `GROUPDISPLAYMODE` (0–2, varsayılan `2`) sistem değişkenlerini kaydeden `@mlightcad/data-model` gerekir. İlişkili tarama ortak seçimi (`PICKSTYLE` 2/3), `AcDbHatch` üzerinde sınır soft-pointer’ları olana kadar no-op kalır.
+`PICKSTYLE` (0–3, varsayılan `1`) ve `GROUPDISPLAYMODE` (0–2, varsayılan `2`) sistem değişkenlerini kaydeden `@mlightcad/data-model` gerekir. İlişkili tarama ortak seçimi (`PICKSTYLE` 2/3), `AcDbHatch` üzerindeki tarama ↔ sınır soft-pointer’larını (DXF 97/330) genişletir.
+:::
+
+::: info İlişkili tarama soft-pointer’ları (DXF 71 / 97 / 330)
+Bu değişikliği içeren sürümden itibaren `@mlightcad/data-model`, `AcDbHatch` üzerinde yol başına kaynak sınır id’lerini (`pathSourceIds` / `setPathSourceIds`) saklar, DXF grup **71** / **97** / **330** ile gidiş-dönüş yapar ve bağlı sınır değişince `AcDbDatabase.hatchAssociationIndex` ile döngüleri yeniden oluşturur (son kaynak silinince ilişkisizleştirir). `AcApHatchCmd` seçili sınırlardan ilişkili tarama oluştururken kaynak id’lerini ekler; kaynak eşlemesi olmayan nokta seçimi ilişkisiz kalır.
 :::
 
 ::: info `cad.view.capturePreview` seçim önizlemesi

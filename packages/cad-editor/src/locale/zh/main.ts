@@ -24,19 +24,24 @@ export default {
         boundary: '边界',
         pattern: '图案',
         properties: '特性',
+        origin: '原点',
         options: '选项',
         close: '关闭'
       },
       command: {
         pickPoints: '拾取点',
-        selectObjects: '选择对象',
+        select: '选择',
+        remove: '删除',
+        recreate: '重建',
+        setOrigin: '设置\n原点',
+        storeOrigin: '存储为默认原点',
         close: '关闭'
       },
       field: {
         pattern: '图案',
         scale: '比例',
         angle: '角度',
-        style: '样式',
+        style: '孤岛检测',
         associative: '关联',
         fillType: '填充类型',
         fillColor: '颜色',
@@ -48,9 +53,10 @@ export default {
         imageScale: '图片比例'
       },
       style: {
-        normal: '普通',
-        outer: '外部',
-        ignore: '忽略'
+        normal: '普通孤岛检测',
+        outer: '外部孤岛检测',
+        ignore: '忽略孤岛检测',
+        none: '无孤岛检测'
       },
       fillType: {
         solid: '实体',
@@ -63,11 +69,27 @@ export default {
       },
       tooltip: {
         pickPoints: '拾取内部点来创建填充区域。',
-        selectObjects: '选择闭合边界对象进行填充。',
+        select: '选择闭合边界对象进行填充。不会自动检测内部孤岛。',
+        remove: '从当前填充边界定义中删除先前添加的边界对象或填充图案。',
+        recreate: '围绕选定填充创建多段线，并可选择将填充与新边界关联。',
         pattern: '设置填充图案名称。',
         scale: '设置填充图案比例。',
         angle: '设置填充图案角度（度）。',
-        style: '控制填充时的岛屿检测样式。',
+        style: '控制填充时的孤岛检测样式。',
+        styleNormal:
+          '从外部边界向内填充，遇到内部孤岛时关闭填充，直到遇到孤岛中的另一个孤岛。',
+        styleOuter:
+          '从外部边界向内填充，但只填充到最外层孤岛为止，忽略更内部的区域。',
+        styleIgnore: '忽略所有内部对象，对整个外部边界内的区域进行填充。',
+        styleNone: '传统样式，效果类似于“忽略”。',
+        setOrigin: '指定新的填充图案原点。',
+        originBL: '将原点设置为填充范围的左下角。',
+        originBR: '将原点设置为填充范围的右下角。',
+        originTR: '将原点设置为填充范围的右上角。',
+        originTL: '将原点设置为填充范围的左上角。',
+        originCenter: '将原点设置为填充范围的中心。',
+        originCurrent: '使用当前填充原点（HPORIGIN）。',
+        storeOrigin: '将当前填充原点存储为默认 HPORIGIN。',
         associative: '切换关联填充模式。',
         fillType: '选择填充类型：实体、图案或渐变色。',
         fillColor: '选择填充颜色。',

@@ -328,6 +328,12 @@ export default {
       description:
         '여러 경계에 대해 단일 해치 객체를 작성할지 개별 해치 객체를 작성할지 조정합니다'
     },
+    hpquickpreview: {
+      description: '해치 영역을 지정할 때 해치 미리보기를 표시할지 여부를 조정합니다'
+    },
+    hpquickprevtimeout: {
+      description: '해치 미리보기 생성이 자동으로 취소되기 전의 최대 시간(초)을 설정합니다'
+    },
     hptransparency: {
       description: '새로 작성하는 해치 및 채우기의 기본 투명도를 설정합니다'
     },

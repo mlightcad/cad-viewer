@@ -314,6 +314,12 @@ export default {
     hpseparate: {
       description: '控制为多个边界创建单个还是独立的填充对象'
     },
+    hpquickpreview: {
+      description: '控制在指定填充区域时是否显示填充预览'
+    },
+    hpquickprevtimeout: {
+      description: '设置生成填充预览的最长时间（秒），超时后取消预览'
+    },
     hptransparency: {
       description: '设置新创建填充和填充区域的默认透明度'
     },

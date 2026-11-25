@@ -457,23 +457,52 @@ export default {
   hatch: {
     prompt: '경계 객체 선택 또는',
     pickPoint: '내부 점 지정 (또는 Enter 키를 눌러 완료)',
+    originPoint: '해치 패턴 원점 지정',
     select: '해치할 객체 선택',
     patternName: '해치 패턴 이름 입력',
     scale: '해치 패턴 축척 지정',
     angle: '해치 패턴 각도 지정',
     style: '해치 스타일 입력',
     associative: '연관성 지정',
+    separate: '개별 해치를 작성하시겠습니까?',
+    nothingToUndo: '명령 취소할 해치가 없습니다.',
+    remove: '경계에서 제거할 객체 선택',
+    nothingToRemove: '제거할 경계 객체가 없습니다.',
+    recreateType: '경계 객체 유형 입력',
+    recreateAssociate: '해치를 새 경계에 연관시키겠습니까?',
+    nothingToRecreate: '경계를 재작성할 해치가 선택되지 않았습니다.',
+    regionUnsupported: '영역 경계는 아직 지원되지 않아 폴리선으로 작성합니다.',
     invalidBoundary: '선택한 객체가 닫힌 경계를 형성하지 않습니다.',
     keywords: {
       pick: {
-        display: '점 선택(P)',
+        display: '점 선택(PP)',
         local: '점 선택',
         global: 'PickPoints'
       },
       select: {
-        display: '객체 선택(S)',
+        display: '객체 선택(SO)',
         local: '객체 선택',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: '경계 제거(R)',
+        local: '경계 제거',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: '폴리선(P)',
+        local: '폴리선',
+        global: 'Polyline'
+      },
+      region: {
+        display: '영역(R)',
+        local: '영역',
+        global: 'Region'
+      },
+      undo: {
+        display: '명령 취소(U)',
+        local: '명령 취소',
+        global: 'Undo'
       },
       cancel: {
         display: '취소(C)',
@@ -496,7 +525,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: '스타일(T)',
+        display: '스타일(HS)',
         local: '스타일',
         global: 'HatchStyle'
       },
@@ -504,6 +533,11 @@ export default {
         display: '연관(AS)',
         local: '연관',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: '개별(SE)',
+        local: '개별',
+        global: 'SEparate'
       },
       normal: {
         display: '일반(N)',

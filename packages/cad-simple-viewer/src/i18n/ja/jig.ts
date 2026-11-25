@@ -460,23 +460,52 @@ export default {
   hatch: {
     prompt: '境界オブジェクトを選択 または',
     pickPoint: '内側の点を指定 (Enter キーで終了)',
+    originPoint: 'ハッチング パターンの原点を指定',
     select: 'ハッチングするオブジェクトを選択',
     patternName: 'ハッチング パターン名を入力',
     scale: 'ハッチング パターンの尺度を指定',
     angle: 'ハッチング パターンの角度を指定',
     style: 'ハッチング スタイルを入力',
     associative: '自動調整を指定',
+    separate: '個別のハッチングを作成しますか?',
+    nothingToUndo: '元に戻すハッチングはありません。',
+    remove: '境界から削除するオブジェクトを選択',
+    nothingToRemove: '削除できる境界オブジェクトがありません。',
+    recreateType: '境界オブジェクトの種類を入力',
+    recreateAssociate: 'ハッチングを新しい境界に関連付けますか?',
+    nothingToRecreate: '境界を再作成するハッチングが選択されていません。',
+    regionUnsupported: 'リージョン境界は未対応のため、ポリラインを作成します。',
     invalidBoundary: '選択したオブジェクトは閉じた境界を形成していません。',
     keywords: {
       pick: {
-        display: '点をクリック(P)',
+        display: 'ポイントを指定(PP)',
         local: '点をクリック',
         global: 'PickPoints'
       },
       select: {
-        display: 'オブジェクトを選択(S)',
+        display: 'オブジェクトを選択(SO)',
         local: 'オブジェクトを選択',
         global: 'SelectObjects'
+      },
+      remove: {
+        display: '境界を削除(R)',
+        local: '境界を削除',
+        global: 'RemoveBoundaries'
+      },
+      polyline: {
+        display: 'ポリライン(P)',
+        local: 'ポリライン',
+        global: 'Polyline'
+      },
+      region: {
+        display: 'リージョン(R)',
+        local: 'リージョン',
+        global: 'Region'
+      },
+      undo: {
+        display: '元に戻す(U)',
+        local: '元に戻す',
+        global: 'Undo'
       },
       cancel: {
         display: 'キャンセル(C)',
@@ -499,7 +528,7 @@ export default {
         global: 'Angle'
       },
       style: {
-        display: 'スタイル(T)',
+        display: 'スタイル(HS)',
         local: 'スタイル',
         global: 'HatchStyle'
       },
@@ -507,6 +536,11 @@ export default {
         display: '自動調整(AS)',
         local: '自動調整',
         global: 'AssociativeMode'
+      },
+      separate: {
+        display: '個別(SE)',
+        local: '個別',
+        global: 'SEparate'
       },
       normal: {
         display: '標準(N)',

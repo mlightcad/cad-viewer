@@ -14,6 +14,7 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _useDashedLine: boolean = false
   private _allowNone: boolean = false
   private _disableOSnap: boolean = false
+  private _disableTracking: boolean = false
   private _showConfirmedPointMark?: boolean
   private _defaultValue?: AcGePoint3d
   private _useDefaultValue: boolean = false
@@ -136,6 +137,20 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   set disableOSnap(flag: boolean) {
     if (!this.isReadOnly) {
       this._disableOSnap = flag
+    }
+  }
+
+  /**
+   * When true, ORTHO / polar tracking do not use the editor's last point as
+   * the tracking origin. Used for free interior picks (HATCH HPQUICKPREVIEW)
+   * so the cursor is not pulled onto a recently drawn entity.
+   */
+  get disableTracking(): boolean {
+    return this._disableTracking
+  }
+  set disableTracking(flag: boolean) {
+    if (!this.isReadOnly) {
+      this._disableTracking = flag
     }
   }
 

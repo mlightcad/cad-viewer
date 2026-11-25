@@ -7,9 +7,31 @@ import type {
 } from '@mlightcad/ribbon'
 import { type Ref, ref } from 'vue'
 
-import { hatchRibbonCommand, type HatchRibbonStyle } from '../../command'
+import {
+  type HatchOriginMode,
+  hatchRibbonCommand,
+  type HatchRibbonStyle
+} from '../../command'
 import { useRibbonContextualTab } from '../../composable'
-import { hatch, hatchAssociative, qselect } from '../../svg'
+import {
+  hatchAssociative,
+  hatchOriginBL,
+  hatchOriginBR,
+  hatchOriginCenter,
+  hatchOriginCurrent,
+  hatchOriginStore,
+  hatchOriginTL,
+  hatchOriginTR,
+  hatchPickPoints,
+  hatchRecreate,
+  hatchRemove,
+  hatchSelect,
+  hatchSetOrigin,
+  hatchStyleIgnore,
+  hatchStyleNone,
+  hatchStyleNormal,
+  hatchStyleOuter
+} from '../../svg'
 import {
   DEFAULT_HATCH_PATTERN_OPTIONS,
   type HatchPatternOption,
@@ -197,6 +219,14 @@ export function useHatchContextualRibbon({
       hatchRibbonCommand.requestSelectObjects()
       return true
     }
+    if (itemId === 'hatch-boundary-remove') {
+      hatchRibbonCommand.requestRemoveBoundaries()
+      return true
+    }
+    if (itemId === 'hatch-boundary-recreate') {
+      hatchRibbonCommand.requestRecreateBoundary()
+      return true
+    }
     if (itemId === 'hatch-close') {
       if (isCommandActive.value) {
         hatchRibbonCommand.close()
@@ -236,9 +266,29 @@ export function useHatchContextualRibbon({
     }
     if (itemId.startsWith('hatch-style:')) {
       const value = itemId.slice('hatch-style:'.length)
-      if (value === 'Normal' || value === 'Outer' || value === 'Ignore') {
+      if (
+        value === 'Normal' ||
+        value === 'Outer' ||
+        value === 'Ignore' ||
+        value === 'None'
+      ) {
         hatchRibbonCommand.setStyle(value as HatchRibbonStyle)
       }
+      return true
+    }
+    if (itemId === 'hatch-origin-set') {
+      hatchRibbonCommand.requestSetOrigin()
+      return true
+    }
+    if (itemId.startsWith('hatch-origin-mode:')) {
+      const mode = Number(itemId.slice('hatch-origin-mode:'.length))
+      if (mode >= 0 && mode <= 5) {
+        hatchRibbonCommand.setOriginMode(mode as HatchOriginMode)
+      }
+      return true
+    }
+    if (itemId === 'hatch-origin-store') {
+      hatchRibbonCommand.storeDefaultOrigin()
       return true
     }
     if (itemId === 'hatch-associative-on') {
@@ -293,6 +343,7 @@ export function useHatchContextualRibbon({
       visible: isVisible.value,
       groups: [
         {
+          // AutoCAD Boundaries: large Pick Points + stacked Select / Remove / Recreate.
           id: 'hatch-boundary-group',
           title: t('main.ribbon.hatch.group.boundary'),
           orientation: 'row',
@@ -307,15 +358,39 @@ export function useHatchContextualRibbon({
                   label: t('main.ribbon.hatch.command.pickPoints'),
                   tooltip: t('main.ribbon.hatch.tooltip.pickPoints'),
                   size: 'large',
-                  props: { icon: hatch }
-                },
+                  props: { icon: hatchPickPoints }
+                }
+              ]
+            },
+            {
+              id: 'hatch-boundary-side',
+              layout: 'column',
+              items: [
                 {
                   id: 'hatch-boundary-select',
                   type: 'button',
-                  label: t('main.ribbon.hatch.command.selectObjects'),
-                  tooltip: t('main.ribbon.hatch.tooltip.selectObjects'),
-                  size: 'large',
-                  props: { icon: qselect }
+                  label: t('main.ribbon.hatch.command.select'),
+                  tooltip: t('main.ribbon.hatch.tooltip.select'),
+                  size: 'small',
+                  props: { icon: hatchSelect }
+                },
+                {
+                  id: 'hatch-boundary-remove',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.remove'),
+                  tooltip: t('main.ribbon.hatch.tooltip.remove'),
+                  size: 'small',
+                  props: { icon: hatchRemove }
+                },
+                {
+                  id: 'hatch-boundary-recreate',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.recreate'),
+                  tooltip: t('main.ribbon.hatch.tooltip.recreate'),
+                  size: 'small',
+                  // AutoCAD: Recreate is disabled during Hatch Creation.
+                  disabled: isCommandActive.value,
+                  props: { icon: hatchRecreate }
                 }
               ]
             }
@@ -495,9 +570,146 @@ export function useHatchContextualRibbon({
           ]
         },
         {
+          // AutoCAD Origin: Set Origin in the panel; extents presets + Store
+          // as Default Origin live in the footer dropdown.
+          id: 'hatch-origin-group',
+          title: t('main.ribbon.hatch.group.origin'),
+          orientation: 'row',
+          footerMenuLayout: 'column',
+          footerMenuItems: [
+            {
+              id: 'hatch-origin-presets',
+              type: 'buttonGroup',
+              hideLabel: true,
+              size: 'small',
+              props: {
+                wrap: false,
+                buttonSize: 'small',
+                options: [
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:1',
+                    icon: hatchOriginBL,
+                    tooltip: t('main.ribbon.hatch.tooltip.originBL')
+                  },
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:2',
+                    icon: hatchOriginBR,
+                    tooltip: t('main.ribbon.hatch.tooltip.originBR')
+                  },
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:3',
+                    icon: hatchOriginTR,
+                    tooltip: t('main.ribbon.hatch.tooltip.originTR')
+                  },
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:4',
+                    icon: hatchOriginTL,
+                    tooltip: t('main.ribbon.hatch.tooltip.originTL')
+                  },
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:5',
+                    icon: hatchOriginCenter,
+                    tooltip: t('main.ribbon.hatch.tooltip.originCenter')
+                  },
+                  {
+                    label: '',
+                    value: 'hatch-origin-mode:0',
+                    icon: hatchOriginCurrent,
+                    tooltip: t('main.ribbon.hatch.tooltip.originCurrent')
+                  }
+                ]
+              }
+            },
+            {
+              id: 'hatch-origin-store',
+              type: 'button',
+              label: t('main.ribbon.hatch.command.storeOrigin'),
+              tooltip: t('main.ribbon.hatch.tooltip.storeOrigin'),
+              size: 'small',
+              props: { icon: hatchOriginStore }
+            }
+          ],
+          collections: [
+            {
+              id: 'hatch-origin-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'hatch-origin-set',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.setOrigin'),
+                  tooltip: t('main.ribbon.hatch.tooltip.setOrigin'),
+                  size: 'large',
+                  props: {
+                    icon: hatchSetOrigin,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          // AutoCAD Options: Associative in the panel; Island Detection lives in
+          // the footer dropdown (cascading submenu, right-start placement).
           id: 'hatch-options-group',
           title: t('main.ribbon.hatch.group.options'),
           orientation: 'row',
+          footerMenuLayout: 'column',
+          footerMenuItems: [
+            {
+              id: 'hatch-style',
+              type: 'dropdown',
+              label: t('main.ribbon.hatch.field.style'),
+              tooltip: t('main.ribbon.hatch.tooltip.style'),
+              size: 'small',
+              props: {
+                modelValue: `hatch-style:${hatchState.style}`,
+                syncLabelWithSelection: true,
+                placement: 'right-start',
+                icon:
+                  hatchState.style === 'Outer'
+                    ? hatchStyleOuter
+                    : hatchState.style === 'Ignore'
+                      ? hatchStyleIgnore
+                      : hatchState.style === 'None'
+                        ? hatchStyleNone
+                        : hatchStyleNormal,
+                options: [
+                  {
+                    label: t('main.ribbon.hatch.style.normal'),
+                    value: 'hatch-style:Normal',
+                    icon: hatchStyleNormal,
+                    tooltip: t('main.ribbon.hatch.tooltip.styleNormal')
+                  },
+                  {
+                    label: t('main.ribbon.hatch.style.outer'),
+                    value: 'hatch-style:Outer',
+                    icon: hatchStyleOuter,
+                    tooltip: t('main.ribbon.hatch.tooltip.styleOuter')
+                  },
+                  {
+                    label: t('main.ribbon.hatch.style.ignore'),
+                    value: 'hatch-style:Ignore',
+                    icon: hatchStyleIgnore,
+                    tooltip: t('main.ribbon.hatch.tooltip.styleIgnore')
+                  },
+                  {
+                    label: t('main.ribbon.hatch.style.none'),
+                    value: 'hatch-style:None',
+                    icon: hatchStyleNone,
+                    tooltip: t('main.ribbon.hatch.tooltip.styleNone')
+                  }
+                ]
+              }
+            }
+          ],
           collections: [
             {
               id: 'hatch-options-main',
