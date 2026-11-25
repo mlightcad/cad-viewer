@@ -279,13 +279,12 @@ Legenda:
 
 #### Úpravy geometrie
 
-* [x] Úchopové body
-* [ ] Protažení
-* [ ] Oříznutí
-* [ ] Prodloužení
+* [x] Protažení
+* [x] Oříznutí
+* [x] Prodloužení
 * [x] Odsazení
-* [ ] Rozložení
-* [ ] Spojení / zaoblení / zkosení (2D)
+* [x] Rozložení
+* [x] Spojení / zaoblení / zkosení (2D)
 
 ### Kreslení a nástroje pro tvorbu
 

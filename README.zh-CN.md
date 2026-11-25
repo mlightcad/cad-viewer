@@ -279,13 +279,12 @@ MLightCAD 针对复杂图纸渲染进行了多项优化，可在保持高帧率�
 
 #### 几何编辑
 
--   [x] 夹点（Grip Points）
--   [ ] 拉伸（Stretch）
--   [ ] 修剪（Trim）
--   [ ] 延伸（Extend）
+-   [x] 拉伸（Stretch）
+-   [x] 修剪（Trim）
+-   [x] 延伸（Extend）
 -   [x] 偏移（Offset）
--   [ ] 分解（Explode）
--   [ ] 连接 / 圆角 / 倒角（2D）
+-   [x] 分解（Explode）
+-   [x] 连接 / 圆角 / 倒角（2D）
 
 ### 绘制与创建工具
 

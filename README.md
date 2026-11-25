@@ -279,12 +279,11 @@ Legend:
 
 #### Geometry Editing
 
-* [x] Grip points
 * [x] Stretch
-* [ ] Trim
-* [ ] Extend
+* [x] Trim
+* [x] Extend
 * [x] Offset
-* [ ] Explode
+* [x] Explode
 * [x] Join / fillet / chamfer (2D)
 
 ### Drawing & Creation Tools

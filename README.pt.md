@@ -279,13 +279,12 @@ Legenda:
 
 #### Edição geométrica
 
-* [x] Pontos de aderência
-* [ ] Esticar
-* [ ] Recortar
-* [ ] Estender
+* [x] Esticar
+* [x] Recortar
+* [x] Estender
 * [x] Deslocamento
-* [ ] Explodir
-* [ ] Unir / filete / chanfro (2D)
+* [x] Explodir
+* [x] Unir / filete / chanfro (2D)
 
 ### Ferramentas de desenho e criação
 

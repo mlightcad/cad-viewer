@@ -279,13 +279,12 @@ Leyenda:
 
 #### Edición de geometría
 
-* [x] Puntos de agarre
-* [ ] Estirar
-* [ ] Recortar
-* [ ] Extender
+* [x] Estirar
+* [x] Recortar
+* [x] Extender
 * [x] Desfase
-* [ ] Explotar
-* [ ] Unir / filete / chaflán (2D)
+* [x] Explotar
+* [x] Unir / filete / chaflán (2D)
 
 ### Herramientas de dibujo y creación
 
