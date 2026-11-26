@@ -1374,6 +1374,10 @@ const buildBaseTabs = (
     mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
     move: t('main.ribbon.tooltip.move'),
     mirror: t('main.ribbon.tooltip.mirror'),
+    array: t('main.ribbon.tooltip.array'),
+    arrayrect: t('main.ribbon.tooltip.arrayrect'),
+    arraypolar: t('main.ribbon.tooltip.arraypolar'),
+    arraypath: t('main.ribbon.tooltip.arraypath'),
     trim: t('main.ribbon.tooltip.trim'),
     extend: t('main.ribbon.tooltip.extend'),
     rotate: t('main.ribbon.tooltip.rotate'),
@@ -2278,6 +2282,35 @@ const buildBaseTabs = (
               label: t('main.ribbon.command.stretch'),
               tooltip: ribbonTooltips.stretch,
               props: { icon: stretch }
+            },
+            {
+              id: 'cmd-array',
+              type: 'dropdown',
+              label: t('main.ribbon.command.array'),
+              tooltip: ribbonTooltips.array,
+              props: {
+                icon: CopyDocument,
+                options: [
+                  {
+                    value: 'array-rectangular',
+                    label: t('main.ribbon.array.rectangular'),
+                    tooltip: ribbonTooltips.arrayrect,
+                    icon: CopyDocument
+                  },
+                  {
+                    value: 'array-polar',
+                    label: t('main.ribbon.array.polar'),
+                    tooltip: ribbonTooltips.arraypolar,
+                    icon: CopyDocument
+                  },
+                  {
+                    value: 'array-path',
+                    label: t('main.ribbon.array.path'),
+                    tooltip: ribbonTooltips.arraypath,
+                    icon: CopyDocument
+                  }
+                ]
+              }
             },
             {
               id: 'cmd-join',
@@ -3482,6 +3515,9 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-mirror', 'mirror')
   commandByItemId.set('cmd-trim-extend', 'trim')
+  commandByItemId.set('array-rectangular', 'arrayrect')
+  commandByItemId.set('array-polar', 'arraypolar')
+  commandByItemId.set('array-path', 'arraypath')
   commandByItemId.set('cmd-trim', 'trim')
   commandByItemId.set('trim', 'trim')
   commandByItemId.set('cmd-extend', 'extend')

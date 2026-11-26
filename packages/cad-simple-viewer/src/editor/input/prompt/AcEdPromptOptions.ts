@@ -76,6 +76,54 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
   }
 
   /**
+   * Strips one or more trailing AutoCAD-style keyword lists (`[K1/K2/…]`)
+   * from a prompt message. Shared by {@link getCoreMessage} and command-line
+   * rendering so i18n strings that still embed `[…]` do not duplicate the
+   * keyword collection chips.
+   *
+   * Only lists that look like AutoCAD keywords are removed: each entry must
+   * contain a keyword separator (`/` or a capitalised `(X)` abbreviation).
+   * Otherwise meaningful brackets such as `[?]` or `[Callout on]` would be
+   * dropped from string prompts.
+   */
+  static stripEmbeddedKeywordList(message: string): string {
+    return message
+      .replace(/(?:\s*\[[^[\]]*\])+\s*$/, list =>
+        AcEdPromptOptions.looksLikeKeywordList(list) ? '' : list
+      )
+      .trimEnd()
+  }
+
+  /**
+   * True when a bracketed tail holds AutoCAD keywords rather than literal text.
+   *
+   * Accepted shapes: `[K1/K2/...]`, `[Column=4 Row=3]`, `[Radius]`, `[Yarıçap(R)]`.
+   * Rejected: `[?]`, `[Callout on]`, `[{name}]`, `[PDF 가져오기]` — those are
+   * prose the prompt must keep.
+   */
+  private static looksLikeKeywordList(list: string): boolean {
+    const inner = list.replace(/[[\]]/g, '').trim()
+    if (!inner) return false
+    if (inner.includes('/') || inner.includes('=')) return true
+    // A single keyword (`[Radius]`, `[Yarıçap(R)]`) — capitalised, optionally
+    // followed by the AutoCAD capital-letter abbreviation.
+    const head = inner[0]
+    if (!head || head !== head.toUpperCase() || head === head.toLowerCase()) {
+      return false
+    }
+    return /^[^\s()]+(?:\s*\([A-Z]{1,3}\))?$/.test(inner)
+  }
+
+  /**
+   * Returns the prompt message without a trailing AutoCAD-style keyword list.
+   * Prefer this (or {@link getDisplayMessage}) when keywords are rendered
+   * separately on the command line or as mobile chips.
+   */
+  getCoreMessage(): string {
+    return AcEdPromptOptions.stripEmbeddedKeywordList(this._message)
+  }
+
+  /**
    * Returns the prompt message with an AutoCAD-style `<default>` suffix when a
    * numeric/string/point default is active.
    *
@@ -84,12 +132,17 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
    * surfaces that show the message without the keyword tail.
    */
   getDisplayMessage(): string {
+    // When the caller asks for embedded keywords (`AppendKeywordsToMessage`
+    // off) the message is the only place the options appear, so keep them.
+    const core = this._appendKeywordsToMessage
+      ? this.getCoreMessage()
+      : this._message.trim()
     const defaultText = this.getDefaultValueDisplayText()
     if (defaultText == null) {
-      return this._message
+      return core
     }
-    const core = this._message.trim().replace(/[：:]\s*$/, '')
-    return `${core} <${defaultText}>`
+    const withoutColon = core.replace(/[：:]\s*$/, '')
+    return `${withoutColon} <${defaultText}>`
   }
 
   /**

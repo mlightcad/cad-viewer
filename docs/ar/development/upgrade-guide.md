@@ -110,6 +110,18 @@ registerLazyAgentPlugin(pluginManager)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يخزّن `@mlightcad/data-model` معرّفات كائنات الحدود المصدرية لكل مسار على `AcDbHatch` (`pathSourceIds` / `setPathSourceIds`)، ويعيد تمريرها عبر مجموعات DXF **71** و**97** و**330**، ويعيد بناء حلقات التهشير عند تعديل حد مرتبط عبر `AcDbDatabase.hatchAssociationIndex` (أو يلغي الارتباط عند حذف آخر مصدر). يرفق `AcApHatchCmd` معرّفات المصدر عند إنشاء تهشير ارتباطي من حدود محددة؛ ويبقى وضع انتقاء النقاط دون مصادر قابلة للاستعادة غير ارتباطي.
 :::
 
+::: info المصفوفات المرتبطة (`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يضيف `@mlightcad/data-model` إطارًا ارتباطيًا بأسلوب ObjectARX تحت `object/assoc/` (`AcDbAssocNetwork` و`AcDbAssocAction` و`AcDbAssocDependency` و`AcDbAssocArrayActionBody` ومعاملات مستطيلة / قطبية / مسار). تُرسَم المصفوفات المرتبطة ما زال كـ `AcDbBlockReference` لكتلة مجهولة `*U`؛ ويملك جسم الإجراء المعاملات ويعيد بناء تحويلات العناصر عند التقييم.
+
+يسجّل `@mlightcad/cad-simple-viewer` أوامر **ARRAY** و**-ARRAY** و**ARRAYRECT** و**ARRAYPOLAR** و**ARRAYPATH** و**ARRAYEDIT** و**ARRAYCLOSE** (الاسم المستعار `AR` → `ARRAY`). الافتراضيات: **`ARRAYASSOCIATIVITY`** (`0` / `1`، الافتراضي `1`)، **`ARRAYTYPE`** (`0` مستطيل / `1` مسار / `2` قطبي، الافتراضي `0`)، و**`ARRAYEDITSTATE`** للقراءة فقط (`0` / `1`، الافتراضي `0`؛ المضيفون يستخدمون `setArrayEditState`). إلى أن يُنفَّذ وضع مصدر ARRAYEDIT، يُبلغ ARRAYCLOSE أن الرسم ليس في حالة تحرير المصفوفة. يؤدي EXPLODE لمصفوفة مرتبطة إلى كيانات ورقية مستقلة وإزالة رسم الإجراءات؛ وتضبط مقابض المصفوفة عدد الأعمدة / الصفوف / العناصر. يضيف `@mlightcad/cad-editor` قائمة منسدلة **مصفوفة** في الرئيسية → تعديل (مستطيل / قطبي / مسار).
+
+ترحيل المضيفين:
+
+- ارفع `@mlightcad/data-model` (و`libredwg-converter` عند فتح DWG) مع `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` — يستدعي العارض `AcDbAssocManager.evaluateTopLevelNetwork` في نهاية أوامر الكتابة.
+- تشمل واجهات API العامة الجديدة `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance` و`acdbAllocateAnonymousUserBlockName` ومساعدي المنحنى `getPointAtDist` / `getFirstDeriv` على `AcDbCurve`.
+- **ملاحظة DWG:** قد لا يُرجع LibreDWG الكائنات المرتبطة ذهابًا وإيابًا بعد؛ قد تظهر مصفوفة مفتوحة من DWG كـ INSERT عادي بلا جسم إجراء. فضّل DXF لاستمرارية المصفوفات المرتبطة حتى يتوسع استيراد DWG.
+  :::
+
 ::: info معاينة التحديد في `cad.view.capturePreview`
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يقبل `CadSession.capturePreview` كائن خيارات بدل رقم `longSide` منفرد:
 

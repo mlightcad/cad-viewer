@@ -82,6 +82,69 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: '选择阵列',
+    notAssociative: '选定的对象不是关联阵列',
+    notInEditState: '当前不在阵列源编辑状态',
+    editStateClosed: '已退出阵列源编辑状态',
+    editOptions: '输入用于编辑阵列的选项',
+    selectType: '输入阵列类型',
+    basePoint: '指定基点',
+    centerPoint: '指定阵列的中心点',
+    selectPath: '选择路径曲线',
+    pathNotCurve: '选定的对象不是有效的路径曲线',
+    pathIsSource: '路径曲线不能是阵列对象本身，请另选一条曲线',
+    rectOptions:
+      '选择夹点以编辑阵列或 [列={columns} 行={rows} 关联={associative}]',
+    polarOptions: '选择夹点以编辑阵列或 [项目={items} 关联={associative}]',
+    pathOptions: '选择夹点以编辑阵列或 [基点 项目={items} 关联={associative}]',
+    associativePrompt: '创建关联阵列 [{value}]',
+    yesNoPrompt: '输入选项 [{value}]',
+    methodPrompt: '输入路径方法',
+    columnCount: '输入列数',
+    rowCount: '输入行数',
+    itemCount: '输入项目数',
+    columnSpacing: '指定列间距',
+    rowSpacing: '指定行间距',
+    fillAngle: '指定填充角度',
+    keywords: {
+      rectangular: { display: '矩形(R)', local: '矩形', global: 'Rectangular' },
+      path: { display: '路径(PA)', local: '路径', global: 'Path' },
+      polar: { display: '环形(PO)', local: '环形', global: 'Polar' },
+      associative: {
+        display: '关联(AS)',
+        local: '关联',
+        global: 'Associative'
+      },
+      count: { display: '数目(COU)', local: '数目', global: 'Count' },
+      spacing: { display: '间距(S)', local: '间距', global: 'Spacing' },
+      columns: { display: '列(COL)', local: '列', global: 'Columns' },
+      rows: { display: '行(R)', local: '行', global: 'Rows' },
+      items: { display: '项目(I)', local: '项目', global: 'Items' },
+      fillAngle: {
+        display: '填充角度(F)',
+        local: '填充角度',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: '旋转项目(ROT)',
+        local: '旋转项目',
+        global: 'RotateItems'
+      },
+      method: { display: '方法(M)', local: '方法', global: 'Method' },
+      alignItems: {
+        display: '对齐项目(A)',
+        local: '对齐项目',
+        global: 'AlignItems'
+      },
+      base: { display: '基点(B)', local: '基点', global: 'Base' },
+      divide: { display: '定数等分(D)', local: '定数等分', global: 'Divide' },
+      measure: { display: '定距等分(M)', local: '定距等分', global: 'Measure' },
+      exit: { display: '退出(X)', local: '退出', global: 'eXit' },
+      yes: { display: '是(Y)', local: '是', global: 'Yes' },
+      no: { display: '否(N)', local: '否', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: '指定基点或',
     displacementOrArray: '指定位移或',
@@ -1446,6 +1509,11 @@ export default {
         local: '圆弧',
         global: 'Arc'
       },
+      length: {
+        display: '长度(L)',
+        local: '长度',
+        global: 'Length'
+      },
       undo: {
         display: '放弃(U)',
         local: '放弃',
@@ -1471,6 +1539,11 @@ export default {
         local: '圆心',
         global: 'Center'
       },
+      direction: {
+        display: '方向(D)',
+        local: '方向',
+        global: 'Direction'
+      },
       secondPoint: {
         display: '第二点(P)',
         local: '第二点',
@@ -1484,9 +1557,11 @@ export default {
     },
     arcAngle: '指定弧角度',
     arcCenter: '指定圆心',
+    arcDirection: '指定圆弧起点的切线方向',
     arcSecondPoint: '指定弧上的第二点',
     arcEndPoint: '指定弧的终点',
-    arcRadius: '指定弧半径'
+    arcRadius: '指定弧半径',
+    segmentLength: '指定直线长度'
   },
   mirror: {
     firstPoint: '指定镜像线的第一点',

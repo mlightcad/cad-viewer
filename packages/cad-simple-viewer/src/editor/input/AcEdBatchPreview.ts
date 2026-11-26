@@ -127,6 +127,28 @@ export class AcEdBatchedPreview {
   }
 
   /**
+   * Applies an explicit world-space matrix to each overlay.
+   *
+   * Used by associative-array creation preview (rectangular / polar / path),
+   * where each item needs a full transform rather than a scaled translation.
+   * Extra matrices beyond {@link copyCount} are ignored; missing matrices leave
+   * the corresponding overlay unchanged.
+   *
+   * @param view - View that owns the preview overlays
+   * @param matrices - Per-overlay world transforms (index `i` → overlay `i`)
+   */
+  updateMatrices(view: AcEdBaseView, matrices: readonly AcGeMatrix3d[]): void {
+    if (!this.useBatchPreview) {
+      return
+    }
+
+    const count = Math.min(this._handleIds.length, matrices.length)
+    for (let i = 0; i < count; i++) {
+      view.updateEntityPreview(this._handleIds[i], matrices[i])
+    }
+  }
+
+  /**
    * Removes every batched preview overlay and clears internal handles.
    *
    * Safe to call multiple times. After disposal, update methods are no-ops.

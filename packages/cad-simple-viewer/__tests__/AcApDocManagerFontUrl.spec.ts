@@ -200,6 +200,12 @@ jest.mock('../src/command', () => {
   const commandNames = [
     'AcApAboutCmd',
     'AcApArcCmd',
+    'AcApArrayCloseCmd',
+    'AcApArrayCmd',
+    'AcApArrayEditCmd',
+    'AcApArrayPathCmd',
+    'AcApArrayPolarCmd',
+    'AcApArrayRectCmd',
     'AcApCacheFontCmd',
     'AcApCircleCmd',
     'AcApClearMarkupsCmd',

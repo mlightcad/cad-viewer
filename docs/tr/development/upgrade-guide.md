@@ -110,6 +110,18 @@ Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **G
 Bu değişikliği içeren sürümden itibaren `@mlightcad/data-model`, `AcDbHatch` üzerinde yol başına kaynak sınır id’lerini (`pathSourceIds` / `setPathSourceIds`) saklar, DXF grup **71** / **97** / **330** ile gidiş-dönüş yapar ve bağlı sınır değişince `AcDbDatabase.hatchAssociationIndex` ile döngüleri yeniden oluşturur (son kaynak silinince ilişkisizleştirir). `AcApHatchCmd` seçili sınırlardan ilişkili tarama oluştururken kaynak id’lerini ekler; kaynak eşlemesi olmayan nokta seçimi ilişkisiz kalır.
 :::
 
+::: info İlişkisel diziler (`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`)
+Bu değişikliği içeren sürümden itibaren `@mlightcad/data-model`, `object/assoc/` altında ObjectARX tarzı bir ilişkisel çerçeve ekler (`AcDbAssocNetwork`, `AcDbAssocAction`, `AcDbAssocDependency`, `AcDbAssocArrayActionBody`, dikdörtgen / kutupsal / yol parametreleri). İlişkisel diziler hâlâ anonim bir `*U` bloğunun `AcDbBlockReference`’ı olarak çizilir; eylem gövdesi parametreleri sahiplenir ve değerlendirmede öğe dönüşümlerini yeniden oluşturur.
+
+`@mlightcad/cad-simple-viewer` **ARRAY**, **-ARRAY**, **ARRAYRECT**, **ARRAYPOLAR**, **ARRAYPATH**, **ARRAYEDIT** ve **ARRAYCLOSE** komutlarını kaydeder (takma ad `AR` → `ARRAY`). Varsayılanlar: **`ARRAYASSOCIATIVITY`** (`0` / `1`, varsayılan `1`), **`ARRAYTYPE`** (`0` dikdörtgen / `1` yol / `2` kutupsal, varsayılan `0`), salt okunur **`ARRAYEDITSTATE`** (`0` / `1`, varsayılan `0`; host `setArrayEditState` kullanır). ARRAYEDIT Source uygulanana kadar ARRAYCLOSE dizi düzenleme durumunda olmadığını bildirir. İlişkisel dizide EXPLODE bağımsız yaprak varlıklar üretir ve eylem grafiğini kaldırır; dizi tutamaçları sütun / satır / öğe sayısını ayarlar. `@mlightcad/cad-editor` Giriş → Değiştir’e **Dizi** açılır menüsü (dikdörtgen / kutupsal / yol) ekler.
+
+Ana bilgisayar geçişi:
+
+- `@mlightcad/data-model`’i (ve DWG açıyorsanız `libredwg-converter`’ı) `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` ile birlikte yükseltin — görüntüleyici yazma komutlarının sonunda `AcDbAssocManager.evaluateTopLevelNetwork` çağırır.
+- Yeni genel API’ler: `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`, `acdbAllocateAnonymousUserBlockName` ve `AcDbCurve` üzerindeki `getPointAtDist` / `getFirstDeriv`.
+- **DWG notu:** LibreDWG henüz ilişkisel nesneleri gidiş-dönüş yapamayabilir; DWG’den açılan bir dizi eylem gövdesi olmadan düz INSERT gibi görünebilir. DWG içe aktarma genişletilene kadar ilişkisel dizi kalıcılığı için DXF’yi tercih edin.
+  :::
+
 ::: info `cad.view.capturePreview` seçim önizlemesi
 Bu değişikliği içeren sürümden itibaren `CadSession.capturePreview` tek bir `longSide` sayısı yerine bir seçenek nesnesi alır:
 

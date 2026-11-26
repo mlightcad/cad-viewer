@@ -110,6 +110,18 @@ registerLazyAgentPlugin(pluginManager)
 이 변경이 포함된 릴리스부터 `@mlightcad/data-model`은 `AcDbHatch`에 경로별 소스 경계 id(`pathSourceIds` / `setPathSourceIds`)를 저장하고 DXF 그룹 **71** / **97** / **330**으로 왕복하며, 연결된 경계가 수정되면 `AcDbDatabase.hatchAssociationIndex`로 루프를 재구축합니다(마지막 소스가 삭제되면 연관 해제). `AcApHatchCmd`는 선택한 경계로 연관 해치를 만들 때 소스 id를 붙입니다. 소스를 복구할 수 없는 픽 포인트 생성은 비연관으로 유지됩니다.
 :::
 
+::: info 연관 배열(`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`)
+이 변경이 포함된 릴리스부터 `@mlightcad/data-model`은 `object/assoc/` 아래에 ObjectARX 스타일 연관 프레임워크(`AcDbAssocNetwork`, `AcDbAssocAction`, `AcDbAssocDependency`, `AcDbAssocArrayActionBody`, 직사각형 / 극좌표 / 경로 매개변수)를 추가합니다. 연관 배열은 계속 익명 `*U` 블록의 `AcDbBlockReference`로 그려지며, 액션 본문이 매개변수를 소유하고 평가 시 항목 변환을 다시 만듭니다.
+
+`@mlightcad/cad-simple-viewer`는 **ARRAY**, **-ARRAY**, **ARRAYRECT**, **ARRAYPOLAR**, **ARRAYPATH**, **ARRAYEDIT**, **ARRAYCLOSE**를 등록합니다(별칭 `AR` → `ARRAY`). 기본값: **`ARRAYASSOCIATIVITY`**(`0` / `1`, 기본 `1`), **`ARRAYTYPE`**(`0` 직사각형 / `1` 경로 / `2` 극좌표, 기본 `0`), 읽기 전용 **`ARRAYEDITSTATE`**(`0` / `1`, 기본 `0`; 호스트는 `setArrayEditState`). ARRAYEDIT Source 구현 전 ARRAYCLOSE는 배열 편집 상태가 아님을 알립니다. 연관 배열을 EXPLODE하면 독립 리프 엔티티가 되고 액션 그래프가 해제됩니다. 배열 그립으로 열 / 행 / 항목 수를 조정할 수 있습니다. `@mlightcad/cad-editor`는 홈 → 수정에 **배열** 드롭다운(직사각형 / 극좌표 / 경로)을 추가합니다.
+
+호스트 마이그레이션:
+
+- `@mlightcad/data-model`(및 DWG를 열 때 `libredwg-converter`)를 `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor`와 함께 올리세요. 뷰어는 쓰기 명령 종료 시 `AcDbAssocManager.evaluateTopLevelNetwork`를 호출합니다.
+- 새 공개 API에는 `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`, `acdbAllocateAnonymousUserBlockName`, `AcDbCurve`의 `getPointAtDist` / `getFirstDeriv`가 포함됩니다.
+- **DWG 참고:** LibreDWG가 아직 연관 객체를 왕복하지 못할 수 있습니다. DWG에서 연 배열은 액션 본문 없는 일반 INSERT로 보일 수 있습니다. DWG 가져오기가 확장되기 전에는 연관 배열 보존에 DXF를 우선하세요.
+  :::
+
 ::: info `cad.view.capturePreview` 선택 미리보기
 이 변경이 포함된 릴리스부터 `CadSession.capturePreview`는 단독 `longSide` 숫자 대신 옵션 객체를 받습니다.
 

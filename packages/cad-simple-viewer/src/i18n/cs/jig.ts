@@ -87,6 +87,84 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: 'Vyberte pole',
+    notAssociative: 'Vybraný objekt není asociativní pole',
+    notInEditState: 'Nejste ve stavu úprav zdroje pole',
+    editStateClosed: 'Stav úprav zdroje pole byl ukončen',
+    editOptions: 'Zadejte možnost úpravy pole',
+    selectType: 'Zadejte typ pole',
+    basePoint: 'Zadejte základní bod',
+    centerPoint: 'Zadejte střed pole',
+    selectPath: 'Vyberte křivku trajektorie',
+    pathNotCurve: 'Vybraný objekt není platná křivka trajektorie',
+    pathIsSource:
+      'Křivka trajektorie nesmí být jedním z objektů pole; vyberte jinou křivku',
+    rectOptions:
+      'Vyberte úchop pro úpravu pole nebo [Sloupce={columns} Řádky={rows} Asociativní={associative}]',
+    polarOptions:
+      'Vyberte úchop pro úpravu pole nebo [Položky={items} Asociativní={associative}]',
+    pathOptions:
+      'Vyberte úchop pro úpravu pole nebo [Základní bod Položky={items} Asociativní={associative}]',
+    associativePrompt: 'Vytvořit asociativní pole [{value}]',
+    yesNoPrompt: 'Zadejte možnost [{value}]',
+    methodPrompt: 'Zadejte metodu trajektorie',
+    columnCount: 'Zadejte počet sloupců',
+    rowCount: 'Zadejte počet řádků',
+    itemCount: 'Zadejte počet položek',
+    columnSpacing: 'Zadejte vzdálenost mezi sloupci',
+    rowSpacing: 'Zadejte vzdálenost mezi řádky',
+    fillAngle: 'Zadejte úhel vyplnění',
+    keywords: {
+      rectangular: {
+        display: 'Pravoúhlé(R)',
+        local: 'Pravoúhlé',
+        global: 'Rectangular'
+      },
+      path: {
+        display: 'Trajektorie(PA)',
+        local: 'Trajektorie',
+        global: 'Path'
+      },
+      polar: { display: 'Polární(PO)', local: 'Polární', global: 'Polar' },
+      associative: {
+        display: 'Asociativní(AS)',
+        local: 'Asociativní',
+        global: 'Associative'
+      },
+      count: { display: 'Počet(COU)', local: 'Počet', global: 'Count' },
+      spacing: { display: 'Rozestup(S)', local: 'Rozestup', global: 'Spacing' },
+      columns: { display: 'Sloupce(COL)', local: 'Sloupce', global: 'Columns' },
+      rows: { display: 'Řádky(R)', local: 'Řádky', global: 'Rows' },
+      items: { display: 'Položky(I)', local: 'Položky', global: 'Items' },
+      fillAngle: {
+        display: 'Úhel vyplnění(F)',
+        local: 'Úhel vyplnění',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: 'Otočit položky(ROT)',
+        local: 'Otočit položky',
+        global: 'RotateItems'
+      },
+      method: { display: 'Metoda(M)', local: 'Metoda', global: 'Method' },
+      alignItems: {
+        display: 'Zarovnat položky(A)',
+        local: 'Zarovnat položky',
+        global: 'AlignItems'
+      },
+      base: {
+        display: 'Základní bod(B)',
+        local: 'Základní bod',
+        global: 'Base'
+      },
+      divide: { display: 'Rozdělit(D)', local: 'Rozdělit', global: 'Divide' },
+      measure: { display: 'Měřit(M)', local: 'Měřit', global: 'Measure' },
+      exit: { display: 'Ukončit(X)', local: 'Ukončit', global: 'eXit' },
+      yes: { display: 'Ano(Y)', local: 'Ano', global: 'Yes' },
+      no: { display: 'Ne(N)', local: 'Ne', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: 'Zadejte základní bod nebo',
     displacementOrArray: 'Zadejte přemístění nebo',
@@ -477,7 +555,8 @@ export default {
     recreateType: 'Zadejte typ objektu hranice',
     recreateAssociate: 'Asociovat šrafování s novou hranicí?',
     nothingToRecreate: 'Není vybráno šrafování pro znovuvytvoření hranice.',
-    regionUnsupported: 'Hranice typu oblast zatím nejsou podporovány; místo toho se vytvoří křivka.',
+    regionUnsupported:
+      'Hranice typu oblast zatím nejsou podporovány; místo toho se vytvoří křivka.',
     invalidBoundary: 'Vybrané objekty netvoří uzavřenou hranici.',
     keywords: {
       pick: {
@@ -1522,6 +1601,11 @@ export default {
         local: 'Oblouk',
         global: 'Arc'
       },
+      length: {
+        display: 'Délka(D)',
+        local: 'Délka',
+        global: 'Length'
+      },
       undo: {
         display: 'Zpět(U)',
         local: 'Zpět',
@@ -1547,6 +1631,11 @@ export default {
         local: 'Střed',
         global: 'Center'
       },
+      direction: {
+        display: 'Směr(S)',
+        local: 'Směr',
+        global: 'Direction'
+      },
       secondPoint: {
         display: 'Druhý bod(P)',
         local: 'Druhý bod',
@@ -1560,9 +1649,11 @@ export default {
     },
     arcAngle: 'Zadejte úhel oblouku',
     arcCenter: 'Zadejte středový bod',
+    arcDirection: 'Zadejte směr tečny v počátečním bodě oblouku',
     arcSecondPoint: 'Zadejte druhý bod na oblouku',
     arcEndPoint: 'Zadejte koncový bod oblouku',
-    arcRadius: 'Zadejte poloměr oblouku'
+    arcRadius: 'Zadejte poloměr oblouku',
+    segmentLength: 'Zadejte délku úsečky'
   },
   rect: {
     firstPoint: 'Zadejte první roh',

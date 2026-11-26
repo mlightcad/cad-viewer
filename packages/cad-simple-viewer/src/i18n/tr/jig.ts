@@ -87,6 +87,80 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: 'Diziyi seçin',
+    notAssociative: 'Seçilen nesne ilişkisel bir dizi değil',
+    notInEditState: 'Dizi kaynak düzenleme durumunda değil',
+    editStateClosed: 'Dizi kaynak düzenleme durumundan çıkıldı',
+    editOptions: 'Diziyi düzenlemek için bir seçenek girin',
+    selectType: 'Dizi türünü girin',
+    basePoint: 'Temel noktayı belirtin',
+    centerPoint: 'Dizinin merkez noktasını belirtin',
+    selectPath: 'Yol eğrisini seçin',
+    pathNotCurve: 'Seçilen nesne geçerli bir yol eğrisi değil',
+    pathIsSource:
+      'Yol eğrisi diziye alınan nesnelerden biri olamaz; farklı bir eğri seçin',
+    rectOptions:
+      'Diziyi düzenlemek için tutamacı seçin veya [Sütunlar={columns} Satırlar={rows} İlişkisel={associative}]',
+    polarOptions:
+      'Diziyi düzenlemek için tutamacı seçin veya [Öğeler={items} İlişkisel={associative}]',
+    pathOptions:
+      'Diziyi düzenlemek için tutamacı seçin veya [Temel nokta Öğeler={items} İlişkisel={associative}]',
+    associativePrompt: 'İlişkisel dizi oluştur [{value}]',
+    yesNoPrompt: 'Bir seçenek girin [{value}]',
+    methodPrompt: 'Yol yöntemini girin',
+    columnCount: 'Sütun sayısını girin',
+    rowCount: 'Satır sayısını girin',
+    itemCount: 'Öğe sayısını girin',
+    columnSpacing: 'Sütunlar arasındaki mesafeyi belirtin',
+    rowSpacing: 'Satırlar arasındaki mesafeyi belirtin',
+    fillAngle: 'Doldurma açısını belirtin',
+    keywords: {
+      rectangular: {
+        display: 'Dikdörtgen(R)',
+        local: 'Dikdörtgen',
+        global: 'Rectangular'
+      },
+      path: { display: 'Yol(PA)', local: 'Yol', global: 'Path' },
+      polar: { display: 'Kutupsal(PO)', local: 'Kutupsal', global: 'Polar' },
+      associative: {
+        display: 'İlişkisel(AS)',
+        local: 'İlişkisel',
+        global: 'Associative'
+      },
+      count: { display: 'Sayı(COU)', local: 'Sayı', global: 'Count' },
+      spacing: { display: 'Aralık(S)', local: 'Aralık', global: 'Spacing' },
+      columns: {
+        display: 'Sütunlar(COL)',
+        local: 'Sütunlar',
+        global: 'Columns'
+      },
+      rows: { display: 'Satırlar(R)', local: 'Satırlar', global: 'Rows' },
+      items: { display: 'Öğeler(I)', local: 'Öğeler', global: 'Items' },
+      fillAngle: {
+        display: 'Doldurma açısı(F)',
+        local: 'Doldurma açısı',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: 'Öğeleri döndür(ROT)',
+        local: 'Öğeleri döndür',
+        global: 'RotateItems'
+      },
+      method: { display: 'Yöntem(M)', local: 'Yöntem', global: 'Method' },
+      alignItems: {
+        display: 'Öğeleri hizala(A)',
+        local: 'Öğeleri hizala',
+        global: 'AlignItems'
+      },
+      base: { display: 'Temel nokta(B)', local: 'Temel nokta', global: 'Base' },
+      divide: { display: 'Böl(D)', local: 'Böl', global: 'Divide' },
+      measure: { display: 'Ölç(M)', local: 'Ölç', global: 'Measure' },
+      exit: { display: 'Çıkış(X)', local: 'Çıkış', global: 'eXit' },
+      yes: { display: 'Evet(Y)', local: 'Evet', global: 'Yes' },
+      no: { display: 'Hayır(N)', local: 'Hayır', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: 'Temel noktayı belirtin veya',
     displacementOrArray: 'Yer değiştirmeyi belirtin veya',
@@ -549,7 +623,8 @@ export default {
     recreateType: 'Sınır nesnesi türünü girin',
     recreateAssociate: 'Tarama yeni sınırla ilişkilendirilsin mi?',
     nothingToRecreate: 'Sınırı yeniden oluşturulacak tarama seçilmedi.',
-    regionUnsupported: 'Bölge sınırları henüz desteklenmiyor; bunun yerine çoklu çizgi oluşturuluyor.',
+    regionUnsupported:
+      'Bölge sınırları henüz desteklenmiyor; bunun yerine çoklu çizgi oluşturuluyor.',
     invalidBoundary: 'Seçilen nesneler kapalı bir sınır oluşturmuyor.',
     keywords: {
       pick: {
@@ -1632,6 +1707,11 @@ export default {
         local: 'Yay',
         global: 'Arc'
       },
+      length: {
+        display: 'Uzunluk(U)',
+        local: 'Uzunluk',
+        global: 'Length'
+      },
       undo: {
         display: 'Geri al(G)',
         local: 'Geri al',
@@ -1657,6 +1737,11 @@ export default {
         local: 'Merkez',
         global: 'Center'
       },
+      direction: {
+        display: 'Yön(N)',
+        local: 'Yön',
+        global: 'Direction'
+      },
       secondPoint: {
         display: 'İkinci nokta(İ)',
         local: 'İkinci nokta',
@@ -1670,9 +1755,11 @@ export default {
     },
     arcAngle: 'Yay açısını belirtin',
     arcCenter: 'Merkez noktasını belirtin',
+    arcDirection: 'Yayın başlangıç noktasındaki teğet yönünü belirtin',
     arcSecondPoint: 'Yay üzerinde ikinci noktayı belirtin',
     arcEndPoint: 'Yayın bitiş noktasını belirtin',
-    arcRadius: 'Yay yarıçapını belirtin'
+    arcRadius: 'Yay yarıçapını belirtin',
+    segmentLength: 'Doğru uzunluğunu belirtin'
   },
   rect: {
     firstPoint: 'İlk köşe noktasını belirtin',

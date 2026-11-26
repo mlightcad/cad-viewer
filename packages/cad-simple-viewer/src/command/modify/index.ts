@@ -1,3 +1,4 @@
+export * from './array/index.js'
 export * from './AcApChamferCmd.js'
 export * from './AcApCopyCmd.js'
 export * from './AcApEraseCmd.js'

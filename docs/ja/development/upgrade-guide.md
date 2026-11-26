@@ -110,6 +110,18 @@ registerLazyAgentPlugin(pluginManager)
 この変更を含むリリース以降、`@mlightcad/data-model` は `AcDbHatch` にパス単位の境界ソース id（`pathSourceIds` / `setPathSourceIds`）を保持し、DXF グループ **71** / **97** / **330** で往復し、リンク先境界の変更時に `AcDbDatabase.hatchAssociationIndex` でループを再構築します（最後のソース削除時は連想解除）。`AcApHatchCmd` は選択境界から連想ハッチを作成するときにソース id を付けます。ソースを復元できないピックポイント作成は非連想のままです。
 :::
 
+::: info 連想配列（`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`）
+この変更を含むリリースから、`@mlightcad/data-model` は `object/assoc/` 配下に ObjectARX 風の連想フレームワーク（`AcDbAssocNetwork`、`AcDbAssocAction`、`AcDbAssocDependency`、`AcDbAssocArrayActionBody`、矩形 / 極座標 / パスパラメータ）を追加します。連想配列は引き続き匿名 `*U` ブロックの `AcDbBlockReference` として描画され、アクションボディがパラメータを所有し、評価時に各項目の変換を再構築します。
+
+`@mlightcad/cad-simple-viewer` は **ARRAY**、**-ARRAY**、**ARRAYRECT**、**ARRAYPOLAR**、**ARRAYPATH**、**ARRAYEDIT**、**ARRAYCLOSE** を登録します（エイリアス `AR` → `ARRAY`）。既定は **`ARRAYASSOCIATIVITY`**（`0` / `1`、既定 `1`）、**`ARRAYTYPE`**（`0` 矩形 / `1` パス / `2` 極座標、既定 `0`）、読み取り専用 **`ARRAYEDITSTATE`**（`0` / `1`、既定 `0`；ホストは `setArrayEditState`）。ARRAYEDIT Source 実装前は ARRAYCLOSE が配列編集状態ではないと通知します。連想配列の EXPLODE は独立したリーフエンティティを生成しアクショングラフを解体します。配列グリップで列 / 行 / 項目数を調整できます。`@mlightcad/cad-editor` はホーム → 修正に **配列** ドロップダウン（矩形 / 極座標 / パス）を追加します。
+
+ホストの移行：
+
+- `@mlightcad/data-model`（および DWG を開く場合は `libredwg-converter`）を `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` と合わせて更新してください。ビューアは書き込みコマンド終了時に `AcDbAssocManager.evaluateTopLevelNetwork` を呼び出します。
+- 新しい公開 API には `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`、`acdbAllocateAnonymousUserBlockName`、および `AcDbCurve` の `getPointAtDist` / `getFirstDeriv` が含まれます。
+- **DWG 注意：** LibreDWG はまだ連想オブジェクトを往復できない場合があります。DWG から開いた配列はアクションボディのない通常の INSERT として見えることがあります。DWG インポートが拡張されるまでは、連想配列の永続化に DXF を優先してください。
+  :::
+
 ::: info `cad.view.capturePreview` の選択プレビュー
 この変更を含むリリースから、`CadSession.capturePreview` は単独の `longSide` 数値ではなくオプションオブジェクトを受け取ります。
 

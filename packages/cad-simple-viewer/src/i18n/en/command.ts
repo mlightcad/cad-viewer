@@ -25,6 +25,48 @@ export default {
       description:
         'Sets whether positive angles are measured clockwise or counterclockwise'
     },
+    array: {
+      description:
+        'Creates copies of objects arranged in a rectangular, polar, or path pattern',
+      prompt: 'Select entities'
+    },
+    '-array': {
+      description:
+        'Creates an array through command-line options (rectangular, polar, or path)',
+      prompt: 'Select entities'
+    },
+    arrayrect: {
+      description: 'Creates a rectangular array of selected objects',
+      prompt: 'Select entities'
+    },
+    arraypolar: {
+      description: 'Creates a polar array of selected objects around a center',
+      prompt: 'Select entities'
+    },
+    arraypath: {
+      description: 'Creates an array of selected objects along a path',
+      prompt: 'Select entities'
+    },
+    arrayedit: {
+      description: 'Edits associative array objects and their source items',
+      prompt: 'Select array'
+    },
+    arrayclose: {
+      description:
+        'Saves or discards changes to array source objects and exits array editing'
+    },
+    arrayassociativity: {
+      description:
+        'Controls whether new arrays are associative by default (0 = no, 1 = yes)'
+    },
+    arrayeditstate: {
+      description:
+        'Indicates whether the drawing is in the array source editing state (read-only)'
+    },
+    arraytype: {
+      description:
+        'Sets the default ARRAY type (0 = rectangular, 1 = path, 2 = polar)'
+    },
     arc: {
       description: 'Creates an arc'
     },

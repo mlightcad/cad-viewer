@@ -5,15 +5,15 @@
 // App runtime services (busy indicator, command-line messages) are reached via
 // {@link acapCommandServices} instead of importing AcApDocManager, which would
 // create a circular init cycle with concrete command classes.
+import { AcDbAssocManager } from '@mlightcad/data-model'
+
 import { acapCommandServices } from '../../app/AcApCommandServices.js'
 import type { AcApContext } from '../../app/AcApContext.js'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit.js'
 import { eventBus } from '../global/eventBus.js'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType.js'
 import { AcEdOpenMode } from '../view/AcEdOpenMode.js'
-import {
-  type AcEdSessionAccessory
-} from './AcEdSessionAccessory.js'
+import { type AcEdSessionAccessory } from './AcEdSessionAccessory.js'
 
 /**
  * Thrown from {@link AcEdSessionAccessory.mount} when the accessory declines to
@@ -27,7 +27,6 @@ export class AcEdSessionAccessoryMountSkippedError extends Error {
     this.name = 'AcEdSessionAccessoryMountSkippedError'
   }
 }
-
 
 /**
  * Abstract base class for all CAD commands.
@@ -323,6 +322,9 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
         }
       }
       if (undoTransactionActive && tm.hasTransaction()) {
+        // Evaluate associative networks (arrays, …) before closing the undo
+        // mark so derived geometry stays in sync with parameter changes.
+        AcDbAssocManager.evaluateTopLevelNetwork(db)
         tm.commitTransaction()
         tm.endUndoMark()
         undoTransactionActive = false

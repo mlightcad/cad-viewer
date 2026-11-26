@@ -21,6 +21,42 @@ export default {
     angdir: {
       description: '设置正角度的方向为顺时针或逆时针'
     },
+    array: {
+      description: '创建矩形、环形或路径图案的对象副本',
+      prompt: '选择对象'
+    },
+    '-array': {
+      description: '通过命令行选项创建阵列（矩形、环形或路径）',
+      prompt: '选择对象'
+    },
+    arrayrect: {
+      description: '创建选定对象的矩形阵列',
+      prompt: '选择对象'
+    },
+    arraypolar: {
+      description: '绕中心点创建选定对象的环形阵列',
+      prompt: '选择对象'
+    },
+    arraypath: {
+      description: '沿路径创建选定对象的阵列',
+      prompt: '选择对象'
+    },
+    arrayedit: {
+      description: '编辑关联阵列对象及其源项目',
+      prompt: '选择阵列'
+    },
+    arrayclose: {
+      description: '保存或放弃对阵列源对象的更改并退出阵列编辑状态'
+    },
+    arrayassociativity: {
+      description: '控制新建阵列是否默认为关联（0 = 否，1 = 是）'
+    },
+    arrayeditstate: {
+      description: '指示图形是否处于阵列源编辑状态（只读）'
+    },
+    arraytype: {
+      description: '设置 ARRAY 的默认类型（0 = 矩形，1 = 路径，2 = 环形）'
+    },
     arc: {
       description: '创建圆弧'
     },

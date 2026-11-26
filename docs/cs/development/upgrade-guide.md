@@ -110,6 +110,18 @@ Vyžaduje `@mlightcad/data-model` se systémovými proměnnými `PICKSTYLE` (0�
 Od vydání s touto změnou `@mlightcad/data-model` ukládá na `AcDbHatch` id zdrojových hranic podle cest (`pathSourceIds` / `setPathSourceIds`), prochází je DXF skupinami **71** / **97** / **330** a při úpravě propojené hranice přestaví smyčky přes `AcDbDatabase.hatchAssociationIndex` (po smazání posledního zdroje zruší asociaci). `AcApHatchCmd` při vytváření asociativní šrafy z vybraných hranic připojí zdrojová id; režim výběru bodů bez obnovitelných zdrojů zůstává neasociativní.
 :::
 
+::: info Asociativní pole (`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`)
+Od vydání, které obsahuje tuto změnu, `@mlightcad/data-model` přidává pod `object/assoc/` asociativní rámec ve stylu ObjectARX (`AcDbAssocNetwork`, `AcDbAssocAction`, `AcDbAssocDependency`, `AcDbAssocArrayActionBody`, pravoúhlé / polární / trajektoriové parametry). Asociativní pole se stále kreslí jako `AcDbBlockReference` anonymního bloku `*U`; tělo akce vlastní parametry a při vyhodnocení znovu sestaví transformace položek.
+
+`@mlightcad/cad-simple-viewer` registruje **ARRAY**, **-ARRAY**, **ARRAYRECT**, **ARRAYPOLAR**, **ARRAYPATH**, **ARRAYEDIT** a **ARRAYCLOSE** (alias `AR` → `ARRAY`). Výchozí: **`ARRAYASSOCIATIVITY`** (`0` / `1`, výchozí `1`), **`ARRAYTYPE`** (`0` pravoúhlé / `1` trajektorie / `2` polární, výchozí `0`), jen pro čtení **`ARRAYEDITSTATE`** (`0` / `1`, výchozí `0`; hostitelé použijí `setArrayEditState`). Dokud není ARRAYEDIT Source, ARRAYCLOSE ohlásí, že výkres není ve stavu úprav pole. EXPLODE asociativního pole vytvoří nezávislé listové entity a odstraní graf akcí; úchyty pole mění počet sloupců / řádků / položek. `@mlightcad/cad-editor` přidává na Domů → Upravit rozbalovací nabídku **Pole** (pravoúhlé / polární / trajektorie).
+
+Migrace hostitelů:
+
+- Aktualizujte `@mlightcad/data-model` (a při načítání DWG i `libredwg-converter`) společně s `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` — prohlížeč na konci zápisových příkazů volá `AcDbAssocManager.evaluateTopLevelNetwork`.
+- Nová veřejná API zahrnují `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`, `acdbAllocateAnonymousUserBlockName` a na `AcDbCurve` metody `getPointAtDist` / `getFirstDeriv`.
+- **Poznámka k DWG:** LibreDWG zatím nemusí asociativní objekty round-tripovat; pole otevřené z DWG se může jevit jako běžný INSERT bez těla akce. Do rozšíření importu DWG preferujte pro persistenci asociativních polí DXF.
+  :::
+
 ::: info Náhled výběru v `cad.view.capturePreview`
 Od vydání, které obsahuje tuto změnu, `CadSession.capturePreview` přijímá objekt voleb místo holého čísla `longSide`:
 

@@ -1,4 +1,5 @@
 import {
+  AcDbAssocArrayActionBody,
   AcDbDimension,
   AcDbEntity,
   AcDbObjectId,
@@ -90,6 +91,12 @@ export class AcEdGripEditSession {
       // the previous block reference).
       if (entity instanceof AcDbDimension) entity.recomputeDimBlock()
     })
+    // Associative-array grips rebuild anonymous-block contents; refresh the
+    // drawable so the new item count / spacing appears immediately.
+    if (AcDbAssocArrayActionBody.isAssociativeArray(this._entity, db)) {
+      this._view.removeEntity(this._entity)
+      this._view.addEntity(this._entity)
+    }
     this.finish()
   }
 

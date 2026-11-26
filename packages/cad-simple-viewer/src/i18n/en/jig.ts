@@ -88,6 +88,132 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: 'Select array',
+    notAssociative: 'Selected object is not an associative array',
+    notInEditState: 'Not in array source editing state',
+    editStateClosed: 'Exited array source editing state',
+    editOptions: 'Enter an option to edit array',
+    selectType: 'Enter array type',
+    basePoint: 'Specify base point',
+    centerPoint: 'Specify center point of array',
+    selectPath: 'Select path curve',
+    pathNotCurve: 'Selected object is not a valid path curve',
+    pathIsSource:
+      'Path curve cannot be one of the arrayed objects; select a different curve',
+    rectOptions:
+      'Select grip to edit array or [Columns={columns} Rows={rows} Associative={associative}]',
+    polarOptions:
+      'Select grip to edit array or [Items={items} Associative={associative}]',
+    pathOptions:
+      'Select grip to edit array or [Base point Items={items} Associative={associative}]',
+    associativePrompt: 'Create associative array [{value}]',
+    yesNoPrompt: 'Enter an option [{value}]',
+    methodPrompt: 'Enter path method',
+    columnCount: 'Enter the number of columns',
+    rowCount: 'Enter the number of rows',
+    itemCount: 'Enter the number of items',
+    columnSpacing: 'Specify the distance between columns',
+    rowSpacing: 'Specify the distance between rows',
+    fillAngle: 'Specify the angle to fill',
+    keywords: {
+      rectangular: {
+        display: 'Rectangular(R)',
+        local: 'Rectangular',
+        global: 'Rectangular'
+      },
+      path: {
+        display: 'PAth(PA)',
+        local: 'PAth',
+        global: 'Path'
+      },
+      polar: {
+        display: 'POlar(PO)',
+        local: 'POlar',
+        global: 'Polar'
+      },
+      associative: {
+        display: 'ASsociative(AS)',
+        local: 'ASsociative',
+        global: 'Associative'
+      },
+      count: {
+        display: 'COUnt(COU)',
+        local: 'COUnt',
+        global: 'Count'
+      },
+      spacing: {
+        display: 'Spacing(S)',
+        local: 'Spacing',
+        global: 'Spacing'
+      },
+      columns: {
+        display: 'COLumns(COL)',
+        local: 'COLumns',
+        global: 'Columns'
+      },
+      rows: {
+        display: 'Rows(R)',
+        local: 'Rows',
+        global: 'Rows'
+      },
+      items: {
+        display: 'Items(I)',
+        local: 'Items',
+        global: 'Items'
+      },
+      fillAngle: {
+        display: 'Fill angle(F)',
+        local: 'Fill angle',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: 'ROTate items(ROT)',
+        local: 'ROTate items',
+        global: 'RotateItems'
+      },
+      method: {
+        display: 'Method(M)',
+        local: 'Method',
+        global: 'Method'
+      },
+      alignItems: {
+        display: 'Align items(A)',
+        local: 'Align items',
+        global: 'AlignItems'
+      },
+      base: {
+        display: 'Base point(B)',
+        local: 'Base point',
+        global: 'Base'
+      },
+      divide: {
+        display: 'Divide(D)',
+        local: 'Divide',
+        global: 'Divide'
+      },
+      measure: {
+        display: 'Measure(M)',
+        local: 'Measure',
+        global: 'Measure'
+      },
+      exit: {
+        display: 'eXit(X)',
+        local: 'eXit',
+        global: 'eXit'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      }
+    }
+  },
   copy: {
     basePointOrOptions: 'Specify base point or',
     displacementOrArray: 'Specify displacement or',
@@ -1484,6 +1610,11 @@ export default {
         local: 'Arc',
         global: 'Arc'
       },
+      length: {
+        display: 'Length(L)',
+        local: 'Length',
+        global: 'Length'
+      },
       undo: {
         display: 'Undo(U)',
         local: 'Undo',
@@ -1509,6 +1640,11 @@ export default {
         local: 'Center',
         global: 'Center'
       },
+      direction: {
+        display: 'Direction(D)',
+        local: 'Direction',
+        global: 'Direction'
+      },
       secondPoint: {
         display: 'Second point(P)',
         local: 'Second point',
@@ -1522,9 +1658,11 @@ export default {
     },
     arcAngle: 'Specify arc angle',
     arcCenter: 'Specify center point',
+    arcDirection: 'Specify the tangent direction for the start point of arc',
     arcSecondPoint: 'Specify second point on arc',
     arcEndPoint: 'Specify arc end point',
-    arcRadius: 'Specify arc radius'
+    arcRadius: 'Specify arc radius',
+    segmentLength: 'Specify length of line'
   },
   rect: {
     firstPoint: 'Specify first corner point',

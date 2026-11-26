@@ -84,6 +84,72 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: '配列を選択',
+    notAssociative: '選択したオブジェクトは関連付け配列ではありません',
+    notInEditState: '配列ソース編集状態ではありません',
+    editStateClosed: '配列ソース編集状態を終了しました',
+    editOptions: '配列を編集するオプションを入力',
+    selectType: '配列のタイプを入力',
+    basePoint: '基点を指定',
+    centerPoint: '配列の中心点を指定',
+    selectPath: 'パス曲線を選択',
+    pathNotCurve: '選択したオブジェクトは有効なパス曲線ではありません',
+    pathIsSource:
+      'パス曲線に配列対象オブジェクトは指定できません。別の曲線を選択してください',
+    rectOptions:
+      'グリップを選択して配列を編集 または [列={columns} 行={rows} 関連付け={associative}]',
+    polarOptions:
+      'グリップを選択して配列を編集 または [項目={items} 関連付け={associative}]',
+    pathOptions:
+      'グリップを選択して配列を編集 または [基点 項目={items} 関連付け={associative}]',
+    associativePrompt: '関連付け配列を作成 [{value}]',
+    yesNoPrompt: 'オプションを入力 [{value}]',
+    methodPrompt: 'パスの方法を入力',
+    columnCount: '列の数を入力',
+    rowCount: '行の数を入力',
+    itemCount: '項目の数を入力',
+    columnSpacing: '列間の距離を指定',
+    rowSpacing: '行間の距離を指定',
+    fillAngle: '塗り潰し角度を指定',
+    keywords: {
+      rectangular: { display: '矩形(R)', local: '矩形', global: 'Rectangular' },
+      path: { display: 'パス(PA)', local: 'パス', global: 'Path' },
+      polar: { display: '極座標(PO)', local: '極座標', global: 'Polar' },
+      associative: {
+        display: '関連付け(AS)',
+        local: '関連付け',
+        global: 'Associative'
+      },
+      count: { display: '数(COU)', local: '数', global: 'Count' },
+      spacing: { display: '間隔(S)', local: '間隔', global: 'Spacing' },
+      columns: { display: '列(COL)', local: '列', global: 'Columns' },
+      rows: { display: '行(R)', local: '行', global: 'Rows' },
+      items: { display: '項目(I)', local: '項目', global: 'Items' },
+      fillAngle: {
+        display: '塗り潰し角度(F)',
+        local: '塗り潰し角度',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: '項目を回転(ROT)',
+        local: '項目を回転',
+        global: 'RotateItems'
+      },
+      method: { display: '方法(M)', local: '方法', global: 'Method' },
+      alignItems: {
+        display: '項目を位置合わせ(A)',
+        local: '項目を位置合わせ',
+        global: 'AlignItems'
+      },
+      base: { display: '基点(B)', local: '基点', global: 'Base' },
+      divide: { display: '分割(D)', local: '分割', global: 'Divide' },
+      measure: { display: '計測(M)', local: '計測', global: 'Measure' },
+      exit: { display: '終了(X)', local: '終了', global: 'eXit' },
+      yes: { display: 'はい(Y)', local: 'はい', global: 'Yes' },
+      no: { display: 'いいえ(N)', local: 'いいえ', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: '基点を指定 または',
     displacementOrArray: '移動距離を指定 または',
@@ -332,17 +398,20 @@ export default {
     minsert: 'MINSERT で挿入された {count} 個のブロックは分解できません'
   },
   trim: {
-    selectObject: 'トリムするオブジェクトを選択 または Shift を押して延長するオブジェクトを選択 または',
+    selectObject:
+      'トリムするオブジェクトを選択 または Shift を押して延長するオブジェクトを選択 または',
     selectEdges: '切り取りエッジを選択 または <すべて選択>',
     modePrompt: 'トリム モードのオプションを入力'
   },
   extend: {
-    selectObject: '延長するオブジェクトを選択 または Shift を押してトリムするオブジェクトを選択 または',
+    selectObject:
+      '延長するオブジェクトを選択 または Shift を押してトリムするオブジェクトを選択 または',
     selectEdges: '境界エッジを選択 または <すべて選択>',
     modePrompt: '延長モードのオプションを入力'
   },
   trimExtend: {
-    currentSettings: '現在の設定: 投影={projection}, エッジ={edge}, モード={mode}',
+    currentSettings:
+      '現在の設定: 投影={projection}, エッジ={edge}, モード={mode}',
     settingValue: {
       none: 'なし',
       ucs: 'UCS',
@@ -1526,6 +1595,11 @@ export default {
         local: '円弧',
         global: 'Arc'
       },
+      length: {
+        display: '長さ(L)',
+        local: '長さ',
+        global: 'Length'
+      },
       undo: {
         display: '元に戻す(U)',
         local: '元に戻す',
@@ -1551,6 +1625,11 @@ export default {
         local: '中心',
         global: 'Center'
       },
+      direction: {
+        display: '方向(D)',
+        local: '方向',
+        global: 'Direction'
+      },
       secondPoint: {
         display: '2 点目(P)',
         local: '2 点目',
@@ -1564,9 +1643,11 @@ export default {
     },
     arcAngle: '円弧の角度を指定',
     arcCenter: '中心点を指定',
+    arcDirection: '円弧の始点における接線方向を指定',
     arcSecondPoint: '円弧上の 2 点目を指定',
     arcEndPoint: '円弧の終点を指定',
-    arcRadius: '円弧の半径を指定'
+    arcRadius: '円弧の半径を指定',
+    segmentLength: '線分の長さを指定'
   },
   rect: {
     firstPoint: '一方のコーナーを指定',

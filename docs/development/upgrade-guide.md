@@ -118,6 +118,18 @@ Requires `@mlightcad/data-model` that registers `PICKSTYLE` (0–3, default `1`)
 Starting with the release that includes this change, `@mlightcad/data-model` stores per-path source boundary object ids on `AcDbHatch` (`pathSourceIds` / `setPathSourceIds`), round-trips them through DXF groups **71**, **97**, and **330**, and rebuilds hatch loops when a linked boundary is modified (or disassociates when the last source is erased) via `AcDbDatabase.hatchAssociationIndex`. `AcApHatchCmd` attaches source ids when creating associative hatches from selected boundaries; pick-points without recoverable sources stay non-associative.
 :::
 
+::: info Associative arrays (`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`)
+Starting with the release that includes this change, `@mlightcad/data-model` adds an ObjectARX-style associative framework under `object/assoc/` (`AcDbAssocNetwork`, `AcDbAssocAction`, `AcDbAssocDependency`, `AcDbAssocArrayActionBody`, rectangular / polar / path parameters). Associative arrays are still drawn as an `AcDbBlockReference` of an anonymous `*U` block; the action body owns the parameters and rebuilds item transforms on evaluate.
+
+`@mlightcad/cad-simple-viewer` registers **ARRAY**, **-ARRAY**, **ARRAYRECT**, **ARRAYPOLAR**, **ARRAYPATH**, **ARRAYEDIT**, and **ARRAYCLOSE** (alias `AR` → `ARRAY`). Defaults: **`ARRAYASSOCIATIVITY`** (`0` / `1`, default `1`), **`ARRAYTYPE`** (`0` rectangular / `1` path / `2` polar, default `0`), read-only **`ARRAYEDITSTATE`** (`0` / `1`, default `0`; hosts use `setArrayEditState`). ARRAYCLOSE is registered for AutoCAD parity; until ARRAYEDIT Source mode is implemented it reports that the drawing is not in array edit state. EXPLODE on an associative array yields independent leaf entities and tears down the action graph; array grips adjust column / row / item counts. Creation shows a live preview (not gated by `COMMANDPREVIEW`). `@mlightcad/cad-editor` adds a Home → Modify **Array** dropdown (rectangular / polar / path).
+
+Migrate hosts:
+
+- Bump `@mlightcad/data-model` (and `libredwg-converter` if you load DWG) together with `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` — the viewer calls `AcDbAssocManager.evaluateTopLevelNetwork` at the end of write commands.
+- New public APIs include `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`, `acdbAllocateAnonymousUserBlockName`, `AcDbSysVarManager.setArrayEditState`, and curve helpers `getPointAtDist` / `getFirstDeriv` on `AcDbCurve`.
+- **DWG note:** LibreDWG may not round-trip assoc objects yet; an array opened from DWG can appear as a plain INSERT without an action body. Prefer DXF for associative-array persistence until DWG import is extended.
+  :::
+
 ::: info `cad.view.capturePreview` selection preview
 Starting with the release that includes this change, `CadSession.capturePreview` takes an options object instead of a bare `longSide` number (a bare positive number is still accepted as `longSide`):
 

@@ -1,4 +1,7 @@
 import {
+  AcDbAssocArrayActionBody,
+  AcDbAssocManager,
+  AcDbBlockReference,
   AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbDimension,
@@ -134,6 +137,7 @@ export class AcApEntityService {
         if (!opened) return
         opened.transformBy(matrix)
         if (options.regenerateDimensions) regenerateDimension(opened)
+        AcDbAssocManager.notifyObjectChanged(this.db, opened.objectId)
         count++
       })
       return count
@@ -323,6 +327,15 @@ export class AcApEntityService {
         erasable.push(objectId)
       })
       if (erasable.length === 0) return 0
+      // Tear down associative-array actions and mark path/source deps dirty
+      // before the bulk remove (which bypasses `AcDbEntity.erase`).
+      for (const objectId of erasable) {
+        const entity = blockTable.getEntityById(objectId)
+        if (entity instanceof AcDbBlockReference) {
+          AcDbAssocArrayActionBody.getAssociativeArray(entity)?.disassociate()
+        }
+        AcDbAssocManager.notifyObjectChanged(this.db, objectId)
+      }
       // `blockTable.removeEntity` stops at the first block that removed any
       // entity, so ask every block for the ids it owns.
       for (const block of blockTable.newIterator()) {

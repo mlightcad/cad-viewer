@@ -25,6 +25,48 @@ export default {
       description:
         'Určuje, zda se kladné úhly měří po směru nebo proti směru hodinových ručiček'
     },
+    array: {
+      description:
+        'Vytvoří kopie objektů uspořádané v pravoúhlém, polárním nebo trajektoriovém poli',
+      prompt: 'Vyberte objekty'
+    },
+    '-array': {
+      description:
+        'Vytvoří pole pomocí možností příkazového řádku (pravoúhlé, polární nebo trajektoriové)',
+      prompt: 'Vyberte objekty'
+    },
+    arrayrect: {
+      description: 'Vytvoří pravoúhlé pole vybraných objektů',
+      prompt: 'Vyberte objekty'
+    },
+    arraypolar: {
+      description: 'Vytvoří polární pole vybraných objektů kolem středu',
+      prompt: 'Vyberte objekty'
+    },
+    arraypath: {
+      description: 'Vytvoří pole vybraných objektů podél trajektorie',
+      prompt: 'Vyberte objekty'
+    },
+    arrayedit: {
+      description: 'Upraví asociativní pole a jejich zdrojové položky',
+      prompt: 'Vyberte pole'
+    },
+    arrayclose: {
+      description:
+        'Uloží nebo zahodí změny zdrojových objektů pole a ukončí stav úprav pole'
+    },
+    arrayassociativity: {
+      description:
+        'Určuje, zda jsou nová pole ve výchozím nastavení asociativní (0 = ne, 1 = ano)'
+    },
+    arrayeditstate: {
+      description:
+        'Udává, zda je výkres ve stavu úprav zdroje pole (jen pro čtení)'
+    },
+    arraytype: {
+      description:
+        'Nastaví výchozí typ ARRAY (0 = pravoúhlé, 1 = trajektorie, 2 = polární)'
+    },
     arc: {
       description: 'Vytvoří oblouk'
     },
@@ -356,10 +398,12 @@ export default {
         'Řídí, zda se pro více hranic vytvoří jeden nebo samostatné objekty šrafování'
     },
     hpquickpreview: {
-      description: 'Určuje, zda se při zadávání oblasti šrafování zobrazí náhled šrafování'
+      description:
+        'Určuje, zda se při zadávání oblasti šrafování zobrazí náhled šrafování'
     },
     hpquickprevtimeout: {
-      description: 'Nastaví maximální dobu ve vteřinách pro generování náhledu šrafování, než bude zrušen'
+      description:
+        'Nastaví maximální dobu ve vteřinách pro generování náhledu šrafování, než bude zrušen'
     },
     hptransparency: {
       description:

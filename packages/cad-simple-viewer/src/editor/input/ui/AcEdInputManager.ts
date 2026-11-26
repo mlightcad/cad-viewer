@@ -688,7 +688,11 @@ export class AcEdInputManager {
   private buildKeywordOptions<T>(
     options: AcEdPromptOptions<T>
   ): AcEdPromptKeywordOptions {
-    const keywordOptions = new AcEdPromptKeywordOptions(options.message)
+    // Use the core message so CLI keyword chips are not duplicated when the
+    // i18n string still embeds an AutoCAD-style `[K1/K2/…]` list.
+    const keywordOptions = new AcEdPromptKeywordOptions(
+      options.getCoreMessage()
+    )
     keywordOptions.appendKeywordsToMessage = options.appendKeywordsToMessage
     keywordOptions.valueDefaultDisplayText =
       options.getDefaultValueDisplayText()
@@ -1510,19 +1514,20 @@ export class AcEdInputManager {
           this.entitySelectionActive = true
           const previousAllowLocked = this.view.allowSelectOnLockedLayer
           const previousAllowGroup = this.view.allowGroupSelection
-          const previousAllowHatchAssoc = this.view.allowAssociativeHatchSelection
+          const previousAllowHatchAssoc =
+            this.view.allowAssociativeHatchSelection
           this.view.allowSelectOnLockedLayer = options.allowObjectOnLockedLayer
           this.view.allowGroupSelection = options.allowGroupSelection
           this.view.allowAssociativeHatchSelection =
             options.allowAssociativeHatchSelection
           const keywordSession = this.startKeywordSession(options, true)
           if (!keywordSession) {
-            this._commandLine.setPrompt(options.message)
+            this._commandLine.setPrompt(options.getDisplayMessage())
           }
 
           const floatingMessage = new AcEdFloatingMessage(this.view, {
             parent: this.view.canvas,
-            message: options.message
+            message: options.getDisplayMessage()
           })
 
           const selected = new Set<string>()
@@ -1877,10 +1882,10 @@ export class AcEdInputManager {
           const keywordSession = this.startKeywordSession(options, true)
           const floatingMessage = new AcEdFloatingMessage(this.view, {
             parent: this.view.canvas,
-            message: options.message
+            message: options.getDisplayMessage()
           })
           if (!keywordSession) {
-            this._commandLine.setPrompt(options.message)
+            this._commandLine.setPrompt(options.getDisplayMessage())
           }
           let settled = false
           const rejector = (err?: Error) => {
@@ -2179,10 +2184,7 @@ export class AcEdInputManager {
     const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
     const box = new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
-    const mode = this.view.getSelectionMode(
-      cwcsP1,
-      this.view.worldToScreen(p2)
-    )
+    const mode = this.view.getSelectionMode(cwcsP1, this.view.worldToScreen(p2))
     return new AcEdPromptBoxResult(AcEdPromptStatus.OK, box, undefined, mode)
   }
 
@@ -2275,7 +2277,9 @@ export class AcEdInputManager {
           .expandByPoint(endWcs)
         const mode = this.view.getSelectionMode(startCanvas, endCanvas)
         cleanup()
-        resolve(new AcEdPromptBoxResult(AcEdPromptStatus.OK, box, undefined, mode))
+        resolve(
+          new AcEdPromptBoxResult(AcEdPromptStatus.OK, box, undefined, mode)
+        )
         return true
       }
 

@@ -85,6 +85,76 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: '배열 선택',
+    notAssociative: '선택한 객체가 연관 배열이 아닙니다',
+    notInEditState: '배열 소스 편집 상태가 아닙니다',
+    editStateClosed: '배열 소스 편집 상태를 종료했습니다',
+    editOptions: '배열을 편집할 옵션 입력',
+    selectType: '배열 유형 입력',
+    basePoint: '기준점 지정',
+    centerPoint: '배열의 중심점 지정',
+    selectPath: '경로 곡선 선택',
+    pathNotCurve: '선택한 객체가 유효한 경로 곡선이 아닙니다',
+    pathIsSource:
+      '경로 곡선은 배열 대상 객체가 될 수 없습니다. 다른 곡선을 선택하십시오',
+    rectOptions:
+      '그립을 선택하여 배열 편집 또는 [열={columns} 행={rows} 연관={associative}]',
+    polarOptions:
+      '그립을 선택하여 배열 편집 또는 [항목={items} 연관={associative}]',
+    pathOptions:
+      '그립을 선택하여 배열 편집 또는 [기준점 항목={items} 연관={associative}]',
+    associativePrompt: '연관 배열 작성 [{value}]',
+    yesNoPrompt: '옵션 입력 [{value}]',
+    methodPrompt: '경로 방법 입력',
+    columnCount: '열 수 입력',
+    rowCount: '행 수 입력',
+    itemCount: '항목 수 입력',
+    columnSpacing: '열 간격 지정',
+    rowSpacing: '행 간격 지정',
+    fillAngle: '채우기 각도 지정',
+    keywords: {
+      rectangular: {
+        display: '직사각형(R)',
+        local: '직사각형',
+        global: 'Rectangular'
+      },
+      path: { display: '경로(PA)', local: '경로', global: 'Path' },
+      polar: { display: '극좌표(PO)', local: '극좌표', global: 'Polar' },
+      associative: {
+        display: '연관(AS)',
+        local: '연관',
+        global: 'Associative'
+      },
+      count: { display: '개수(COU)', local: '개수', global: 'Count' },
+      spacing: { display: '간격(S)', local: '간격', global: 'Spacing' },
+      columns: { display: '열(COL)', local: '열', global: 'Columns' },
+      rows: { display: '행(R)', local: '행', global: 'Rows' },
+      items: { display: '항목(I)', local: '항목', global: 'Items' },
+      fillAngle: {
+        display: '채우기 각도(F)',
+        local: '채우기 각도',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: '항목 회전(ROT)',
+        local: '항목 회전',
+        global: 'RotateItems'
+      },
+      method: { display: '방법(M)', local: '방법', global: 'Method' },
+      alignItems: {
+        display: '항목 정렬(A)',
+        local: '항목 정렬',
+        global: 'AlignItems'
+      },
+      base: { display: '기준점(B)', local: '기준점', global: 'Base' },
+      divide: { display: '분할(D)', local: '분할', global: 'Divide' },
+      measure: { display: '측정(M)', local: '측정', global: 'Measure' },
+      exit: { display: '종료(X)', local: '종료', global: 'eXit' },
+      yes: { display: '예(Y)', local: '예', global: 'Yes' },
+      no: { display: '아니오(N)', local: '아니오', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: '기준점 지정 또는',
     displacementOrArray: '변위 지정 또는',
@@ -336,7 +406,8 @@ export default {
     modePrompt: '자르기 모드 옵션 입력'
   },
   extend: {
-    selectObject: '연장할 객체 선택 또는 Shift 키를 누른 채 선택하여 자르기 또는',
+    selectObject:
+      '연장할 객체 선택 또는 Shift 키를 누른 채 선택하여 자르기 또는',
     selectEdges: '경계 모서리 선택 또는 <모두 선택>',
     modePrompt: '연장 모드 옵션 입력'
   },
@@ -1125,8 +1196,7 @@ export default {
     rejectObject: '이 객체는 필렛할 수 없습니다.',
     rejectPolyline: '선택한 객체가 2D 폴리선이 아닙니다.',
     invalidRadius: '필렛 반지름은 0 이상이어야 합니다.',
-    eraseFailed:
-      '변환된 객체를 모두 지우지 못해 필렛이 취소되었습니다.',
+    eraseFailed: '변환된 객체를 모두 지우지 못해 필렛이 취소되었습니다.',
     nothingToUndo: '명령이 완전히 취소되었습니다.',
     polylineResult:
       '꼭짓점 {filleted}개를 필렛하고 {skipped}개를 건너뛰었습니다.',
@@ -1196,8 +1266,7 @@ export default {
     methodPrompt: '모따기 방법 입력 [거리(D)/각도(A)]',
     rejectObject: '이 객체는 모따기할 수 없습니다.',
     rejectPolyline: '선택한 객체가 2D 폴리선이 아닙니다.',
-    eraseFailed:
-      '변환된 객체를 모두 지우지 못해 모따기가 취소되었습니다.',
+    eraseFailed: '변환된 객체를 모두 지우지 못해 모따기가 취소되었습니다.',
     nothingToUndo: '명령이 완전히 취소되었습니다.',
     polylineResult:
       '꼭짓점 {chamfered}개를 모따기하고 {skipped}개를 건너뛰었습니다.',
@@ -1515,6 +1584,11 @@ export default {
         local: '호',
         global: 'Arc'
       },
+      length: {
+        display: '길이(L)',
+        local: '길이',
+        global: 'Length'
+      },
       undo: {
         display: '명령 취소(U)',
         local: '명령 취소',
@@ -1540,6 +1614,11 @@ export default {
         local: '중심',
         global: 'Center'
       },
+      direction: {
+        display: '방향(D)',
+        local: '방향',
+        global: 'Direction'
+      },
       secondPoint: {
         display: '두 번째 점(P)',
         local: '두 번째 점',
@@ -1553,9 +1632,11 @@ export default {
     },
     arcAngle: '호의 각도 지정',
     arcCenter: '중심점 지정',
+    arcDirection: '호 시작점의 접선 방향 지정',
     arcSecondPoint: '호 위의 두 번째 점 지정',
     arcEndPoint: '호의 끝점 지정',
-    arcRadius: '호의 반지름 지정'
+    arcRadius: '호의 반지름 지정',
+    segmentLength: '선 길이 지정'
   },
   rect: {
     firstPoint: '첫 번째 구석점 지정',
