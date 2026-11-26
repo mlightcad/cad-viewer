@@ -55,8 +55,7 @@ export default {
       style: {
         normal: '普通孤岛检测',
         outer: '外部孤岛检测',
-        ignore: '忽略孤岛检测',
-        none: '无孤岛检测'
+        ignore: '忽略孤岛检测'
       },
       fillType: {
         solid: '实体',
@@ -81,7 +80,6 @@ export default {
         styleOuter:
           '从外部边界向内填充，但只填充到最外层孤岛为止，忽略更内部的区域。',
         styleIgnore: '忽略所有内部对象，对整个外部边界内的区域进行填充。',
-        styleNone: '传统样式，效果类似于“忽略”。',
         setOrigin: '指定新的填充图案原点。',
         originBL: '将原点设置为填充范围的左下角。',
         originBR: '将原点设置为填充范围的右下角。',

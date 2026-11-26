@@ -55,8 +55,7 @@ export default {
       style: {
         normal: '일반 섬 감지',
         outer: '외부 섬 감지',
-        ignore: '섬 감지 무시',
-        none: '섬 감지 없음'
+        ignore: '섬 감지 무시'
       },
       fillType: {
         solid: '솔리드',
@@ -84,7 +83,6 @@ export default {
         styleOuter:
           '바깥 경계에서 안쪽으로 채우되 가장 바깥 섬까지만 채우고 더 안쪽은 무시합니다.',
         styleIgnore: '내부 객체를 무시하고 바깥 경계 안 전체를 채웁니다.',
-        styleNone: '전통적인 스타일로, 효과는 "무시"와 비슷합니다.',
         setOrigin: '새 해치 패턴 원점을 지정합니다.',
         originBL: '원점을 해치 범위의 왼쪽 아래로 설정합니다.',
         originBR: '원점을 해치 범위의 오른쪽 아래로 설정합니다.',

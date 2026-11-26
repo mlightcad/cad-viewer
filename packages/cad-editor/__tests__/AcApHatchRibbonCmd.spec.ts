@@ -1,6 +1,8 @@
 const mockDocManager = {
   curDocument: undefined as { database: unknown } | undefined,
-  curView: undefined as { selectionSet: { ids: string[] } } | undefined,
+  curView: undefined as
+    | { selectionSet: { ids: string[] }; updateEntity?: jest.Mock }
+    | undefined,
   editor: {
     getEntity: jest.fn()
   },
@@ -11,6 +13,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
   class AcApHatchCmd {
     static BRANCH_CONTINUE = 'continue' as const
     static BRANCH_CANCEL = 'cancel' as const
+    static BRANCH_DONE = 'done' as const
 
     globalName = 'HATCH'
 
@@ -63,7 +66,12 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     }
 
     protected originFromExtents(
-      hatch: { geometricExtents: { min: { x: number; y: number }; max: { x: number; y: number } } },
+      hatch: {
+        geometricExtents: {
+          min: { x: number; y: number }
+          max: { x: number; y: number }
+        }
+      },
       mode: number
     ) {
       const box = hatch.geometricExtents
@@ -113,6 +121,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     protected get sessionHatches() {
       return []
     }
+
+    refreshActivePreview() {}
   }
 
   class MockKeywordCollection {
@@ -164,6 +174,7 @@ import {
   AcDbDatabase,
   AcDbHatch,
   AcDbHatchObjectType,
+  AcDbHatchStyle,
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcGeLine2d,
@@ -294,18 +305,116 @@ describe('AcApHatchRibbonCmd fill type synchronization', () => {
     expect(hatch.hatchObjectType).not.toBe(AcDbHatchObjectType.GradientObject)
   })
 
-  test('No Island Detection clears HPISLANDDETECTIONMODE', () => {
+  test('Ignore Island Detection enables mode and sets HPISLANDDETECTION 2', () => {
     const { command, database } = createCommandWithDatabase()
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPISLANDDETECTIONMODE,
+      0,
+      database
+    )
 
-    command.setStyle('None')
+    command.setStyle('Ignore')
 
-    expect(command.state.style).toBe('None')
+    expect(command.state.style).toBe('Ignore')
     expect(
       AcDbSysVarManager.instance().getVar(
         AcDbSystemVariables.HPISLANDDETECTIONMODE,
         database
       )
-    ).toBe(0)
+    ).toBe(1)
+    expect(
+      AcDbSysVarManager.instance().getVar(
+        AcDbSystemVariables.HPISLANDDETECTION,
+        database
+      )
+    ).toBe(2)
+  })
+
+  test('HPISLANDDETECTIONMODE 0 from a drawing shows as Ignore', () => {
+    const { command, database } = createCommandWithDatabase()
+    command.setStyle('Normal')
+
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPISLANDDETECTIONMODE,
+      0,
+      database
+    )
+
+    expect(command.state.style).toBe('Ignore')
+  })
+
+  test('changing island style or pattern refreshes the live hatch preview', () => {
+    const { command } = createCommandWithDatabase()
+    const refresh = jest.spyOn(command, 'refreshActivePreview')
+
+    command.setStyle('Outer')
+    command.setStyle('Ignore')
+    command.setPatternScale(3)
+
+    expect(refresh).toHaveBeenCalledTimes(3)
+  })
+
+  test('island style on a selected hatch changes only its hatchStyle', () => {
+    const { command, database } = createCommandWithDatabase()
+    const hatch = new AcDbHatch()
+    database.tables.blockTable.modelSpace.appendEntity(hatch)
+    hatch.patternName = 'ANSI31'
+    hatch.patternScale = 5
+    hatch.hatchStyle = AcDbHatchStyle.Outer
+    mockDocManager.curView = {
+      selectionSet: { ids: [hatch.objectId] }
+    }
+
+    command.setStyle('Normal')
+
+    expect(hatch.hatchStyle).toBe(AcDbHatchStyle.Normal)
+    // AutoCAD's Hatch Editor edits one property; the rest of the hatch is kept.
+    expect(hatch.patternName).toBe('ANSI31')
+    expect(hatch.patternScale).toBe(5)
+
+    command.setStyle('Ignore')
+    expect(hatch.hatchStyle).toBe(AcDbHatchStyle.Ignore)
+  })
+
+  test.each([
+    ['island style', (c: AcApHatchRibbonCmd) => c.setStyle('Normal')],
+    ['pattern', (c: AcApHatchRibbonCmd) => c.setPatternNameFromGallery('ANSI31')]
+  ])(
+    'redraws session hatches at once when %s changes inside HATCH',
+    (_name, change) => {
+      const { command, database } = createCommandWithDatabase()
+      const hatch = new AcDbHatch()
+      database.tables.blockTable.modelSpace.appendEntity(hatch)
+      const updateEntity = jest.fn()
+      mockDocManager.curView = {
+        selectionSet: { ids: [hatch.objectId] },
+        updateEntity
+      }
+      // HATCH keeps its undo transaction open, so the database's modified
+      // notification (and redraw) would only arrive when the command ends.
+      jest.spyOn(database, 'isUndoRecording').mockReturnValue(true)
+
+      change(command)
+
+      expect(updateEntity).toHaveBeenCalledWith([hatch])
+    }
+  )
+
+  test('leaves the redraw to the modified event outside a command', () => {
+    const { command, database } = createCommandWithDatabase()
+    const hatch = new AcDbHatch()
+    database.tables.blockTable.modelSpace.appendEntity(hatch)
+    const updateEntity = jest.fn()
+    mockDocManager.curView = {
+      selectionSet: { ids: [hatch.objectId] },
+      updateEntity
+    }
+    jest.spyOn(database, 'isUndoRecording').mockReturnValue(false)
+
+    command.setStyle('Normal')
+
+    expect(hatch.hatchStyle).toBe(AcDbHatchStyle.Normal)
+    expect(updateEntity).not.toHaveBeenCalled()
   })
 
   test('Outer Island Detection enables mode and sets HPISLANDDETECTION', () => {
@@ -346,7 +455,10 @@ describe('AcApHatchRibbonCmd fill type synchronization', () => {
       )
     ).toBe(0)
     expect(
-      AcDbSysVarManager.instance().getVar(AcDbSystemVariables.HPORIGIN, database)
+      AcDbSysVarManager.instance().getVar(
+        AcDbSystemVariables.HPORIGIN,
+        database
+      )
     ).toEqual({ x: 12, y: 34, z: 0 })
   })
 

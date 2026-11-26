@@ -131,8 +131,7 @@ export default {
       style: {
         normal: 'Normální detekce ostrovů',
         outer: 'Vnější detekce ostrovů',
-        ignore: 'Ignorovat detekci ostrovů',
-        none: 'Bez detekce ostrovů'
+        ignore: 'Ignorovat detekci ostrovů'
       },
       fillType: {
         solid: 'Plná',
@@ -161,7 +160,6 @@ export default {
           'Vyplňuje od vnější hranice dovnitř jen po nejvnější ostrovy.',
         styleIgnore:
           'Ignoruje vnitřní objekty a vyplní celou oblast uvnitř vnější hranice.',
-        styleNone: 'Tradiční styl; účinek je podobný Ignorovat.',
         setOrigin: 'Zadejte nový počátek vzoru šrafování.',
         originBL: 'Nastaví počátek do levého dolního rohu rozsahu šrafování.',
         originBR: 'Nastaví počátek do pravého dolního rohu rozsahu šrafování.',

@@ -476,7 +476,7 @@ export default {
   },
   hatch: {
     prompt: '选择边界对象或',
-    pickPoint: '指定内部点（或按 Enter 结束）',
+    pickPoint: '拾取内部点或',
     originPoint: '指定填充图案的原点',
     select: '选择要填充的对象',
     patternName: '输入填充图案名称',
@@ -493,7 +493,15 @@ export default {
     nothingToRecreate: '没有可重建边界的填充。',
     regionUnsupported: '暂不支持面域边界，将改为创建多段线。',
     invalidBoundary: '所选对象无法构成闭合边界。',
+    selectObjects: '选择对象或',
+    found: '找到 {count} 个',
+    foundTotal: '找到 {count} 个，总计 {total} 个',
     keywords: {
+      pickInternal: {
+        display: '拾取内部点(K)',
+        local: '拾取内部点',
+        global: 'picK'
+      },
       pick: {
         display: '拾取点(PP)',
         local: '拾取点',
@@ -520,8 +528,8 @@ export default {
         global: 'Region'
       },
       undo: {
-        display: '撤销(U)',
-        local: '撤销',
+        display: '放弃(U)',
+        local: '放弃',
         global: 'Undo'
       },
       cancel: {

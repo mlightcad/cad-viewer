@@ -528,7 +528,7 @@ export default {
   },
   hatch: {
     prompt: '境界オブジェクトを選択 または',
-    pickPoint: '内側の点を指定 (Enter キーで終了)',
+    pickPoint: '内側の点をクリック または',
     originPoint: 'ハッチング パターンの原点を指定',
     select: 'ハッチングするオブジェクトを選択',
     patternName: 'ハッチング パターン名を入力',
@@ -545,7 +545,15 @@ export default {
     nothingToRecreate: '境界を再作成するハッチングが選択されていません。',
     regionUnsupported: 'リージョン境界は未対応のため、ポリラインを作成します。',
     invalidBoundary: '選択したオブジェクトは閉じた境界を形成していません。',
+    selectObjects: 'オブジェクトを選択 または',
+    found: '{count} 個を検出',
+    foundTotal: '{count} 個を検出、合計 {total} 個',
     keywords: {
+      pickInternal: {
+        display: '内側の点をクリック(K)',
+        local: '内側の点をクリック',
+        global: 'picK'
+      },
       pick: {
         display: 'ポイントを指定(PP)',
         local: '点をクリック',

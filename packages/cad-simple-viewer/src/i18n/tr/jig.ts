@@ -608,7 +608,7 @@ export default {
   },
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
-    pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',
+    pickPoint: 'İç noktayı seçin veya',
     originPoint: 'Tarama deseni için başlangıç noktasını belirtin',
     select: 'Tarama yapılacak nesneleri seçin',
     patternName: 'Tarama deseni adını girin',
@@ -626,7 +626,15 @@ export default {
     regionUnsupported:
       'Bölge sınırları henüz desteklenmiyor; bunun yerine çoklu çizgi oluşturuluyor.',
     invalidBoundary: 'Seçilen nesneler kapalı bir sınır oluşturmuyor.',
+    selectObjects: 'Nesneleri seçin veya',
+    found: '{count} bulundu',
+    foundTotal: '{count} bulundu, toplam {total}',
     keywords: {
+      pickInternal: {
+        display: 'iç noktayı seç(K)',
+        local: 'iç noktayı seç',
+        global: 'picK'
+      },
       pick: {
         display: 'Nokta seç(PP)',
         local: 'Nokta seç',

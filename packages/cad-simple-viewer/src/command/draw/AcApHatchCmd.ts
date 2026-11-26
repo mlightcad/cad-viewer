@@ -121,6 +121,8 @@ export class AcApHatchCmd extends AcEdCommand {
    * them (AutoCAD: ESC / Cancel discards; Enter / Close accepts).
    */
   private _discardSession = false
+  /** Preview jig of the prompt currently on screen, if any. */
+  private _activePreview: AcApHatchQuickPreviewJig | undefined
 
   /**
    * Creates one HATCH command instance and marks it as write-mode only.
@@ -206,6 +208,37 @@ export class AcApHatchCmd extends AcEdCommand {
    */
   protected get sessionHatches(): ReadonlyArray<AcDbHatch> {
     return this._sessionHatches
+  }
+
+  /**
+   * Creates the HPQUICKPREVIEW jig for the current prompt and remembers it so
+   * {@link refreshActivePreview} can rebuild it after a setting change.
+   *
+   * @param context Active command context.
+   * @param resolveLoops Loops to preview for a cursor point.
+   * @returns The preview jig to attach to the prompt.
+   */
+  protected createPreviewJig(
+    context: AcApContext,
+    resolveLoops: (point: AcGePoint3dLike) => ReadonlyArray<AcGeLoop2d>
+  ) {
+    const jig = new AcApHatchQuickPreviewJig(context.view, {
+      database: context.doc.database,
+      resolveLoops,
+      createHatch: (loops: ReadonlyArray<AcGeLoop2d>) =>
+        this.createHatchEntity(context, loops, { associative: false })
+    })
+    this._activePreview = jig
+    return jig
+  }
+
+  /**
+   * Rebuilds the live hatch preview with the current settings (pattern,
+   * scale, angle, island style, colours, …). Ribbon property setters call
+   * this so the preview follows option changes without moving the cursor.
+   */
+  refreshActivePreview() {
+    this._activePreview?.refresh()
   }
 
   /**
@@ -658,7 +691,8 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * Strategy:
    * - Find the smallest containing loop as target.
-   * - Include direct children as holes unless style is `Ignore`.
+   * - Include every nested island (all tiers) when island detection is on;
+   *   the hatch style filters them when the hatch is drawn.
    *
    * @param point Seed point selected by user.
    * @param loops Candidate loops (ignored when `infos` is provided).
@@ -681,22 +715,24 @@ export class AcApHatchCmd extends AcEdCommand {
 
     if (!containing.length) return []
 
-    containing.sort(
-      (a, b) => resolvedInfos[a].area - resolvedInfos[b].area
-    )
+    containing.sort((a, b) => resolvedInfos[a].area - resolvedInfos[b].area)
     const target = containing[0]
     const selected = new Set<number>([target])
 
-    // Pick-points mode should hatch the region connected to the picked seed.
-    // Normal: outer + islands as holes (odd/even handled by hatchStyle).
-    // Outer: outermost area only — outer + direct children as holes.
-    // Ignore / No Island Detection: fill through islands (outer path only).
+    // Like AutoCAD, keep every island nested inside the picked area and let
+    // the hatch's island style (Normal / Outer / Ignore, applied when the
+    // hatch is drawn) decide which of them are filled. Editing the style of
+    // an existing hatch then changes its fill. With island detection off
+    // only the boundary itself is stored.
     const settings = this.getActiveSettings()
-    const includeIslandsAsHoles =
-      settings.islandDetectionEnabled &&
-      settings.style !== AcDbHatchStyle.Ignore
-    if (includeIslandsAsHoles) {
-      resolvedInfos[target].children.forEach(child => selected.add(child))
+    if (settings.islandDetectionEnabled) {
+      const addDescendants = (index: number) => {
+        resolvedInfos[index].children.forEach(child => {
+          selected.add(child)
+          addDescendants(child)
+        })
+      }
+      addDescendants(target)
     }
 
     return [...selected].map(index => resolvedInfos[index].loop)
@@ -1141,9 +1177,12 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * - `continue`: stay in the main HATCH loop (Enter ended the sub-prompt).
    * - `cancel`: ESC cancelled the sub-prompt; discard session hatches and exit.
+   * - `done`: Enter accepted the sub-prompt and the whole HATCH command should
+   *   end, keeping session hatches (AutoCAD select-objects Enter).
    */
   protected static readonly BRANCH_CONTINUE = 'continue' as const
   protected static readonly BRANCH_CANCEL = 'cancel' as const
+  protected static readonly BRANCH_DONE = 'done' as const
 
   /**
    * Builds a closed polyline from one hatch boundary loop.
@@ -1249,11 +1288,7 @@ export class AcApHatchCmd extends AcEdCommand {
 
       // Prefer dropping matched paths over erasing the whole session hatch
       // when a window/crossing pick includes both the fill and a boundary.
-      if (
-        dropIndices.size === 0 &&
-        removeIds.has(hatchId) &&
-        isSessionHatch
-      ) {
+      if (dropIndices.size === 0 && removeIds.has(hatchId) && isSessionHatch) {
         this.eraseHatchEntity(context, hatch)
         changed = true
         continue
@@ -1351,7 +1386,9 @@ export class AcApHatchCmd extends AcEdCommand {
 
     const matched: number[] = []
     hatch.loops.forEach((loop, index) => {
-      if (candidates.some(candidate => this.loopsRoughlyEqual(loop, candidate))) {
+      if (
+        candidates.some(candidate => this.loopsRoughlyEqual(loop, candidate))
+      ) {
         matched.push(index)
       }
     })
@@ -1550,8 +1587,7 @@ export class AcApHatchCmd extends AcEdCommand {
 
         if (!associate || rebuiltLoops.length === 0) continue
 
-        const writable =
-          context.doc.database.openEntityForWrite(hatch) ?? hatch
+        const writable = context.doc.database.openEntityForWrite(hatch) ?? hatch
         if (!(writable instanceof AcDbHatch)) continue
         writable.setLoops(rebuiltLoops, sourceIds)
         writable.associative = true
@@ -1586,46 +1622,146 @@ export class AcApHatchCmd extends AcEdCommand {
   /**
    * Executes object-selection branch of HATCH.
    *
+   * Mirrors AutoCAD `Select objects or [picK internal point/Undo]:`. Every
+   * pick adds to the accumulated boundary set and re-prompts; while the set
+   * forms closed loops, a transient hatch preview is shown (gated by
+   * HPQUICKPREVIEW / HPQUICKPREVTIMEOUT like pick-points).
+   *
+   * - Enter commits the accumulated boundary set and ends HATCH (`done`).
+   * - `picK` commits the accumulated set and returns to pick-points.
+   * - `Undo` drops the most recent pick from the set.
+   * - ESC cancels the whole HATCH session.
+   *
    * @param context Active command context.
    * @returns Branch outcome for the main command loop.
    */
   protected async doSelectObjects(
     context: AcApContext
-  ): Promise<'continue' | 'cancel'> {
-    const options = new AcEdPromptSelectionOptions(
-      AcApI18n.t('jig.hatch.select')
-    )
-    options.allowObjectOnLockedLayer = true
-    const result = await AcApDocManager.instance.editor.getSelection(options)
-    if (result.status === AcEdPromptStatus.Cancel) {
-      return AcApHatchCmd.BRANCH_CANCEL
+  ): Promise<'continue' | 'cancel' | 'done'> {
+    const editor = AcApDocManager.instance.editor
+    const selectionSet = context.view.selectionSet
+    // Each entry is the cumulative selection after one pick, so Undo can
+    // restore the previous state even after remove (Shift) picks.
+    const history: AcDbObjectId[][] = []
+    const current = () => history[history.length - 1] ?? []
+
+    let previewLoops: AcGeLoop2d[] = []
+    // Cursor-independent: shows the hatch the current boundary set yields.
+    const preview = this.createPreviewJig(context, () => previewLoops)
+    const refreshPreview = () => {
+      previewLoops = this.collectLoopsFromIds(context, current()).map(
+        item => item.loop
+      )
+      preview.update({ x: 0, y: 0, z: 0 })
+      preview.render()
     }
-    if (result.status !== AcEdPromptStatus.OK || !result.value) {
-      return AcApHatchCmd.BRANCH_CONTINUE
+    const commit = () => {
+      if (!current().length) return
+      const loops = this.collectLoopsFromIds(context, current())
+      if (loops.length) {
+        this.appendHatches(context, loops)
+      } else {
+        this.showMessage(AcApI18n.t('jig.hatch.invalidBoundary'), 'warning')
+      }
     }
 
-    const loops = this.collectLoopsFromIds(context, result.value.ids)
-    if (loops.length) {
-      this.appendHatches(context, loops)
+    selectionSet.clear()
+    try {
+      while (true) {
+        const options = new AcEdPromptSelectionOptions(
+          AcApI18n.t('jig.hatch.selectObjects')
+        )
+        options.allowObjectOnLockedLayer = true
+        // One pick (or one window) per prompt, like AutoCAD HATCH, so the
+        // preview and the "found" count refresh after every pick.
+        options.singleOnly = true
+        options.keywords.add(
+          AcApI18n.t('jig.hatch.keywords.pickInternal.display'),
+          AcApI18n.t('jig.hatch.keywords.pickInternal.global'),
+          AcApI18n.t('jig.hatch.keywords.pickInternal.local')
+        )
+        options.keywords.add(
+          AcApI18n.t('jig.hatch.keywords.undo.display'),
+          AcApI18n.t('jig.hatch.keywords.undo.global'),
+          AcApI18n.t('jig.hatch.keywords.undo.local')
+        )
+
+        const result = await editor.getSelection(options)
+        if (result.status === AcEdPromptStatus.Cancel) {
+          return AcApHatchCmd.BRANCH_CANCEL
+        }
+
+        if (result.status === AcEdPromptStatus.Keyword) {
+          const keyword = result.stringResult ?? ''
+          if (keyword === 'picK') {
+            commit()
+            return AcApHatchCmd.BRANCH_CONTINUE
+          }
+          if (keyword === 'Undo') {
+            if (!history.length) {
+              this.showMessage(AcApI18n.t('jig.hatch.nothingToUndo'), 'warning')
+            } else {
+              history.pop()
+              selectionSet.clear()
+              selectionSet.add(current())
+              refreshPreview()
+            }
+          }
+          continue
+        }
+
+        if (result.status !== AcEdPromptStatus.OK) {
+          return AcApHatchCmd.BRANCH_CONTINUE
+        }
+
+        // The prompt resolves Enter with an empty id list; the view selection
+        // set is what holds the cumulative boundary set across prompts.
+        const ids = [...selectionSet.ids]
+        const previous = current()
+        const added = ids.filter(id => !previous.includes(id)).length
+        if (added === 0 && ids.length === previous.length) {
+          // Enter (selection unchanged) accepts the boundary set.
+          commit()
+          return AcApHatchCmd.BRANCH_DONE
+        }
+
+        history.push([...ids])
+        if (added > 0) {
+          const message =
+            previous.length > 0
+              ? AcApI18n.t('jig.hatch.foundTotal')
+                  .replace('{count}', String(added))
+                  .replace('{total}', String(ids.length))
+              : AcApI18n.t('jig.hatch.found').replace('{count}', String(added))
+          this.showMessage(message)
+        }
+        refreshPreview()
+      }
+    } finally {
+      preview.end()
+      selectionSet.clear()
     }
-    return AcApHatchCmd.BRANCH_CONTINUE
   }
 
   /**
    * Executes pick-points branch of HATCH.
    *
-   * The user can place multiple seed points. Each accepted point attempts
-   * one hatch creation. Enter ends this branch and returns to the main loop;
-   * ESC cancels the whole HATCH session (discards created hatches).
+   * Mirrors AutoCAD `Pick internal point or [Select objects/Undo]:`. The user
+   * can place multiple seed points; each accepted point attempts one hatch
+   * creation.
+   *
+   * - Enter ends this branch (`continue`) and returns to the caller.
+   * - `Select objects` switches to {@link doSelectObjects}; its `picK`
+   *   returns here, its Enter ends the command (`done`).
+   * - `Undo` removes the last hatch created in this session.
+   * - ESC cancels the whole HATCH session (discards created hatches).
    *
    * @param context Active command context.
    * @returns Branch outcome for the main command loop.
    */
   protected async doPickPoints(
     context: AcApContext
-  ): Promise<'continue' | 'cancel'> {
-    const database = context.doc.database
-
+  ): Promise<'continue' | 'cancel' | 'done'> {
     while (true) {
       // Refresh boundaries each prompt so newly drawn closed shapes are found.
       const sourceLoops = this.collectLoopsFromAllBoundaries(context)
@@ -1635,23 +1771,41 @@ export class AcApHatchCmd extends AcEdCommand {
         AcApI18n.t('jig.hatch.pickPoint')
       )
       pointOptions.allowNone = true
+      pointOptions.keywords.add(
+        AcApI18n.t('jig.hatch.keywords.select.display'),
+        AcApI18n.t('jig.hatch.keywords.select.global'),
+        AcApI18n.t('jig.hatch.keywords.select.local')
+      )
+      pointOptions.keywords.add(
+        AcApI18n.t('jig.hatch.keywords.undo.display'),
+        AcApI18n.t('jig.hatch.keywords.undo.global'),
+        AcApI18n.t('jig.hatch.keywords.undo.local')
+      )
       // Interior seed points must follow the true cursor. CEN/END osnap and
       // ORTHO/polar-from-lastPoint would pull HPQUICKPREVIEW onto a recently
       // drawn entity instead of the region under the crosshair.
       pointOptions.disableOSnap = true
       pointOptions.disableTracking = true
       // HPQUICKPREVIEW hover preview (AutoCAD pick-points default).
-      pointOptions.jig = new AcApHatchQuickPreviewJig(context.view, {
-        database,
-        resolveLoops: (point: AcGePoint3dLike) =>
-          this.resolveLoopsForPickPoint(point, sourceLoops, loopInfos),
-        createHatch: (loops: ReadonlyArray<AcGeLoop2d>) =>
-          this.createHatchEntity(context, loops, { associative: false })
-      })
+      pointOptions.jig = this.createPreviewJig(context, point =>
+        this.resolveLoopsForPickPoint(point, sourceLoops, loopInfos)
+      )
       const pointResult =
         await AcApDocManager.instance.editor.getPoint(pointOptions)
       if (pointResult.status === AcEdPromptStatus.Cancel) {
         return AcApHatchCmd.BRANCH_CANCEL
+      }
+      if (pointResult.status === AcEdPromptStatus.Keyword) {
+        const keyword = pointResult.stringResult ?? ''
+        if (keyword === 'SelectObjects') {
+          const outcome = await this.doSelectObjects(context)
+          if (outcome !== AcApHatchCmd.BRANCH_CONTINUE) return outcome
+        } else if (keyword === 'Undo') {
+          if (!this.undoLastSessionHatch(context)) {
+            this.showMessage(AcApI18n.t('jig.hatch.nothingToUndo'), 'warning')
+          }
+        }
+        continue
       }
       if (pointResult.status !== AcEdPromptStatus.OK || !pointResult.value) {
         break
@@ -1682,8 +1836,6 @@ export class AcApHatchCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     this.beginSession()
     try {
-      const database = context.doc.database
-
       let running = true
       while (running) {
         const sourceLoops = this.collectLoopsFromAllBoundaries(context)
@@ -1746,13 +1898,9 @@ export class AcApHatchCmd extends AcEdCommand {
           AcApI18n.t('jig.hatch.keywords.separate.global'),
           AcApI18n.t('jig.hatch.keywords.separate.local')
         )
-        options.jig = new AcApHatchQuickPreviewJig(context.view, {
-          database,
-          resolveLoops: (point: AcGePoint3dLike) =>
-            this.resolveLoopsForPickPoint(point, sourceLoops, loopInfos),
-          createHatch: (loops: ReadonlyArray<AcGeLoop2d>) =>
-            this.createHatchEntity(context, loops, { associative: false })
-        })
+        options.jig = this.createPreviewJig(context, point =>
+          this.resolveLoopsForPickPoint(point, sourceLoops, loopInfos)
+        )
 
         const result = await AcApDocManager.instance.editor.getPoint(options)
         if (result.status === AcEdPromptStatus.OK && result.value) {
@@ -1770,11 +1918,11 @@ export class AcApHatchCmd extends AcEdCommand {
         if (result.status === AcEdPromptStatus.Keyword) {
           const keyword = result.stringResult ?? ''
           if (keyword === 'SelectObjects') {
-            if (
-              (await this.doSelectObjects(context)) ===
-              AcApHatchCmd.BRANCH_CANCEL
-            ) {
+            const outcome = await this.doSelectObjects(context)
+            if (outcome === AcApHatchCmd.BRANCH_CANCEL) {
               this.markDiscardSession()
+              running = false
+            } else if (outcome === AcApHatchCmd.BRANCH_DONE) {
               running = false
             }
           } else if (keyword === 'RemoveBoundaries') {
@@ -1787,10 +1935,7 @@ export class AcApHatchCmd extends AcEdCommand {
             }
           } else if (keyword === 'Undo') {
             if (!this.undoLastSessionHatch(context)) {
-              this.showMessage(
-                AcApI18n.t('jig.hatch.nothingToUndo'),
-                'warning'
-              )
+              this.showMessage(AcApI18n.t('jig.hatch.nothingToUndo'), 'warning')
             }
           } else if (keyword === 'Cancel') {
             this.markDiscardSession()

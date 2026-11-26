@@ -55,8 +55,7 @@ export default {
       style: {
         normal: 'Normal Ada Algılama',
         outer: 'Dış Ada Algılama',
-        ignore: 'Ada Algılamayı Yoksay',
-        none: 'Ada Algılama Yok'
+        ignore: 'Ada Algılamayı Yoksay'
       },
       fillType: {
         solid: 'Düz',
@@ -85,7 +84,6 @@ export default {
           'Dış sınırdan içeri doldurur ancak yalnızca en dış adalara kadar gider.',
         styleIgnore:
           'İç nesneleri yoksayar ve dış sınırın içindeki tüm alanı doldurur.',
-        styleNone: 'Geleneksel stil; etkisi Yoksay’a benzer.',
         setOrigin: 'Yeni bir tarama deseni başlangıç noktası belirtin.',
         originBL: 'Başlangıcı tarama sınırlarının sol altına ayarlar.',
         originBR: 'Başlangıcı tarama sınırlarının sağ altına ayarlar.',

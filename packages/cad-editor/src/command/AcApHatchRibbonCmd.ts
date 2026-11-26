@@ -23,7 +23,7 @@ import {
 } from '@mlightcad/data-model'
 import { reactive } from 'vue'
 
-export type HatchRibbonStyle = 'Normal' | 'Outer' | 'Ignore' | 'None'
+export type HatchRibbonStyle = 'Normal' | 'Outer' | 'Ignore'
 /** AutoCAD HPORIGINMODE values used by the Origin ribbon panel. */
 export type HatchOriginMode = 0 | 1 | 2 | 3 | 4 | 5
 export type HatchFillType = 'solid' | 'pattern' | 'gradient'
@@ -157,11 +157,9 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
             case 'patternAngleDeg':
               return this._state.patternAngle
             case 'style':
-              return this.keywordToStyle(
-                this._state.style === 'None' ? 'Ignore' : this._state.style
-              )
+              return this.keywordToStyle(this._state.style)
             case 'islandDetectionEnabled':
-              return this._state.style !== 'None'
+              return true
             case 'associative':
               return this._state.associative
           }
@@ -260,7 +258,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
                 database
               )
               if (!value) {
-                this._state.style = 'None'
+                this._state.style = 'Ignore'
               }
             }
             break
@@ -284,7 +282,9 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const mode = Number(
       sysVarManager.getVar(AcDbSystemVariables.HPISLANDDETECTIONMODE, database)
     )
-    if (mode === 0) return 'None'
+    // Island detection off (e.g. from a loaded drawing) fills through islands
+    // exactly like Ignore, so the ribbon shows it as Ignore.
+    if (mode === 0) return 'Ignore'
     return this.styleToKeyword(
       this.styleFromIslandDetection(
         sysVarManager.getVar(AcDbSystemVariables.HPISLANDDETECTION, database)
@@ -488,6 +488,11 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   }
 
   private applyStateToSelectedHatches() {
+    // The live HPQUICKPREVIEW hatch must follow every ribbon option change
+    // (island style Normal ↔ Outer keeps the same loops, so the preview's
+    // loop cache would otherwise keep the stale hatch).
+    this.refreshActivePreview()
+
     const docManager = AcApDocManager.instance
     const db = docManager.curDocument?.database
     if (!db) return
@@ -495,13 +500,38 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const hatches = this.getSelectedHatches()
     if (hatches.length === 0) return
 
-    acapRunDatabaseEdit(db, 'Hatch Properties', () => {
+    this.editHatches(db, 'Hatch Properties', hatches, hatch =>
+      this.applyStateToHatch(hatch)
+    )
+  }
+
+  /**
+   * Edits hatches as one undoable database edit and keeps the view in sync.
+   *
+   * While HATCH runs, its undo transaction is still open, so the database's
+   * modified notification (which redraws the entity) only fires when the
+   * command ends. Session hatches are therefore redrawn here right away so
+   * ribbon option changes show up during Hatch Creation.
+   */
+  private editHatches(
+    db: AcDbDatabase,
+    label: string,
+    hatches: ReadonlyArray<AcDbHatch>,
+    edit: (hatch: AcDbHatch) => void
+  ) {
+    const redrawNow = db.isUndoRecording?.() ?? false
+    const edited: AcDbHatch[] = []
+    acapRunDatabaseEdit(db, label, () => {
       hatches.forEach(hatch => {
         const opened = db.openEntityForWrite(hatch)
-        if (!opened || !(opened instanceof AcDbHatch)) return
-        this.applyStateToHatch(opened)
+        if (!(opened instanceof AcDbHatch)) return
+        edit(opened)
+        edited.push(opened)
       })
     })
+    if (redrawNow && edited.length > 0) {
+      AcApDocManager.instance.curView?.updateEntity(edited)
+    }
   }
 
   private applyStateToHatch(hatch: AcDbHatch) {
@@ -527,10 +557,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
       hatch.patternType = AcDbHatchPatternType.Predefined
       hatch.patternScale = this._state.patternScale
       hatch.patternAngle = (this._state.patternAngle * Math.PI) / 180
-      hatch.hatchStyle =
-        this._state.style === 'None'
-          ? this.keywordToStyle('Ignore')
-          : this.keywordToStyle(this._state.style)
+      hatch.hatchStyle = this.keywordToStyle(this._state.style)
       hatch.isSolidFill = isSolidFill
     }
     hatch.hatchObjectType = this._state.hatchObjectType
@@ -544,8 +571,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
         ? this.toAcCmColor(this._state.backgroundColor)
         : undefined
     hatch.transparency = this.createTransparency(opacity)
-    hatch.associative =
-      this._state.associative && hatch.hasAnyPathSourceIds()
+    hatch.associative = this._state.associative && hatch.hasAnyPathSourceIds()
   }
 
   setPatternName(value: string) {
@@ -558,6 +584,8 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     sysVarManager.setVar(AcDbSystemVariables.HPNAME, patternName, db)
     if (this._state.fillType === 'pattern') {
       this.applyStateToSelectedHatches()
+    } else {
+      this.refreshActivePreview()
     }
   }
 
@@ -608,33 +636,26 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   setStyle(value: HatchRibbonStyle) {
     const db = AcApDocManager.instance.curDocument?.database
     this._state.style = value
+    const style = this.keywordToStyle(value)
     if (db) {
       const sysVarManager = AcDbSysVarManager.instance()
-      if (value === 'None') {
-        sysVarManager.setVar(
-          AcDbSystemVariables.HPISLANDDETECTIONMODE,
-          0,
-          db
-        )
-        sysVarManager.setVar(
-          AcDbSystemVariables.HPISLANDDETECTION,
-          this.islandDetectionFromStyle(this.keywordToStyle('Ignore')),
-          db
-        )
-      } else {
-        sysVarManager.setVar(
-          AcDbSystemVariables.HPISLANDDETECTIONMODE,
-          1,
-          db
-        )
-        sysVarManager.setVar(
-          AcDbSystemVariables.HPISLANDDETECTION,
-          this.islandDetectionFromStyle(this.keywordToStyle(value)),
-          db
-        )
-      }
+      sysVarManager.setVar(AcDbSystemVariables.HPISLANDDETECTIONMODE, 1, db)
+      sysVarManager.setVar(
+        AcDbSystemVariables.HPISLANDDETECTION,
+        this.islandDetectionFromStyle(style),
+        db
+      )
     }
-    this.applyStateToSelectedHatches()
+    this.refreshActivePreview()
+    // Like AutoCAD's Hatch Editor, change only the island style of the
+    // session / selected hatches: the hatch keeps all its island loops and
+    // the style decides which of them are filled, so the fill updates while
+    // the pattern, scale and colours of an existing hatch stay untouched.
+    const hatches = this.getSelectedHatches()
+    if (!db || hatches.length === 0) return
+    this.editHatches(db, 'Hatch Island Detection', hatches, hatch => {
+      hatch.hatchStyle = style
+    })
   }
 
   /**
@@ -673,15 +694,11 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const hatches = this.getEditableHatches()
     if (hatches.length === 0) return
 
-    acapRunDatabaseEdit(db, 'Hatch Origin', () => {
-      hatches.forEach(hatch => {
-        const opened = db.openEntityForWrite(hatch)
-        if (!opened || !(opened instanceof AcDbHatch)) return
-        opened.originPoint =
-          mode === 0
-            ? this.getHatchOriginSysVar(db)
-            : this.originFromExtents(opened, mode)
-      })
+    this.editHatches(db, 'Hatch Origin', hatches, hatch => {
+      hatch.originPoint =
+        mode === 0
+          ? this.getHatchOriginSysVar(db)
+          : this.originFromExtents(hatch, mode)
     })
   }
 
@@ -717,12 +734,8 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const hatches = this.getEditableHatches()
     if (hatches.length === 0) return
 
-    acapRunDatabaseEdit(db, 'Hatch Origin', () => {
-      hatches.forEach(hatch => {
-        const opened = db.openEntityForWrite(hatch)
-        if (!opened || !(opened instanceof AcDbHatch)) return
-        opened.originPoint = point
-      })
+    this.editHatches(db, 'Hatch Origin', hatches, hatch => {
+      hatch.originPoint = point
     })
   }
 
@@ -966,21 +979,17 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   ) {
     // Close accepts session hatches (AutoCAD: exit Hatch Creation).
     if (action === 'close') return false
-    if (action === 'pickPoints') {
-      if ((await this.doPickPoints(context)) === AcApHatchCmd.BRANCH_CANCEL) {
+    if (action === 'pickPoints' || action === 'selectObjects') {
+      const outcome =
+        action === 'pickPoints'
+          ? await this.doPickPoints(context)
+          : await this.doSelectObjects(context)
+      if (outcome === AcApHatchCmd.BRANCH_CANCEL) {
         this.markDiscardSession()
         return false
       }
-      return true
-    }
-    if (action === 'selectObjects') {
-      if (
-        (await this.doSelectObjects(context)) === AcApHatchCmd.BRANCH_CANCEL
-      ) {
-        this.markDiscardSession()
-        return false
-      }
-      return true
+      // Select-objects Enter accepts the hatch and ends Hatch Creation.
+      return outcome !== AcApHatchCmd.BRANCH_DONE
     }
     if (action === 'removeBoundaries') {
       if (

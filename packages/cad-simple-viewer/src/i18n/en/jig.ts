@@ -561,7 +561,7 @@ export default {
   },
   hatch: {
     prompt: 'Select boundary object or',
-    pickPoint: 'Specify internal point (or press Enter to finish)',
+    pickPoint: 'Pick internal point or',
     originPoint: 'Specify origin point for hatch pattern',
     select: 'Select objects to hatch',
     patternName: 'Enter hatch pattern name',
@@ -579,7 +579,15 @@ export default {
     regionUnsupported:
       'Region boundaries are not supported yet; creating a polyline instead.',
     invalidBoundary: 'Selected objects do not form a closed boundary.',
+    selectObjects: 'Select objects or',
+    found: '{count} found',
+    foundTotal: '{count} found, {total} total',
     keywords: {
+      pickInternal: {
+        display: 'picK internal point(K)',
+        local: 'picK internal point',
+        global: 'picK'
+      },
       pick: {
         display: 'Pick points(PP)',
         local: 'Pick points',

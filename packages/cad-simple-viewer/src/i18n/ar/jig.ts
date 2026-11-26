@@ -602,7 +602,7 @@ export default {
   },
   hatch: {
     prompt: 'حدد عنصر حدود أو',
-    pickPoint: 'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',
+    pickPoint: 'انتقِ نقطة داخلية أو',
     originPoint: 'حدد نقطة أصل نمط التهشير',
     select: 'حدد العناصر المطلوب تهشيرها',
     patternName: 'أدخل اسم نمط التهشير',
@@ -620,7 +620,15 @@ export default {
     regionUnsupported:
       'حدود المنطقة غير مدعومة بعد؛ سيتم إنشاء خط متعدد بدلاً من ذلك.',
     invalidBoundary: 'العناصر المحددة لا تكوّن حدودًا مغلقة.',
+    selectObjects: 'حدد العناصر أو',
+    found: 'تم العثور على {count}',
+    foundTotal: 'تم العثور على {count}، الإجمالي {total}',
     keywords: {
+      pickInternal: {
+        display: 'انتقاء نقطة داخلية(K)',
+        local: 'انتقاء نقطة داخلية',
+        global: 'picK'
+      },
       pick: {
         display: 'التقاط نقاط(PP)',
         local: 'اختيار نقاط',
