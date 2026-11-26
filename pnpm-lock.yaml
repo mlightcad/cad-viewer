@@ -10,7 +10,7 @@ overrides:
   '@mlightcad/mtext-input-box': 0.3.10
   '@mlightcad/mtext-parser': 1.5.7
   '@mlightcad/mtext-renderer': 0.13.10
-  '@mlightcad/ribbon': 0.1.17
+  '@mlightcad/ribbon': 0.1.18
   '@mlightcad/ui-components': 0.1.14
   '@types/three': ^0.186.0
   element-plus: ^2.13.4
@@ -306,8 +306,8 @@ importers:
         specifier: workspace:*
         version: link:../pdf-renderer
       '@mlightcad/ribbon':
-        specifier: 0.1.17
-        version: 0.1.17(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: 0.1.18
+        version: 0.1.18(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -2740,8 +2740,8 @@ packages:
       '@mlightcad/mtext-parser': 1.5.7
       three: ^0.186.1
 
-  '@mlightcad/ribbon@0.1.17':
-    resolution: {integrity: sha512-M7lyEdzLC4eNoY7HAYGuo7MjkuYrsDzRFyqz1xZd6byFuP1UMl79SOOXCDp266lwO5M3i3wCRtPYfJnp/Aplcw==}
+  '@mlightcad/ribbon@0.1.18':
+    resolution: {integrity: sha512-2ostxfXPMJJienG24au2lV07JssD9zDMARBxg19/b2MNBoxCHq0++v0WISkO9VAgxnErdWj0dalxau0hBo8dyw==}
     peerDependencies:
       '@element-plus/icons-vue': ^2.3.2
       element-plus: ^2.13.4
@@ -9454,7 +9454,7 @@ snapshots:
       opentype.js: 2.0.0
       three: 0.186.1
 
-  '@mlightcad/ribbon@0.1.17(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ribbon@0.1.18(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.31(typescript@5.9.3))
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))

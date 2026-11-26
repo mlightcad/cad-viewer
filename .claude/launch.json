@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cad-editor-demo",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@mlightcad/cad-editor-demo",
+        "dev",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "cad-simple-viewer-demo",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@mlightcad/cad-simple-viewer-demo",
+        "dev",
+        "--port",
+        "5198",
+        "--strictPort"
+      ],
+      "port": 5198
+    }
+  ]
+}

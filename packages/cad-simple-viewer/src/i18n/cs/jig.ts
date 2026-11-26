@@ -540,7 +540,7 @@ export default {
   },
   hatch: {
     prompt: 'Vyberte objekt hranice nebo',
-    pickPoint: 'Zadejte vnitřní bod (nebo stiskněte Enter pro dokončení)',
+    pickPoint: 'Vyberte vnitřní bod nebo',
     originPoint: 'Zadejte počáteční bod vzoru šrafování',
     select: 'Vyberte objekty k šrafování',
     patternName: 'Zadejte název vzoru šrafování',
@@ -558,7 +558,15 @@ export default {
     regionUnsupported:
       'Hranice typu oblast zatím nejsou podporovány; místo toho se vytvoří křivka.',
     invalidBoundary: 'Vybrané objekty netvoří uzavřenou hranici.',
+    selectObjects: 'Vyberte objekty nebo',
+    found: 'Nalezeno: {count}',
+    foundTotal: 'Nalezeno: {count}, celkem: {total}',
     keywords: {
+      pickInternal: {
+        display: 'vybrat vnitřní bod(K)',
+        local: 'vybrat vnitřní bod',
+        global: 'picK'
+      },
       pick: {
         display: 'Vybrat body(PP)',
         local: 'Vybrat body',

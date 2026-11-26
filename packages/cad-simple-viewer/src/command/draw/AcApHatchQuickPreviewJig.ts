@@ -47,6 +47,8 @@ export class AcApHatchQuickPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _renderedId: string | undefined
   /** Last successfully previewed loop set (object identity). */
   private _lastLoops: ReadonlyArray<AcGeLoop2d> = []
+  /** Last sampled cursor point, replayed when hatch settings change. */
+  private _lastPoint: AcGePoint3dLike | undefined
 
   constructor(view: AcEdBaseView, options: AcApHatchQuickPreviewJigOptions) {
     super(view)
@@ -61,6 +63,7 @@ export class AcApHatchQuickPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
    * @param point Current cursor WCS point from the point prompt.
    */
   update(point: AcGePoint3dLike) {
+    this._lastPoint = point
     if (!this.isQuickPreviewEnabled()) {
       this.clearRendered()
       this._lastLoops = []
@@ -128,6 +131,25 @@ export class AcApHatchQuickPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   override end() {
     this.clearRendered()
     this._lastLoops = []
+    this._lastPoint = undefined
+  }
+
+  /**
+   * Discards the cached preview and rebuilds it at the last cursor point.
+   *
+   * Call when a hatch setting (pattern, scale, island style, colour, …)
+   * changes mid-prompt: the loop set may be identical (Normal ↔ Outer) or
+   * the cursor may not move at all (select-objects), so the identity cache
+   * in {@link update} would otherwise keep showing the stale hatch.
+   * System variable change events cannot drive this because they are not
+   * dispatched while the HATCH command transaction is recording.
+   */
+  refresh() {
+    if (!this._lastPoint) return
+    this.clearRendered()
+    this._lastLoops = []
+    this.update(this._lastPoint)
+    this.render()
   }
 
   private sameLoops(

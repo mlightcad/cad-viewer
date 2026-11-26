@@ -28,7 +28,6 @@ import {
   hatchSelect,
   hatchSetOrigin,
   hatchStyleIgnore,
-  hatchStyleNone,
   hatchStyleNormal,
   hatchStyleOuter
 } from '../../svg'
@@ -269,8 +268,7 @@ export function useHatchContextualRibbon({
       if (
         value === 'Normal' ||
         value === 'Outer' ||
-        value === 'Ignore' ||
-        value === 'None'
+        value === 'Ignore'
       ) {
         hatchRibbonCommand.setStyle(value as HatchRibbonStyle)
       }
@@ -673,14 +671,14 @@ export function useHatchContextualRibbon({
                 modelValue: `hatch-style:${hatchState.style}`,
                 syncLabelWithSelection: true,
                 placement: 'right-start',
+                // Big AutoCAD-style previews show each island style's effect.
+                optionIconSize: 'large',
                 icon:
                   hatchState.style === 'Outer'
                     ? hatchStyleOuter
                     : hatchState.style === 'Ignore'
                       ? hatchStyleIgnore
-                      : hatchState.style === 'None'
-                        ? hatchStyleNone
-                        : hatchStyleNormal,
+                      : hatchStyleNormal,
                 options: [
                   {
                     label: t('main.ribbon.hatch.style.normal'),
@@ -699,12 +697,6 @@ export function useHatchContextualRibbon({
                     value: 'hatch-style:Ignore',
                     icon: hatchStyleIgnore,
                     tooltip: t('main.ribbon.hatch.tooltip.styleIgnore')
-                  },
-                  {
-                    label: t('main.ribbon.hatch.style.none'),
-                    value: 'hatch-style:None',
-                    icon: hatchStyleNone,
-                    tooltip: t('main.ribbon.hatch.tooltip.styleNone')
                   }
                 ]
               }

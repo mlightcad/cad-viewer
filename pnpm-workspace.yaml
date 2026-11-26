@@ -14,7 +14,7 @@ overrides:
   '@mlightcad/mtext-input-box': '0.3.10'
   '@mlightcad/mtext-parser': '1.5.7'
   '@mlightcad/mtext-renderer': '0.13.10'
-  '@mlightcad/ribbon': '0.1.17'
+  '@mlightcad/ribbon': '0.1.18'
   '@mlightcad/ui-components': '0.1.14'
   '@types/three': '^0.186.0'
   element-plus: '^2.13.4'

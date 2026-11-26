@@ -20,7 +20,9 @@ jest.mock('../src/editor', () => {
   }
 
   class MockKeywordCollection {
+    readonly globals: string[] = []
     add(display: string, global: string, local: string) {
+      this.globals.push(global)
       return { display, global, local }
     }
   }
@@ -61,7 +63,8 @@ jest.mock('../src/editor', () => {
 
   class AcEdPromptSelectionOptions {
     allowObjectOnLockedLayer = false
-
+    singleOnly = false
+    keywords = new MockKeywordCollection()
     constructor(readonly message: string) {}
   }
 
@@ -101,9 +104,9 @@ jest.mock('../src/i18n', () => ({
 
 import {
   AcDbCircle,
+  AcDbDatabase,
   AcDbHatch,
   AcDbHatchStyle,
-  AcDbDatabase,
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcGeCircArc2d,
@@ -173,6 +176,13 @@ class TestHatchCmd extends AcApHatchCmd {
     return this.createPolylineFromLoop(loop)
   }
 
+  resolvePickPointForTest(
+    point: { x: number; y: number },
+    loops: ReadonlyArray<AcGeLoop2d>
+  ) {
+    return this.resolveLoopsForPickPoint(point, loops)
+  }
+
   async executeForTest(context: Parameters<AcApHatchCmd['appendHatch']>[0]) {
     await this.execute(context)
   }
@@ -187,12 +197,7 @@ class DefaultHatchCmd extends AcApHatchCmd {
   }
 }
 
-const createSquareLoop = (
-  minX = 0,
-  minY = 0,
-  maxX = 10,
-  maxY = 10
-) =>
+const createSquareLoop = (minX = 0, minY = 0, maxX = 10, maxY = 10) =>
   new AcGeLoop2d([
     new AcGeLine2d({ x: minX, y: minY }, { x: maxX, y: minY }),
     new AcGeLine2d({ x: maxX, y: minY }, { x: maxX, y: maxY }),
@@ -236,7 +241,9 @@ const createContext = () => {
       })
     }),
     updateEntity: jest.fn(),
-    hasEntity: jest.fn((objectId: string) => viewEntities.has(String(objectId))),
+    hasEntity: jest.fn((objectId: string) =>
+      viewEntities.has(String(objectId))
+    ),
     selectionSet
   }
   const appendEntity = jest.spyOn(
@@ -298,7 +305,9 @@ describe('AcApHatchCmd', () => {
     )
     const cmd = new DefaultHatchCmd()
 
-    expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBeTruthy()
+    expect(
+      cmd.appendForTest(context as never, [createSquareLoop()])
+    ).toBeTruthy()
 
     const hatch = appended[0]
     expect(hatch.patternName).toBe(HATCH_PATTERN_SOLID)
@@ -325,7 +334,9 @@ describe('AcApHatchCmd', () => {
     )
     const cmd = new TestHatchCmd(createSettings())
 
-    expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBeTruthy()
+    expect(
+      cmd.appendForTest(context as never, [createSquareLoop()])
+    ).toBeTruthy()
 
     const hatch = appended[0]
     expect(hatch).toBeInstanceOf(AcDbHatch)
@@ -353,7 +364,9 @@ describe('AcApHatchCmd', () => {
     )
     const cmd = new TestHatchCmd(createSettings({ patternName: 'solid' }))
 
-    expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBeTruthy()
+    expect(
+      cmd.appendForTest(context as never, [createSquareLoop()])
+    ).toBeTruthy()
 
     const hatch = appended[0]
     expect(hatch.patternName).toBe(HATCH_PATTERN_SOLID)
@@ -390,7 +403,9 @@ describe('AcApHatchCmd', () => {
     )
     const cmd = new TestHatchCmd(createSettings({ associative: true }))
 
-    expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBeTruthy()
+    expect(
+      cmd.appendForTest(context as never, [createSquareLoop()])
+    ).toBeTruthy()
 
     const hatch = appended[0]
     expect(hatch.associative).toBe(false)
@@ -741,6 +756,57 @@ describe('AcApHatchCmd', () => {
     expect(polyline!.numberOfVertices).toBe(4)
   })
 
+  test.each([
+    AcDbHatchStyle.Normal,
+    AcDbHatchStyle.Outer,
+    AcDbHatchStyle.Ignore
+  ])(
+    'pick point keeps every nested island loop for style %s',
+    style => {
+      // Three concentric circles: AutoCAD stores all detected islands and
+      // applies the island style when drawing, so the style can be edited.
+      const outer = createCircleLoop(0, 0, 30)
+      const middle = createCircleLoop(0, 0, 20)
+      const inner = createCircleLoop(0, 0, 10)
+      const cmd = new TestHatchCmd(createSettings({ style }))
+
+      const loops = cmd.resolvePickPointForTest({ x: 25, y: 0 }, [
+        inner,
+        outer,
+        middle
+      ])
+
+      expect(new Set(loops)).toEqual(new Set([outer, middle, inner]))
+    }
+  )
+
+  test('pick point keeps only the boundary when island detection is off', () => {
+    const outer = createCircleLoop(0, 0, 30)
+    const middle = createCircleLoop(0, 0, 20)
+    const cmd = new TestHatchCmd(
+      createSettings({ islandDetectionEnabled: false })
+    )
+
+    expect(
+      cmd.resolvePickPointForTest({ x: 25, y: 0 }, [outer, middle])
+    ).toEqual([outer])
+  })
+
+  test('pick point between islands keeps the enclosing loop and its islands', () => {
+    const outer = createCircleLoop(0, 0, 30)
+    const middle = createCircleLoop(0, 0, 20)
+    const inner = createCircleLoop(0, 0, 10)
+    const cmd = new TestHatchCmd(createSettings())
+
+    const loops = cmd.resolvePickPointForTest({ x: 15, y: 0 }, [
+      outer,
+      middle,
+      inner
+    ])
+
+    expect(new Set(loops)).toEqual(new Set([middle, inner]))
+  })
+
   test('execute RemoveBoundaries keyword invokes remove-boundaries branch', async () => {
     const { context, database } = createContext()
     AcDbSysVarManager.instance().setVar(
@@ -777,5 +843,210 @@ describe('AcApHatchCmd', () => {
     await cmd.executeForTest(context as never)
 
     expect(removeSpy).toHaveBeenCalled()
+  })
+})
+
+describe('AcApHatchCmd select objects', () => {
+  type SelectionStep =
+    | { pick: string[] }
+    | { keyword: string }
+    | { enter: true }
+    | { cancel: true }
+
+  const setup = (steps: SelectionStep[], hpQuickPreview = 1) => {
+    const ctx = createContext()
+    const sysVars = AcDbSysVarManager.instance()
+    sysVars.setVar(
+      AcDbSystemVariables.HPNAME,
+      HATCH_PATTERN_SOLID,
+      ctx.database
+    )
+    sysVars.setVar(
+      AcDbSystemVariables.HPQUICKPREVIEW,
+      hpQuickPreview,
+      ctx.database
+    )
+    const transients = new Map<string, unknown>()
+    Object.assign(ctx.view, {
+      addTransientEntity: jest.fn((entity: AcDbHatch) => {
+        transients.set(String(entity.objectId), entity)
+      }),
+      removeTransientEntity: jest.fn((id: string) => {
+        transients.delete(String(id))
+      })
+    })
+
+    const editor = AcApDocManager.instance.editor
+    const selectionMessages: string[] = []
+    const selectionSet = ctx.view.selectionSet
+    ;(editor.getSelection as jest.Mock).mockReset()
+    steps.forEach(step => {
+      ;(editor.getSelection as jest.Mock).mockImplementationOnce(
+        async (options: { message: string }) => {
+          selectionMessages.push(options.message)
+          if ('pick' in step) {
+            selectionSet.add(step.pick)
+            return { status: AcEdPromptStatus.OK, value: { ids: step.pick } }
+          }
+          if ('keyword' in step) {
+            return {
+              status: AcEdPromptStatus.Keyword,
+              stringResult: step.keyword
+            }
+          }
+          if ('enter' in step) {
+            return { status: AcEdPromptStatus.OK, value: { ids: [] } }
+          }
+          return { status: AcEdPromptStatus.Cancel }
+        }
+      )
+    })
+
+    const cmd = new TestHatchCmd(createSettings({ patternName: 'solid' }))
+    // Each selected id stands for one closed square boundary.
+    jest
+      .spyOn(
+        cmd as unknown as {
+          collectLoopsFromIds: (
+            context: unknown,
+            ids: string[]
+          ) => AcApHatchLoopWithSources[]
+        },
+        'collectLoopsFromIds'
+      )
+      .mockImplementation((_context, ids) =>
+        ids.map((id, index) => ({
+          loop: createSquareLoop(index * 20, 0, index * 20 + 10, 10),
+          sourceIds: [id]
+        }))
+      )
+    jest
+      .spyOn(
+        cmd as unknown as { collectLoopsFromAllBoundaries: () => AcGeLoop2d[] },
+        'collectLoopsFromAllBoundaries'
+      )
+      .mockReturnValue([])
+    const messages: string[] = []
+    jest
+      .spyOn(
+        cmd as unknown as { showMessage: (m: string) => void },
+        'showMessage'
+      )
+      .mockImplementation(message => {
+        messages.push(message)
+      })
+    ;(editor.getPoint as jest.Mock).mockReset().mockResolvedValueOnce({
+      status: AcEdPromptStatus.Keyword,
+      stringResult: 'SelectObjects'
+    })
+
+    return { ...ctx, cmd, editor, messages, selectionMessages, transients }
+  }
+
+  test('prompts with picK / Undo keywords and previews the boundary set', async () => {
+    const { appended, cmd, context, editor, messages, view } = setup([
+      { pick: ['C1'] },
+      { pick: ['C2'] },
+      { enter: true }
+    ])
+
+    await cmd.executeForTest(context as never)
+
+    const firstOptions = (editor.getSelection as jest.Mock).mock.calls[0][0]
+    expect(firstOptions.message).toBe('jig.hatch.selectObjects')
+    expect(firstOptions.singleOnly).toBe(true)
+    // Preview hatch published after each pick, before commit.
+    const addTransient = (view as unknown as { addTransientEntity: jest.Mock })
+      .addTransientEntity
+    expect(addTransient).toHaveBeenCalledTimes(2)
+    expect(messages).toEqual(['jig.hatch.found', 'jig.hatch.foundTotal'])
+    // Enter commits one hatch with both boundaries and ends HATCH (no
+    // further main-loop prompt).
+    expect(appended).toHaveLength(1)
+    expect(appended[0].loops).toHaveLength(2)
+    expect(editor.getPoint).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not preview when HPQUICKPREVIEW is off', async () => {
+    const { appended, cmd, context, view } = setup(
+      [{ pick: ['C1'] }, { enter: true }],
+      0
+    )
+
+    await cmd.executeForTest(context as never)
+
+    const addTransient = (view as unknown as { addTransientEntity: jest.Mock })
+      .addTransientEntity
+    expect(addTransient).not.toHaveBeenCalled()
+    expect(appended).toHaveLength(1)
+  })
+
+  test('Undo drops the last pick and clears its preview', async () => {
+    const { appended, cmd, context, view } = setup([
+      { pick: ['C1'] },
+      { keyword: 'Undo' },
+      { enter: true }
+    ])
+
+    await cmd.executeForTest(context as never)
+
+    const removeTransient = (
+      view as unknown as { removeTransientEntity: jest.Mock }
+    ).removeTransientEntity
+    expect(removeTransient).toHaveBeenCalled()
+    // Nothing left to hatch after undoing the only pick.
+    expect(appended).toHaveLength(0)
+  })
+
+  test('picK commits the selection and returns to pick internal point', async () => {
+    const { appended, cmd, context, editor } = setup([
+      { pick: ['C1'] },
+      { keyword: 'picK' }
+    ])
+    ;(editor.getPoint as jest.Mock).mockResolvedValueOnce({
+      status: AcEdPromptStatus.None
+    })
+
+    await cmd.executeForTest(context as never)
+
+    expect(appended).toHaveLength(1)
+    expect(editor.getPoint).toHaveBeenCalledTimes(2)
+  })
+
+  test('ESC during select objects discards the session', async () => {
+    const { appended, cmd, context, viewEntities } = setup([
+      { pick: ['C1'] },
+      { cancel: true }
+    ])
+
+    await cmd.executeForTest(context as never)
+
+    expect(appended).toHaveLength(0)
+    expect(viewEntities.size).toBe(0)
+  })
+
+  test('pick-points branch (ribbon) offers Select objects / Undo and switches to selection', async () => {
+    const { appended, cmd, context, editor } = setup([
+      { pick: ['C1'] },
+      { enter: true }
+    ])
+    ;(editor.getPoint as jest.Mock).mockReset().mockResolvedValueOnce({
+      status: AcEdPromptStatus.Keyword,
+      stringResult: 'SelectObjects'
+    })
+
+    const outcome = await (
+      cmd as unknown as { doPickPoints: (c: unknown) => Promise<string> }
+    ).doPickPoints(context)
+
+    const pointOptions = (editor.getPoint as jest.Mock).mock.calls[0][0]
+    expect(pointOptions.message).toBe('jig.hatch.pickPoint')
+    expect(pointOptions.keywords.globals).toEqual([
+      'jig.hatch.keywords.select.global',
+      'jig.hatch.keywords.undo.global'
+    ])
+    expect(editor.getSelection).toHaveBeenCalled()
+    expect(appended).toHaveLength(1)
+    expect(outcome).toBe('done')
   })
 })

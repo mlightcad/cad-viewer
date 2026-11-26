@@ -527,7 +527,7 @@ export default {
   },
   hatch: {
     prompt: '경계 객체 선택 또는',
-    pickPoint: '내부 점 지정 (또는 Enter 키를 눌러 완료)',
+    pickPoint: '내부 점 선택 또는',
     originPoint: '해치 패턴 원점 지정',
     select: '해치할 객체 선택',
     patternName: '해치 패턴 이름 입력',
@@ -544,7 +544,15 @@ export default {
     nothingToRecreate: '경계를 재작성할 해치가 선택되지 않았습니다.',
     regionUnsupported: '영역 경계는 아직 지원되지 않아 폴리선으로 작성합니다.',
     invalidBoundary: '선택한 객체가 닫힌 경계를 형성하지 않습니다.',
+    selectObjects: '객체 선택 또는',
+    found: '{count}개를 찾음',
+    foundTotal: '{count}개를 찾음, 총 {total}개',
     keywords: {
+      pickInternal: {
+        display: '내부 점 선택(K)',
+        local: '내부 점 선택',
+        global: 'picK'
+      },
       pick: {
         display: '점 선택(PP)',
         local: '점 선택',

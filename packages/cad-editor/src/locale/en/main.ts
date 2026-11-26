@@ -55,8 +55,7 @@ export default {
       style: {
         normal: 'Normal Island Detection',
         outer: 'Outer Island Detection',
-        ignore: 'Ignore Island Detection',
-        none: 'No Island Detection'
+        ignore: 'Ignore Island Detection'
       },
       fillType: {
         solid: 'Solid',
@@ -85,8 +84,6 @@ export default {
           'Fill from the outer boundary inward only as far as the outermost islands.',
         styleIgnore:
           'Ignore internal objects and hatch the entire area inside the outer boundary.',
-        styleNone:
-          'Traditional style with no island detection; similar to Ignore.',
         setOrigin: 'Specify a new hatch pattern origin point.',
         originBL: 'Set origin to the bottom-left of the hatch extents.',
         originBR: 'Set origin to the bottom-right of the hatch extents.',

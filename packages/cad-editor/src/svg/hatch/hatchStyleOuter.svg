@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1"/>
-  <path fill="none" stroke="currentColor" stroke-width=".55" d="M2.2 4h15.6M2.2 6.2h15.6M2.2 13.8h15.6M2.2 16h15.6"/>
-  <rect x="5" y="5" width="10" height="10" fill="var(--ml-ribbon-bg, #2b2b2b)" stroke="currentColor" stroke-width=".9"/>
-  <rect x="7.5" y="7.5" width="5" height="5" fill="none" stroke="currentColor" stroke-width=".9"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <path fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="square" vector-effect="non-scaling-stroke" opacity=".8" d="M3 4.75L4.75 3M3 8.25L8.25 3M3 11.75L11.75 3M3 15.25L15.25 3M3 18.75L9.5 12.25M12.25 9.5L18.75 3M3 22.25L9.5 15.75M15.75 9.5L22.25 3M3 25.75L9.5 19.25M19.25 9.5L25.75 3M3.25 29L9.75 22.5M22.5 9.75L29 3.25M6.75 29L13.25 22.5M22.5 13.25L29 6.75M10.25 29L16.75 22.5M22.5 16.75L29 10.25M13.75 29L20.25 22.5M22.5 20.25L29 13.75M17.25 29L29 17.25M20.75 29L29 20.75M24.25 29L29 24.25M27.75 29L29 27.75"/>
+  <rect x="3" y="3" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <rect x="9.5" y="9.5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.25" vector-effect="non-scaling-stroke"/>
+  <rect x="13.5" y="13.5" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1.25" vector-effect="non-scaling-stroke"/>
 </svg>
