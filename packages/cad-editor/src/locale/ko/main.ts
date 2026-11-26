@@ -286,6 +286,11 @@ export default {
       centerStartAngle: '중심점, 시작점, 각도',
       centerStartLength: '중심점, 시작점, 길이'
     },
+    array: {
+      rectangular: '직사각형 배열',
+      polar: '극좌표 배열',
+      path: '경로 배열'
+    },
     circle: {
       centerRadius: '중심점, 반지름',
       centerDiameter: '중심점, 지름',
@@ -336,6 +341,10 @@ export default {
       mleaderRemove: '기존 다중 지시선에서 지시선을 제거합니다.',
       move: '선택한 객체를 새 위치로 이동합니다.',
       mirror: '선택한 객체의 대칭 복사본을 작성합니다.',
+      array: '패턴으로 객체 사본을 작성합니다.',
+      arrayrect: '직사각형 배열을 작성합니다.',
+      arraypolar: '극좌표 배열을 작성합니다.',
+      arraypath: '경로를 따라 배열을 작성합니다.',
       trim: '다른 객체의 모서리에 맞도록 객체를 자릅니다.',
       extend: '다른 객체의 모서리에 맞도록 객체를 연장합니다.',
       rotate: '선택한 객체를 기준점을 중심으로 회전합니다.',
@@ -492,6 +501,7 @@ export default {
       mleaderRemove: '지시선 제거',
       move: '이동',
       mirror: '대칭',
+      array: '배열',
       trim: '자르기',
       extend: '연장',
       rotate: '회전',

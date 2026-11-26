@@ -288,6 +288,11 @@ export default {
       centerStartAngle: '中心、始点、角度',
       centerStartLength: '中心、始点、弦の長さ'
     },
+    array: {
+      rectangular: '矩形配列',
+      polar: '極座標配列',
+      path: 'パス配列'
+    },
     circle: {
       centerRadius: '中心、半径',
       centerDiameter: '中心、直径',
@@ -340,6 +345,10 @@ export default {
       mleaderRemove: '既存のマルチ引出線から引出線を削除します。',
       move: '選択したオブジェクトを新しい位置に移動します。',
       mirror: '選択したオブジェクトのミラーコピーを作成します。',
+      array: 'パターンでオブジェクトのコピーを作成します。',
+      arrayrect: '矩形配列を作成します。',
+      arraypolar: '極座標配列を作成します。',
+      arraypath: 'パスに沿って配列を作成します。',
       trim: '他のオブジェクトのエッジに合わせてオブジェクトをトリムします。',
       extend: '他のオブジェクトのエッジまでオブジェクトを延長します。',
       rotate: '選択したオブジェクトを基点を中心に回転します。',
@@ -506,6 +515,7 @@ export default {
       mleaderRemove: '引出線を削除',
       move: '移動',
       mirror: 'ミラー',
+      array: '配列',
       trim: 'トリム',
       extend: '延長',
       rotate: '回転',

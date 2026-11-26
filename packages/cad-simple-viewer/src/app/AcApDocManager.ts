@@ -15,6 +15,12 @@ import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSessio
 import {
   AcApAboutCmd,
   AcApArcCmd,
+  AcApArrayCloseCmd,
+  AcApArrayCmd,
+  AcApArrayEditCmd,
+  AcApArrayPathCmd,
+  AcApArrayPolarCmd,
+  AcApArrayRectCmd,
   acapBindMarkupSession,
   AcApCacheFontCmd,
   AcApChamferCmd,
@@ -240,6 +246,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   OFFSET: ['O'],
   COPY: ['CO', 'CP'],
   COPYBASE: ['CB'],
+  ARRAY: ['AR'],
   PROPERTIES: ['PR', 'PROPS', 'CH', 'MO'],
   MIRROR: ['MI'],
   ROTATE: ['RO'],
@@ -2162,6 +2169,13 @@ export class AcApDocManager {
     addSystemCommand('pasteclip', 'pasteclip', new AcApPasteClipCmd())
     addSystemCommand('pasteorig', 'pasteorig', new AcApPasteOrigCmd())
     addSystemCommand('pasteblock', 'pasteblock', new AcApPasteBlockCmd())
+    addSystemCommand('array', 'array', new AcApArrayCmd())
+    addSystemCommand('-array', '-array', new AcApArrayCmd())
+    addSystemCommand('arrayrect', 'arrayrect', new AcApArrayRectCmd())
+    addSystemCommand('arraypolar', 'arraypolar', new AcApArrayPolarCmd())
+    addSystemCommand('arraypath', 'arraypath', new AcApArrayPathCmd())
+    addSystemCommand('arrayedit', 'arrayedit', new AcApArrayEditCmd())
+    addSystemCommand('arrayclose', 'arrayclose', new AcApArrayCloseCmd())
     addSystemCommand('mirror', 'mirror', new AcApMirrorCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())

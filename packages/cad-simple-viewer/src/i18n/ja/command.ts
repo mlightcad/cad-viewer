@@ -25,6 +25,47 @@ export default {
       description:
         '正の角度を時計回りに測定するか反時計回りに測定するかを設定します'
     },
+    array: {
+      description:
+        'オブジェクトのコピーを矩形、極座標、またはパスのパターンで作成します',
+      prompt: 'オブジェクトを選択'
+    },
+    '-array': {
+      description:
+        'コマンドラインで配列を作成します（矩形、極座標、またはパス）',
+      prompt: 'オブジェクトを選択'
+    },
+    arrayrect: {
+      description: '選択したオブジェクトの矩形配列を作成します',
+      prompt: 'オブジェクトを選択'
+    },
+    arraypolar: {
+      description: '中心点の周りに選択したオブジェクトの極座標配列を作成します',
+      prompt: 'オブジェクトを選択'
+    },
+    arraypath: {
+      description: 'パスに沿って選択したオブジェクトの配列を作成します',
+      prompt: 'オブジェクトを選択'
+    },
+    arrayedit: {
+      description: '関連付け配列オブジェクトとそのソース項目を編集します',
+      prompt: '配列を選択'
+    },
+    arrayclose: {
+      description:
+        '配列のソースオブジェクトへの変更を保存または破棄し、配列編集状態を終了します'
+    },
+    arrayassociativity: {
+      description:
+        '新規配列を既定で関連付けにするかどうかを制御します（0 = しない、1 = する）'
+    },
+    arrayeditstate: {
+      description: '図面が配列ソース編集状態かどうかを示します（読み取り専用）'
+    },
+    arraytype: {
+      description:
+        'ARRAY の既定タイプを設定します（0 = 矩形、1 = パス、2 = 極座標）'
+    },
     arc: {
       description: '円弧を作成します'
     },
@@ -357,10 +398,12 @@ export default {
         '複数の境界に対して 1 つのハッチング オブジェクトを作成するか、個別のハッチング オブジェクトを作成するかをコントロールします'
     },
     hpquickpreview: {
-      description: 'ハッチング領域を指定するときにプレビューを表示するかどうかをコントロールします'
+      description:
+        'ハッチング領域を指定するときにプレビューを表示するかどうかをコントロールします'
     },
     hpquickprevtimeout: {
-      description: 'ハッチング プレビューの生成を自動キャンセルするまでの最大時間（秒）を設定します'
+      description:
+        'ハッチング プレビューの生成を自動キャンセルするまでの最大時間（秒）を設定します'
     },
     hptransparency: {
       description:

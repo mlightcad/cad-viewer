@@ -282,6 +282,11 @@ export default {
       centerStartAngle: '圆心、起点、角度',
       centerStartLength: '圆心、起点、长度'
     },
+    array: {
+      rectangular: '矩形阵列',
+      polar: '环形阵列',
+      path: '路径阵列'
+    },
     circle: {
       centerRadius: '圆心、半径',
       centerDiameter: '圆心、直径',
@@ -330,6 +335,10 @@ export default {
       mleaderRemove: '从现有多重引线移除引线。',
       move: '将选中的对象移动到新位置。',
       mirror: '创建选定对象的镜像副本。',
+      array: '按图案创建对象的副本。',
+      arrayrect: '创建矩形阵列。',
+      arraypolar: '创建环形阵列。',
+      arraypath: '沿路径创建阵列。',
       trim: '修剪对象以与其他对象的边相接。',
       extend: '延伸对象以与其他对象的边相接。',
       rotate: '围绕基点旋转选中的对象。',
@@ -471,6 +480,7 @@ export default {
       mleaderRemove: '移除引线',
       move: '移动',
       mirror: '镜像',
+      array: '阵列',
       trim: '修剪',
       extend: '延伸',
       rotate: '旋转',

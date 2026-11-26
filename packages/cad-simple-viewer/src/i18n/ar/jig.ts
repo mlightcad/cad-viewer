@@ -88,6 +88,76 @@ export default {
       }
     }
   },
+  array: {
+    selectArray: 'حدد المصفوفة',
+    notAssociative: 'الكائن المحدد ليس مصفوفة مرتبطة',
+    notInEditState: 'لست في حالة تحرير مصدر المصفوفة',
+    editStateClosed: 'تم الخروج من حالة تحرير مصدر المصفوفة',
+    editOptions: 'أدخل خيارًا لتحرير المصفوفة',
+    selectType: 'أدخل نوع المصفوفة',
+    basePoint: 'حدد نقطة الأساس',
+    centerPoint: 'حدد مركز المصفوفة',
+    selectPath: 'حدد منحنى المسار',
+    pathNotCurve: 'الكائن المحدد ليس منحنى مسار صالحًا',
+    pathIsSource:
+      'لا يمكن أن يكون منحنى المسار أحد الكائنات المصفوفة؛ حدد منحنى آخر',
+    rectOptions:
+      'حدد مقبضًا لتحرير المصفوفة أو [الأعمدة={columns} الصفوف={rows} مرتبط={associative}]',
+    polarOptions:
+      'حدد مقبضًا لتحرير المصفوفة أو [العناصر={items} مرتبط={associative}]',
+    pathOptions:
+      'حدد مقبضًا لتحرير المصفوفة أو [نقطة الأساس العناصر={items} مرتبط={associative}]',
+    associativePrompt: 'إنشاء مصفوفة مرتبطة [{value}]',
+    yesNoPrompt: 'أدخل خيارًا [{value}]',
+    methodPrompt: 'أدخل طريقة المسار',
+    columnCount: 'أدخل عدد الأعمدة',
+    rowCount: 'أدخل عدد الصفوف',
+    itemCount: 'أدخل عدد العناصر',
+    columnSpacing: 'حدد المسافة بين الأعمدة',
+    rowSpacing: 'حدد المسافة بين الصفوف',
+    fillAngle: 'حدد زاوية التعبئة',
+    keywords: {
+      rectangular: {
+        display: 'مستطيل(R)',
+        local: 'مستطيل',
+        global: 'Rectangular'
+      },
+      path: { display: 'مسار(PA)', local: 'مسار', global: 'Path' },
+      polar: { display: 'قطبي(PO)', local: 'قطبي', global: 'Polar' },
+      associative: {
+        display: 'مرتبط(AS)',
+        local: 'مرتبط',
+        global: 'Associative'
+      },
+      count: { display: 'العدد(COU)', local: 'العدد', global: 'Count' },
+      spacing: { display: 'التباعد(S)', local: 'التباعد', global: 'Spacing' },
+      columns: { display: 'الأعمدة(COL)', local: 'الأعمدة', global: 'Columns' },
+      rows: { display: 'الصفوف(R)', local: 'الصفوف', global: 'Rows' },
+      items: { display: 'العناصر(I)', local: 'العناصر', global: 'Items' },
+      fillAngle: {
+        display: 'زاوية التعبئة(F)',
+        local: 'زاوية التعبئة',
+        global: 'FillAngle'
+      },
+      rotateItems: {
+        display: 'تدوير العناصر(ROT)',
+        local: 'تدوير العناصر',
+        global: 'RotateItems'
+      },
+      method: { display: 'الطريقة(M)', local: 'الطريقة', global: 'Method' },
+      alignItems: {
+        display: 'محاذاة العناصر(A)',
+        local: 'محاذاة العناصر',
+        global: 'AlignItems'
+      },
+      base: { display: 'نقطة الأساس(B)', local: 'نقطة الأساس', global: 'Base' },
+      divide: { display: 'تقسيم(D)', local: 'تقسيم', global: 'Divide' },
+      measure: { display: 'قياس(M)', local: 'قياس', global: 'Measure' },
+      exit: { display: 'خروج(X)', local: 'خروج', global: 'eXit' },
+      yes: { display: 'نعم(Y)', local: 'نعم', global: 'Yes' },
+      no: { display: 'لا(N)', local: 'لا', global: 'No' }
+    }
+  },
   copy: {
     basePointOrOptions: 'حدد نقطة الأساس أو',
     displacementOrArray: 'حدد الإزاحة أو',
@@ -547,7 +617,8 @@ export default {
     recreateType: 'أدخل نوع عنصر الحدود',
     recreateAssociate: 'هل تريد ربط التهشير بالحد الجديد؟',
     nothingToRecreate: 'لم يتم تحديد تهشير لإعادة إنشاء حدوده.',
-    regionUnsupported: 'حدود المنطقة غير مدعومة بعد؛ سيتم إنشاء خط متعدد بدلاً من ذلك.',
+    regionUnsupported:
+      'حدود المنطقة غير مدعومة بعد؛ سيتم إنشاء خط متعدد بدلاً من ذلك.',
     invalidBoundary: 'العناصر المحددة لا تكوّن حدودًا مغلقة.',
     keywords: {
       pick: {
@@ -1202,8 +1273,7 @@ export default {
     rejectObject: 'لا يمكن شطف هذا الكائن دائريًا.',
     rejectPolyline: 'الكائن المحدد ليس خطًا متعددًا ثنائي الأبعاد.',
     invalidRadius: 'يجب أن يكون نصف قطر الشطف صفرًا أو أكبر.',
-    eraseFailed:
-      'تعذر مسح جميع الكائنات المحوّلة. تم إلغاء الشطف الدائري.',
+    eraseFailed: 'تعذر مسح جميع الكائنات المحوّلة. تم إلغاء الشطف الدائري.',
     nothingToUndo: 'تم التراجع عن الأمر بالكامل.',
     polylineResult: 'تم شطف {filleted} رأسًا دائريًا؛ وتخطي {skipped}.',
     keywords: {
@@ -1623,6 +1693,11 @@ export default {
         local: 'قوس',
         global: 'Arc'
       },
+      length: {
+        display: 'طول(L)',
+        local: 'طول',
+        global: 'Length'
+      },
       undo: {
         display: 'تراجع(U)',
         local: 'تراجع',
@@ -1648,6 +1723,11 @@ export default {
         local: 'المركز',
         global: 'Center'
       },
+      direction: {
+        display: 'اتجاه(D)',
+        local: 'اتجاه',
+        global: 'Direction'
+      },
       secondPoint: {
         display: 'النقطة الثانية(P)',
         local: 'النقطة الثانية',
@@ -1661,9 +1741,11 @@ export default {
     },
     arcAngle: 'حدد زاوية القوس',
     arcCenter: 'حدد نقطة مركز القوس',
+    arcDirection: 'حدد اتجاه المماس عند نقطة بداية القوس',
     arcSecondPoint: 'حدد النقطة الثانية على القوس',
     arcEndPoint: 'حدد نقطة نهاية القوس',
-    arcRadius: 'حدد نصف قطر القوس'
+    arcRadius: 'حدد نصف قطر القوس',
+    segmentLength: 'حدد طول الخط'
   },
   rect: {
     firstPoint: 'حدد نقطة الركن الأول',

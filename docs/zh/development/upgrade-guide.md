@@ -112,6 +112,18 @@ registerLazyAgentPlugin(pluginManager)
 自包含此变更的版本起，`@mlightcad/data-model` 在 `AcDbHatch` 上按边界路径存储源对象 id（`pathSourceIds` / `setPathSourceIds`），通过 DXF 组码 **71**、**97**、**330** 往返，并在关联边界被修改时通过 `AcDbDatabase.hatchAssociationIndex` 重建填充环（最后一个源被删除时解除关联）。`AcApHatchCmd` 在从所选边界创建关联填充时写入源 id；无法恢复源映射的拾取点模式保持非关联。
 :::
 
+::: info 关联阵列（`ARRAY` / `ARRAYRECT` / `ARRAYPOLAR` / `ARRAYPATH` / `ARRAYEDIT` / `ARRAYCLOSE`）
+自包含本变更的版本起，`@mlightcad/data-model` 在 `object/assoc/` 下增加 ObjectARX 风格的关联框架（`AcDbAssocNetwork`、`AcDbAssocAction`、`AcDbAssocDependency`、`AcDbAssocArrayActionBody` 以及矩形 / 环形 / 路径参数）。关联阵列仍以匿名 `*U` 块的 `AcDbBlockReference` 绘制；动作体拥有参数，并在评估时重建各项目变换。
+
+`@mlightcad/cad-simple-viewer` 注册 **ARRAY**、**-ARRAY**、**ARRAYRECT**、**ARRAYPOLAR**、**ARRAYPATH**、**ARRAYEDIT**、**ARRAYCLOSE**（别名 `AR` → `ARRAY`）。默认值：**`ARRAYASSOCIATIVITY`**（`0` / `1`，默认 `1`）、**`ARRAYTYPE`**（`0` 矩形 / `1` 路径 / `2` 环形，默认 `0`）、只读 **`ARRAYEDITSTATE`**（`0` / `1`，默认 `0`；宿主用 `setArrayEditState`）。在实现 ARRAYEDIT Source 之前，ARRAYCLOSE 会提示当前不在阵列编辑状态。对关联阵列执行 EXPLODE 会得到独立叶子实体并拆除动作图；阵列夹点可调整列 / 行 / 项目数。`@mlightcad/cad-editor` 在「开始 → 修改」增加 **阵列** 下拉（矩形 / 环形 / 路径）。
+
+宿主迁移：
+
+- 将 `@mlightcad/data-model`（以及加载 DWG 时的 `libredwg-converter`）与 `@mlightcad/cad-simple-viewer` / `@mlightcad/cad-editor` 一起升级——查看器在写命令结束时调用 `AcDbAssocManager.evaluateTopLevelNetwork`。
+- 新增公共 API 包括 `AcDbAssocArray.createArray` / `AcDbAssocArrayActionBody.createInstance`、`acdbAllocateAnonymousUserBlockName`，以及 `AcDbCurve` 上的 `getPointAtDist` / `getFirstDeriv`。
+- **DWG 说明：** LibreDWG 可能尚不能往返关联对象；从 DWG 打开的阵列可能只显示为普通 INSERT 而无动作体。在扩展 DWG 导入之前，关联阵列持久化请优先使用 DXF。
+  :::
+
 ::: info `cad.view.capturePreview` 选中预览出图
 自包含本变更的版本起，`CadSession.capturePreview` 改为接收选项对象，不再使用单独的 `longSide` 数字参数：
 

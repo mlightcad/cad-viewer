@@ -290,6 +290,11 @@ export default {
       centerStartAngle: 'Center, Start, Angle',
       centerStartLength: 'Center, Start, Length'
     },
+    array: {
+      rectangular: 'Rectangular Array',
+      polar: 'Polar Array',
+      path: 'Path Array'
+    },
     circle: {
       centerRadius: 'Center, Radius',
       centerDiameter: 'Center, Diameter',
@@ -341,6 +346,10 @@ export default {
       mleaderRemove: 'Remove a leader line from an existing multileader.',
       move: 'Move selected objects to a new position.',
       mirror: 'Create a mirrored copy of selected objects.',
+      array: 'Create copies of objects in a pattern.',
+      arrayrect: 'Create a rectangular array.',
+      arraypolar: 'Create a polar array.',
+      arraypath: 'Create an array along a path.',
       trim: 'Trims objects to meet the edges of other objects.',
       extend: 'Extends objects to meet the edges of other objects.',
       rotate: 'Rotate selected objects around a base point.',
@@ -520,6 +529,7 @@ export default {
       mleaderRemove: 'Remove Leader',
       move: 'Move',
       mirror: 'Mirror',
+      array: 'Array',
       trim: 'Trim',
       extend: 'Extend',
       rotate: 'Rotate',

@@ -106,6 +106,17 @@ describe('AcEdBatchedPreview', () => {
     expect(removedIds).toEqual(['preview-1', 'preview-2', 'preview-3'])
   })
 
+  it('applies explicit matrices to each overlay', () => {
+    const { view } = createMockView({ multiHandle: true })
+    const previews = new AcEdBatchedPreview(view, ['id-1'], 2)
+    const m0 = new AcGeMatrix3d().makeTranslation(1, 0, 0)
+    const m1 = new AcGeMatrix3d().makeTranslation(0, 2, 0)
+
+    previews.updateMatrices(view, [m0, m1])
+    expect(view.updateEntityPreview).toHaveBeenCalledWith('preview-1', m0)
+    expect(view.updateEntityPreview).toHaveBeenCalledWith('preview-2', m1)
+  })
+
   it('falls back when one overlay fails to create', () => {
     let createCount = 0
     const { view, removedIds } = createMockView({

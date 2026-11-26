@@ -24,6 +24,49 @@ export default {
       description:
         'Pozitif açıların saat yönünde mi yoksa saat yönünün tersine mi ölçüleceğini ayarlar'
     },
+    array: {
+      description:
+        'Nesnelerin kopyalarını dikdörtgen, kutupsal veya yol deseninde oluşturur',
+      prompt: 'Nesneleri seçin'
+    },
+    '-array': {
+      description:
+        'Komut satırı seçenekleriyle dizi oluşturur (dikdörtgen, kutupsal veya yol)',
+      prompt: 'Nesneleri seçin'
+    },
+    arrayrect: {
+      description: 'Seçili nesnelerin dikdörtgen dizisini oluşturur',
+      prompt: 'Nesneleri seçin'
+    },
+    arraypolar: {
+      description:
+        'Bir merkez etrafında seçili nesnelerin kutupsal dizisini oluşturur',
+      prompt: 'Nesneleri seçin'
+    },
+    arraypath: {
+      description: 'Bir yol boyunca seçili nesnelerin dizisini oluşturur',
+      prompt: 'Nesneleri seçin'
+    },
+    arrayedit: {
+      description: 'İlişkisel dizi nesnelerini ve kaynak öğelerini düzenler',
+      prompt: 'Diziyi seçin'
+    },
+    arrayclose: {
+      description:
+        'Dizi kaynak nesnelerindeki değişiklikleri kaydeder veya iptal eder ve dizi düzenleme durumundan çıkar'
+    },
+    arrayassociativity: {
+      description:
+        'Yeni dizilerin varsayılan olarak ilişkisel olup olmadığını denetler (0 = hayır, 1 = evet)'
+    },
+    arrayeditstate: {
+      description:
+        'Çizimin dizi kaynak düzenleme durumunda olup olmadığını gösterir (salt okunur)'
+    },
+    arraytype: {
+      description:
+        'ARRAY varsayılan türünü ayarlar (0 = dikdörtgen, 1 = yol, 2 = kutupsal)'
+    },
     arc: {
       description: 'Bir yay oluşturur'
     },
@@ -367,10 +410,12 @@ export default {
         'Birden çok sınır için tek mi yoksa ayrı tarama nesneleri mi oluşturulacağını denetler'
     },
     hpquickpreview: {
-      description: 'Bir tarama alanı belirtilirken tarama önizlemesinin görüntülenip görüntülenmeyeceğini denetler'
+      description:
+        'Bir tarama alanı belirtilirken tarama önizlemesinin görüntülenip görüntülenmeyeceğini denetler'
     },
     hpquickprevtimeout: {
-      description: 'Tarama önizlemesinin iptal edilmeden önce oluşturulması için maksimum süreyi (saniye) ayarlar'
+      description:
+        'Tarama önizlemesinin iptal edilmeden önce oluşturulması için maksimum süreyi (saniye) ayarlar'
     },
     hptransparency: {
       description:

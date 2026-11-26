@@ -23,6 +23,47 @@ export default {
       description:
         '양의 각도를 시계 방향 또는 시계 반대 방향으로 측정할지 설정합니다'
     },
+    array: {
+      description:
+        '객체의 사본을 직사각형, 극좌표 또는 경로 패턴으로 작성합니다',
+      prompt: '객체 선택'
+    },
+    '-array': {
+      description:
+        '명령행 옵션으로 배열을 작성합니다(직사각형, 극좌표 또는 경로)',
+      prompt: '객체 선택'
+    },
+    arrayrect: {
+      description: '선택한 객체의 직사각형 배열을 작성합니다',
+      prompt: '객체 선택'
+    },
+    arraypolar: {
+      description: '중심점 주위에 선택한 객체의 극좌표 배열을 작성합니다',
+      prompt: '객체 선택'
+    },
+    arraypath: {
+      description: '경로를 따라 선택한 객체의 배열을 작성합니다',
+      prompt: '객체 선택'
+    },
+    arrayedit: {
+      description: '연관 배열 객체와 소스 항목을 편집합니다',
+      prompt: '배열 선택'
+    },
+    arrayclose: {
+      description:
+        '배열 소스 객체 변경을 저장하거나 취소하고 배열 편집 상태를 종료합니다'
+    },
+    arrayassociativity: {
+      description:
+        '새 배열이 기본적으로 연관인지 제어합니다(0 = 아니오, 1 = 예)'
+    },
+    arrayeditstate: {
+      description: '도면이 배열 소스 편집 상태인지 나타냅니다(읽기 전용)'
+    },
+    arraytype: {
+      description:
+        'ARRAY 기본 유형을 설정합니다(0 = 직사각형, 1 = 경로, 2 = 극좌표)'
+    },
     arc: {
       description: '호를 작성합니다'
     },
@@ -329,10 +370,12 @@ export default {
         '여러 경계에 대해 단일 해치 객체를 작성할지 개별 해치 객체를 작성할지 조정합니다'
     },
     hpquickpreview: {
-      description: '해치 영역을 지정할 때 해치 미리보기를 표시할지 여부를 조정합니다'
+      description:
+        '해치 영역을 지정할 때 해치 미리보기를 표시할지 여부를 조정합니다'
     },
     hpquickprevtimeout: {
-      description: '해치 미리보기 생성이 자동으로 취소되기 전의 최대 시간(초)을 설정합니다'
+      description:
+        '해치 미리보기 생성이 자동으로 취소되기 전의 최대 시간(초)을 설정합니다'
     },
     hptransparency: {
       description: '새로 작성하는 해치 및 채우기의 기본 투명도를 설정합니다'

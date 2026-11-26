@@ -291,6 +291,11 @@ export default {
       centerStartAngle: 'Merkez, Başlangıç, Açı',
       centerStartLength: 'Merkez, Başlangıç, Uzunluk'
     },
+    array: {
+      rectangular: 'Dikdörtgen Dizi',
+      polar: 'Kutupsal Dizi',
+      path: 'Yol Dizisi'
+    },
     circle: {
       centerRadius: 'Merkez, Yarıçap',
       centerDiameter: 'Merkez, Çap',
@@ -345,8 +350,13 @@ export default {
       mleaderRemove: 'Mevcut çoklu önderden bir önder çizgisini kaldırın.',
       move: 'Seçili nesneleri yeni bir konuma taşıyın.',
       mirror: 'Seçili nesnelerin aynalanmış bir kopyasını oluşturur.',
+      array: 'Nesnelerin kopyalarını bir desende oluşturur.',
+      arrayrect: 'Dikdörtgen dizi oluşturur.',
+      arraypolar: 'Kutupsal dizi oluşturur.',
+      arraypath: 'Yol boyunca dizi oluşturur.',
       trim: 'Nesneleri diğer nesnelerin kenarlarıyla buluşacak şekilde budar.',
-      extend: 'Nesneleri diğer nesnelerin kenarlarıyla buluşacak şekilde uzatır.',
+      extend:
+        'Nesneleri diğer nesnelerin kenarlarıyla buluşacak şekilde uzatır.',
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       scale:
         'Seçili nesneleri, ölçeklemeden sonra oranlarını koruyarak büyütün veya küçültün.',
@@ -526,6 +536,7 @@ export default {
       mleaderRemove: 'Önder Kaldır',
       move: 'Taşı',
       mirror: 'Ayna',
+      array: 'Dizi',
       trim: 'Buda',
       extend: 'Uzat',
       rotate: 'Döndür',

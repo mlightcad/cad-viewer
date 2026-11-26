@@ -7,6 +7,7 @@ export default {
     cancel: 'Zrušit',
     rotation: 'Otočené',
     mirror: 'Zrcadlené',
+    array: 'Pole',
     scale: 'V měřítku',
     sameLayer: 'Stejná hladina',
     existingBlocks: 'Existující bloky',
@@ -364,6 +365,11 @@ export default {
       centerStartAngle: 'Střed, počátek, úhel',
       centerStartLength: 'Střed, počátek, délka'
     },
+    array: {
+      rectangular: 'Pravoúhlé pole',
+      polar: 'Polární pole',
+      path: 'Pole na trajektorii'
+    },
     circle: {
       centerRadius: 'Střed, poloměr',
       centerDiameter: 'Střed, průměr',
@@ -416,6 +422,10 @@ export default {
         'Odebere odkazovou čáru z existující vícenásobné odkazové čáry.',
       move: 'Posune vybrané objekty na novou pozici.',
       mirror: 'Vytvoří zrcadlenou kopii vybraných objektů.',
+      array: 'Vytvoří kopie objektů v určitém vzoru.',
+      arrayrect: 'Vytvoří pravoúhlé pole.',
+      arraypolar: 'Vytvoří polární pole.',
+      arraypath: 'Vytvoří pole podél trajektorie.',
       trim: 'Ořízne objekty tak, aby se setkaly s hranami jiných objektů.',
       extend: 'Prodlouží objekty tak, aby se setkaly s hranami jiných objektů.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
@@ -589,6 +599,7 @@ export default {
       mleaderRemove: 'Odebrat odkaz',
       move: 'Posunout',
       mirror: 'Zrcadlit',
+      array: 'Pole',
       trim: 'Oříznout',
       extend: 'Prodloužit',
       rotate: 'Otočit',

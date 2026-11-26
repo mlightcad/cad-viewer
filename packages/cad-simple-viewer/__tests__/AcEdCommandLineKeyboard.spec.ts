@@ -237,9 +237,9 @@ describe('AcEdCommandLine keyboard', () => {
 
     expect(sendStringToExecute).toHaveBeenCalledWith('CIRCLE')
     expect(
-      container.querySelector('.ml-cli-cmd-popup')?.classList.contains(
-        'ml-cli-hidden'
-      )
+      container
+        .querySelector('.ml-cli-cmd-popup')
+        ?.classList.contains('ml-cli-hidden')
     ).toBe(true)
   })
 
@@ -292,9 +292,7 @@ describe('AcEdCommandLine keyboard', () => {
     press(input, 'ArrowDown')
 
     // Close autocomplete without resetting the caret, then open history.
-    document.body.dispatchEvent(
-      new MouseEvent('click', { bubbles: true })
-    )
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     const downBtn = container.querySelector('.ml-cli-down') as HTMLButtonElement
     downBtn.click()
 
@@ -304,5 +302,32 @@ describe('AcEdCommandLine keyboard', () => {
     )
     expect(items[0].classList.contains('selected')).toBe(true)
     expect(input.value).toBe('CIRCLE')
+  })
+
+  it('renders keyword chips once when the message already embeds [options]', () => {
+    const options = new AcEdPromptKeywordOptions(
+      'Select first line or [Undo/Polyline/Distance/Angle/Trim/mEthod/Multiple]'
+    )
+    options.keywords.add('Undo', 'Undo', 'Undo')
+    options.keywords.add('Polyline', 'Polyline', 'Polyline')
+    options.keywords.add('Distance', 'Distance', 'Distance')
+    options.keywords.add('Angle', 'Angle', 'Angle')
+    options.keywords.add('Trim', 'Trim', 'Trim')
+    options.keywords.add('mEthod', 'Method', 'Method')
+    options.keywords.add('Multiple', 'Multiple', 'Multiple')
+
+    cli.renderKeywordPrompt(options, () => undefined)
+
+    const promptEl = container.querySelector('.ml-cli-prompt') as HTMLElement
+    const text = promptEl.textContent ?? ''
+    expect(text).toBe(
+      'Select first line or [Undo/Polyline/Distance/Angle/Trim/mEthod/Multiple]: '
+    )
+    expect(promptEl.querySelectorAll('.ml-cli-option')).toHaveLength(7)
+
+    const recent = container.querySelector('.ml-cli-recent') as HTMLElement
+    expect(recent.textContent).toBe(
+      'Select first line or [Undo/Polyline/Distance/Angle/Trim/mEthod/Multiple]:'
+    )
   })
 })

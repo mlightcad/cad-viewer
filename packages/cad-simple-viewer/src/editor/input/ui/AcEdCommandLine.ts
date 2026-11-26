@@ -974,15 +974,22 @@ export class AcEdCommandLine {
     // Hide default placeholder when showing a prompt/keyword message.
     this.textInput.placeholder = ''
 
-    if (options.message) {
-      const promptCore = options.message.trim().replace(/[：:]\s*$/, '')
-      this.promptEl.append(promptCore + ' ')
-    }
-
     const promptFormat = options.getKeywordPromptFormat()
     const keywords = options.keywords?.toArray().filter(k => k.visible) ?? []
+    const appendKeywords =
+      options.appendKeywordsToMessage !== false && keywords.length > 0
 
-    if (keywords.length) {
+    // When chips are appended from the keyword collection, strip any `[…]`
+    // already embedded in the i18n message so options appear only once.
+    if (options.message) {
+      const raw = appendKeywords ? options.getCoreMessage() : options.message
+      const promptCore = raw.trim().replace(/[：:]\s*$/, '')
+      if (promptCore) {
+        this.promptEl.append(promptCore + ' ')
+      }
+    }
+
+    if (appendKeywords) {
       this.promptEl.append('[')
 
       keywords.forEach((kw, i) => {

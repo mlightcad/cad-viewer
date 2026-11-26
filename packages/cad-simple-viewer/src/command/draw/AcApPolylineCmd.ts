@@ -1,10 +1,12 @@
 import {
   AcDbPolyline,
+  acgeBulgeFromCenter,
+  acgeBulgeFromStartEndDirection,
+  acgeBulgeFromStartEndRadius,
+  acgeBulgeFromThreePoints,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d,
-  AcGeTol,
-  TAU
+  AcGePoint3d
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app/index.js'
@@ -13,6 +15,7 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
+  AcEdPromptDistanceOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
@@ -22,6 +25,12 @@ import {
   AcEdPromptStatus
 } from '../../editor/index.js'
 import { AcApI18n } from '../../i18n/index.js'
+import {
+  acapPolylineArcFromTangentAndIncludedAngle,
+  acapPolylineFlipArcBulgeForCtrl,
+  acapPolylineIncomingTangentRadians,
+  acapPolylinePointAlongTangent
+} from './AcApPolylineArcGeom.js'
 
 /**
  * Preview jig that dynamically updates a polyline while the user is acquiring
@@ -29,7 +38,8 @@ import { AcApI18n } from '../../i18n/index.js'
  *
  * Responsibilities:
  * - Keep the already-confirmed vertices visible.
- * - Add a transient "current" vertex that follows the cursor.
+ * - Add a transient "current" vertex that follows the cursor (or a projected
+ *   endpoint when `endPointProvider` is set, e.g. PLINE Angle).
  * - Update the bulge of the last confirmed vertex to preview arc/line changes.
  *
  * Why this jig exists:
@@ -43,15 +53,11 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
   private _bulges: (number | undefined)[]
   private _currentBulge?: number
   private _bulgeProvider?: (endPoint: AcGePoint2dLike) => number | undefined
+  private _endPointProvider?: (cursor: AcGePoint2dLike) => AcGePoint2dLike
   private _baseCount: number
   private _hasTemp: boolean = false
   private _appliedBulge?: number
 
-  /**
-   * Creates a polyline jig.
-   *
-   * @param view - The associated view
-   */
   /**
    * Create a polyline preview jig for point acquisition.
    *
@@ -60,14 +66,16 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
    * @param bulges - Bulge values aligned with `points`.
    * @param currentBulge - Optional fixed bulge used for the preview segment.
    * @param bulgeProvider - Optional function to compute bulge based on the
-   *                        current cursor point.
+   *                        current (possibly projected) end point.
+   * @param endPointProvider - Optional cursor → endpoint map (Angle mode).
    */
   constructor(
     view: AcEdBaseView,
     points: AcGePoint2d[],
     bulges: (number | undefined)[],
     currentBulge?: number,
-    bulgeProvider?: (endPoint: AcGePoint2dLike) => number | undefined
+    bulgeProvider?: (endPoint: AcGePoint2dLike) => number | undefined,
+    endPointProvider?: (cursor: AcGePoint2dLike) => AcGePoint2dLike
   ) {
     super(view)
     this._polyline = new AcDbPolyline()
@@ -75,6 +83,7 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
     this._bulges = bulges
     this._currentBulge = currentBulge
     this._bulgeProvider = bulgeProvider
+    this._endPointProvider = endPointProvider
     this._baseCount = points.length
     this._appliedBulge = this._bulges[this._baseCount - 1]
     this.addBaseVertices()
@@ -92,7 +101,7 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
    *
    * This updates:
    * - The bulge of the last confirmed vertex (if needed).
-   * - A single temporary vertex representing the current cursor position.
+   * - A single temporary vertex representing the current end point.
    */
   update(point: AcGePoint2dLike) {
     if (this._baseCount === 0) return
@@ -102,8 +111,9 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
       this._hasTemp = false
     }
 
+    const endPoint = this._endPointProvider?.(point) ?? point
     const lastIndex = this._baseCount - 1
-    const dynamicBulge = this._bulgeProvider?.(point)
+    const dynamicBulge = this._bulgeProvider?.(endPoint)
     const desiredBulge =
       dynamicBulge ?? this._currentBulge ?? this._bulges[lastIndex]
 
@@ -116,7 +126,7 @@ export class AcApPolylineJig extends AcEdPreviewJig<AcGePoint2dLike> {
 
     this._polyline.addVertexAt(
       this._baseCount,
-      new AcGePoint2d(point),
+      new AcGePoint2d(endPoint),
       undefined
     )
     this._hasTemp = true
@@ -192,292 +202,6 @@ export class AcApPolylineCmd extends AcEdCommand {
     this.mode = AcEdOpenMode.Write
   }
 
-  /**
-   * Bulge for the complementary arc on the same circle (same endpoints and start
-   * tangent): included angle `2π - |θ|` instead of `θ`.
-   *
-   * @param bulge - Bulge of the current arc segment.
-   * @returns Bulge for the other arc on the same circle.
-   */
-  private complementBulge(bulge: number) {
-    if (AcGeTol.equalToZero(bulge)) return bulge
-    const sweep = 4 * Math.atan(bulge)
-    const sign = Math.sign(sweep) || 1
-    const complementSweep = sign * (Math.PI * 2 - Math.abs(sweep))
-    if (AcGeTol.equalToZero(complementSweep)) return bulge
-    return Math.tan(complementSweep / 4)
-  }
-
-  /**
-   * Bulge used when Ctrl is pressed during PLINE arc: the complementary arc on the
-   * opposite side of the chord (negated complement). This matches AutoCAD — the
-   * rest of the circle, bulging to the other side of the current segment.
-   *
-   * @param bulge - Bulge of the current arc segment.
-   * @returns Bulge for the Ctrl-toggle preview/result.
-   */
-  private flipArcBulgeForCtrl(bulge: number) {
-    return -this.complementBulge(bulge)
-  }
-
-  /**
-   * Arc center from chord endpoints and bulge (polyline arc convention).
-   */
-  private computeArcCenterFromBulge(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    bulge: number
-  ) {
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const chord = Math.hypot(dx, dy)
-    if (AcGeTol.isNonPositive(chord)) return undefined
-
-    const mx = (start.x + end.x) / 2
-    const my = (start.y + end.y) / 2
-    const ux = -dy / chord
-    const uy = dx / chord
-    const offset = (chord / 2) * bulge
-    return { x: mx + ux * offset, y: my + uy * offset }
-  }
-
-  /**
-   * Forward tangent at a point on a circular arc, from center and sweep direction.
-   */
-  private getGeometricTangentAtPoint(
-    point: AcGePoint2dLike,
-    center: AcGePoint2dLike,
-    ccw: boolean
-  ) {
-    const vx = point.x - center.x
-    const vy = point.y - center.y
-    return ccw ? Math.atan2(-vy, vx) : Math.atan2(vy, -vx)
-  }
-
-  /**
-   * Tangent direction (radians) at the end of an arc segment, along polyline flow.
-   */
-  private getArcTangentAtEnd(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    bulge: number
-  ) {
-    const center = this.computeArcCenterFromBulge(start, end, bulge)
-    if (!center) return undefined
-    return this.getGeometricTangentAtPoint(end, center, bulge >= 0)
-  }
-
-  /**
-   * Incoming tangent at the last vertex (direction of the previous segment).
-   */
-  private getIncomingTangentRadians(
-    points: AcGePoint2d[],
-    bulges: (number | undefined)[]
-  ) {
-    if (points.length < 2) return 0
-
-    const start = points[points.length - 1]
-    const prev = points[points.length - 2]
-    const prevBulge = bulges[points.length - 2]
-    if (prevBulge == null || AcGeTol.equalToZero(prevBulge)) {
-      return Math.atan2(start.y - prev.y, start.x - prev.x)
-    }
-    const exitTangent = this.getArcTangentAtEnd(prev, start, prevBulge)
-    return exitTangent ?? Math.atan2(start.y - prev.y, start.x - prev.x)
-  }
-
-  /**
-   * Bulge for an arc through `start` and `end` that is tangent to `tangentRad` at `start`.
-   */
-  private computeBulgeFromTangentDirection(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    tangentRad: number
-  ) {
-    const tx = Math.cos(tangentRad)
-    const ty = Math.sin(tangentRad)
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const nx = -ty
-    const ny = tx
-    const denominator = 2 * (dx * nx + dy * ny)
-    if (AcGeTol.equalToZero(denominator)) return undefined
-
-    const lambda = (dx * dx + dy * dy) / denominator
-    if (!Number.isFinite(lambda)) return undefined
-
-    const center = {
-      x: start.x + nx * lambda,
-      y: start.y + ny * lambda
-    }
-    return this.computeBulgeFromCenterWithTangent(
-      start,
-      end,
-      center,
-      tangentRad
-    )
-  }
-
-  /**
-   * Bulge from a known center, sweeping in the direction that matches `tangentRad`
-   * at `start` (including included angles greater than 180°).
-   *
-   * Orientation follows the same rule as {@link createArcFromStartEndDirection} in
-   * `AcApArcCmd`: compare the incoming tangent with the start radius vector.
-   */
-  private computeBulgeFromCenterWithTangent(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    center: AcGePoint2dLike,
-    tangentRad: number
-  ) {
-    const v1x = start.x - center.x
-    const v1y = start.y - center.y
-    const v2x = end.x - center.x
-    const v2y = end.y - center.y
-    const tx = Math.cos(tangentRad)
-    const ty = Math.sin(tangentRad)
-    const chordX = end.x - start.x
-    const chordY = end.y - start.y
-
-    const crossStartTangent = v1x * ty - v1y * tx
-    let ccw: boolean
-    if (AcGeTol.isPositive(Math.abs(crossStartTangent))) {
-      ccw = crossStartTangent > 0
-    } else {
-      const chordCrossTangent = chordX * ty - chordY * tx
-      ccw = chordCrossTangent >= 0
-    }
-
-    const startAngle = Math.atan2(v1y, v1x)
-    const endAngle = Math.atan2(v2y, v2x)
-
-    let sweep: number
-    if (ccw) {
-      sweep = endAngle - startAngle
-      if (AcGeTol.isNonPositive(sweep)) sweep += Math.PI * 2
-    } else {
-      sweep = startAngle - endAngle
-      if (AcGeTol.isNonPositive(sweep)) sweep += Math.PI * 2
-    }
-    if (!AcGeTol.great(TAU - sweep, 0)) return undefined
-
-    return ccw ? Math.tan(sweep / 4) : -Math.tan(sweep / 4)
-  }
-
-  /**
-   * Bulge for an arc with a fixed included angle that is tangent at `start`.
-   */
-  private computeBulgeFromTangentAndIncludedAngle(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    tangentRad: number,
-    includedAngleRad: number
-  ) {
-    const tx = Math.cos(tangentRad)
-    const ty = Math.sin(tangentRad)
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const nx = -ty
-    const ny = tx
-    const denominator = 2 * (dx * nx + dy * ny)
-    if (AcGeTol.equalToZero(denominator)) return undefined
-
-    const lambda = (dx * dx + dy * dy) / denominator
-    if (!Number.isFinite(lambda)) return undefined
-
-    const center = {
-      x: start.x + nx * lambda,
-      y: start.y + ny * lambda
-    }
-    const referenceBulge = this.computeBulgeFromCenterWithTangent(
-      start,
-      end,
-      center,
-      tangentRad
-    )
-    if (referenceBulge == null) return undefined
-
-    const requested = Math.tan(includedAngleRad / 4)
-    if (!Number.isFinite(requested)) return undefined
-    return Math.sign(referenceBulge) * Math.abs(requested)
-  }
-
-  private computeBulgeFromCenter(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    center: AcGePoint2dLike
-  ) {
-    const v1x = start.x - center.x
-    const v1y = start.y - center.y
-    const v2x = end.x - center.x
-    const v2y = end.y - center.y
-    const cross = v1x * v2y - v1y * v2x
-    const dot = v1x * v2x + v1y * v2y
-    const angle = Math.atan2(cross, dot)
-    if (!Number.isFinite(angle)) return undefined
-    return Math.tan(angle / 4)
-  }
-
-  private computeCircleCenter(
-    p1: AcGePoint2dLike,
-    p2: AcGePoint2dLike,
-    p3: AcGePoint2dLike
-  ) {
-    const x1 = p1.x
-    const y1 = p1.y
-    const x2 = p2.x
-    const y2 = p2.y
-    const x3 = p3.x
-    const y3 = p3.y
-
-    const a = x1 - x2
-    const b = y1 - y2
-    const c = x1 - x3
-    const d = y1 - y3
-    const e = (x1 * x1 - x2 * x2 + y1 * y1 - y2 * y2) / 2
-    const f = (x1 * x1 - x3 * x3 + y1 * y1 - y3 * y3) / 2
-    const det = a * d - b * c
-    if (AcGeTol.equalToZero(det)) return undefined
-
-    const cx = (d * e - b * f) / det
-    const cy = (-c * e + a * f) / det
-    return new AcGePoint2d(cx, cy)
-  }
-
-  private computeBulgeFromThreePoints(
-    start: AcGePoint2dLike,
-    mid: AcGePoint2dLike,
-    end: AcGePoint2dLike
-  ) {
-    const center = this.computeCircleCenter(start, mid, end)
-    if (!center) return undefined
-    return this.computeBulgeFromCenter(start, end, center)
-  }
-
-  private computeBulgeFromRadius(
-    start: AcGePoint2dLike,
-    end: AcGePoint2dLike,
-    radius: number
-  ) {
-    const r = Math.abs(radius)
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const chord = Math.hypot(dx, dy)
-    if (chord === 0 || chord > 2 * r) return undefined
-
-    const midx = (start.x + end.x) / 2
-    const midy = (start.y + end.y) / 2
-    const h = Math.sqrt(Math.max(0, r * r - (chord * chord) / 4))
-    const ux = -dy / chord
-    const uy = dx / chord
-    const sign = radius >= 0 ? 1 : -1
-    const cx = midx + ux * h * sign
-    const cy = midy + uy * h * sign
-    const center = new AcGePoint2d(cx, cy)
-    return this.computeBulgeFromCenter(start, end, center)
-  }
-
   async execute(context: AcApContext) {
     AcApDocManager.instance.editor.resetInputToggles()
     const points: AcGePoint2d[] = []
@@ -486,58 +210,31 @@ export class AcApPolylineCmd extends AcEdCommand {
     const applyArcDirection = (bulge?: number) => {
       if (bulge == null) return bulge
       const toggles = AcApDocManager.instance.editor.getInputToggles()
-      return toggles.ctrlArcFlip ? this.flipArcBulgeForCtrl(bulge) : bulge
+      return toggles.ctrlArcFlip
+        ? acapPolylineFlipArcBulgeForCtrl(bulge)
+        : bulge
     }
-    const computeBulgeFromCenter = (
-      start: AcGePoint2dLike,
-      end: AcGePoint2dLike,
-      center: AcGePoint2dLike
-    ) => this.computeBulgeFromCenter(start, end, center)
-    const computeBulgeFromThreePoints = (
-      start: AcGePoint2dLike,
-      mid: AcGePoint2dLike,
-      end: AcGePoint2dLike
-    ) => this.computeBulgeFromThreePoints(start, mid, end)
-    const computeBulgeFromRadius = (
-      start: AcGePoint2dLike,
-      end: AcGePoint2dLike,
-      radius: number
-    ) => this.computeBulgeFromRadius(start, end, radius)
     const getIncomingTangent = () =>
-      this.getIncomingTangentRadians(points, bulges)
+      acapPolylineIncomingTangentRadians(points, bulges)
     const computeDefaultArcBulge = (end: AcGePoint2dLike) => {
       const start = getCurrentPoint()
       if (!start) return undefined
-      return this.computeBulgeFromTangentDirection(
-        start,
-        end,
-        getIncomingTangent()
-      )
+      return acgeBulgeFromStartEndDirection(start, end, getIncomingTangent())
     }
-    const computeBulgeFromTangentAndIncludedAngle = (
-      start: AcGePoint2dLike,
-      end: AcGePoint2dLike,
-      tangentRad: number,
-      includedAngleRad: number
-    ) =>
-      this.computeBulgeFromTangentAndIncludedAngle(
-        start,
-        end,
-        tangentRad,
-        includedAngleRad
-      )
     const createStaticJig = <T>() =>
       new AcApPolylineStaticJig<T>(context.view, points, bulges)
     const createPreviewJig = (
       currentBulge?: number,
-      bulgeProvider?: (endPoint: AcGePoint2dLike) => number | undefined
+      bulgeProvider?: (endPoint: AcGePoint2dLike) => number | undefined,
+      endPointProvider?: (cursor: AcGePoint2dLike) => AcGePoint2dLike
     ) =>
       new AcApPolylineJig(
         context.view,
         points,
         bulges,
         currentBulge,
-        bulgeProvider
+        bulgeProvider,
+        endPointProvider
       )
     const getCurrentPoint = () => points[points.length - 1]
     const setSegmentBulge = (bulge?: number) => {
@@ -581,6 +278,11 @@ export class AcApPolylineCmd extends AcEdCommand {
           AcApI18n.t('jig.polyline.keywords.arc.local')
         )
         prompt.keywords.add(
+          AcApI18n.t('jig.polyline.keywords.length.display'),
+          AcApI18n.t('jig.polyline.keywords.length.global'),
+          AcApI18n.t('jig.polyline.keywords.length.local')
+        )
+        prompt.keywords.add(
           AcApI18n.t('jig.polyline.keywords.undo.display'),
           AcApI18n.t('jig.polyline.keywords.undo.global'),
           AcApI18n.t('jig.polyline.keywords.undo.local')
@@ -607,6 +309,28 @@ export class AcApPolylineCmd extends AcEdCommand {
           const keyword = result.stringResult ?? ''
           if (keyword === 'Arc') {
             this.machine.setState(new ArcState(this.machine))
+          } else if (keyword === 'Length') {
+            const startPoint = getCurrentPoint()
+            if (!startPoint) return 'finish'
+            const lengthPrompt = new AcEdPromptDistanceOptions(
+              AcApI18n.t('jig.polyline.segmentLength')
+            )
+            lengthPrompt.allowZero = false
+            lengthPrompt.allowNegative = false
+            lengthPrompt.useBasePoint = true
+            lengthPrompt.basePoint = new AcGePoint3d(startPoint)
+            lengthPrompt.jig = createStaticJig<number>()
+            const lengthResult =
+              await AcApDocManager.instance.editor.getDistance(lengthPrompt)
+            if (shouldFinish(lengthResult.status)) return 'finish'
+            const next = acapPolylinePointAlongTangent(
+              startPoint,
+              getIncomingTangent(),
+              lengthResult.value ?? 0
+            )
+            if (!next) return 'continue'
+            setSegmentBulge(undefined)
+            appendPoint(next)
           } else if (keyword === 'Undo') {
             undoLast()
           } else if (keyword === 'Close' && points.length > 1) {
@@ -643,6 +367,11 @@ export class AcApPolylineCmd extends AcEdCommand {
           AcApI18n.t('jig.polyline.keywords.center.display'),
           AcApI18n.t('jig.polyline.keywords.center.global'),
           AcApI18n.t('jig.polyline.keywords.center.local')
+        )
+        prompt.keywords.add(
+          AcApI18n.t('jig.polyline.keywords.direction.display'),
+          AcApI18n.t('jig.polyline.keywords.direction.global'),
+          AcApI18n.t('jig.polyline.keywords.direction.local')
         )
         prompt.keywords.add(
           AcApI18n.t('jig.polyline.keywords.secondPoint.display'),
@@ -728,29 +457,43 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           const angleRad = (angleResult.value ?? 0) * (Math.PI / 180)
           const tangent = getIncomingTangent()
-          endPrompt.jig = createPreviewJig(undefined, end =>
-            applyArcDirection(
-              computeBulgeFromTangentAndIncludedAngle(
+          const resolveAngleSegment = (cursor: AcGePoint2dLike) => {
+            const segment = acapPolylineArcFromTangentAndIncludedAngle(
+              startPoint,
+              cursor,
+              tangent,
+              angleRad
+            )
+            if (!segment) return undefined
+            return {
+              end: segment.end,
+              bulge: applyArcDirection(segment.bulge)
+            }
+          }
+          endPrompt.jig = createPreviewJig(
+            undefined,
+            end => {
+              // `end` is already the projected endpoint from endPointProvider.
+              const segment = acapPolylineArcFromTangentAndIncludedAngle(
                 startPoint,
+                // Reconstruct a cursor on the chord ray at this distance so
+                // bulge matches the projected segment (same as resolve).
                 end,
                 tangent,
                 angleRad
               )
-            )
+              return applyArcDirection(segment?.bulge)
+            },
+            cursor => resolveAngleSegment(cursor)?.end ?? cursor
           )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
           if (shouldFinish(endResult.status)) return 'finish'
 
-          const angleBulge = computeBulgeFromTangentAndIncludedAngle(
-            startPoint,
-            endResult.value!,
-            tangent,
-            angleRad
-          )
-          if (angleBulge === undefined) return 'continue'
-          setSegmentBulge(applyArcDirection(angleBulge))
-          appendPoint(endResult.value!)
+          const resolved = resolveAngleSegment(endResult.value!)
+          if (!resolved || resolved.bulge == null) return 'continue'
+          setSegmentBulge(resolved.bulge)
+          appendPoint(resolved.end)
           return 'continue'
         }
 
@@ -771,17 +514,61 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
             applyArcDirection(
-              computeBulgeFromCenter(startPoint, end, centerResult.value!)
+              acgeBulgeFromCenter(startPoint, end, centerResult.value!)
             )
           )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
           if (shouldFinish(endResult.status)) return 'finish'
 
-          const bulge = computeBulgeFromCenter(
+          const bulge = acgeBulgeFromCenter(
             startPoint,
             endResult.value!,
             centerResult.value!
+          )
+          if (bulge === undefined) return 'continue'
+          setSegmentBulge(applyArcDirection(bulge))
+          appendPoint(endResult.value!)
+          return 'continue'
+        }
+
+        if (keyword === 'Direction') {
+          const directionPrompt = new AcEdPromptPointOptions(
+            AcApI18n.t('jig.polyline.arcDirection')
+          )
+          directionPrompt.useDashedLine = true
+          directionPrompt.useBasePoint = true
+          directionPrompt.basePoint = new AcGePoint3d(startPoint)
+          directionPrompt.jig = createStaticJig<AcGePoint3d>()
+          const directionResult =
+            await AcApDocManager.instance.editor.getPoint(directionPrompt)
+          if (shouldFinish(directionResult.status)) return 'finish'
+
+          const directionPoint = directionResult.value!
+          const direction = Math.atan2(
+            directionPoint.y - startPoint.y,
+            directionPoint.x - startPoint.x
+          )
+
+          const endPrompt = new AcEdPromptPointOptions(
+            AcApI18n.t('jig.polyline.arcEndPoint')
+          )
+          endPrompt.useDashedLine = true
+          endPrompt.useBasePoint = true
+          endPrompt.basePoint = new AcGePoint3d(startPoint)
+          endPrompt.jig = createPreviewJig(undefined, end =>
+            applyArcDirection(
+              acgeBulgeFromStartEndDirection(startPoint, end, direction)
+            )
+          )
+          const endResult =
+            await AcApDocManager.instance.editor.getPoint(endPrompt)
+          if (shouldFinish(endResult.status)) return 'finish'
+
+          const bulge = acgeBulgeFromStartEndDirection(
+            startPoint,
+            endResult.value!,
+            direction
           )
           if (bulge === undefined) return 'continue'
           setSegmentBulge(applyArcDirection(bulge))
@@ -809,14 +596,14 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
             applyArcDirection(
-              computeBulgeFromThreePoints(startPoint, secondResult.value!, end)
+              acgeBulgeFromThreePoints(startPoint, secondResult.value!, end)
             )
           )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
           if (shouldFinish(endResult.status)) return 'finish'
 
-          const bulge = computeBulgeFromThreePoints(
+          const bulge = acgeBulgeFromThreePoints(
             startPoint,
             secondResult.value!,
             endResult.value!
@@ -844,14 +631,18 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
             applyArcDirection(
-              computeBulgeFromRadius(startPoint, end, radiusResult.value ?? 0)
+              acgeBulgeFromStartEndRadius(
+                startPoint,
+                end,
+                radiusResult.value ?? 0
+              )
             )
           )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
           if (shouldFinish(endResult.status)) return 'finish'
 
-          const bulge = computeBulgeFromRadius(
+          const bulge = acgeBulgeFromStartEndRadius(
             startPoint,
             endResult.value!,
             radiusResult.value ?? 0

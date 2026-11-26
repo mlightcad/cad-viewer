@@ -247,4 +247,25 @@ describe('Prompt default display message', () => {
     expect(opt.message).toBe('Specify distance')
     expect(opt.getDefaultValueDisplayText()).toBe('10.5')
   })
+
+  test('strips embedded keyword lists for floating / core display', () => {
+    const chamfer =
+      'Select first line or [Undo/Polyline/Distance/Angle/Trim/mEthod/Multiple]'
+    const opt = new AcEdPromptStringOptions(chamfer)
+    expect(opt.message).toBe(chamfer)
+    expect(opt.getCoreMessage()).toBe('Select first line or')
+    expect(opt.getDisplayMessage()).toBe('Select first line or')
+
+    const single = new AcEdPromptStringOptions(
+      'Select second object or shift-select to apply corner or [Radius]'
+    )
+    expect(single.getCoreMessage()).toBe(
+      'Select second object or shift-select to apply corner or'
+    )
+
+    const zh = new AcEdPromptStringOptions(
+      '选择第一条直线或 [放弃(U)/多段线(P)/距离(D)] [放弃(U)/多段线(P)/距离(D)]'
+    )
+    expect(zh.getCoreMessage()).toBe('选择第一条直线或')
+  })
 })
