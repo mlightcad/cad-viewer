@@ -1,5 +1,6 @@
 import {
   AcCmColor,
+  ACGI_DARK_THEME_FOREGROUND,
   ACGI_LIGHT_THEME_FOREGROUND,
   ACGI_PAPER_SPACE_BACKGROUND
 } from '@mlightcad/data-model'
@@ -544,5 +545,73 @@ describe('AcTrMTextColorUtil', () => {
     })
 
     expect(traits.color.isForeground).toBe(true)
+  })
+
+  describe('inline \\C0 (ByBlock)', () => {
+    const byBlockSettings = (byBlockColor: number) => ({
+      layer: 'TITLE',
+      color: (() => {
+        const c = new MTextColor()
+        c.aci = 0
+        return c
+      })(),
+      byLayerColor: 0x00ff00,
+      byBlockColor
+    })
+
+    it('outside a block uses the foreground of the background, not literal white', () => {
+      const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+      traits.color.setByLayer()
+      expect(
+        AcTrMTextColorUtil.buildColorSettingsFromTraits(traits, 0xffffff)
+          .byBlockColor
+      ).toBe(ACGI_LIGHT_THEME_FOREGROUND)
+      expect(
+        AcTrMTextColorUtil.buildColorSettingsFromTraits(traits, 0x000000)
+          .byBlockColor
+      ).toBe(ACGI_DARK_THEME_FOREGROUND)
+    })
+
+    it('outside a block gives glyphs a foreground-tracking material', () => {
+      const styleManager = new AcTrStyleManager()
+      styleManager.currentBackgroundColor = 0xffffff
+
+      const traits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+        byBlockSettings(ACGI_LIGHT_THEME_FOREGROUND),
+        0xffffff
+      )
+      expect(traits.color.isForeground).toBe(true)
+
+      const material = styleManager.getMTextFillMaterial(traits)
+      expect(getMaterialMetadata(material).isForeground).toBe(true)
+      expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+        ACGI_LIGHT_THEME_FOREGROUND
+      )
+
+      styleManager.currentBackgroundColor = 0x000000
+      expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+        ACGI_DARK_THEME_FOREGROUND
+      )
+    })
+
+    it('inside a block keeps the colour of the block reference', () => {
+      const styleManager = new AcTrStyleManager()
+      styleManager.currentBackgroundColor = 0xffffff
+
+      const traits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+        byBlockSettings(0xff0000),
+        0xffffff
+      )
+      expect(traits.color.isForeground).toBe(false)
+
+      const material = styleManager.getMTextFillMaterial(traits)
+      expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+        0xff0000
+      )
+      styleManager.currentBackgroundColor = 0x000000
+      expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+        0xff0000
+      )
+    })
   })
 })

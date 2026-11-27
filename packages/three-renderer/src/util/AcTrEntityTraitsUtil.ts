@@ -1,6 +1,8 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  ACGI_PAPER_SPACE_BACKGROUND,
+  acgiForegroundColorForBackground,
   AcGiLineWeight,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
@@ -35,9 +37,24 @@ export class AcTrSubEntityTraitsUtil {
 
   static createTraitsForMText(
     colorSettings: ColorSettings,
-    _backgroundColor?: number
+    backgroundColor?: number
   ): AcGiSubEntityTraits {
     const color = AcTrMTextColorUtil.toAcCmColor(colorSettings.color)
+    // Inline `\C0` (ByBlock) glyphs take the colour the entity gives its ByBlock
+    // parts (`byBlockColor`). Outside a block that is ACI 7: track the
+    // foreground so the glyphs follow background switches instead of being
+    // born white and never repainted.
+    if (color.isByBlock) {
+      const byBlockRgb = colorSettings.byBlockColor
+      const foreground = acgiForegroundColorForBackground(
+        backgroundColor ?? ACGI_PAPER_SPACE_BACKGROUND
+      )
+      if (typeof byBlockRgb !== 'number' || byBlockRgb === foreground) {
+        color.setForeground()
+      } else {
+        color.setRGBValue(byBlockRgb)
+      }
+    }
     return {
       color,
       lineType: {
