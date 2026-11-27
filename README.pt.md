@@ -7,10 +7,20 @@
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
-O MLightCAD é `o primeiro visualizador e editor web de DXF/DWG do mundo que funciona inteiramente no navegador, sem depender de nenhum serviço de backend`.
+O MLightCAD é `a primeira plataforma web de visualização, comparação e edição de DXF/DWG do mundo que funciona inteiramente no navegador, sem depender de nenhum serviço de backend`.
 Ao realizar a análise de DWG/DXF, o processamento geométrico e a renderização diretamente no navegador, o MLightCAD possibilita visualização e edição CAD verdadeiramente serverless, ideal para aplicativos em nuvem, uso offline e fluxos de trabalho sensíveis à privacidade.
 
-Ele também oferece algo que você raramente encontra em outros visualizadores CAD — **exportação com um clique para um único arquivo HTML autossuficiente**. O `.html` baixado incorpora o snapshot do desenho e um runtime leve de visualização, para que os destinatários possam abrir, aplicar pan, zoom, alternar camadas e medir distâncias em qualquer navegador moderno **sem app CAD, sem servidor e sem instalação**. A maioria dos visualizadores CAD desktop e web só permite visualizar dentro do próprio produto; o MLightCAD transforma um desenho ativo em um artefato portátil e offline que você pode enviar por e-mail, arquivar ou hospedar em um servidor de arquivos estáticos — ideal para compartilhar com clientes, arquivos de conformidade e fluxos de trabalho air-gapped. O visualizador offline também usa muito menos memória do que ferramentas desktop tradicionais ao abrir o mesmo desenho (veja a [comparação de memória](#uso-de-memória-do-html-autossuficiente) abaixo).
+O MLightCAD não é apenas um visualizador CAD, mas uma **infraestrutura CAD nativa do navegador**. Sobre um mesmo motor, oferece três formas de produto prontas para uso:
+
+| Subprojeto | Função | Pacote |
+| --- | --- | --- |
+| **CAD Viewer** | Visualização e revisão: abra DWG/DXF, aplique pan/zoom, meça e faça anotações; também pode ser usado como SDK dentro do seu próprio produto | [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) |
+| **CAD Diff Viewer** | Comparação de revisões: lado a lado ou sobrepostas—cinza sem alteração, vermelho excluído, verde adicionado—com nuvens de revisão geradas a partir dos conjuntos de mudanças | [`@mlightcad/cad-diff-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-diff-viewer) |
+| **CAD Editor** | Edição e desenho: menus, ribbon, linha de comando e barra de status no estilo AutoCAD; abra um desenho e modifique a geometria diretamente | [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) |
+
+Os três compartilham o mesmo modelo de entidades, motor de renderização e barramento de plugins. UI, exportação e recursos de IA são carregados sob demanda em vez de reimplementados — visualizar, comparar e editar são formas diferentes de um mesmo núcleo CAD, não ferramentas desconexas.
+
+Além disso, o MLightCAD oferece algo raramente encontrado em outros softwares CAD — **exportação com um clique para um único arquivo HTML autossuficiente**. O `.html` baixado incorpora o snapshot do desenho e um runtime leve de visualização, para que os destinatários possam abrir, aplicar pan, zoom, alternar camadas e medir distâncias em qualquer navegador moderno **sem app CAD, sem servidor e sem instalação**. A maioria dos visualizadores CAD desktop e web só permite visualizar dentro do próprio produto; o MLightCAD transforma um desenho ativo em um artefato portátil e offline que você pode enviar por e-mail, arquivar ou hospedar em um servidor de arquivos estáticos — ideal para compartilhar com clientes, arquivos de conformidade e fluxos de trabalho air-gapped. O visualizador offline também usa muito menos memória do que ferramentas desktop tradicionais ao abrir o mesmo desenho (veja a [comparação de memória](#uso-de-memória-do-html-autossuficiente) abaixo).
 
 O MLightCAD também oferece suporte a **pré-renderização no servidor**. O desenho é analisado e processado uma única vez no servidor, e o cliente apenas exibe o resultado pré-renderizado, sem reanalisar o DWG/DXF nem reconstruir a geometria. Isso reduz drasticamente o uso de memória no cliente e torna as aberturas seguintes do mesmo desenho muito mais rápidas — uma abordagem especialmente adequada para visualizar desenhos em dispositivos móveis.
 
@@ -40,11 +50,9 @@ Aplicativos e integrações da comunidade:
 - [flyfish-dev/cad-viewer](https://github.com/flyfish-dev/cad-viewer) — Visualizador CAD orientado à produção para DWG, DXF, DWF, DWFx e XPS ([demo ao vivo](https://cad-viewer-iys.pages.dev))
 - [Nextcloud CAD Viewer](https://github.com/ashcoft/nextcloud-cad-viewer) — App nativo do Nextcloud para visualizar DWG/DXF no navegador ([App Store](https://apps.nextcloud.com/apps/cad_viewer))
 
-Pacotes desktop Linux da comunidade:
+Aplicativo desktop oficial:
 
-- [CAD Viewer AppImage](https://github.com/pass-wind/cad-viewer-appimage) — AppImage baseado em Electron para Linux (~114 MB), testado no Fedora
-- [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Pacote fonte Arch Linux usando Electron do sistema (~5,4 MB)
-- [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Pacote binário Arch Linux com fontes/templates incluídos para abertura totalmente offline de desenhos
+- [MLightCAD Studio](https://github.com/mlightcad/mlightcad-studio) — a edição desktop oficial do MLightCAD, que empacota [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) em um shell [Tauri 2](https://v2.tauri.app/) e funciona totalmente offline; inclui instaladores para Windows (NSIS / MSI), Linux (AppImage / deb) e macOS (DMG universal, Apple Silicon + Intel) — [baixe aqui](https://github.com/mlightcad/mlightcad-studio/releases/).
 
 ### Apps de demonstração (Demo Apps)
 
@@ -69,6 +77,38 @@ Apps de exemplo oficiais que mostram como integrar o MLightCAD no seu próprio p
 - Fluxos de trabalho de edição offline e online
 - Motores de renderização 3D THREE.js com técnicas avançadas de otimização
 - Projetado para extensibilidade e integração com plataformas como CMS, Notion e WeChat
+
+- **Arquitetura em camadas clara** — modelo → renderização → visão → UI / plugins, com pacotes de nível inferior nunca dependendo dos de nível superior, além de exportadores headless e uma CLI implantáveis separadamente; veja a [visão geral da arquitetura](https://mlightcad.com/cad-viewer/docs/development/architecture-overview.html)
+
+## Recursos de IA
+
+O MLightCAD inclui um conjunto integrado de recursos CAD voltados para IA. Os scripts e as chamadas de ferramenta são executados localmente, portanto os dados do desenho nunca saem da sua máquina.
+
+### Scripts de CAD
+- Um runtime de scripts JavaScript em modo sandbox que consulta entidades, desenha, modifica, mede e exporta por meio de uma API host unificada `cad.*`
+- Um único script pode filtrar, medir, modificar e autoverificar em uma única chamada, evitando muitas idas e voltas de ferramenta e consumo de tokens
+- Validação AST antes da execução: `import`, `eval`, acesso à rede e à página são bloqueados, com orçamentos de passos/tempo e um limite de número de snapshots
+- Um console de scripts permite escrever e executar scripts diretamente sem intervenção de qualquer modelo; os scripts podem exportar para DXF / PDF / HTML e outros formatos
+
+### Agente de IA
+- Um painel de conversa em linguagem natural: descreva o que você precisa e o modelo escreve e executa scripts `cad.*` para desenhar, consultar e editar
+- Baseado no Vercel AI SDK; os modelos e as chaves de API são configurados em um painel unificado de configurações do modelo de IA
+- Dois modos de raciocínio, Simple e High; no modo High, o agente tira um screenshot após tarefas complexas e faz uma verificação visual
+
+### MCP
+- Expõe o mesmo catálogo de ferramentas de script como um servidor MCP stdio por meio de `@mlightcad/cad-mcp-server` para clientes de IA externos (ex.: Claude Desktop, Cursor)
+- Assistentes externos podem abrir desenhos, consultar entidades, executar scripts e salvar resultados, com as mesmas capacidades do agente integrado
+
+### Blocos inteligentes
+- Encontra automaticamente todas as cópias idênticas dos objetos selecionados e as converte em referências de bloco
+- Encontra objetos repetidos em todo o desenho e os converte em lote para blocos
+- Cópias que diferem apenas no texto (ex.: números de sala) podem ser convertidas automaticamente em atributos de bloco, com um limite de benefício mínimo configurável
+
+### Recuperação de desenhos a partir de PDF
+- Importa geometria vetorial de páginas PDF e reconstrói entidades CAD reais — círculos/arcos/elipses/splines, polilinhas com bulge, espessuras de linha e tipos de linha tracejados, estilos de texto, preenchimentos sólidos e de hachura e imagens; os Form XObject desenhados repetidamente são restaurados automaticamente como referências de bloco
+- Calibra a escala do desenho importado usando uma distância conhecida
+- Reconhece texto que foi explodido em linhas de volta para entidades de texto CAD: primeiro um dicionário de glifos integrado faz o reconhecimento local, e o restante é reconhecido em lote por OCR / um modelo de visão
+- Recupera dimensões lineares, de raio, de diâmetro e angulares a partir de setas, linhas de cota e texto, com um painel de revisão para confirmar valores e selecionar ou criar um estilo de dimensão
 
 ## Incorporar DWG/DXF com uma linha de código
 
@@ -107,6 +147,9 @@ pnpm dev
 
 # Ou iniciar o visualizador simples
 pnpm dev:simple
+
+# Ou iniciar o visualizador de comparação de desenhos (cad-diff-viewer)
+pnpm dev:diff
 ```
 
 ### Compilação
@@ -183,214 +226,11 @@ Se você precisa de melhor compatibilidade, menor uso de memória, suporte a arq
 
 ## Roteiro
 
-O objetivo deste projeto é criar um **sistema 2D semelhante ao AutoCAD no navegador** (visualizador + editor), com arquitetura modular e integração agnóstica a framework.
+O objetivo do MLightCAD é um sistema CAD 2D completo, modular e independente de framework que roda no navegador — visualização, comparação e edição sobre o mesmo núcleo.
 
-Legenda:
-- [x] Concluído
+O roteiro é mantido na Wiki. Ele cobre o trabalho de plataforma ainda em andamento (renderização LOD, vistas nomeadas, entidades personalizadas etc.) e as frentes de IA em que estamos avançando (compreensão de desenhos, revisão automatizada, reconhecimento de desenhos digitalizados, edição em linguagem natural verificada etc.):
 
-### Camada central de arquivos e dados
-
-#### Suporte a arquivos
-
-* [x] Carregamento DXF
-* [x] Carregamento DWG
-* [x] Exportação para HTML offline autossuficiente (visualizador incorporado)
-* [x] Streaming de arquivos grandes / carregamento incremental
-* [x] Compatibilidade de versão de arquivo (R12–Latest)
-
-#### Modelo de dados
-
-* [x] Modelo de dados unificado de entidades
-* [x] Suporte a tabela de camadas
-* [x] Estrutura de bloco / insert
-* [ ] Gerenciamento de handle e object ID: atualmente objectId é igual ao handle e representado como uma string em vez de bigint (int64).
-* [x] Suporte a XData / dicionário de extensão
-* [x] Tratamento de entidades proxy
-
-### Renderização e desempenho
-
-#### Motor de renderização
-
-* [x] Renderização baseada em WebGL (Three.js)
-* [x] Pipeline otimizado apenas 2D
-* [x] Organização de cena baseada em camadas
-* [x] Renderização de layout / paper space
-* [x] Suporte a entidade viewport
-
-#### Otimização de desempenho
-
-* [x] Mesclagem e agrupamento de geometria
-* [x] Indexação espacial (básica)
-* [x] Índice espacial avançado (R-tree / BVH)
-* [ ] Renderização level-of-detail (LOD)
-* [ ] Multi-canvas / renderização em tiles para desenhos muito grandes
-
-### Visualização e navegação
-
-#### Controles de visualização
-
-* [x] Panorâmica
-* [x] Zoom (roda / zoom por janela)
-* [x] Ajustar à visualização / extensão
-* [ ] Visualizações nomeadas
-* [ ] Histórico de visualização (desfazer / refazer mudanças de visualização)
-
-#### Controles de exibição
-
-* [x] Visibilidade de camada ligada/desligada
-* [x] Congelar / bloquear camada
-* [x] Exibição de espessura de linha
-* [x] Escala de tipo de linha
-* [x] Alternância de fundo / tema
-
-### Seleção e interação
-
-#### Seleção
-
-* [x] Seleção de entidade única
-* [x] Destacar entidades selecionadas
-* [x] Seleção por janela
-* [x] Seleção por cruzamento
-* [x] Filtros de seleção (por tipo / camada)
-* [x] Ciclo de seleção
-
-#### Captura (OSNAP)
-
-* [x] Ponto final
-* [x] Ponto médio
-* [x] Centro
-* [x] Interseção
-* [ ] Perpendicular / tangente
-* [x] Mais próximo
-* [ ] Rastreamento de captura
-
-
-### Edição e modificação
-
-#### Edição básica
-
-* [x] Framework de edição de entidades
-* [x] Mover
-* [x] Copiar/Colar
-* [x] Rotacionar
-* [x] Escalar
-* [x] Excluir
-* [x] Desfazer / refazer
-
-#### Edição geométrica
-
-* [x] Esticar
-* [x] Recortar
-* [x] Estender
-* [x] Deslocamento
-* [x] Explodir
-* [x] Unir / filete / chanfro (2D)
-
-### Ferramentas de desenho e criação
-
-#### Entidades básicas
-
-* [x] Linha
-* [x] Polilinha
-* [x] Spline
-* [x] Círculo
-* [x] Arco
-* [x] Elipse
-* [x] Retângulo / polígono
-
-#### Entidades avançadas
-
-* [x] Hachura
-* [x] Texto (linha única / multilinha)
-* [x] Cotas (linear, alinhada, angular)
-* [x] Criação e inserção de blocos
-
-### Medição
-
-* [x] Distância
-* [x] Comprimento de arco
-* [x] Área
-* [x] Ângulo
-* [x] Coordenada
-* [x] Estatísticas de entidades (comprimento, área, contagem)
-
-### Cota
-
-* [x] Cota linear
-* [x] Cota angular
-* [x] Coordenada
-
-### Propriedades e painéis de UI
-
-#### Paleta de propriedades
-
-* [x] Propriedades da entidade selecionada
-* [ ] Edição de camada, cor, tipo de linha
-* [x] Atualização ao vivo na mudança
-
-#### Painéis e UI
-
-* [x] Gerenciador de camadas
-* [x] Gerenciador de blocos
-* [x] Histórico de comandos / console
-* [x] Barra de status (captura, ortogonal, grade)
-
-#### Sistema de comandos
-
-* [x] Registro de comandos
-* [x] Aliases de comandos
-* [x] Prompts de comando (estilo AutoCAD)
-
-### Integração e extensibilidade
-
-#### Integração com frameworks
-
-* [x] Núcleo agnóstico a framework
-* [ ] Exemplo de integração React
-* [x] Exemplo de integração Vue
-* [x] [Exemplo de integração Next.js](https://github.com/mlightcad/cad-viewer-nextjs-demo)
-* [ ] Integração OpenLayers / Map
-* [ ] Incorporação CMS / Notion
-
-#### Sistema de plugins
-
-* [x] API de plugins
-* [ ] Suporte a entidades personalizadas
-* [x] Comando personalizado
-
-### Edição offline e online
-
-#### Editor offline
-
-* [x] Edição local no navegador
-* [x] Salvar em DXF
-* [x] Salvar conjunto de alterações / diff
-* [ ] Persistência IndexedDB
-
-#### Editor online
-
-* [ ] Design de API de backend
-* [ ] Autenticação de usuário
-* [ ] Versionamento de arquivos
-* [ ] Controle de acesso multiusuário
-* [ ] Colaboração em tempo real (futuro)
-
-### Plataformas-alvo
-
-* [x] Integração com Google Drive (fonte de dados Picker; Drive “Open with” como acompanhamento opcional)
-* [x] Integração com OneDrive (fonte de dados do Microsoft OneDrive / SharePoint)
-* [ ] Visualizador WeChat Mini Program
-* [x] Suporte a navegador mobile (layout responsivo e gestos de toque)
-
-### Documentação e comunidade
-
-* [x] Documentação de arquitetura
-* [x] Referência de API
-* [ ] Guia de contribuição
-* [x] Projetos de exemplo
-* [x] Manutenção de roteiro e changelog
-
-Este roteiro é intencionalmente granular para que os colaboradores possam ver claramente **o que existe**, **o que falta** e **onde a ajuda é necessária**.
+→ **[Roteiro (Wiki)](https://github.com/mlightcad/cad-viewer/wiki/Roadmap)**
 
 ## Contribuindo
 

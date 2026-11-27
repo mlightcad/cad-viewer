@@ -7,10 +7,20 @@
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
-MLightCAD is `the first web-based DXF/DWG viewer and editor in the world that operates entirely in browser, without relying on any backend services`.
+MLightCAD is `the first web-based DXF/DWG viewing, comparison, and editing platform in the world that operates entirely in browser, without relying on any backend services`.
 By performing DWG/DXF parsing, geometry processing, and rendering directly in the browser, MLightCAD enables true serverless CAD viewing and editing, ideal for cloud apps, offline usage, and privacy-sensitive workflows.
 
-It also offers something you will rarely find in other CAD viewers—**one-click export to a single, self-contained HTML file**. The downloaded `.html` embeds the drawing snapshot and a lightweight viewer runtime, so recipients can open, pan, zoom, toggle layers, and measure distances in any modern browser with **no CAD app, no server, and no install**. Most desktop and web CAD viewers only let you view inside their own product; MLightCAD turns a live drawing into a portable, offline artifact you can email, archive, or drop on a static file host—ideal for sharing with clients, compliance archives, and air-gapped workflows. The offline viewer also uses far less memory than traditional desktop tools when opening the same drawing (see [memory comparison](#self-contained-html-memory-usage) below).
+MLightCAD is more than a CAD viewer—it is a **browser-native CAD infrastructure** that ships three ready-to-use products on one engine:
+
+| Sub-project | What it does | Package |
+| --- | --- | --- |
+| **CAD Viewer** | View and review: open DWG/DXF, pan/zoom, measure, annotate; also usable as an SDK inside your own product | [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) |
+| **CAD Diff Viewer** | Compare drawing revisions side by side or as an overlay—gray unchanged, red deleted, green added—and generate revision clouds from change sets | [`@mlightcad/cad-diff-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-diff-viewer) |
+| **CAD Editor** | Edit and draw: AutoCAD-style menus, ribbon, command line, and status bar; open a drawing and modify geometry directly | [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) |
+
+All three share the same entity model, rendering engine, and plugin bus. UI, export, and AI capabilities load on demand instead of being reimplemented—viewing, comparing, and editing are different product forms of one CAD kernel, not unrelated tools.
+
+On top of that, MLightCAD offers something you will rarely find in other CAD software—**one-click export to a single, self-contained HTML file**. The downloaded `.html` embeds the drawing snapshot and a lightweight viewer runtime, so recipients can open, pan, zoom, toggle layers, and measure distances in any modern browser with **no CAD app, no server, and no install**. Most desktop and web CAD tools only let you view inside their own product; MLightCAD turns a live drawing into a portable, offline artifact you can email, archive, or drop on a static file host—ideal for sharing with clients, compliance archives, and air-gapped workflows. The offline viewer also uses far less memory than traditional desktop tools when opening the same drawing (see [memory comparison](#self-contained-html-memory-usage) below).
 
 MLightCAD also supports **server-side prerendering**. The drawing is parsed and processed once on the server, and the client simply displays the prerendered result instead of re-parsing the DWG/DXF and rebuilding geometry itself. This keeps client-side memory usage very low and makes the second and subsequent opens of the same drawing much faster—an approach particularly well suited to viewing drawings on mobile devices.
 
@@ -40,11 +50,9 @@ Community apps & integrations:
 - [flyfish-dev/cad-viewer](https://github.com/flyfish-dev/cad-viewer) — Production-oriented browser CAD viewer for DWG, DXF, DWF, DWFx and XPS ([live demo](https://cad-viewer-iys.pages.dev))
 - [Nextcloud CAD Viewer](https://github.com/ashcoft/nextcloud-cad-viewer) — Native Nextcloud app for viewing DWG/DXF in the browser ([App Store](https://apps.nextcloud.com/apps/cad_viewer))
 
-Community Linux desktop packages:
+Official desktop app:
 
-- [CAD Viewer AppImage](https://github.com/pass-wind/cad-viewer-appimage) — Electron-based AppImage for Linux (~114 MB), tested on Fedora
-- [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Arch Linux source package using system Electron (~5.4 MB)
-- [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Arch Linux binary package with bundled fonts/templates for fully offline drawing open
+- [MLightCAD Studio](https://github.com/mlightcad/mlightcad-studio) — the official desktop edition of MLightCAD, wrapping [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) in a [Tauri 2](https://v2.tauri.app/) shell and running fully offline; installers are available for Windows (NSIS / MSI), Linux (AppImage / deb), and macOS (Universal DMG, Apple Silicon + Intel)—[download here](https://github.com/mlightcad/mlightcad-studio/releases/).
 
 ### Demo Apps
 
@@ -69,6 +77,38 @@ Official sample apps that show how to integrate MLightCAD into your own product:
 - Offline and online editing workflows
 - THREE.js 3D rendering engines with advanced optimization techniques
 - Designed for extensibility and integration with platforms like CMS, Notion, and WeChat
+
+- **Clear layered architecture** — model → rendering → view → UI / plugins, where lower-level packages never depend on higher-level ones, plus separately deployable headless exporters and a CLI; see the [Architecture Overview](https://mlightcad.com/cad-viewer/docs/development/architecture-overview.html)
+
+## AI Capabilities
+
+MLightCAD ships with a built-in set of AI-oriented CAD capabilities. Scripts and tool calls all run locally, so your drawing data never leaves your machine.
+
+### CAD Scripts
+- A sandboxed JavaScript script runtime that queries entities, draws, modifies, measures, and exports through a unified `cad.*` host API
+- A single script can filter, measure, modify, and self-check in one call, avoiding heavy tool round-trips and token consumption
+- AST validation before execution: `import`, `eval`, network and page access are blocked, with step/time budgets and a snapshot count cap
+- A script console lets you hand-write and run scripts directly without any model involved; scripts can export to DXF / PDF / HTML and other formats
+
+### AI Agent
+- A natural-language conversation panel: describe what you need, and the model writes and runs `cad.*` scripts to draw, query, and edit
+- Built on the Vercel AI SDK; models and API keys are configured in a unified AI model settings panel
+- Two reasoning modes, Simple and High; in High mode the agent takes a screenshot after complex tasks and performs a visual check
+
+### MCP
+- Exposes the same script tool catalog as a stdio MCP server through `@mlightcad/cad-mcp-server` to external AI clients (e.g. Claude Desktop, Cursor)
+- External assistants can open drawings, query entities, run scripts, and save results — with the same capabilities as the built-in agent
+
+### Smart Blocks
+- Automatically finds all identical copies of the selected objects and converts them into block references
+- Finds repeated objects across the entire drawing and batch-converts them into blocks
+- Copies that differ only in text (e.g. room numbers) can be turned into block attributes automatically, with a configurable minimum-benefit threshold
+
+### PDF Drawing Recovery
+- Imports vector geometry from PDF pages and rebuilds real CAD entities — circles/arcs/ellipses/splines, polylines with bulge, line weights and dashed linetypes, text styles, solid and hatch fills, and images; repeatedly drawn Form XObjects are restored as block references automatically
+- Calibrates the scale of the imported drawing using a known distance
+- Recognizes text that has been exploded into lines back into CAD text entities: an on-board glyph dictionary handles local recognition first, and the rest is batch-recognized by OCR / a vision model
+- Recovers linear, radius, diameter, and angular dimensions from arrows, dimension lines, and text, with a review panel to confirm values and select or create a dimension style
 
 ## Embed DWG/DXF with One Line of Code
 
@@ -107,6 +147,9 @@ pnpm dev
 
 # Or start the simple viewer
 pnpm dev:simple
+
+# Or start the drawing comparison viewer (cad-diff-viewer)
+pnpm dev:diff
 ```
 
 ### Build
@@ -183,214 +226,11 @@ If you need better compatibility, lower memory usage, large-file support, or a c
 
 ## Roadmap
 
-The goal of this project is to create a full-featured **2D AutoCAD-like system in the browser** (viewer + editor), with modular architecture and framework-agnostic integration.
+MLightCAD's goal is a full-featured, modular, framework-agnostic 2D CAD system in the browser—viewing, comparing, and editing on the same kernel.
 
-Legend:
-- [x] Completed
+The roadmap lives in the Wiki. It covers the platform work still in progress (LOD rendering, named views, custom entities, and more) as well as the AI directions we are pushing on (drawing understanding, automated review, scanned-drawing recognition, verified natural-language editing, and more):
 
-### Core File & Data Layer
-
-#### File Support
-
-* [x] DXF loading
-* [x] DWG loading
-* [x] Export to self-contained offline HTML (embedded viewer)
-* [x] Large file streaming / incremental loading
-* [x] File version compatibility (R12–Latest)
-
-#### Data Model
-
-* [x] Unified entity data model
-* [x] Layer table support
-* [x] Block / insert structure
-* [ ] Handle & object ID management: currently objectId is same as handle and represented as one string instead of bigint (int64).
-* [x] XData / extension dictionary support
-* [x] Proxy entity handling
-
-### Rendering & Performance
-
-#### Rendering Engine
-
-* [x] WebGL-based rendering (Three.js)
-* [x] 2D-only optimized pipeline
-* [x] Layer-based scene organization
-* [x] Layout / paper space rendering
-* [x] Viewport entity support
-
-#### Performance Optimization
-
-* [x] Geometry merging & batching
-* [x] Spatial indexing (basic)
-* [x] Advanced spatial index (R-tree / BVH)
-* [ ] Level-of-detail (LOD) rendering
-* [ ] Multi-canvas / tiled rendering for very large drawings
-
-### Viewing & Navigation
-
-#### View Controls
-
-* [x] Pan
-* [x] Zoom (wheel / box zoom)
-* [x] Fit to view / extents
-* [ ] Named views
-* [ ] View history (undo / redo view changes)
-
-#### Display Controls
-
-* [x] Layer visibility on/off
-* [x] Layer freeze / lock
-* [x] Lineweight display
-* [x] Linetype scaling
-* [x] Background / theme switching
-
-### Selection & Interaction
-
-#### Selection
-
-* [x] Single entity selection
-* [x] Highlight selected entities
-* [x] Window selection
-* [x] Crossing selection
-* [x] Selection filters (by type / layer)
-* [x] Selection cycling
-
-#### Snapping (OSNAP)
-
-* [x] Endpoint
-* [x] Midpoint
-* [x] Center
-* [x] Intersection
-* [ ] Perpendicular / tangent
-* [x] Nearest
-* [ ] Snap tracking
-
-
-### Editing & Modification
-
-#### Basic Editing
-
-* [x] Entity editing framework
-* [x] Move
-* [x] Copy/Paste
-* [x] Rotate
-* [x] Scale
-* [x] Delete
-* [x] Undo / redo
-
-#### Geometry Editing
-
-* [x] Stretch
-* [x] Trim
-* [x] Extend
-* [x] Offset
-* [x] Explode
-* [x] Join / fillet / chamfer (2D)
-
-### Drawing & Creation Tools
-
-#### Basic Entities
-
-* [x] Line
-* [x] Polyline
-* [x] Spline
-* [x] Circle
-* [x] Arc
-* [x] Ellipse
-* [x] Rectangle / polygon
-
-#### Advanced Entities
-
-* [x] Hatch
-* [x] Text (single-line / multi-line)
-* [x] Dimensions (linear, aligned, angular)
-* [x] Blocks creation & insertion
-
-### Measurement
-
-* [x] Distance
-* [x] Arc length
-* [x] Area
-* [x] Angle
-* [x] Coordinate
-* [x] Entity statistics (length, area, count)
-
-### Dimension
-
-* [x] Linear dimension
-* [x] Angle dimension
-* [x] Coordinate
-
-### Properties & UI Panels
-
-#### Property Palette
-
-* [x] Selected entity properties
-* [ ] Layer, color, linetype editing
-* [x] Live update on change
-
-#### Panels & UI
-
-* [x] Layer manager
-* [x] Block manager
-* [x] Command history / console
-* [x] Status bar (snap, ortho, grid)
-
-#### Command System
-
-* [x] Command registry
-* [x] Command aliases
-* [x] Command prompts (AutoCAD-style)
-
-### Integration & Extensibility
-
-#### Framework Integration
-
-* [x] Framework-agnostic core
-* [ ] React integration example
-* [x] Vue integration example
-* [x] [Next.js integration example](https://github.com/mlightcad/cad-viewer-nextjs-demo)
-* [ ] OpenLayers / Map integration
-* [ ] CMS / Notion embedding
-
-#### Plugin System
-
-* [x] Plugin API
-* [ ] Custom entity support
-* [x] Custom command
-
-### Offline & Online Editing
-
-#### Offline Editor
-
-* [x] Local editing in browser
-* [x] Save to DXF
-* [x] Save change set / diff
-* [ ] IndexedDB persistence
-
-#### Online Editor
-
-* [ ] Backend API design
-* [ ] User authentication
-* [ ] File versioning
-* [ ] Multi-user access control
-* [ ] Real-time collaboration (future)
-
-### Platform Targets
-
-* [x] Google Drive Integration (Picker data source; Drive “Open with” optional follow-up)
-* [x] OneDrive Integration (Microsoft OneDrive / SharePoint data source)
-* [ ] WeChat Mini Program viewer
-* [x] Mobile browser support (responsive layout & touch)
-
-### Documentation & Community
-
-* [x] Architecture documentation
-* [x] API reference
-* [ ] Contribution guide
-* [x] Example projects
-* [x] Roadmap & changelog maintenance
-
-This roadmap is intentionally granular so contributors can clearly see **what exists**, **what is missing**, and **where help is needed**.
+→ **[Roadmap (Wiki)](https://github.com/mlightcad/cad-viewer/wiki/Roadmap)**
 
 ## Contributing
 

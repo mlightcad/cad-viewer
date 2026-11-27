@@ -7,10 +7,20 @@
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
-MLightCAD je `první webový prohlížeč a editor DXF/DWG na světě, který běží zcela v prohlížeči a nevyžaduje žádné backendové služby`.
+MLightCAD je `první webová platforma pro prohlížení, porovnávání a úpravy DXF/DWG na světě, která běží zcela v prohlížeči a nevyžaduje žádné backendové služby`.
 Tím, že parsování DWG/DXF, zpracování geometrie a vykreslování probíhá přímo v prohlížeči, MLightCAD umožňuje skutečné bezserverové prohlížení a úpravy CAD — ideální pro cloudové aplikace, offline použití a pracovní postupy citlivé na soukromí.
 
-Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — **export jedním kliknutím do jediného samostatného souboru HTML**. Stažený soubor `.html` obsahuje snímek výkresu a lehké běhové prostředí prohlížeče, takže příjemci mohou v jakémkoli moderním prohlížeči otevírat, posouvat, přibližovat, přepínat vrstvy a měřit vzdálenosti **bez CAD aplikace, bez serveru a bez instalace**. Většina desktopových i webových CAD prohlížečů umožňuje prohlížení pouze ve vlastním produktu; MLightCAD promění živý výkres v přenosný offline artefakt, který můžete poslat e-mailem, archivovat nebo umístit na statický souborový hosting — ideální pro sdílení s klienty, archivy pro compliance a izolovaná prostředí bez připojení k síti. Offline prohlížeč také spotřebovává výrazně méně paměti než tradiční desktopové nástroje při otevírání stejného výkresu (viz [porovnání paměti](#spotřeba-paměti-samostatného-html) níže).
+MLightCAD není jen CAD prohlížeč, ale **CAD infrastruktura běžící nativně v prohlížeči**. Na jednom jádru nabízí tři produkty připravené k použití:
+
+| Podprojekt | Zaměření | Balíček |
+| --- | --- | --- |
+| **CAD Viewer** | Prohlížení a revize: otevření DWG/DXF, posun, zoom, měření a poznámky; lze použít i jako SDK ve vlastním produktu | [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) |
+| **CAD Diff Viewer** | Porovnání revizí výkresů: vedle sebe nebo překrytím — šedá beze změny, červená odstraněno, zelená přidáno; revizní obláčky z množin změn | [`@mlightcad/cad-diff-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-diff-viewer) |
+| **CAD Editor** | Úpravy a kreslení: nabídky, ribbon, příkazový řádek a stavový řádek ve stylu AutoCADu; otevřete výkres a upravujte geometrii přímo | [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) |
+
+Všechny tři sdílejí stejný model entit, vykreslovací engine a sběrnici pluginů. UI, export a funkce AI se načítají podle potřeby, místo aby se implementovaly znovu — prohlížení, porovnávání a úpravy jsou různé formy jednoho CAD jádra, nikoli nesouvisející nástroje.
+
+Navíc MLightCAD nabízí něco, co u jiného CAD softwaru jen zřídka najdete — **export jedním kliknutím do jediného samostatného souboru HTML**. Stažený soubor `.html` obsahuje snímek výkresu a lehké běhové prostředí prohlížeče, takže příjemci mohou v jakémkoli moderním prohlížeči otevírat, posouvat, přibližovat, přepínat vrstvy a měřit vzdálenosti **bez CAD aplikace, bez serveru a bez instalace**. Většina desktopových i webových CAD nástrojů umožňuje prohlížení pouze ve vlastním produktu; MLightCAD promění živý výkres v přenosný offline artefakt, který můžete poslat e-mailem, archivovat nebo umístit na statický souborový hosting — ideální pro sdílení s klienty, archivy pro compliance a izolovaná prostředí bez připojení k síti. Offline prohlížeč také spotřebovává výrazně méně paměti než tradiční desktopové nástroje při otevírání stejného výkresu (viz [porovnání paměti](#spotřeba-paměti-samostatného-html) níže).
 
 MLightCAD navíc podporuje **předrenderování na straně serveru**. Výkres se jednou zpracuje na serveru a klient pouze zobrazí předrenderovaný výsledek, aniž by znovu parsoval DWG/DXF nebo znovu sestavoval geometrii. Výrazně to snižuje spotřebu paměti na klientu a opakované otevření stejného výkresu je mnohem rychlejší — ideální pro prohlížení výkresů na mobilních zařízeních.
 
@@ -40,11 +50,9 @@ Komunitní aplikace a integrace:
 - [flyfish-dev/cad-viewer](https://github.com/flyfish-dev/cad-viewer) — produkční webový CAD prohlížeč pro DWG, DXF, DWF, DWFx a XPS ([živé demo](https://cad-viewer-iys.pages.dev))
 - [Nextcloud CAD Viewer](https://github.com/ashcoft/nextcloud-cad-viewer) — nativní aplikace Nextcloud pro prohlížení DWG/DXF v prohlížeči ([App Store](https://apps.nextcloud.com/apps/cad_viewer))
 
-Komunitní desktopové balíčky pro Linux:
+Oficiální desktopová aplikace:
 
-- [CAD Viewer AppImage](https://github.com/pass-wind/cad-viewer-appimage) — AppImage založená na Electronu pro Linux (~114 MB), testováno na Fedoře
-- [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — zdrojový balíček pro Arch Linux využívající systémový Electron (~5,4 MB)
-- [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — binární balíček pro Arch Linux se součástí fontů/šablon pro plně offline otevírání výkresů
+- [MLightCAD Studio](https://github.com/mlightcad/mlightcad-studio) — oficiální desktopová edice MLightCAD, která zabaluje [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) do shellu [Tauri 2](https://v2.tauri.app/) a funguje zcela offline; k dispozici jsou instalátory pro Windows (NSIS / MSI), Linux (AppImage / deb) a macOS (Universal DMG, Apple Silicon + Intel) — [stáhnout](https://github.com/mlightcad/mlightcad-studio/releases/).
 
 ### Demo aplikace (Demo Apps)
 
@@ -69,6 +77,38 @@ Oficiální ukázkové aplikace, které ukazují, jak integrovat MLightCAD do vl
 - Offline i online editační pracovní postupy
 - 3D vykreslovací engine THREE.js s pokročilými optimalizačními technikami
 - Navrženo pro rozšiřitelnost a integraci s platformami jako CMS, Notion a WeChat
+
+- **Jasná vrstvená architektura** — model → vykreslování → pohled → UI / pluginy, kde nižší balíčky nikdy nezávisí na vyšších, plus samostatně nasaditelné headless exportéry a CLI; viz [přehled architektury](https://mlightcad.com/cad-viewer/docs/cs/development/architecture-overview.html)
+
+## Možnosti AI
+
+MLightCAD přichází s vestavěnou sadou CAD schopností zaměřených na AI. Skripty a volání nástrojů se provádějí lokálně, takže data výkresu nikdy neopustí váš počítač.
+
+### CAD skripty
+- Vestavěné izolované (sandbox) běhové prostředí JavaScript skriptů, které přes jednotné hostitelské API `cad.*` dotazuje entity, kreslí, upravuje, měří a exportuje
+- Jeden skript může za jedno volání provést filtrování, měření, úpravy a samokontrolu, čímž se vyhnete častému přepínání nástrojů a spotřebě tokenů
+- Před spuštěním probíhá AST validace: `import`, `eval`, přístup k síti a ke stránce jsou blokovány, s rozpočtem kroků/času a limitem počtu snapshotů
+- Konzole skriptů umožňuje psát a spouštět skripty přímo bez účasti jakéhokoli modelu; skripty mohou exportovat do DXF / PDF / HTML a dalších formátů
+
+### AI agent
+- Panel konverzace v přirozeném jazyce: popište, co potřebujete, a model napíše a spustí skripty `cad.*` pro kreslení, dotazy a úpravy
+- Založeno na Vercel AI SDK; modely a API klíče se konfigurují v jednotném nastavení AI modelů
+- Dva režimy uvažování — Simple a High; v režimu High agent po složitých úkolech pořídí screenshot a provede vizuální kontrolu
+
+### MCP
+- Stejný katalog skriptových nástrojů vystavuje jako stdio MCP server přes `@mlightcad/cad-mcp-server` pro externí AI klienty (např. Claude Desktop, Cursor)
+- Externí asistenti mohou otevírat výkresy, dotazovat entity, spouštět skripty a ukládat výsledky se stejnými schopnostmi jako vestavěný agent
+
+### Chytré bloky
+- Automaticky najde všechny identické kopie vybraných objektů a převede je na reference bloku
+- Najde opakující se objekty v celém výkresu a dávkově je převede na bloky
+- Kopie, které se liší pouze textem (např. čísla místností), mohou být automaticky převedeny na atributy bloku, s konfigurovatelným prahem minimálního přínosu
+
+### Obnova výkresů z PDF
+- Importuje vektorovou geometrii ze stránek PDF a rekonstruuje skutečné CAD entity — kružnice/oblouky/elipsy/splajny, polylinie s boulí (bulge), tloušťky čar a přerušované typy čar, textové styly, plnohodnotná a šrafovací výplně a obrázky; opakovaně kreslené Form XObject se automaticky obnovují jako reference bloku
+- Kalibruje měřítko importovaného výkresu pomocí známé vzdálenosti
+- Rozpozná text rozložený na čáry zpět do CAD textových entit: nejprve vestavěný slovník glyfů provede lokální rozpoznání, zbytek se hromadně rozpozná přes OCR / model vidění
+- Obnoví lineární, poloměrové, průměrové a úhlové rozměry ze šipek, rozměrových čar a textu, s panelem kontroly pro potvrzení hodnot a výběr nebo vytvoření stylu rozměru
 
 ## Vložení DWG/DXF jedním řádkem kódu
 
@@ -107,6 +147,9 @@ pnpm dev
 
 # Nebo spustit jednoduchý prohlížeč
 pnpm dev:simple
+
+# Nebo spustit prohlížeč porovnání výkresů (cad-diff-viewer)
+pnpm dev:diff
 ```
 
 ### Sestavení
@@ -183,214 +226,11 @@ Pokud potřebujete lepší kompatibilitu, nižší spotřebu paměti, podporu ve
 
 ## Plán vývoje
 
-Cílem tohoto projektu je vytvořit plnohodnotný **2D systém podobný AutoCADu v prohlížeči** (prohlížeč + editor) s modulární architekturou a integrací nezávislou na frameworku.
+Cílem MLightCAD je plnohodnotný, modulární a na frameworku nezávislý 2D CAD systém v prohlížeči — prohlížení, porovnávání a úpravy nad jedním jádrem.
 
-Legenda:
-- [x] Dokončeno
+Plán vývoje je veden ve Wiki. Zahrnuje platformní práci, která ještě probíhá (LOD vykreslování, pojmenované pohledy, vlastní entity atd.), i směry AI, na které se zaměřujeme (porozumění výkresům, automatizované revize, rozpoznávání naskenovaných výkresů, ověřitelné úpravy přirozeným jazykem atd.):
 
-### Jádro souborů a datové vrstvy
-
-#### Podpora souborů
-
-* [x] Načítání DXF
-* [x] Načítání DWG
-* [x] Export do samostatného offline HTML (vložený prohlížeč)
-* [x] Streamování / přírůstkové načítání velkých souborů
-* [x] Kompatibilita verzí souborů (R12–Latest)
-
-#### Datový model
-
-* [x] Jednotný datový model entit
-* [x] Podpora tabulky vrstev
-* [x] Struktura bloků / vložení
-* [ ] Správa handle a object ID: v současnosti je objectId stejný jako handle a reprezentován jako jeden řetězec místo bigint (int64).
-* [x] Podpora XData / rozšiřujícího slovníku
-* [x] Zpracování proxy entit
-
-### Vykreslování a výkon
-
-#### Vykreslovací engine
-
-* [x] Vykreslování založené na WebGL (Three.js)
-* [x] Pipeline optimalizovaná pouze pro 2D
-* [x] Organizace scény podle vrstev
-* [x] Vykreslování layoutu / papírového prostoru
-* [x] Podpora entit viewportu
-
-#### Optimalizace výkonu
-
-* [x] Slučování a dávkování geometrie
-* [x] Prostorové indexování (základní)
-* [x] Pokročilý prostorový index (R-tree / BVH)
-* [ ] Vykreslování s úrovní detailu (LOD)
-* [ ] Více pláten / dlaždicové vykreslování pro velmi rozsáhlé výkresy
-
-### Prohlížení a navigace
-
-#### Ovládání zobrazení
-
-* [x] Posun
-* [x] Přiblížení (kolečko / rámečkové přiblížení)
-* [x] Přizpůsobení zobrazení / rozsah
-* [ ] Pojmenovaná zobrazení
-* [ ] Historie zobrazení (zpět / vpřed u změn zobrazení)
-
-#### Ovládání zobrazení obsahu
-
-* [x] Viditelnost vrstev zap/vyp
-* [x] Zmrazení / uzamčení vrstev
-* [x] Zobrazení tloušťky čar
-* [x] Měřítko typů čar
-* [x] Přepínání pozadí / motivu
-
-### Výběr a interakce
-
-#### Výběr
-
-* [x] Výběr jedné entity
-* [x] Zvýraznění vybraných entit
-* [x] Výběr oknem
-* [x] Křížový výběr
-* [x] Filtry výběru (podle typu / vrstvy)
-* [x] Cyklický výběr
-
-#### Přichycení (OSNAP)
-
-* [x] Koncový bod
-* [x] Střed
-* [x] Střed kružnice
-* [x] Průsečík
-* [ ] Kolmice / tečna
-* [x] Nejbližší
-* [ ] Sledování přichycení
-
-
-### Úpravy a modifikace
-
-#### Základní úpravy
-
-* [x] Rámec pro úpravu entit
-* [x] Posun
-* [x] Kopírování/Vložení
-* [x] Otočení
-* [x] Měřítko
-* [x] Smazání
-* [x] Zpět / vpřed
-
-#### Úpravy geometrie
-
-* [x] Protažení
-* [x] Oříznutí
-* [x] Prodloužení
-* [x] Odsazení
-* [x] Rozložení
-* [x] Spojení / zaoblení / zkosení (2D)
-
-### Kreslení a nástroje pro tvorbu
-
-#### Základní entity
-
-* [x] Čára
-* [x] Polyline
-* [x] Spline
-* [x] Kružnice
-* [x] Oblouk
-* [x] Elipsa
-* [x] Obdélník / polygon
-
-#### Pokročilé entity
-
-* [x] Šrafování
-* [x] Text (jednořádkový / víceřádkový)
-* [x] Kóty (lineární, zarovnané, úhlové)
-* [x] Vytváření a vkládání bloků
-
-### Měření
-
-* [x] Vzdálenost
-* [x] Délka oblouku
-* [x] Plocha
-* [x] Úhel
-* [x] Souřadnice
-* [x] Statistiky entit (délka, plocha, počet)
-
-### Kóty
-
-* [x] Lineární kóta
-* [x] Úhlová kóta
-* [x] Souřadnice
-
-### Vlastnosti a UI panely
-
-#### Paleta vlastností
-
-* [x] Vlastnosti vybrané entity
-* [ ] Úprava vrstvy, barvy, typu čáry
-* [x] Živá aktualizace při změně
-
-#### Panely a UI
-
-* [x] Správce vrstev
-* [x] Správce bloků
-* [x] Historie příkazů / konzole
-* [x] Stavový řádek (přichycení, orto, mřížka)
-
-#### Systém příkazů
-
-* [x] Registr příkazů
-* [x] Aliasy příkazů
-* [x] Výzvy příkazů (ve stylu AutoCADu)
-
-### Integrace a rozšiřitelnost
-
-#### Integrace frameworků
-
-* [x] Jádro nezávislé na frameworku
-* [ ] Příklad integrace React
-* [x] Příklad integrace Vue
-* [x] [Příklad integrace Next.js](https://github.com/mlightcad/cad-viewer-nextjs-demo)
-* [ ] Integrace OpenLayers / Map
-* [ ] Vkládání do CMS / Notion
-
-#### Systém pluginů
-
-* [x] Plugin API
-* [ ] Podpora vlastních entit
-* [x] Vlastní příkaz
-
-### Offline a online úpravy
-
-#### Offline editor
-
-* [x] Lokální úpravy v prohlížeči
-* [x] Uložení do DXF
-* [x] Uložení sady změn / diff
-* [ ] Perzistence IndexedDB
-
-#### Online editor
-
-* [ ] Návrh backend API
-* [ ] Autentizace uživatelů
-* [ ] Verzování souborů
-* [ ] Řízení přístupu pro více uživatelů
-* [ ] Real-time spolupráce (budoucnost)
-
-### Cílové platformy
-
-* [x] Integrace Google Drive (datový zdroj Picker; Drive „Open with“ jako volitelné pokračování)
-* [x] Integrace OneDrive (datový zdroj Microsoft OneDrive / SharePoint)
-* [ ] Prohlížeč pro WeChat Mini Program
-* [x] Podpora mobilního prohlížeče (responzivní rozložení a dotykové ovládání)
-
-### Dokumentace a komunita
-
-* [x] Dokumentace architektury
-* [x] Referenční dokumentace API
-* [ ] Průvodce pro přispěvatele
-* [x] Ukázkové projekty
-* [x] Údržba plánu vývoje a changelogu
-
-Tento plán vývoje je záměrně podrobný, aby přispěvatelé jasně viděli, **co existuje**, **co chybí** a **kde je potřeba pomoc**.
+→ **[Plán vývoje (Wiki)](https://github.com/mlightcad/cad-viewer/wiki/Roadmap)**
 
 ## Přispívání
 
