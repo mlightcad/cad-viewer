@@ -244,6 +244,7 @@ export default {
       navigate: 'Navigate',
       namedViews: 'Named Views',
       coordinates: 'Coordinates',
+      interface: 'Interface',
       review: 'Review',
       measurement: 'Measurement',
       style: 'Style',
@@ -406,17 +407,14 @@ export default {
       newView: 'Creates a new named view from the current display or a window.',
       viewManager:
         'Opens the View Manager to create, restore, and delete named views.',
+      ucsIcon: 'Controls the visibility, placement, appearance, and selectability of the UCS icon.',
       ucs: 'Sets the origin and orientation of the current user coordinate system.',
       namedUcs: 'Manages named UCS definitions and UCS icon settings.',
-      ucsWorld: 'Sets the UCS to the world coordinate system.',
-      ucsOrigin: 'Defines a new UCS origin.',
-      ucsX: 'Rotates the UCS about the X axis.',
-      ucsY: 'Rotates the UCS about the Y axis.',
-      ucsZ: 'Rotates the UCS about the Z axis.',
-      ucsZAxis: 'Defines a UCS by specifying the Z axis.',
-      ucsView: 'Aligns the UCS with the current view.',
-      ucsObject: 'Aligns the UCS to a selected object.',
       restoreView: 'Restores a named view saved in the drawing.',
+      toolbar: 'Shows or hides the toolbars.',
+      commandLine: 'Shows or hides the command line.',
+      layoutTabs:
+        'Shows or hides the Model and layout tabs (LAYOUTTAB).',
       propertyColor:
         'Set the color for newly created objects or selected entities.',
       propertyLineType:
@@ -570,17 +568,13 @@ export default {
       zoomSmart: 'Smart',
       newView: 'New\nView',
       viewManager: 'View\nManager',
+      ucsIcon: 'UCS\nIcon',
       ucs: 'UCS',
       namedUcs: 'Named\nUCS',
-      ucsWorld: 'World',
-      ucsOrigin: 'Origin',
-      ucsX: 'X',
-      ucsY: 'Y',
-      ucsZ: 'Z',
-      ucsZAxis: 'Z Axis',
-      ucsView: 'View',
-      ucsObject: 'Object',
-      restoreView: 'Restore\nView'
+      restoreView: 'Restore\nView',
+      toolbar: 'Toolbar',
+      commandLine: 'Command\nLine',
+      layoutTabs: 'Layout\nTabs'
     }
   },
   bsearch: {

@@ -231,6 +231,10 @@ export default {
     layer: {
       description: 'Opens or closes the layer manager dock panel'
     },
+    layouttab: {
+      description:
+        'Controls whether the Model and layout tabs are displayed'
+    },
     loginname: {
       description: 'Displays the user\'s login name (read-only)'
     },
@@ -811,12 +815,60 @@ export default {
     viewrestore: {
       description: 'Restores a named view by name'
     },
+    ucsaxisang: {
+      description:
+        'Stores the default angle when rotating the UCS around one of its axes using the X, Y, or Z option of the UCS command'
+    },
+    ucsbase: {
+      description:
+        'Stores the name of the UCS that defines the origin and orientation of orthographic UCS settings'
+    },
+    ucsfollow: {
+      description:
+        'Generates a plan view whenever you change from one UCS to another'
+    },
+    ucsname: {
+      description:
+        'Stores the name of the current coordinate system for the current viewport (read-only)'
+    },
+    ucsorg: {
+      description:
+        'Stores the origin point of the current UCS for the current viewport (read-only)'
+    },
+    ucsselectmode: {
+      description:
+        'Controls whether the UCS icon can be selected and manipulated with grips'
+    },
+    ucsview: {
+      description:
+        'Determines whether the current UCS is saved with a named view'
+    },
+    ucsvp: {
+      description:
+        'Determines whether the UCS in active viewports remains locked or changes to follow the UCS of the currently active viewport'
+    },
+    ucsxdir: {
+      description:
+        'Stores the X direction of the current UCS for the current viewport (read-only)'
+    },
+    ucsydir: {
+      description:
+        'Stores the Y direction of the current UCS for the current viewport (read-only)'
+    },
+    worlducs: {
+      description:
+        'Indicates whether the current UCS is the same as the WCS (read-only)'
+    },
     ucs: {
       description:
         'Sets the origin and orientation of the current user coordinate system'
     },
     ucsman: {
       description: 'Manages named UCS definitions and UCS icon settings'
+    },
+    ucsicon: {
+      description:
+        'Controls the visibility, placement, appearance, and selectability of the UCS icon'
     }
   },
   USER: {}

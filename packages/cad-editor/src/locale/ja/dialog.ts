@@ -685,7 +685,6 @@ export default {
     renamePrompt: '新しい UCS 名を入力:',
     renameFailed: 'UCS の名前を変更できませんでした。',
     deleteFailed: 'UCS を削除できませんでした。',
-    help: 'ヘルプ',
     iconSettings: 'UCS アイコンの設定',
     iconOn: 'オン',
     iconAtOrigin: 'UCS 原点に表示',

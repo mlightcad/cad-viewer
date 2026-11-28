@@ -132,6 +132,25 @@ export default {
     copyright: '© {year} mlightcad. Tüm hakları saklıdır.',
     ok: 'Tamam'
   },
+  ucsIconDlg: {
+    title: 'UCS Simgesi',
+    close: 'Kapat',
+    ok: 'Tamam',
+    cancel: 'İptal',
+    lineWidth: 'Çizgi kalınlığı',
+    size: 'UCS simgesi boyutu',
+    sizeHint: 'Görüntü alanının yüzdesi (5–95)',
+    modelColor: 'Model alanı simge rengi',
+    layoutColor: 'Yerleşim sekmesi simge rengi',
+    applySingleColor: 'Tek renk uygula',
+    on: 'Açık',
+    off: 'Kapalı',
+    colorTitle: 'Renk Seç',
+    colorIndex: 'Renk İndeksi: ',
+    colorRgb: 'RGB: ',
+    colorInput: 'Renk',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: 'Renk',
     fontSize: 'Yazı yüksekliği'

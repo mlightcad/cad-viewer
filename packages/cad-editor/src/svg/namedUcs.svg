@@ -1,8 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <rect x="3" y="3" width="11" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-  <path d="M6 8h5M6 11h5M6 14h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M14 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M14 16V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M20 16l2-2M20 16l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M14 9l-2 2M14 9l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- AutoCAD Named UCS / UCSMAN Find icon: XY axes + dialog list -->
+  <path
+    d="M4 20 V5 M4 20 H19"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Y arrowhead (up) -->
+  <path d="M4 3.2 L1.7 7.2 H6.3 Z" fill="currentColor" />
+  <!-- X arrowhead (right) -->
+  <path d="M20.8 20 L16.8 17.7 V22.3 Z" fill="currentColor" />
+  <!-- Dialog frame -->
+  <rect
+    x="8.5"
+    y="7"
+    width="11"
+    height="11"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <!-- Title bar -->
+  <path d="M8.5 7 H19.5 V9.5 H8.5 Z" fill="currentColor" />
+  <!-- List rows: bullet + line (filled, matching AutoCAD Find glyph) -->
+  <rect x="10.2" y="11.2" width="1.5" height="1.5" fill="currentColor" />
+  <rect x="12.5" y="11.55" width="5.2" height="0.8" fill="currentColor" />
+  <rect x="10.2" y="14.8" width="1.5" height="1.5" fill="currentColor" />
+  <rect x="12.5" y="15.15" width="5.2" height="0.8" fill="currentColor" />
 </svg>

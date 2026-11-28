@@ -120,7 +120,11 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
       return null
     }
 
-    return { x: nx, y: ny, z: 0 }
+    // Dynamic Input absolute X/Y are current-UCS numbers (same as typed
+    // command-line coords without `*`). Click commits bypass this path and
+    // keep the WCS pick from getDynamicValue.value.
+    const wcs = AcApUcsService.ucsToWcs({ x: nx, y: ny, z: 0 })
+    return { x: wcs.x, y: wcs.y, z: wcs.z }
   }
 
   /**

@@ -208,6 +208,9 @@ export default {
     layer: {
       description: '打开或关闭图层管理器停靠面板'
     },
+    layouttab: {
+      description: '控制模型选项卡和布局选项卡的显示'
+    },
     loginname: {
       description: '显示当前用户的登录名（只读）'
     },
@@ -728,11 +731,49 @@ export default {
     viewrestore: {
       description: '按名称恢复命名视图'
     },
+    ucsaxisang: {
+      description:
+        '存储使用 UCS 命令的 X、Y 或 Z 选项绕轴旋转 UCS 时的默认角度'
+    },
+    ucsbase: {
+      description: '存储定义正交 UCS 设置的原点和方向的 UCS 名称'
+    },
+    ucsfollow: {
+      description: '控制从一个 UCS 转换到另一个 UCS 时是否生成平面视图'
+    },
+    ucsname: {
+      description: '存储当前视口的当前坐标系名称（只读）'
+    },
+    ucsorg: {
+      description: '存储当前视口的当前 UCS 原点（只读）'
+    },
+    ucsselectmode: {
+      description: '控制是否可以选择 UCS 图标以使用夹点进行操作'
+    },
+    ucsview: {
+      description: '确定是否将当前 UCS 与命名视图一起保存'
+    },
+    ucsvp: {
+      description:
+        '确定活动视口中的 UCS 是保持锁定还是跟随当前活动视口的 UCS'
+    },
+    ucsxdir: {
+      description: '存储当前视口的当前 UCS 的 X 方向（只读）'
+    },
+    ucsydir: {
+      description: '存储当前视口的当前 UCS 的 Y 方向（只读）'
+    },
+    worlducs: {
+      description: '指示当前 UCS 是否与 WCS 相同（只读）'
+    },
     ucs: {
       description: '设置当前用户坐标系的原点和方向'
     },
     ucsman: {
       description: '管理命名 UCS 定义和 UCS 图标设置'
+    },
+    ucsicon: {
+      description: '控制 UCS 图标的可见性、位置、外观和可选择性'
     }
   },
   USER: {}

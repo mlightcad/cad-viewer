@@ -2375,6 +2375,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: 'أدخل خيارًا',
+    selectableOption: 'أدخل خيارًا لقابلية تحديد أيقونة UCS',
+    keywords: {
+      on: {
+        display: 'تشغيل(ON)',
+        local: 'تشغيل',
+        global: 'ON'
+      },
+      off: {
+        display: 'إيقاف(OFF)',
+        local: 'إيقاف',
+        global: 'OFF'
+      },
+      all: {
+        display: 'الكل(A)',
+        local: 'الكل',
+        global: 'All'
+      },
+      noorigin: {
+        display: 'بلاأصل(N)',
+        local: 'بلاأصل',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: 'الأصل(OR)',
+        local: 'الأصل',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: 'قابل للتحديد(S)',
+        local: 'قابل للتحديد',
+        global: 'Selectable'
+      },
+      properties: {
+        display: 'خصائص(P)',
+        local: 'خصائص',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: 'حدد الكائنات أو',
     createOrOption: 'إنشاء مجموعة أو',

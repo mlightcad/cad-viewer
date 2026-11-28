@@ -16,6 +16,7 @@ export const POLAR_ANGLE_SYSVAR_NAME = AcDbSystemVariables.POLARANG
 export const POLAR_ADD_ANGLE_SYSVAR_NAME = AcDbSystemVariables.POLARADDANG
 export const CANNOSCALE_SYSVAR_NAME = AcDbSystemVariables.CANNOSCALE
 export const ANNOALLVISIBLE_SYSVAR_NAME = AcDbSystemVariables.ANNOALLVISIBLE
+export const LAYOUT_TAB_SYSVAR_NAME = AcDbSystemVariables.LAYOUTTAB
 
 export interface SystemVariables {
   pdmode?: number
@@ -29,6 +30,7 @@ export interface SystemVariables {
   polaraddang?: string
   cannoscale?: string
   annoallvisible?: number
+  layouttab?: number
 }
 
 function getDatabaseSysVarValue(database: AcDbDatabase, name: string): unknown {
@@ -106,6 +108,12 @@ export function normalizeAnnoAllVisible(value: unknown): number {
   return asNumber === 0 ? 0 : 1
 }
 
+export function normalizeLayoutTab(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 1
+  return normalized === 0 ? 0 : 1
+}
+
 export function normalizePolarmode(value: unknown): number {
   const normalized = Number(value)
   if (Number.isNaN(normalized)) return 0
@@ -164,6 +172,10 @@ export function useSystemVars(editor: AcApDocManager) {
       getDatabaseSysVarValue(doc, CANNOSCALE_SYSVAR_NAME) ?? doc.cannoscale ?? '1:1'
     )
     reactiveSystemVars.annoallvisible = doc.annoallvisible === false ? 0 : 1
+    reactiveSystemVars.layouttab = normalizeLayoutTab(
+      getDatabaseSysVarValue(doc, LAYOUT_TAB_SYSVAR_NAME) ??
+        AcDbSysVarManager.instance().getDefaultValue(LAYOUT_TAB_SYSVAR_NAME)
+    )
   }
   reset(doc.database)
 
@@ -211,6 +223,11 @@ export function useSystemVars(editor: AcApDocManager) {
 
     if (name === ANNOALLVISIBLE_SYSVAR_NAME.toLowerCase()) {
       reactiveSystemVars.annoallvisible = normalizeAnnoAllVisible(args.newVal)
+      return
+    }
+
+    if (name === LAYOUT_TAB_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.layouttab = normalizeLayoutTab(args.newVal)
       return
     }
 

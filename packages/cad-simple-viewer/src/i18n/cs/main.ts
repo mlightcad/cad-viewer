@@ -132,6 +132,25 @@ export default {
     copyright: '© {year} mlightcad. Všechna práva vyhrazena.',
     ok: 'OK'
   },
+  ucsIconDlg: {
+    title: 'Ikona USS',
+    close: 'Zavřít',
+    ok: 'OK',
+    cancel: 'Storno',
+    lineWidth: 'Šířka čáry',
+    size: 'Velikost ikony USS',
+    sizeHint: 'Procento výřezu (5–95)',
+    modelColor: 'Barva ikony v modelovém prostoru',
+    layoutColor: 'Barva ikony na kartě rozvržení',
+    applySingleColor: 'Použít jednu barvu',
+    on: 'Zapnuto',
+    off: 'Vypnuto',
+    colorTitle: 'Vybrat barvu',
+    colorIndex: 'Index barvy: ',
+    colorRgb: 'RGB: ',
+    colorInput: 'Barva',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: 'Barva',
     fontSize: 'Výška textu'

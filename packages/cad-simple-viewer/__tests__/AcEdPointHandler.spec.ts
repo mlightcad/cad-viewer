@@ -1,7 +1,31 @@
+import { AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcEdDistanceHandler } from '../src/editor/input/handler/AcEdDistanceHandler'
 import { AcEdPointHandler } from '../src/editor/input/handler/AcEdPointHandler'
 import { AcEdPromptDistanceOptions } from '../src/editor/input/prompt/AcEdPromptDistanceOptions'
 import { AcEdPromptPointOptions } from '../src/editor/input/prompt/AcEdPromptPointOptions'
+import { AcApUcsService } from '../src/service/AcApUcsService'
+
+describe('AcEdPointHandler.parse', () => {
+  const pointHandler = new AcEdPointHandler(new AcEdPromptPointOptions('point'))
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('maps Dynamic Input absolute X/Y through the active UCS', () => {
+    jest.spyOn(AcApUcsService, 'getActiveFrame').mockReturnValue({
+      origin: new AcGePoint3d(10, 20, 0),
+      xAxis: new AcGePoint3d(0, 1, 0),
+      yAxis: new AcGePoint3d(-1, 0, 0)
+    })
+    // UCS (3, 4) → WCS origin + 3*X + 4*Y = (10,20) + (0,3) + (-4,0) = (6, 23)
+    const point = pointHandler.parse('3', '4')
+    expect(point?.x).toBeCloseTo(6)
+    expect(point?.y).toBeCloseTo(23)
+    expect(point?.z).toBeCloseTo(0)
+  })
+})
 
 describe('AcEdPointHandler.parseCommandLine', () => {
   const pointHandler = new AcEdPointHandler(new AcEdPromptPointOptions('point'))

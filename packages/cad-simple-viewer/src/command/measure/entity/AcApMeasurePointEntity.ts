@@ -1,6 +1,7 @@
 import type { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import { AcTrHtmlBadge, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
+import { AcApUcsService } from '../../../service/AcApUcsService.js'
 import {
   type AcApMeasurementStyle,
   formatMeasurementValue
@@ -113,6 +114,19 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
   ): AcApMeasureWorldDrawResult {
     const live = { x: this.point.x, y: this.point.y }
     const layoutId = this.resolveLayoutId(view)
+    const formatCoords = (wcs: { x: number; y: number }) => {
+      const u = AcApUcsService.wcsToUcs(
+        { x: wcs.x, y: wcs.y, z: 0 },
+        undefined,
+        db
+      )
+      return formatMeasurementValue(db, {
+        kind: 'coordinate',
+        x: u.x,
+        y: u.y
+      })
+    }
+    // Extras keep WCS; badge text is current-UCS for the user.
     let value = {
       kind: 'coordinate' as const,
       x: live.x,
@@ -128,7 +142,7 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
-      text: formatMeasurementValue(db, value),
+      text: formatCoords(live),
       worldPosition: live,
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize,
@@ -143,7 +157,7 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
 
     const refreshLive = () => {
       value = { kind: 'coordinate', x: live.x, y: live.y }
-      badge.setText(formatMeasurementValue(db, value))
+      badge.setText(formatCoords(live))
       acapPlaceOverlayHtml(view, badge, live)
       view.isHtmlDirty = true
     }

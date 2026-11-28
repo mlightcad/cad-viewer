@@ -95,7 +95,10 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect.js'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult.js'
-import { AcApUcsService } from '../service/AcApUcsService.js'
+import {
+  type AcApUcsChangedEventArgs,
+  AcApUcsService
+} from '../service/AcApUcsService.js'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex.js'
 import type { AcTrLazySpatialChildren } from '../spatialIndex/index.js'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit.js'
@@ -113,6 +116,7 @@ import {
   ACAP_READING_MODE_BACKGROUND,
   AcApReadingModeState
 } from './AcApReadingMode.js'
+import { AcApUcsIconController } from './AcApUcsIconController.js'
 import { AcApUcsIconOverlay } from './AcApUcsIconOverlay.js'
 import {
   trySelectReviewOverlay,
@@ -226,7 +230,9 @@ export class AcTrView2d extends AcEdBaseView {
   private _css2dRenderer: CSS2DRenderer
   /** Drawing UCS triad overlay (On / at origin). */
   private _ucsIconOverlay: AcApUcsIconOverlay | null = null
-  private _onUcsChanged?: () => void
+  /** Hover / select / grip-edit for a selectable UCS icon. */
+  private _ucsIconController: AcApUcsIconController | null = null
+  private _onUcsChanged?: (args: AcApUcsChangedEventArgs) => void
   /**
    * Block table record ids of layouts whose entities are currently being
    * batch-converted into the scene. Used by
@@ -870,19 +876,29 @@ export class AcTrView2d extends AcEdBaseView {
         if (trySelectReviewOverlay(this, endCanvas.x, endCanvas.y, action)) {
           if (action === 'replace') {
             this.selectionSet.clear()
+            this._ucsIconController?.clearSelection()
           }
+        } else if (
+          action === 'replace' &&
+          this._ucsIconController?.trySelect(endCanvas.x, endCanvas.y)
+        ) {
+          this.selectionSet.clear()
+          this.htmlTransientManager.deselectAll()
         } else if (this.entitySelectionEnabled) {
           const picked = this.pick(endWcs)
           if (picked.length > 0) {
             if (action === 'replace') {
               this.htmlTransientManager.deselectAll()
+              this._ucsIconController?.clearSelection()
             }
             this.applySelection([picked[0].id], action)
           } else if (action === 'replace') {
             this.selectionSet.clear()
+            this._ucsIconController?.clearSelection()
           }
         } else if (action === 'replace') {
           this.selectionSet.clear()
+          this._ucsIconController?.clearSelection()
         }
       } else {
         const box = new AcGeBox2d()
@@ -1086,8 +1102,40 @@ export class AcTrView2d extends AcEdBaseView {
     container.appendChild(this._css2dRenderer.domElement)
 
     this._ucsIconOverlay = new AcApUcsIconOverlay(container)
-    this._onUcsChanged = () => {
+    this._ucsIconController = new AcApUcsIconController(
+      this,
+      this._ucsIconOverlay,
+      container,
+      {
+        canWrite: () => {
+          const doc = AcApDocManager.tryGetInstance()?.curDocument
+          return !!doc && doc.openMode >= AcEdOpenMode.Write
+        },
+        getDatabase: () =>
+          this._renderer.context.database ??
+          AcApDocManager.tryGetInstance()?.curDocument?.database
+      }
+    )
+    this._onUcsChanged = (args: AcApUcsChangedEventArgs) => {
+      // Prefer the database bound to this canvas — not curDocument — so
+      // compare / overlay views only follow UCS changes for their drawing.
+      const db = this._renderer.context.database
+      if (db && args.database !== db) return
+
+      // Apply VPORT viewTwistAngle when UCSFOLLOW wrote a PLAN twist (or the
+      // drawing already stores a DVIEW twist). Skip during grip preview.
+      if (
+        !AcApUcsService.isDisplayPreviewActive(db) &&
+        this._layoutViewManager?.activeLayoutView
+      ) {
+        const vport = db?.tables.viewportTable.getActiveVport()
+        const twist = vport?.viewTwistAngle
+        if (typeof twist === 'number' && Number.isFinite(twist)) {
+          this.activeLayoutView.viewTwistAngle = twist
+        }
+      }
       this._ucsIconOverlay?.update(this)
+      this._ucsIconController?.sync()
       this._isDirty = true
     }
     AcApUcsService.events.ucsChanged.addEventListener(this._onUcsChanged)
@@ -1129,6 +1177,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.setCursor(AcEdCorsorType.Crosshair)
     this._onCommandWillStartHitTest = () => {
       this.htmlTransientManager.setHitTestEnabled(false)
+      this._ucsIconController?.clearSelection()
     }
     this._onCommandEndedHitTest = () => {
       this.htmlTransientManager.setHitTestEnabled(true)
@@ -3999,6 +4048,8 @@ export class AcTrView2d extends AcEdBaseView {
       AcApUcsService.events.ucsChanged.removeEventListener(this._onUcsChanged)
       this._onUcsChanged = undefined
     }
+    this._ucsIconController?.dispose()
+    this._ucsIconController = null
     this._ucsIconOverlay?.dispose()
     this._ucsIconOverlay = null
     if (this._onCommandWillStartHitTest) {
@@ -4094,6 +4145,7 @@ export class AcTrView2d extends AcEdBaseView {
       camera: this.internalCamera
     })
     this._ucsIconOverlay?.update(this)
+    this._ucsIconController?.sync()
 
     const stillLoading = this._numOfEntitiesToProcess > 0
     const sceneBusy = stillLoading || this._pendingGeometryJobs > 0

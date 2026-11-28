@@ -11,6 +11,7 @@ import {
 import { AcApDocManager, AcApSettingManager } from '../../../app/index.js'
 import { AcApI18n } from '../../../i18n/index.js'
 import { isEntityOnLockedLayer as entityIsOnLockedLayer } from '../../../service/AcApLockedLayer.js'
+import { AcApUcsService } from '../../../service/AcApUcsService.js'
 import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog.js'
 import type {
   AcEdSessionAccessory,
@@ -1271,8 +1272,15 @@ export class AcEdInputManager {
     }
 
     const getDynamicValue = (pos: AcGePoint2dLike) => {
-      const dx = pos.x - basePoint.x
-      const dy = pos.y - basePoint.y
+      // Angle rubber-band is measured from the current UCS X axis.
+      const posU = AcApUcsService.wcsToUcs({ x: pos.x, y: pos.y, z: 0 })
+      const baseU = AcApUcsService.wcsToUcs({
+        x: basePoint.x,
+        y: basePoint.y,
+        z: 0
+      })
+      const dx = posU.x - baseU.x
+      const dy = posU.y - baseU.y
       const rawAngleRad = Math.atan2(dy, dx)
       const baseAngleRad = (options.baseAngle * Math.PI) / 180
       let angleRad = rawAngleRad - baseAngleRad
@@ -2465,11 +2473,13 @@ export class AcEdInputManager {
     this.showConfirmedPointMarksIfAny()
 
     const getDynamicValue = (pos: AcGePoint2dLike) => {
+      // Click/jig commit stays WCS; the X/Y boxes show current-UCS numbers.
+      const u = AcApUcsService.wcsToUcs({ x: pos.x, y: pos.y, z: 0 })
       return {
         value: { x: pos.x, y: pos.y, z: 0 },
         raw: {
-          x: this.formatNumber(pos.x, 'point'),
-          y: this.formatNumber(pos.y, 'point')
+          x: this.formatNumber(u.x, 'point'),
+          y: this.formatNumber(u.y, 'point')
         }
       }
     }

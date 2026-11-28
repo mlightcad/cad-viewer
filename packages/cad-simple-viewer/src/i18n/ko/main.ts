@@ -133,6 +133,25 @@ export default {
     copyright: '© {year} mlightcad. 모든 권리 보유.',
     ok: '확인'
   },
+  ucsIconDlg: {
+    title: 'UCS 아이콘',
+    close: '닫기',
+    ok: '확인',
+    cancel: '취소',
+    lineWidth: '선가중치',
+    size: 'UCS 아이콘 크기',
+    sizeHint: '뷰포트 비율(5–95)',
+    modelColor: '모형 공간 아이콘 색상',
+    layoutColor: '배치 탭 아이콘 색상',
+    applySingleColor: '단색 적용',
+    on: '켜기',
+    off: '끄기',
+    colorTitle: '색상 선택',
+    colorIndex: '색상 인덱스: ',
+    colorRgb: 'RGB: ',
+    colorInput: '색상',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: '색상',
     fontSize: '문자 높이'

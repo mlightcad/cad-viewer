@@ -1,7 +1,20 @@
-import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
+import {
+  AcDbDatabase,
+  acdbHostApplicationServices,
+  AcGePoint2dLike,
+  AcGePoint3d
+} from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../../app/index.js'
-import { AcEdBaseView } from '../../view/index.js'
+import { AcEdBaseView } from '../../view/AcEdBaseView.js'
+
+/** Working DB for unit formatting; null when unset (avoids DocManager import cycle). */
+function tryWorkingDatabase(): AcDbDatabase | null {
+  try {
+    return acdbHostApplicationServices().workingDatabase
+  } catch {
+    return null
+  }
+}
 
 /**
  * Options for the AcEdRubberBand preview.
@@ -22,6 +35,12 @@ export interface AcEdRubberBandOptions {
    * If true, only the baseLine will be shown. Other lines are hidden.
    */
   showBaseLineOnly?: boolean
+
+  /**
+   * When true, the base line from last point to cursor is dashed
+   * (AutoCAD grip-drag rubber-band). Defaults to solid.
+   */
+  dashedBaseLine?: boolean
 
   /**
    * Base angle in degrees used as the 0-degree direction for angle preview.
@@ -105,6 +124,14 @@ export class AcEdRubberBand {
   }
 
   /**
+   * Moves the rubber-band base (e.g. a grip that tracks a live preview).
+   * Does not redraw until the next {@link update}.
+   */
+  setBasePoint(basePoint: AcGePoint2dLike) {
+    this.basePoint = new AcGePoint3d(basePoint)
+  }
+
+  /**
    * Starts the rubber-band preview.
    * @param basePoint The starting point in world coordinates.
    */
@@ -134,7 +161,8 @@ export class AcEdRubberBand {
     // --------------------------------------------------------------------
     this.baseLine = document.createElement('div')
     this.baseLine.style.position = 'absolute'
-    this.baseLine.style.borderTop = `1px solid ${color}`
+    const baseStyle = this.options.dashedBaseLine ? 'dashed' : 'solid'
+    this.baseLine.style.borderTop = `1px ${baseStyle} ${color}`
     this.container.appendChild(this.baseLine)
 
     const createDashed = () => {
@@ -281,7 +309,7 @@ export class AcEdRubberBand {
           (targetPoint.y - this.basePoint.y) ** 2
       )
 
-      const db = AcApDocManager.instance.curDocument?.database
+      const db = tryWorkingDatabase()
       this.labelEl.textContent = db
         ? db.formatter.formatLength(dist)
         : dist.toFixed(3)
@@ -377,7 +405,7 @@ export class AcEdRubberBand {
       this.anglePath.setAttribute('d', d)
 
       const angleValueRad = Math.abs(angleRad)
-      const db = AcApDocManager.instance.curDocument?.database
+      const db = tryWorkingDatabase()
       const angleText = db
         ? db.formatter.formatAngle(angleValueRad, {
             showUnits: true,

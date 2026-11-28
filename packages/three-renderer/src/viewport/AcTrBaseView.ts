@@ -27,6 +27,11 @@ export class AcTrBaseView {
   protected _camera: AcTrCamera
   protected _cameraControls: OrbitControls
   protected _raycaster: THREE.Raycaster
+  /**
+   * DVIEW / PLAN twist in radians. `flyTo` resets Euler rotation, so this is
+   * re-applied afterward (same pattern as paper-space {@link AcTrViewportView}).
+   */
+  private _viewTwistAngle = 0
 
   public readonly events = {
     viewChanged: new AcCmEventManager<AcTrBaseViewEventArgs>()
@@ -81,6 +86,24 @@ export class AcTrBaseView {
   }
   set enabled(value: boolean) {
     this._cameraControls.enabled = value
+  }
+
+  /**
+   * View twist angle in radians (DXF group 51 / PLAN of current UCS).
+   * Rotates the orthographic camera so WCS content appears twisted on screen.
+   */
+  get viewTwistAngle() {
+    return this._viewTwistAngle
+  }
+  set viewTwistAngle(value: number) {
+    const angle = Number.isFinite(value) ? value : 0
+    if (this._viewTwistAngle === angle) {
+      this.applyViewTwist()
+      return
+    }
+    this._viewTwistAngle = angle
+    this.applyViewTwist()
+    this.events.viewChanged.dispatch({ view: this })
   }
 
   /**
@@ -236,6 +259,8 @@ export class AcTrBaseView {
 
     if (scale != null) this._camera.zoom = scale
     this._camera.updateProjectionMatrix()
+    // lookAt + identity Euler clear twist; restore PLAN / DVIEW orientation.
+    this.applyViewTwist()
   }
 
   protected updateCameraFrustum(width?: number, height?: number) {
@@ -246,6 +271,19 @@ export class AcTrBaseView {
     this._camera.bottom = -this._frustum
     this._camera.updateProjectionMatrix()
     this._cameraControls.update()
+    this.applyViewTwist()
+  }
+
+  /**
+   * Applies {@link viewTwistAngle} to the orthographic camera (up + Z rotation).
+   */
+  protected applyViewTwist() {
+    const angle = this._viewTwistAngle
+    const camera = this._camera.internalCamera
+    camera.up.set(-Math.sin(angle), Math.cos(angle), 0)
+    this._camera.setRotationFromEuler(new THREE.Euler(0, 0, angle))
+    this._camera.lookAt(this._cameraControls.target)
+    this._camera.updateProjectionMatrix()
   }
 
   /**

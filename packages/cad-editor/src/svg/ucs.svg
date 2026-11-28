@@ -1,9 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <path d="M4 18h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M4 18V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M14 18l3-3M14 18l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M4 8l-3 3M4 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="16" y="17" font-size="6" fill="currentColor" font-family="sans-serif">X</text>
-  <text x="2" y="6" font-size="6" fill="currentColor" font-family="sans-serif">Y</text>
-  <rect x="3" y="16" width="3" height="3" stroke="currentColor" stroke-width="1.5"/>
+  <!-- AutoCAD UCS Find icon: orthographic XYZ triad from lower-left -->
+  <path
+    d="M4 20 V5 M4 20 H19 M4 20 L14.2 8.2"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Y arrowhead (up) -->
+  <path d="M4 3.2 L1.7 7.2 H6.3 Z" fill="currentColor" />
+  <!-- X arrowhead (right) -->
+  <path d="M20.8 20 L16.8 17.7 V22.3 Z" fill="currentColor" />
+  <!-- Z arrowhead (diagonal ~45°) -->
+  <path d="M15.5 6.7 L11.8 8.1 L13.9 11.3 Z" fill="currentColor" />
 </svg>

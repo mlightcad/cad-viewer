@@ -684,7 +684,6 @@ export default {
     renamePrompt: 'أدخل اسمًا جديدًا لـ UCS:',
     renameFailed: 'تعذرت إعادة تسمية UCS.',
     deleteFailed: 'تعذر حذف UCS.',
-    help: 'تعليمات',
     iconSettings: 'إعدادات أيقونة UCS',
     iconOn: 'تشغيل',
     iconAtOrigin: 'العرض عند نقطة أصل UCS',

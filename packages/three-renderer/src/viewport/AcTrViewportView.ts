@@ -220,7 +220,7 @@ export class AcTrViewportView extends AcTrBaseView {
     this._viewport = viewport.clone()
     this._frustum *= viewport.height / parentView.height
     this.zoomTo(this._viewport.viewBox)
-    this.applyViewTwist()
+    this.viewTwistAngle = this._viewport.viewTwistAngle
     this.enabled = false
   }
 
@@ -236,7 +236,7 @@ export class AcTrViewportView extends AcTrBaseView {
    */
   update() {
     this.zoomTo(this._viewport.viewBox, 1.0)
-    this.applyViewTwist()
+    this.viewTwistAngle = this._viewport.viewTwistAngle
   }
 
   /**
@@ -347,18 +347,6 @@ export class AcTrViewportView extends AcTrBaseView {
   }
 
   /**
-   * Rotates this viewport's camera by {@link AcGiViewport.viewTwistAngle}
-   * after {@link zoomTo}, which otherwise resets rotation to identity.
-   */
-  private applyViewTwist() {
-    const twist = this._viewport.viewTwistAngle
-    const angle = Number.isFinite(twist) ? twist : 0
-    this._camera.internalCamera.up.set(-Math.sin(angle), Math.cos(angle), 0)
-    this._camera.setRotationFromEuler(new THREE.Euler(0, 0, angle))
-    this._camera.updateProjectionMatrix()
-  }
-
-  /**
    * Returns the paper→model scale factor for this viewport (greater than 1
    * means model is "larger" than what paper shows, i.e. the viewport zooms
    * out). Useful to convert a tolerance/hit-radius expressed in paper-space
@@ -407,8 +395,8 @@ export class AcTrViewportView extends AcTrBaseView {
     if (!hit) return null
     // Map the CSS clip onto the DCS view box. Do not send corners through
     // `paperPointToModel`: that applies `viewTwistAngle`, and `render()`
-    // already calls `applyViewTwist()` after `zoomTo`. Using the twisted
-    // AABB would zoom out fully on-screen twisted viewports.
+    // already re-applies twist after `zoomTo`. Using the twisted AABB would
+    // zoom out fully on-screen twisted viewports.
     const mapped = acTrCssRectToWcsBox(hit, this._viewport.viewBox, cssVp)
     const modelBox = new AcGeBox2d()
     modelBox.expandByPoint({ x: mapped.minX, y: mapped.minY })
@@ -429,7 +417,7 @@ export class AcTrViewportView extends AcTrBaseView {
     this._height = pass.hit.height
     this._frustum = pass.hit.height / 2
     this.zoomTo(pass.modelBox, 1.0)
-    this.applyViewTwist()
+    this.viewTwistAngle = this._viewport.viewTwistAngle
 
     const gl = acTrCssTopLeftRectToGl(pass.hit, this._parentView.height)
     this._renderer.setViewport(gl.x, gl.y, gl.width, gl.height)

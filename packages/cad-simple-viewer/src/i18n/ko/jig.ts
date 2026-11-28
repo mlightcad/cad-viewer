@@ -2266,6 +2266,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: '옵션을 입력하십시오',
+    selectableOption: 'UCS 아이콘 선택 가능 여부 옵션을 입력하십시오',
+    keywords: {
+      on: {
+        display: '켜기(ON)',
+        local: '켜기',
+        global: 'ON'
+      },
+      off: {
+        display: '끄기(OFF)',
+        local: '끄기',
+        global: 'OFF'
+      },
+      all: {
+        display: '모두(A)',
+        local: '모두',
+        global: 'All'
+      },
+      noorigin: {
+        display: '원점 아님(N)',
+        local: '원점 아님',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: '원점(OR)',
+        local: '원점',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: '선택 가능(S)',
+        local: '선택 가능',
+        global: 'Selectable'
+      },
+      properties: {
+        display: '특성(P)',
+        local: '특성',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: '객체를 선택하거나',
     createOrOption: '그룹을 만들거나',

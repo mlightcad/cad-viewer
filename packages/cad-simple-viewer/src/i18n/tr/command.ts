@@ -236,6 +236,10 @@ export default {
     layer: {
       description: 'Katman yöneticisi yerleştirme panelini açar veya kapatır'
     },
+    layouttab: {
+      description:
+        'Model ve yerleşim sekmelerinin görüntülenmesini denetler'
+    },
     loginname: {
       description: 'Kullanıcının oturum açma adını görüntüler (salt okunur)'
     },
@@ -830,12 +834,59 @@ export default {
     viewrestore: {
       description: 'Adlı bir görünümü adıyla geri yükler'
     },
+    ucsaxisang: {
+      description:
+        'UCS komutunun X, Y veya Z seçenekleriyle UCS\'yi bir eksen etrafında döndürürken kullanılan varsayılan açıyı saklar'
+    },
+    ucsbase: {
+      description:
+        'Ortogonal UCS ayarlarının orijinini ve yönünü tanımlayan UCS adını saklar'
+    },
+    ucsfollow: {
+      description:
+        'Bir UCS\'den başka bir UCS\'ye geçildiğinde plan görünümü oluşturulup oluşturulmayacağını denetler'
+    },
+    ucsname: {
+      description:
+        'Geçerli görünüm penceresinin geçerli koordinat sistemi adını saklar (salt okunur)'
+    },
+    ucsorg: {
+      description:
+        'Geçerli görünüm penceresinin geçerli UCS orijinini saklar (salt okunur)'
+    },
+    ucsselectmode: {
+      description:
+        'UCS simgesinin tutamaklarla seçilip manipüle edilip edilemeyeceğini denetler'
+    },
+    ucsview: {
+      description:
+        'Geçerli UCS\'nin adlı bir görünümle birlikte kaydedilip kaydedilmeyeceğini belirler'
+    },
+    ucsvp: {
+      description:
+        'Etkin görünüm pencerelerindeki UCS\'nin kilitli kalıp kalmayacağını veya geçerli etkin görünüm penceresinin UCS\'sine uyup uymayacağını belirler'
+    },
+    ucsxdir: {
+      description:
+        'Geçerli görünüm penceresinin geçerli UCS X yönünü saklar (salt okunur)'
+    },
+    ucsydir: {
+      description:
+        'Geçerli görünüm penceresinin geçerli UCS Y yönünü saklar (salt okunur)'
+    },
+    worlducs: {
+      description:
+        'Geçerli UCS\'nin WCS ile aynı olup olmadığını gösterir (salt okunur)'
+    },
     ucs: {
       description:
         'Geçerli kullanıcı koordinat sisteminin orijinini ve yönünü ayarlar'
     },
     ucsman: {
       description: 'Adlı UCS tanımlarını ve UCS simgesi ayarlarını yönetir'
+    },
+    ucsicon: {
+      description: 'UCS simgesinin görünürlüğünü, konumunu, görünümünü ve seçilebilirliğini denetler'
     }
   },
   USER: {}

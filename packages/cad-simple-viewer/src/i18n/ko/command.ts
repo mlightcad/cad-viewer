@@ -218,6 +218,9 @@ export default {
     layer: {
       description: '도면층 관리자 도킹 패널을 열거나 닫습니다'
     },
+    layouttab: {
+      description: '모형 탭 및 배치 탭의 표시 여부를 제어합니다'
+    },
     loginname: {
       description: '사용자의 로그인 이름을 표시합니다(읽기 전용)'
     },
@@ -768,11 +771,52 @@ export default {
     viewrestore: {
       description: '이름으로 명명된 뷰를 복원합니다'
     },
+    ucsaxisang: {
+      description:
+        'UCS 명령의 X, Y 또는 Z 옵션으로 UCS를 축 중심으로 회전할 때의 기본 각도를 저장합니다'
+    },
+    ucsbase: {
+      description:
+        '직교 UCS 설정의 원점과 방향을 정의하는 UCS 이름을 저장합니다'
+    },
+    ucsfollow: {
+      description:
+        '한 UCS에서 다른 UCS로 변경할 때 평면 뷰를 생성할지 여부를 제어합니다'
+    },
+    ucsname: {
+      description: '현재 뷰포트의 현재 좌표계 이름을 저장합니다(읽기 전용)'
+    },
+    ucsorg: {
+      description: '현재 뷰포트의 현재 UCS 원점을 저장합니다(읽기 전용)'
+    },
+    ucsselectmode: {
+      description:
+        '그립으로 조작하기 위해 UCS 아이콘을 선택할 수 있는지 여부를 제어합니다'
+    },
+    ucsview: {
+      description: '현재 UCS를 명명된 뷰와 함께 저장할지 여부를 결정합니다'
+    },
+    ucsvp: {
+      description:
+        '활성 뷰포트의 UCS를 고정할지, 현재 활성 뷰포트의 UCS를 따를지 결정합니다'
+    },
+    ucsxdir: {
+      description: '현재 뷰포트의 현재 UCS X 방향을 저장합니다(읽기 전용)'
+    },
+    ucsydir: {
+      description: '현재 뷰포트의 현재 UCS Y 방향을 저장합니다(읽기 전용)'
+    },
+    worlducs: {
+      description: '현재 UCS가 WCS와 동일한지 여부를 나타냅니다(읽기 전용)'
+    },
     ucs: {
       description: '현재 사용자 좌표계의 원점과 방향을 설정합니다'
     },
     ucsman: {
       description: '명명된 UCS 정의 및 UCS 아이콘 설정을 관리합니다'
+    },
+    ucsicon: {
+      description: 'UCS 아이콘의 가시성, 배치, 모양 및 선택 가능 여부를 제어합니다'
     }
   },
   USER: {}

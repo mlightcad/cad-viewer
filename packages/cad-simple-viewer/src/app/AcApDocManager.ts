@@ -12,6 +12,7 @@ import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession.js'
+import { AcApUcsiconCmd } from '../command/AcApUcsiconCmd.js'
 import {
   AcApAboutCmd,
   AcApArcCmd,
@@ -2217,11 +2218,19 @@ export class AcApDocManager {
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
     addSystemCommand('viewrestore', 'viewrestore', new AcApViewRestoreCmd())
     addSystemCommand('ucs', 'ucs', new AcApUcsCmd())
+    // Leaf import (not command/index export*) — avoids a Jest/CJS hole when
+    // View2d ↔ DocManager cycles during barrel evaluation.
+    addSystemCommand('ucsicon', 'ucsicon', new AcApUcsiconCmd())
 
-    // Register system variables as commands
+    // Register system variables as commands so typing a name (e.g. OSMODE)
+    // prompts for a new value. AutoCAD allows the same string as both a
+    // command and a sysvar (UCSICON); at the command line the *command* wins
+    // and the variable is reached via SETVAR. Skip any sysvar whose name is
+    // already taken by a real command so registration does not throw.
     acapRegisterTrimExtendSysVars()
     const sysVars = AcDbSysVarManager.instance().getAllDescriptors()
-    sysVars.forEach(sysVar => {
+    for (const sysVar of sysVars) {
+      if (register.lookupGlobalCmd(sysVar.name)) continue
       register.addCommand(
         AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
         sysVar.name,
@@ -2229,7 +2238,7 @@ export class AcApDocManager {
         new AcApSysVarCmd(),
         this.resolveCommandAliases(sysVar.name, [])
       )
-    })
+    }
   }
 
   /**

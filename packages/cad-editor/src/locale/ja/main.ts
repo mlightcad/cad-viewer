@@ -243,6 +243,7 @@ export default {
       navigate: 'ナビゲート',
       namedViews: '名前の付いたビュー',
       coordinates: '座標',
+      interface: 'インターフェイス',
       review: 'レビュー',
       measurement: '計測',
       style: 'スタイル',
@@ -407,17 +408,14 @@ export default {
       newView: '現在の表示または窓から新しい名前の付いたビューを作成します。',
       viewManager:
         'ビュー管理を開き、名前の付いたビューを作成、復元、削除します。',
+      ucsIcon: 'UCS アイコンの表示、配置、外観、選択可否をコントロールします。',
       ucs: '現在のユーザ座標系の原点と方向を設定します。',
       namedUcs: '名前の付いた UCS 定義と UCS アイコンの設定を管理します。',
-      ucsWorld: 'UCS をワールド座標系に設定します。',
-      ucsOrigin: '新しい UCS 原点を定義します。',
-      ucsX: 'X 軸を中心に UCS を回転します。',
-      ucsY: 'Y 軸を中心に UCS を回転します。',
-      ucsZ: 'Z 軸を中心に UCS を回転します。',
-      ucsZAxis: 'Z 軸を指定して UCS を定義します。',
-      ucsView: 'UCS を現在のビューに位置合わせします。',
-      ucsObject: 'UCS を選択したオブジェクトに位置合わせします。',
       restoreView: '図面に保存された名前の付いたビューを復元します。',
+      toolbar: 'ツールバーの表示/非表示を切り替えます。',
+      commandLine: 'コマンドラインの表示/非表示を切り替えます。',
+      layoutTabs:
+        'モデルとレイアウトのタブの表示/非表示を切り替えます（LAYOUTTAB）。',
       propertyColor:
         '新規作成オブジェクトまたは選択したオブジェクトの色を設定します。',
       propertyLineType:
@@ -557,17 +555,13 @@ export default {
       zoomSmart: 'スマート',
       newView: '新規\nビュー',
       viewManager: 'ビュー\n管理',
+      ucsIcon: 'UCS\nアイコン',
       ucs: 'UCS',
       namedUcs: '名前の付いた\nUCS',
-      ucsWorld: 'ワールド',
-      ucsOrigin: '原点',
-      ucsX: 'X',
-      ucsY: 'Y',
-      ucsZ: 'Z',
-      ucsZAxis: 'Z 軸',
-      ucsView: 'ビュー',
-      ucsObject: 'オブジェクト',
-      restoreView: 'ビュー\n復元'
+      restoreView: 'ビュー\n復元',
+      toolbar: 'ツールバー',
+      commandLine: 'コマンド\nライン',
+      layoutTabs: 'レイアウト\nタブ'
     }
   },
   bsearch: {

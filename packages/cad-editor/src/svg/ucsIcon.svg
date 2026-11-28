@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!--
+    AutoCAD 2D UCS icon (WCS): L-shaped XY axes with origin square —
+    the glyph users see in the viewport corner (theme currentColor).
+  -->
+  <path
+    d="M5 19 V5 M5 19 H19"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- WCS origin square -->
+  <rect
+    x="5"
+    y="15.5"
+    width="3.5"
+    height="3.5"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <!-- Y arrowhead (up) -->
+  <path d="M5 3.2 L2.7 7.2 H7.3 Z" fill="currentColor" />
+  <!-- X arrowhead (right) -->
+  <path d="M20.8 19 L16.8 16.7 V21.3 Z" fill="currentColor" />
+</svg>
