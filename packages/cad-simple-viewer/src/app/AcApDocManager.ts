@@ -108,7 +108,6 @@ import {
   AcApSysVarCmd,
   AcApTrimCmd,
   AcApUcsCmd,
-  AcApUcsiconCmd,
   AcApUndoCmd,
   AcApUngroupCmd,
   AcApUnisolateObjectsCmd,
@@ -2218,6 +2217,12 @@ export class AcApDocManager {
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
     addSystemCommand('viewrestore', 'viewrestore', new AcApViewRestoreCmd())
     addSystemCommand('ucs', 'ucs', new AcApUcsCmd())
+    // Leaf require at register time: a top-level `export *` import of
+    // AcApUcsiconCmd can stay undefined under Jest/CJS when View2d ↔ DocManager
+    // cycles during command barrel evaluation.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AcApUcsiconCmd } =
+      require('../command/AcApUcsiconCmd.js') as typeof import('../command/AcApUcsiconCmd.js')
     addSystemCommand('ucsicon', 'ucsicon', new AcApUcsiconCmd())
 
     // Register system variables as commands so typing a name (e.g. OSMODE)

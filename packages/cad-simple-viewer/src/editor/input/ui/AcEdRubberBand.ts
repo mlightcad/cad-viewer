@@ -1,7 +1,20 @@
-import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
+import {
+  AcDbDatabase,
+  acdbHostApplicationServices,
+  AcGePoint2dLike,
+  AcGePoint3d
+} from '@mlightcad/data-model'
 
-import { AcApDocManager } from '../../../app/AcApDocManager.js'
 import { AcEdBaseView } from '../../view/AcEdBaseView.js'
+
+/** Working DB for unit formatting; null when unset (avoids DocManager import cycle). */
+function tryWorkingDatabase(): AcDbDatabase | null {
+  try {
+    return acdbHostApplicationServices().workingDatabase
+  } catch {
+    return null
+  }
+}
 
 /**
  * Options for the AcEdRubberBand preview.
@@ -296,7 +309,7 @@ export class AcEdRubberBand {
           (targetPoint.y - this.basePoint.y) ** 2
       )
 
-      const db = AcApDocManager.instance.curDocument?.database
+      const db = tryWorkingDatabase()
       this.labelEl.textContent = db
         ? db.formatter.formatLength(dist)
         : dist.toFixed(3)
@@ -392,7 +405,7 @@ export class AcEdRubberBand {
       this.anglePath.setAttribute('d', d)
 
       const angleValueRad = Math.abs(angleRad)
-      const db = AcApDocManager.instance.curDocument?.database
+      const db = tryWorkingDatabase()
       const angleText = db
         ? db.formatter.formatAngle(angleValueRad, {
             showUnits: true,

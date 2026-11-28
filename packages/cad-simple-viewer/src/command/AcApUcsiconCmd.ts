@@ -1,17 +1,21 @@
 import type { AcApContext } from '../app/AcApContext.js'
-import { AcApDocManager } from '../app/AcApDocManager.js'
-import {
-  AcEdCommand,
-  AcEdOpenMode,
-  AcEdPromptKeywordOptions,
-  AcEdPromptStatus
-} from '../editor/index.js'
-import { AcApI18n } from '../i18n/index.js'
+import { AcEdCommand } from '../editor/command/AcEdCommand.js'
+import { AcEdPromptKeywordOptions } from '../editor/input/prompt/AcEdPromptKeywordOptions.js'
+import { AcEdPromptStatus } from '../editor/input/prompt/AcEdPromptStatus.js'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
+import { AcApI18n } from '../i18n/AcApI18n.js'
 import {
   type AcApUcsIconSettings,
   AcApUcsService
 } from '../service/AcApUcsService.js'
-import { AcUiUcsIconDialog } from '../ui/AcUiUcsIconDialog.js'
+
+/** Lazy DocManager — avoids command ↔ DocManager cycles under Jest/CJS. */
+function docManagerEditor() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { AcApDocManager } =
+    require('../app/AcApDocManager.js') as typeof import('../app/AcApDocManager.js')
+  return AcApDocManager.instance.editor
+}
 
 type UcsIconKeyword =
   | 'ON'
@@ -59,6 +63,8 @@ export class AcApUcsiconCmd extends AcEdCommand {
 
       if (choice === 'Properties') {
         const host = context.view?.container ?? document.body
+        // Dynamic import keeps the dialog out of the DocManager command graph.
+        const { AcUiUcsIconDialog } = await import('../ui/AcUiUcsIconDialog.js')
         await AcUiUcsIconDialog.open(host)
         return
       }
@@ -134,7 +140,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
       if (key === defaultKey) prompt.keywords.default = keyword
     }
 
-    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    const result = await docManagerEditor().getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return undefined
     if (
       result.status !== AcEdPromptStatus.OK &&
@@ -168,7 +174,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
           AcApI18n.t('jig.ucsicon.keywords.off.global')
         )
 
-    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    const result = await docManagerEditor().getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return currentOn
     if (
       result.status !== AcEdPromptStatus.OK &&
