@@ -96,6 +96,11 @@ export function removeSnapshotElement(element: HTMLElement): void {
  * THREE skips invisible objects during `render()`, so geometry on layers that
  * start off never reaches the GPU. Call this around the upload render that
  * precedes {@link releaseLayerGroupsGeometryCpuArrays}.
+ *
+ * Frustum culling is a separate trap: the upload pass uses the opening camera
+ * (`initialView: 'current'` may leave the title block off-screen). CAD batches
+ * set `frustumCulled = false` in the viewer runtime so that pass still uploads
+ * every mesh before CPU arrays are dropped.
  */
 export function acexHtmlWithAllLayerGroupsVisible(
   layerGroupMaps: Iterable<Map<string, THREE.Group>>,

@@ -873,6 +873,68 @@ function sharedEntity(objectId: string, drawable: THREE.Object3D) {
 }
 
 describe('acexHtmlCollectBatchesFromObject3D shared block instances', () => {
+  it('splits far-apart shared mesh glyphs so float32 locals stay precise', () => {
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    // Unit glyph triangle — stroke detail that float32 destroys at |WCS|≥1e6.
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [0, 0, 0, 0.05, 0, 0, 0, 0.05, 0],
+        3
+      )
+    )
+    geometry.setIndex([0, 1, 2])
+
+    const originX = 5_000_000
+    const originY = 3_000_000
+    const farX = originX + 50_000
+
+    const near = new THREE.Mesh(geometry, material)
+    near.position.set(originX, originY, 0)
+    near.updateMatrixWorld(true)
+    getSceneDrawableUserData(near).sharesTemplateGeometry = true
+    getSceneDrawableUserData(near).bboxIntersectionCheck = true
+
+    const far = new THREE.Mesh(geometry, material)
+    far.position.set(farX, originY, 0)
+    far.updateMatrixWorld(true)
+    getSceneDrawableUserData(far).sharesTemplateGeometry = true
+    getSceneDrawableUserData(far).bboxIntersectionCheck = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(sharedEntity('glyph-near', near))
+    group.addEntity(sharedEntity('glyph-far', far))
+
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(group)
+    expect(meshBatches.length).toBeGreaterThanOrEqual(2)
+
+    for (const batch of meshBatches) {
+      for (let i = 0; i < batch.positions.length; i++) {
+        expect(Math.abs(batch.positions[i]!)).toBeLessThan(100)
+      }
+    }
+
+    const worlds = meshBatches.flatMap(batch =>
+      worldPositions(batch.positions, batch.offset)
+    )
+    // Near glyph tip stays sub-unit precise after export round-trip.
+    const nearTip = worlds.find(
+      (_, i) =>
+        i % 3 === 0 &&
+        Math.abs(worlds[i]! - (originX + 0.05)) < 1e-3 &&
+        Math.abs(worlds[i + 1]! - originY) < 1e-3
+    )
+    expect(nearTip).toBeDefined()
+    const farTip = worlds.find(
+      (_, i) =>
+        i % 3 === 0 &&
+        Math.abs(worlds[i]! - (farX + 0.05)) < 1e-3 &&
+        Math.abs(worlds[i + 1]! - originY) < 1e-3
+    )
+    expect(farTip).toBeDefined()
+  })
+
   it('bakes every visible INSERT of a shared line', () => {
     const material = new THREE.LineBasicMaterial({ color: 0xffffff })
     const geometry = new THREE.BufferGeometry()

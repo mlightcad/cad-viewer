@@ -220,6 +220,7 @@ export {
 } from './AcExHtmlIcons.js'
 export * from './AcExHtmlDocsUrl.js'
 export * from './AcExHtmlLayerExtents.js'
+export * from './AcExHtmlCameraDepth.js'
 export { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView.js'
 export * from './AcExHtmlBatchBuffers.js'
 export * from './AcExHtmlBatchBinaryCodec.js'

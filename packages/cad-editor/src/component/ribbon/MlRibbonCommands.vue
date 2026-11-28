@@ -3821,8 +3821,10 @@ const handleHeaderRedo = () => {
   AcApDocManager.instance.sendStringToExecute('redo')
 }
 
-const handleFileMenuSelect = async (command: string) => {
+const handleFileMenuSelect = async (command: unknown) => {
   if (isRibbonDisabled.value) return
+  // Element Plus defaults unset dropdown `command` to `{}`; ignore non-strings.
+  if (typeof command !== 'string') return
   if (
     AcApDocManager.instance.disableExport &&
     (command === 'Convert' || command === 'PngOut')

@@ -1,6 +1,11 @@
 import * as THREE from 'three'
 
-import { acexHtmlReadBatchWorldOffset, acexHtmlToWcsCoord } from '@mlightcad/cad-html-core'
+import {
+  acexHtmlBakePlainDrawableSlice,
+  acexHtmlReadBatchWorldOffset,
+  acexHtmlRebasePlainDrawableSliceAroundCentroid,
+  acexHtmlToWcsCoord
+} from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('rebase and measurement precision', () => {
@@ -61,6 +66,33 @@ describe('rebase and measurement precision', () => {
     index.rebuild(layout)
     const snap = index.findSnap(origin + 0.1, origin + 0.1, 1)
     expect(snap).toEqual({ x: origin, y: origin, mode: 'endpoint' })
+  })
+
+  it('keeps sub-unit glyph detail when baking at survey-scale WCS', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([0, 0, 0, 0.05, 0, 0, 0, 0.05, 0]),
+        3
+      )
+    )
+    const mesh = new THREE.Mesh(geometry)
+    mesh.position.set(5_000_000, 3_000_000, 0)
+    mesh.updateMatrixWorld(true)
+
+    // float32 world bake would snap 0.05 onto ~0.25 steps at 5e6.
+    const baked = acexHtmlBakePlainDrawableSlice(
+      { positions: Float32Array.from([0, 0, 0, 0.05, 0, 0, 0, 0.05, 0]) },
+      mesh.matrixWorld
+    )
+    expect(baked.positions).toBeInstanceOf(Float64Array)
+    expect(baked.positions[3]).toBeCloseTo(5_000_000.05, 6)
+
+    const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(baked)
+    expect(
+      acexHtmlToWcsCoord(rebased.slice.positions[3]!, rebased.offset[0]!)
+    ).toBeCloseTo(5_000_000.05, 5)
   })
 
   it('reads nested drawable offsets from matrixWorld instead of local position', () => {

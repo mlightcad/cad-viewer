@@ -1,5 +1,6 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
 import {
+  AcTrCamera,
   AcTrDirectEntityMeta,
   AcTrEntity,
   AcTrEntityPreview,
@@ -253,11 +254,20 @@ export class AcTrLayout {
   }
 
   private extendDepthRange(wcsBbox: THREE.Box3) {
-    // Infinite boxes (XLINE/RAY) or empty boxes carry no usable depth.
-    if (Number.isFinite(wcsBbox.min.z) && Number.isFinite(wcsBbox.max.z)) {
-      this._depthMin = Math.min(this._depthMin, wcsBbox.min.z)
-      this._depthMax = Math.max(this._depthMax, wcsBbox.max.z)
+    // Infinite boxes (XLINE/RAY), empty boxes, or absurd Z (corrupt DWG
+    // vertices ~1e83) carry no usable depth — accepting them poisons
+    // fitDepthRange and blanks the canvas. Require both ends usable so a
+    // half-sane box cannot leave min>max / empty depthRange.
+    const minZ = wcsBbox.min.z
+    const maxZ = wcsBbox.max.z
+    if (
+      !AcTrCamera.isUsableDepthZ(minZ) ||
+      !AcTrCamera.isUsableDepthZ(maxZ)
+    ) {
+      return
     }
+    this._depthMin = Math.min(this._depthMin, minZ)
+    this._depthMax = Math.max(this._depthMax, maxZ)
   }
 
   /**

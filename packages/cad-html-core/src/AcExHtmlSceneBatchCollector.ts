@@ -21,6 +21,7 @@ import {
   acexHtmlCopyUint32Range,
   acexHtmlExportPlainDrawableSlice,
   acexHtmlOmitNonFinitePrimitives,
+  type AcExHtmlPlainDrawableSlice,
   acexHtmlReadBatchWorldOffset,
   acexHtmlRebasePlainDrawableSliceAroundCentroid
 } from './AcExHtmlBatchBuffers.js'
@@ -627,12 +628,13 @@ function readWorldOffset(object: THREE.Object3D): [number, number, number] {
 
 function exportSceneDrawableSlice(
   object: THREE.Object3D,
-  slice: AcExHtmlBufferGeometrySlice,
+  slice: AcExHtmlPlainDrawableSlice,
   options: { preserveWorldSpaceForPatternFill?: boolean } = {}
 ): AcExHtmlBufferGeometrySlice & { offset: [number, number, number] } {
   const exported = acexHtmlExportPlainDrawableSlice(object, slice, options)
   return {
-    ...exported.slice,
+    positions: exported.slice.positions,
+    indices: exported.slice.indices,
     offset: exported.offset
   }
 }
@@ -956,8 +958,28 @@ function groupVisibleInstancesByExportLayer(
 }
 
 /**
- * Bakes selected visible INSERTs of one shared template into a single
- * world-space slice, then rebases around the centroid.
+ * Max XY span (drawing units) for one HTML-exported instance cluster.
+ *
+ * Shared TrueType glyphs (and INSERT templates) can appear across an entire
+ * survey sheet. Baking every instance into one float32 batch then centering
+ * leaves title-block characters at |local| ≫ 1e4, which quantizes stroke
+ * detail. Grid cells of this size keep post-rebase locals float32-safe
+ * (~0.001 ulp) for glyph meshes.
+ */
+export const ACEX_HTML_INSTANCE_CLUSTER_SPAN = 8192
+
+type AcExHtmlExpandedInstanceBatch = {
+  slice: AcExHtmlBufferGeometrySlice
+  offset: [number, number, number]
+}
+
+/**
+ * Bakes selected visible instances of one shared template into one or more
+ * world-space clusters, each rebased around its own centroid.
+ *
+ * Instances are grouped onto an XY grid of {@link ACEX_HTML_INSTANCE_CLUSTER_SPAN}
+ * so TrueType mesh glyphs that share a template across a large drawing do not
+ * destroy each other's float32 precision.
  *
  * @param instanceIndices - When set, only these instance slots are baked.
  */
@@ -965,18 +987,13 @@ function expandInstancedGeometry(
   object: InstancedExportDrawable,
   primitiveVertexCount: 1 | 2 | 3,
   instanceIndices?: readonly number[]
-):
-  | {
-      slice: AcExHtmlBufferGeometrySlice
-      offset: [number, number, number]
-    }
-  | undefined {
+): AcExHtmlExpandedInstanceBatch[] {
   const template = acexHtmlOmitNonFinitePrimitives(
     acexHtmlExportBufferGeometrySlice(object.geometry),
     primitiveVertexCount
   )
   const floatsPerInstance = template.positions.length
-  if (floatsPerInstance === 0) return undefined
+  if (floatsPerInstance === 0) return []
 
   object.updateMatrixWorld(true)
   const array = object.instanceMatrix.array as Float32Array
@@ -984,41 +1001,58 @@ function expandInstancedGeometry(
   const slotList =
     instanceIndices ??
     Array.from({ length: object.count }, (_, index) => index)
-  let visible = 0
-  for (const i of slotList) {
-    _instanceMatrix.fromArray(array, i * 16)
-    if (isUsableInstanceMatrix(_instanceMatrix)) visible++
-  }
-  if (visible === 0) return undefined
 
-  const positions = new Float32Array(visible * floatsPerInstance)
-  const indices =
-    template.indices != null ? new Uint32Array(visible * indexCount) : undefined
-  const vertexCount = floatsPerInstance / 3
-  let slot = 0
+  const span = ACEX_HTML_INSTANCE_CLUSTER_SPAN
+  const clusters = new Map<string, number[]>()
   for (const i of slotList) {
     _instanceMatrix.fromArray(array, i * 16)
     if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
-    const baked = acexHtmlBakePlainDrawableSlice(template, _instanceWorld)
-    positions.set(baked.positions, slot * floatsPerInstance)
-    if (indices && baked.indices) {
-      const base = slot * vertexCount
-      for (let k = 0; k < baked.indices.length; k++) {
-        indices[slot * indexCount + k] = baked.indices[k]! + base
-      }
+    const tx = _instanceWorld.elements[12]!
+    const ty = _instanceWorld.elements[13]!
+    const key = `${Math.floor(tx / span)}\0${Math.floor(ty / span)}`
+    const group = clusters.get(key)
+    if (group) {
+      group.push(i)
+    } else {
+      clusters.set(key, [i])
     }
-    slot++
   }
+  if (clusters.size === 0) return []
 
-  const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(
-    acexHtmlOmitNonFinitePrimitives(
-      { positions, indices },
-      primitiveVertexCount
+  const vertexCount = floatsPerInstance / 3
+  const results: AcExHtmlExpandedInstanceBatch[] = []
+  for (const group of clusters.values()) {
+    const positions = new Float64Array(group.length * floatsPerInstance)
+    const indices =
+      template.indices != null
+        ? new Uint32Array(group.length * indexCount)
+        : undefined
+    let slot = 0
+    for (const i of group) {
+      _instanceMatrix.fromArray(array, i * 16)
+      _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
+      const baked = acexHtmlBakePlainDrawableSlice(template, _instanceWorld)
+      positions.set(baked.positions, slot * floatsPerInstance)
+      if (indices && baked.indices) {
+        const base = slot * vertexCount
+        for (let k = 0; k < baked.indices.length; k++) {
+          indices[slot * indexCount + k] = baked.indices[k]! + base
+        }
+      }
+      slot++
+    }
+
+    const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(
+      acexHtmlOmitNonFinitePrimitives(
+        { positions, indices },
+        primitiveVertexCount
+      )
     )
-  )
-  if (rebased.slice.positions.length === 0) return undefined
-  return { slice: rebased.slice, offset: rebased.offset }
+    if (rebased.slice.positions.length === 0) continue
+    results.push({ slice: rebased.slice, offset: rebased.offset })
+  }
+  return results
 }
 
 function meshNeedsPerInstanceExport(material: THREE.Material): boolean {
@@ -1057,24 +1091,25 @@ function pushInstancedLine(
   const fallbackLayer = options?.geometryLayerName || materialLayer
   const excludeFromOsnap = drawableExcludesFromOsnap(object)
   for (const [exportLayer, indices] of groups) {
-    const expanded = expandInstancedGeometry(object, 2, indices)
-    if (!expanded) continue
-    const lineDistances = linePattern
-      ? acexHtmlComputeLineDistancesForSegments(expanded.slice.positions)
-      : undefined
-    const exported: AcExHtmlLineBatch = {
-      layer: exportLayer || fallbackLayer,
-      color,
-      offset: expanded.offset,
-      linePattern,
-      lineDistances,
-      ...expanded.slice
+    const expandedList = expandInstancedGeometry(object, 2, indices)
+    for (const expanded of expandedList) {
+      const lineDistances = linePattern
+        ? acexHtmlComputeLineDistancesForSegments(expanded.slice.positions)
+        : undefined
+      const exported: AcExHtmlLineBatch = {
+        layer: exportLayer || fallbackLayer,
+        color,
+        offset: expanded.offset,
+        linePattern,
+        lineDistances,
+        ...expanded.slice
+      }
+      if (excludeFromOsnap) {
+        exported.excludeFromOsnap = true
+      }
+      assignRenderOrder(exported, object, material)
+      lineBatches.push(exported)
     }
-    if (excludeFromOsnap) {
-      exported.excludeFromOsnap = true
-    }
-    assignRenderOrder(exported, object, material)
-    lineBatches.push(exported)
   }
 }
 
@@ -1131,23 +1166,24 @@ function pushInstancedMesh(
   }
 
   for (const [exportLayer, indices] of groups) {
-    const expanded = expandInstancedGeometry(
+    const expandedList = expandInstancedGeometry(
       object,
       asPoints ? 1 : 3,
       indices
     )
-    if (!expanded) continue
-    const mesh = buildMeshBatch(
-      object.geometry,
-      material,
-      object,
-      expanded.slice,
-      expanded.offset,
-      !asPoints
-    )
-    if (!mesh) continue
-    mesh.layer = exportLayer || fallbackLayer
-    meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+    for (const expanded of expandedList) {
+      const mesh = buildMeshBatch(
+        object.geometry,
+        material,
+        object,
+        expanded.slice,
+        expanded.offset,
+        !asPoints
+      )
+      if (!mesh) continue
+      mesh.layer = exportLayer || fallbackLayer
+      meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+    }
   }
 }
 
