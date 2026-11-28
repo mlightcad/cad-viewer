@@ -40,9 +40,12 @@ export class AcTrMTextColorUtil {
           color: this.normalizeEntityColor(layerColor)
         })
       : resolvedRgb
-    // Inline `\C0` is ByBlock. An entity with its own ACI is not that colour;
-    // model-space ByBlock displays as white unless the entity itself is ByBlock.
-    const byBlockColor = color.isByBlock ? resolvedRgb : 0xffffff
+    // Inline `\C0` is ByBlock. When the entity itself is ByBlock it takes the
+    // block reference's colour; otherwise ByBlock outside a block displays as
+    // ACI 7 — the foreground of the background, not literal white.
+    const byBlockColor = color.isByBlock
+      ? resolvedRgb
+      : acgiForegroundColorForBackground(backgroundColor)
     return {
       layer: traits.layer,
       color: this.toMTextColor(color),
