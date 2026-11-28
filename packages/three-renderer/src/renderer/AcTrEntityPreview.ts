@@ -132,9 +132,14 @@ export class AcTrEntityPreview {
     const trCamera = new AcTrCamera(camera)
     // Elevated entities (e.g. contour polylines) sit far outside the default
     // depth band; fit it to the drawable so the preview is not blank.
+    // fitDepthRange itself rejects half-corrupt / absurd Z boxes.
     drawable.updateMatrixWorld(true)
     const depthBox = new THREE.Box3().setFromObject(drawable)
-    if (!depthBox.isEmpty()) {
+    if (
+      !depthBox.isEmpty() &&
+      AcTrCamera.isUsableDepthZ(depthBox.min.z) &&
+      AcTrCamera.isUsableDepthZ(depthBox.max.z)
+    ) {
       trCamera.fitDepthRange(depthBox.min.z, depthBox.max.z)
     }
 

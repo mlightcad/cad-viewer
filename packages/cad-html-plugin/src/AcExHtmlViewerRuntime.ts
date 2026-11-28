@@ -32,10 +32,16 @@ import {
   acexHtmlResolveViewerManifestUrl
 } from '@mlightcad/cad-html-core'
 import {
+  ACEX_HTML_CAMERA_NEAR,
+  ACEX_HTML_DEFAULT_DEPTH_HALF,
   type AcExHtmlBatchExtentEntry,
   acexHtmlCollectLayoutBatchExtentEntries,
   acexHtmlComputeIntelligentExtentsFromBatchEntries,
   acexHtmlComputeLayerExtentsMap,
+  acexHtmlCreateEmptyDepthRange,
+  acexHtmlExpandDepthRangeFromBatches,
+  acexHtmlFitOrthographicDepthRange,
+  type AcExHtmlMutableDepthRange,
   acexHtmlResolveLayoutFallbackExtents,
   acexHtmlResolveLayoutViewExtents
 } from '@mlightcad/cad-html-core'
@@ -160,7 +166,11 @@ import {
 
 /** Matches {@link AcTrBaseView} orthographic half-height in world units. */
 const ACEX_CAMERA_FRUSTUM = 400
-const ACEX_CAMERA_DISTANCE = 500
+/**
+ * Default camera Z / half-depth band. Matches {@link ACEX_HTML_DEFAULT_DEPTH_HALF}.
+ * Elevated geometry grows the band via {@link acexHtmlFitOrthographicDepthRange}.
+ */
+const ACEX_CAMERA_DISTANCE = ACEX_HTML_DEFAULT_DEPTH_HALF
 
 function hideLoading(): void {
   const loading = document.getElementById('mlcad-loading')
@@ -782,8 +792,8 @@ async function startViewer(): Promise<void> {
     initialWidth / 2,
     initialHeight / 2,
     -initialHeight / 2,
-    0.1,
-    1000
+    ACEX_HTML_CAMERA_NEAR,
+    2 * ACEX_CAMERA_DISTANCE
   )
   camera.position.set(0, 0, ACEX_CAMERA_DISTANCE)
   camera.up.set(0, 1, 0)
@@ -820,11 +830,42 @@ async function startViewer(): Promise<void> {
   const modelRoot = new THREE.Group()
   modelRoot.name = 'model-space'
   const modelScene = new THREE.Scene()
-  const viewportCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+  const viewportCamera = new THREE.OrthographicCamera(
+    -1,
+    1,
+    1,
+    -1,
+    ACEX_HTML_CAMERA_NEAR,
+    2 * ACEX_CAMERA_DISTANCE
+  )
+  viewportCamera.position.z = ACEX_CAMERA_DISTANCE
   viewportCamera.up.set(0, 1, 0)
   /** Orthographic camera used only for the snap-loupe scissor pass. */
-  const loupeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+  const loupeCamera = new THREE.OrthographicCamera(
+    -1,
+    1,
+    1,
+    -1,
+    ACEX_HTML_CAMERA_NEAR,
+    2 * ACEX_CAMERA_DISTANCE
+  )
+  loupeCamera.position.z = ACEX_CAMERA_DISTANCE
   loupeCamera.up.set(0, 1, 0)
+
+  /**
+   * Grow-only WCS Z of loaded batches. Survey contours / elevation labels sit
+   * at their real height; a fixed ±500 band clips them (same bug fixed in
+   * cad-simple-viewer by `AcTrCamera.fitDepthRange`).
+   */
+  const geometryDepthRange: AcExHtmlMutableDepthRange =
+    acexHtmlCreateEmptyDepthRange()
+
+  const fitCamerasDepth = () => {
+    const { min, max } = geometryDepthRange
+    acexHtmlFitOrthographicDepthRange(camera, min, max)
+    acexHtmlFitOrthographicDepthRange(viewportCamera, min, max)
+    acexHtmlFitOrthographicDepthRange(loupeCamera, min, max)
+  }
   const savedViewportBox = new THREE.Vector4()
   /** DOM chrome (border and OSNAP glyph) for the snap loupe. */
   const snapLoupe = new AcExSnapLoupe(canvasHost)
@@ -854,6 +895,12 @@ async function startViewer(): Promise<void> {
     parent: THREE.Object3D,
     materials: LineMaterial[]
   ) => {
+    // Scan before GPU upload / CPU release so elevated Z survives for depth fit.
+    acexHtmlExpandDepthRangeFromBatches(
+      geometryDepthRange,
+      lineBatches,
+      meshBatches
+    )
     const created: THREE.Object3D[] = []
     for (const batch of lineBatches) {
       const object = createLineObject(batch, materials, wideLineResolution)
@@ -1450,7 +1497,9 @@ async function startViewer(): Promise<void> {
 
   const flyTo = (centerX: number, centerY: number, zoom?: number) => {
     const target = new THREE.Vector3(centerX, centerY, 0)
-    camera.position.set(centerX, centerY, ACEX_CAMERA_DISTANCE)
+    camera.position.x = centerX
+    camera.position.y = centerY
+    fitCamerasDepth()
     camera.lookAt(target)
     camera.setRotationFromEuler(new THREE.Euler(0, 0, 0))
     controls.target.copy(target)
@@ -1888,7 +1937,13 @@ async function startViewer(): Promise<void> {
     target.right = fitted.aspect * fitted.frustum
     target.top = fitted.frustum
     target.bottom = -fitted.frustum
-    target.position.set(fitted.centerX, fitted.centerY, ACEX_CAMERA_DISTANCE)
+    target.position.x = fitted.centerX
+    target.position.y = fitted.centerY
+    acexHtmlFitOrthographicDepthRange(
+      target,
+      geometryDepthRange.min,
+      geometryDepthRange.max
+    )
     target.lookAt(fitted.centerX, fitted.centerY, 0)
     target.up.set(-Math.sin(twist), Math.cos(twist), 0)
     target.setRotationFromEuler(new THREE.Euler(0, 0, twist))
@@ -2092,6 +2147,8 @@ async function startViewer(): Promise<void> {
   }
 
   const render = () => {
+    // Keep near/far in sync every frame (OrbitControls / flyTo only move XY).
+    fitCamerasDepth()
     measure?.syncOverlays()
     markup?.syncOverlays()
     renderer.render(scene, camera)
@@ -3393,6 +3450,11 @@ function applyBatchPose(
   if (batch.renderOrder != null) {
     object.renderOrder = batch.renderOrder
   }
+  // Match live AcTrBatched* / mesh-glyph InstancedMeshes. The post-load
+  // "upload then drop CPU arrays" pass renders once under the opening camera;
+  // with `initialView: 'current'` that frustum often excludes the title block,
+  // so frustum-culled meshes never reach the GPU and vanish after CPU release.
+  object.frustumCulled = false
 }
 
 /**

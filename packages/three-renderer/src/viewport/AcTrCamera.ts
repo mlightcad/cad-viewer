@@ -11,6 +11,15 @@ export class AcTrCamera {
   /** Near-plane distance of 2D view cameras. */
   static readonly NEAR = 0.1
   /**
+   * Absolute WCS Z beyond this is treated as corrupt for depth fitting.
+   *
+   * Real CAD elevations stay well below this (survey contours are ~10³–10⁴).
+   * Some DWGs contribute a single vertex at ~1e83; folding that into the
+   * orthographic near/far band destroys float depth precision and blanks the
+   * canvas (including paper layouts whose own Z is fine).
+   */
+  static readonly MAX_ABS_DEPTH_Z = 1e8
+  /**
    * Clearance kept between fitted geometry and the near/far planes, so
    * draw-order Z offsets stacked on top of the geometry are not clipped.
    */
@@ -23,12 +32,21 @@ export class AcTrCamera {
   }
 
   /**
+   * True when `z` is finite and within {@link MAX_ABS_DEPTH_Z}.
+   */
+  static isUsableDepthZ(z: number): boolean {
+    return Number.isFinite(z) && Math.abs(z) <= AcTrCamera.MAX_ABS_DEPTH_Z
+  }
+
+  /**
    * Moves the camera along Z and sets its near/far planes so WCS Z in
    * `[minZ, maxZ]` is inside the clip volume.
    *
    * The band only grows beyond the default one, so drawings near Z=0 keep
-   * full depth precision for draw-order Z stacking. Non-finite bounds fall
-   * back to the default band.
+   * full depth precision for draw-order Z stacking. Either bound non-finite
+   * or absurd (see {@link MAX_ABS_DEPTH_Z}) falls the whole call back to the
+   * default band — mixing a usable min with a corrupt max (or vice versa)
+   * would leave elevated geometry clipped against the default half.
    *
    * @param minZ - Lowest WCS Z of the geometry to show.
    * @param maxZ - Highest WCS Z of the geometry to show.
@@ -36,8 +54,10 @@ export class AcTrCamera {
   fitDepthRange(minZ: number, maxZ: number) {
     const half = AcTrCamera.DEFAULT_DEPTH_HALF
     const margin = AcTrCamera.DEPTH_MARGIN
-    const low = Number.isFinite(minZ) ? Math.min(minZ - margin, -half) : -half
-    const high = Number.isFinite(maxZ) ? Math.max(maxZ + margin, half) : half
+    const usable =
+      AcTrCamera.isUsableDepthZ(minZ) && AcTrCamera.isUsableDepthZ(maxZ)
+    const low = usable ? Math.min(minZ - margin, -half) : -half
+    const high = usable ? Math.max(maxZ + margin, half) : half
     const far = high - low
     const camera = this._camera
     if (camera.position.z === high && camera.far === far) return

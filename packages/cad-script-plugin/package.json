@@ -51,14 +51,14 @@
     "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "1.16.5",
+    "@mlightcad/data-model": "1.16.6",
     "vite": "^6.4.3"
   },
   "peerDependencies": {
     "@mlightcad/cad-agent-core": "workspace:^",
     "@mlightcad/cad-script-core": "workspace:^",
     "@mlightcad/cad-simple-viewer": "workspace:^",
-    "@mlightcad/data-model": "1.16.5"
+    "@mlightcad/data-model": "1.16.6"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

@@ -189,4 +189,37 @@ describe('AcTrBaseView depth range', () => {
     expect(view.internalCamera.position.z).toBe(500)
     expect(view.internalCamera.far).toBe(1000)
   })
+
+  it('ignores absurd finite Z that would destroy depth precision', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    // Corrupt DWG vertices can report ~1e83; fitting that blanks the canvas.
+    view.fitDepthRange(-16, 1.2141680576410807e83)
+
+    expect(view.internalCamera.position.z).toBe(500)
+    expect(view.internalCamera.far).toBe(1000)
+    expect(Math.abs(ndcDepth(view.internalCamera, 0))).toBeLessThanOrEqual(1)
+  })
+
+  it('rejects a half-corrupt elevated range instead of mixing bounds', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    // Usable survey min + corrupt max must not leave high at the default
+    // half while low expands — that clips the real elevation.
+    view.fitDepthRange(1100, 1.2141680576410807e83)
+
+    expect(view.internalCamera.position.z).toBe(500)
+    expect(view.internalCamera.far).toBe(1000)
+  })
+
+  it('still fits large but realistic survey elevations', () => {
+    const view = new TestView(createMockRenderer(), 800, 600)
+
+    view.fitDepthRange(0, 5_000_000)
+
+    expect(view.internalCamera.position.z).toBe(5_000_000 + 100)
+    expect(Math.abs(ndcDepth(view.internalCamera, 5_000_000))).toBeLessThanOrEqual(
+      1
+    )
+  })
 })

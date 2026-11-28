@@ -108,14 +108,26 @@ export function acexHtmlReadBatchWorldOffset(
   return [_worldOffset.x, _worldOffset.y, _worldOffset.z]
 }
 
-/** Minimal geometry slice used while rebasing plain drawables for HTML export. */
+/**
+ * Minimal geometry slice used while rebasing plain drawables for HTML export.
+ *
+ * Intermediate world-space bakes may use {@link Float64Array} so large WCS
+ * translations are not quantized before {@link acexHtmlRebasePlainDrawableSliceAroundCentroid}
+ * moves them into a float32-friendly local frame. Exported snapshot batches
+ * always store {@link Float32Array} locals.
+ */
 export interface AcExHtmlPlainDrawableSlice {
-  positions: Float32Array
+  positions: Float32Array | Float64Array
   indices?: Uint32Array
 }
 
 /**
- * Applies a world matrix to every vertex in a geometry slice using double precision.
+ * Applies a world matrix to every vertex in a geometry slice using float64
+ * intermediates.
+ *
+ * Writing world positions straight into {@link Float32Array} at survey-scale
+ * coordinates (1e6+) quantizes glyph strokes to 0.1–1 drawing units before
+ * rebase can rescue them — the HTML title-block garbled-text bug.
  */
 export function acexHtmlBakePlainDrawableSlice(
   slice: AcExHtmlPlainDrawableSlice,
@@ -124,10 +136,10 @@ export function acexHtmlBakePlainDrawableSlice(
   const elements = matrix.elements
   const source = slice.positions
   if (source.length === 0) {
-    return { positions: new Float32Array(0), indices: slice.indices }
+    return { positions: new Float64Array(0), indices: slice.indices }
   }
 
-  const transformed = new Float32Array(source.length)
+  const transformed = new Float64Array(source.length)
   for (let i = 0; i < source.length; i += 3) {
     const x = source[i]!
     const y = source[i + 1]!
@@ -146,7 +158,10 @@ export function acexHtmlBakePlainDrawableSlice(
   }
 }
 
-function vertexIsFinite(positions: Float32Array, vertex: number): boolean {
+function vertexIsFinite(
+  positions: ArrayLike<number>,
+  vertex: number
+): boolean {
   const offset = vertex * 3
   return (
     Number.isFinite(positions[offset]!) &&
@@ -185,6 +200,11 @@ export function acexHtmlOmitNonFinitePrimitives(
     return slice
   }
 
+  const packPositions = (packed: number[]): Float32Array | Float64Array =>
+    positions instanceof Float64Array
+      ? Float64Array.from(packed)
+      : Float32Array.from(packed)
+
   const indices = slice.indices
   if (indices && indices.length > 0) {
     const kept: number[] = []
@@ -211,7 +231,12 @@ export function acexHtmlOmitNonFinitePrimitives(
       }
     }
     if (kept.length === 0) {
-      return { positions: new Float32Array(0) }
+      return {
+        positions:
+          positions instanceof Float64Array
+            ? new Float64Array(0)
+            : new Float32Array(0)
+      }
     }
     const remap = new Int32Array(vertexCount)
     remap.fill(-1)
@@ -232,7 +257,7 @@ export function acexHtmlOmitNonFinitePrimitives(
       }
       remapped[i] = next
     }
-    return { positions: Float32Array.from(packed), indices: remapped }
+    return { positions: packPositions(packed), indices: remapped }
   }
 
   const packed: number[] = []
@@ -255,24 +280,41 @@ export function acexHtmlOmitNonFinitePrimitives(
     }
   }
   if (packed.length === 0) {
-    return { positions: new Float32Array(0) }
+    return {
+      positions:
+        positions instanceof Float64Array
+          ? new Float64Array(0)
+          : new Float32Array(0)
+    }
   }
-  return { positions: Float32Array.from(packed) }
+  return { positions: packPositions(packed) }
 }
 
 /**
  * Rebases a world-space slice around its axis-aligned center so HTML playback can
  * keep float32-friendly local vertices with a separate float64 origin.
  *
+ * Accepts float64 world bakes from {@link acexHtmlBakePlainDrawableSlice}; the
+ * returned local buffer is always {@link Float32Array}.
+ *
  * Non-finite coordinates are ignored while placing the origin and written as the
  * local origin so one corrupt vertex cannot make the whole batch's bounds NaN.
  */
 export function acexHtmlRebasePlainDrawableSliceAroundCentroid(
   slice: AcExHtmlPlainDrawableSlice
-): { slice: AcExHtmlPlainDrawableSlice; offset: [number, number, number] } {
+): {
+  slice: { positions: Float32Array; indices?: Uint32Array }
+  offset: [number, number, number]
+} {
   const source = slice.positions
   if (source.length < 3) {
-    return { slice, offset: [0, 0, 0] }
+    return {
+      slice: {
+        positions: new Float32Array(0),
+        indices: slice.indices
+      },
+      offset: [0, 0, 0]
+    }
   }
 
   let minX = Infinity
@@ -348,7 +390,10 @@ export function acexHtmlExportPlainDrawableSlice(
   object: THREE.Object3D,
   slice: AcExHtmlPlainDrawableSlice,
   _options: { preserveWorldSpaceForPatternFill?: boolean } = {}
-): { slice: AcExHtmlPlainDrawableSlice; offset: [number, number, number] } {
+): {
+  slice: { positions: Float32Array; indices?: Uint32Array }
+  offset: [number, number, number]
+} {
   object.updateMatrixWorld(true)
   const worldSlice = acexHtmlBakePlainDrawableSlice(slice, object.matrixWorld)
 
