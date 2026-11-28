@@ -126,8 +126,7 @@ export default {
   about: {
     title: '정보',
     close: '닫기',
-    product: 'CAD 뷰어',
-    tagline: 'DWG 및 DXF 도면을 위한 고성능 웹 CAD 뷰어입니다.',
+    tagline: 'DWG 및 DXF를 위한 웹 CAD 인프라입니다.',
     website: '웹 사이트',
     docs: '문서',
     repository: 'GitHub',

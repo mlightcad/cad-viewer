@@ -121,8 +121,7 @@ export default {
   about: {
     title: '关于',
     close: '关闭',
-    product: 'CAD 查看器',
-    tagline: '面向 DWG/DXF 图纸的高性能 Web CAD 查看器。',
+    tagline: '面向 DWG 与 DXF 的 Web CAD 基础设施',
     website: '官网',
     docs: '文档',
     repository: 'GitHub',

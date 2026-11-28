@@ -58,10 +58,6 @@ export class AcUiAboutDialog extends AcUiDialog {
       iconSize: '56px'
     })
 
-    const product = document.createElement('div')
-    product.className = 'ml-ui-about-product'
-    product.textContent = AcApI18n.t('main.about.product')
-
     const tagline = document.createElement('div')
     tagline.className = 'ml-ui-about-tagline'
     tagline.textContent = AcApI18n.t('main.about.tagline')
@@ -86,7 +82,6 @@ export class AcUiAboutDialog extends AcUiDialog {
     )
 
     this.bodyEl.appendChild(brand)
-    this.bodyEl.appendChild(product)
     this.bodyEl.appendChild(tagline)
     this.bodyEl.appendChild(links)
     this.bodyEl.appendChild(copyright)
@@ -144,12 +139,6 @@ export class AcUiAboutDialog extends AcUiDialog {
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--ml-ui-text, #303133);
-}
-
-.ml-ui-about-product {
-  text-align: center;
-  font-size: 15px;
-  font-weight: 600;
 }
 
 .ml-ui-about-tagline {

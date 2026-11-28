@@ -10,10 +10,10 @@ export const MLIGHTCAD_ICON_SVG =
   '</svg>'
 
 /** Public-facing brand / product name. */
-export const MLIGHTCAD_BRAND_NAME = 'mlightcad'
+export const MLIGHTCAD_BRAND_NAME = 'MLightCAD'
 
 /** Marketing / demo site. */
-export const MLIGHTCAD_WEBSITE_URL = 'https://mlightcad.github.io/cad-viewer/'
+export const MLIGHTCAD_WEBSITE_URL = 'https://mlightcad.com/'
 
 /** User-guide / docs site root (localized pages live under this base). */
 export const MLIGHTCAD_DOCS_URL = 'https://mlightcad.com/cad-viewer/docs/'
