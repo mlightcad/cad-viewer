@@ -209,13 +209,14 @@ export class AcApUcsIconController {
   private syncPointerEvents() {
     // Hold-drag: disable hits so the moving origin triad does not swallow
     // pointerup. Click-to-place: keep hits so a pick on the icon commits.
+    // Idle: only when canInteract() — never steal canvas picks during an
+    // active command (TRIM/EXTEND picking at the UCS origin, etc.).
     let enabled = false
     if (!this.disposed && this.overlay.geometry != null) {
       if (this.dragging) {
         enabled = !this.dragging.pointerDown
       } else {
-        const icon = AcApUcsService.getIconSettings(this.tryDb())
-        enabled = icon.on && icon.allowSelectingIcon
+        enabled = this.canInteract()
       }
     }
     if (enabled === this.pointerEventsEnabled) return

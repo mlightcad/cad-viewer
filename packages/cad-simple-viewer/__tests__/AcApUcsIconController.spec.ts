@@ -174,6 +174,24 @@ describe('AcApUcsIconController', () => {
     })
   })
 
+  test('disables icon hits while the editor is active (command picking)', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const view = createView()
+    ;(view.editor as { isActive: boolean }).isActive = true
+    const overlay = new AcApUcsIconOverlay(host)
+    overlay.update(view)
+
+    const controller = createController(view, overlay, host)
+    controller.sync()
+
+    expect(overlay.element.style.pointerEvents).toBe('none')
+
+    controller.dispose()
+    overlay.dispose()
+    host.remove()
+  })
+
   test('pointerdown on the icon shows three grip handles', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
