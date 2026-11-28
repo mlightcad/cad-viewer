@@ -127,6 +127,21 @@ function createView(
   } as unknown as AcEdBaseView
 }
 
+function createController(
+  view: AcEdBaseView,
+  overlay: AcApUcsIconOverlay,
+  host: HTMLElement
+) {
+  // Mirror AcTrView2d host hooks (controller no longer imports DocManager).
+  return new AcApUcsIconController(view, overlay, host, {
+    canWrite: () => {
+      const doc = mockTryGetInstance()?.curDocument
+      return !!doc && doc.openMode >= AcEdOpenMode.Write
+    },
+    getDatabase: () => mockTryGetInstance()?.curDocument?.database
+  })
+}
+
 describe('AcApUcsIconController', () => {
   beforeEach(() => {
     mockRubberBandStart.mockClear()
@@ -166,7 +181,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     controller.sync()
 
     expect(overlay.element.style.pointerEvents).toBe('auto')
@@ -192,7 +207,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     controller.sync()
     const geometry = overlay.geometry!
 
@@ -235,7 +250,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     const geometry = overlay.geometry!
     expect(controller.trySelect(geometry.origin.x, geometry.origin.y)).toBe(
       true
@@ -261,7 +276,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     overlay.element.dispatchEvent(
       new PointerEvent('pointerdown', { button: 0, bubbles: true })
     )
@@ -319,7 +334,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     overlay.element.dispatchEvent(
       new PointerEvent('pointerdown', { button: 0, bubbles: true })
     )
@@ -372,7 +387,7 @@ describe('AcApUcsIconController', () => {
     const overlay = new AcApUcsIconOverlay(host)
     overlay.update(view)
 
-    const controller = new AcApUcsIconController(view, overlay, host)
+    const controller = createController(view, overlay, host)
     overlay.element.dispatchEvent(
       new PointerEvent('pointerdown', { button: 0, bubbles: true })
     )

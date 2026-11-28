@@ -1,5 +1,6 @@
 import type { AcApContext } from '../app/AcApContext.js'
 import { AcEdCommand } from '../editor/command/AcEdCommand.js'
+import type { AcEditor } from '../editor/input/AcEditor.js'
 import { AcEdPromptKeywordOptions } from '../editor/input/prompt/AcEdPromptKeywordOptions.js'
 import { AcEdPromptStatus } from '../editor/input/prompt/AcEdPromptStatus.js'
 import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
@@ -8,14 +9,6 @@ import {
   type AcApUcsIconSettings,
   AcApUcsService
 } from '../service/AcApUcsService.js'
-
-/** Lazy DocManager — avoids command ↔ DocManager cycles under Jest/CJS. */
-function docManagerEditor() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { AcApDocManager } =
-    require('../app/AcApDocManager.js') as typeof import('../app/AcApDocManager.js')
-  return AcApDocManager.instance.editor
-}
 
 type UcsIconKeyword =
   | 'ON'
@@ -50,10 +43,11 @@ export class AcApUcsiconCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const db = context.doc.database
+    const editor = context.view.editor
     let applyAll = AcApUcsService.getIconSettings(db).applyToAllActiveViewports
 
     while (true) {
-      const choice = await this.askMain(applyAll)
+      const choice = await this.askMain(editor, applyAll)
       if (choice === undefined) return
 
       if (choice === 'All') {
@@ -71,6 +65,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
 
       if (choice === 'Selectable') {
         const selectable = await this.askOnOff(
+          editor,
           'selectable',
           AcApUcsService.getIconSettings(db).allowSelectingIcon
         )
@@ -115,6 +110,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
   }
 
   private async askMain(
+    editor: AcEditor,
     _applyAll: boolean
   ): Promise<UcsIconKeyword | undefined> {
     const settings = AcApUcsService.getIconSettings()
@@ -140,7 +136,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
       if (key === defaultKey) prompt.keywords.default = keyword
     }
 
-    const result = await docManagerEditor().getKeywords(prompt)
+    const result = await editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return undefined
     if (
       result.status !== AcEdPromptStatus.OK &&
@@ -152,6 +148,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
   }
 
   private async askOnOff(
+    editor: AcEditor,
     kind: 'selectable',
     currentOn: boolean
   ): Promise<boolean | undefined> {
@@ -174,7 +171,7 @@ export class AcApUcsiconCmd extends AcEdCommand {
           AcApI18n.t('jig.ucsicon.keywords.off.global')
         )
 
-    const result = await docManagerEditor().getKeywords(prompt)
+    const result = await editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return currentOn
     if (
       result.status !== AcEdPromptStatus.OK &&

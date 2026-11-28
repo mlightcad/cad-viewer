@@ -9,25 +9,18 @@ import { readGripAppearance } from '../editor/grip/AcEdGripAppearance.js'
 import { AcEdGripHandle } from '../editor/grip/AcEdGripHandle.js'
 import { AcEdRubberBand } from '../editor/input/ui/AcEdRubberBand.js'
 import type { AcEdBaseView } from '../editor/view/AcEdBaseView.js'
-import { AcEdOpenMode } from '../editor/view/AcEdOpenMode.js'
 import { type AcApUcsFrame, AcApUcsService } from '../service/AcApUcsService.js'
 import type { AcApUcsIconOverlay } from './AcApUcsIconOverlay.js'
 
 /**
- * Lazy DocManager access — a top-level import would cycle
- * `AcTrView2d` → this controller → `AcApDocManager` → commands → `AcApContext`
- * → `AcTrView2d` and leave `AcApUcsiconCmd` undefined under Jest/CJS.
+ * Host hooks so this controller never imports {@link AcApDocManager} (that
+ * cycle breaks Jest/CJS command registration). {@link AcTrView2d} supplies them.
  */
-function tryDocManager():
-  | typeof import('../app/AcApDocManager.js').AcApDocManager
-  | undefined {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('../app/AcApDocManager.js')
-      .AcApDocManager as typeof import('../app/AcApDocManager.js').AcApDocManager
-  } catch {
-    return undefined
-  }
+export interface AcApUcsIconControllerHost {
+  /** False when the active drawing is read-only. Defaults to true. */
+  canWrite?: () => boolean
+  /** Fallback database when the view renderer has none bound yet. */
+  getDatabase?: () => AcDbDatabase | undefined
 }
 
 type UcsGripKind = 'origin' | 'x' | 'y'
@@ -96,7 +89,8 @@ export class AcApUcsIconController {
   constructor(
     private readonly view: AcEdBaseView,
     private readonly overlay: AcApUcsIconOverlay,
-    private readonly host: HTMLElement
+    private readonly host: HTMLElement,
+    private readonly hostAccess: AcApUcsIconControllerHost = {}
   ) {
     const el = this.overlay.element
     // Hover follows the X/Y strokes, not the whole triad bounding box.
@@ -207,8 +201,7 @@ export class AcApUcsIconController {
   private canInteract(): boolean {
     const icon = AcApUcsService.getIconSettings(this.tryDb())
     if (!icon.on || !icon.allowSelectingIcon) return false
-    const doc = tryDocManager()?.tryGetInstance()?.curDocument
-    if (!doc || doc.openMode < AcEdOpenMode.Write) return false
+    if (!(this.hostAccess.canWrite?.() ?? true)) return false
     if (this.view.editor.isActive) return false
     return this.overlay.geometry != null
   }
@@ -543,7 +536,7 @@ export class AcApUcsIconController {
     }
     return (
       viewWithRenderer.renderer?.context?.database ??
-      tryDocManager()?.tryGetInstance()?.curDocument?.database
+      this.hostAccess.getDatabase?.()
     )
   }
 }

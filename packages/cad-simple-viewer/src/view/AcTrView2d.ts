@@ -1105,7 +1105,16 @@ export class AcTrView2d extends AcEdBaseView {
     this._ucsIconController = new AcApUcsIconController(
       this,
       this._ucsIconOverlay,
-      container
+      container,
+      {
+        canWrite: () => {
+          const doc = AcApDocManager.tryGetInstance()?.curDocument
+          return !!doc && doc.openMode >= AcEdOpenMode.Write
+        },
+        getDatabase: () =>
+          this._renderer.context.database ??
+          AcApDocManager.tryGetInstance()?.curDocument?.database
+      }
     )
     this._onUcsChanged = (args: AcApUcsChangedEventArgs) => {
       // Prefer the database bound to this canvas — not curDocument — so

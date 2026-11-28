@@ -12,6 +12,7 @@ import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession.js'
+import { AcApUcsiconCmd } from '../command/AcApUcsiconCmd.js'
 import {
   AcApAboutCmd,
   AcApArcCmd,
@@ -2217,12 +2218,8 @@ export class AcApDocManager {
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
     addSystemCommand('viewrestore', 'viewrestore', new AcApViewRestoreCmd())
     addSystemCommand('ucs', 'ucs', new AcApUcsCmd())
-    // Leaf require at register time: a top-level `export *` import of
-    // AcApUcsiconCmd can stay undefined under Jest/CJS when View2d ↔ DocManager
-    // cycles during command barrel evaluation.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { AcApUcsiconCmd } =
-      require('../command/AcApUcsiconCmd.js') as typeof import('../command/AcApUcsiconCmd.js')
+    // Leaf import (not command/index export*) — avoids a Jest/CJS hole when
+    // View2d ↔ DocManager cycles during barrel evaluation.
     addSystemCommand('ucsicon', 'ucsicon', new AcApUcsiconCmd())
 
     // Register system variables as commands so typing a name (e.g. OSMODE)
