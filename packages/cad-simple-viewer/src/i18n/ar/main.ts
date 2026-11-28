@@ -124,8 +124,7 @@ export default {
   about: {
     title: 'حول',
     close: 'إغلاق',
-    product: 'عارض CAD',
-    tagline: 'عارض CAD عالي الأداء للويب لملفات DWG وDXF.',
+    tagline: 'بنية تحتية لـ CAD على الويب لملفات DWG وDXF.',
     website: 'الموقع الإلكتروني',
     docs: 'التوثيق',
     repository: 'GitHub',

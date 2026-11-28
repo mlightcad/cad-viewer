@@ -127,8 +127,7 @@ export default {
   about: {
     title: 'バージョン情報',
     close: '閉じる',
-    product: 'CAD ビューア',
-    tagline: 'DWG および DXF 図面用の高性能 Web CAD ビューア。',
+    tagline: 'DWG および DXF のための Web CAD インフラストラクチャ。',
     website: 'Web サイト',
     docs: 'ドキュメント',
     repository: 'GitHub',

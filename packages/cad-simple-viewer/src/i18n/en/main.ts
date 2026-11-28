@@ -126,8 +126,7 @@ export default {
   about: {
     title: 'About',
     close: 'Close',
-    product: 'CAD Viewer',
-    tagline: 'High-performance web CAD viewer for DWG and DXF drawings.',
+    tagline: 'Web CAD infrastructure for DWG and DXF.',
     website: 'Website',
     docs: 'Documentation',
     repository: 'GitHub',

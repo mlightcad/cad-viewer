@@ -125,8 +125,7 @@ export default {
   about: {
     title: 'Hakkında',
     close: 'Kapat',
-    product: 'CAD Görüntüleyici',
-    tagline: 'DWG ve DXF çizimleri için yüksek performanslı web CAD görüntüleyici.',
+    tagline: 'DWG ve DXF için web CAD altyapısı.',
     website: 'Web sitesi',
     docs: 'Belgeler',
     repository: 'GitHub',

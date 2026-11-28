@@ -125,8 +125,7 @@ export default {
   about: {
     title: 'O aplikaci',
     close: 'Zavřít',
-    product: 'CAD prohlížeč',
-    tagline: 'Vysokovýkonný webový CAD prohlížeč pro výkresy DWG a DXF.',
+    tagline: 'Webová CAD infrastruktura pro DWG a DXF.',
     website: 'Web',
     docs: 'Dokumentace',
     repository: 'GitHub',
