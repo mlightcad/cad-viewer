@@ -15,13 +15,13 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 
 import {
-  type AcExHtmlPlainDrawableSlice,
   acexHtmlBakePlainDrawableSlice,
   acexHtmlCompactIndexedSlice,
   acexHtmlCopyFloat32Range,
   acexHtmlCopyUint32Range,
   acexHtmlExportPlainDrawableSlice,
   acexHtmlOmitNonFinitePrimitives,
+  type AcExHtmlPlainDrawableSlice,
   acexHtmlReadBatchWorldOffset,
   acexHtmlRebasePlainDrawableSliceAroundCentroid
 } from './AcExHtmlBatchBuffers.js'
