@@ -320,6 +320,7 @@ export default {
       navigate: 'Navigace',
       namedViews: 'Pojmenované pohledy',
       coordinates: 'Souřadnice',
+      interface: 'Rozhraní',
       review: 'Kontrola',
       measurement: 'Měření',
       style: 'Styl',
@@ -482,17 +483,14 @@ export default {
         'Vytvoří nový pojmenovaný pohled z aktuálního zobrazení nebo okna.',
       viewManager:
         'Otevře Správce pohledů pro vytváření, obnovení a odstraňování pojmenovaných pohledů.',
+      ucsIcon: 'Ovládá viditelnost, umístění, vzhled a vybíratelnost ikony USS.',
       ucs: 'Nastaví počátek a orientaci aktuálního uživatelského souřadnicového systému.',
       namedUcs: 'Spravuje pojmenované definice USS a nastavení ikony USS.',
-      ucsWorld: 'Nastaví USS na globální souřadnicový systém.',
-      ucsOrigin: 'Definuje nový počátek USS.',
-      ucsX: 'Otočí USS kolem osy X.',
-      ucsY: 'Otočí USS kolem osy Y.',
-      ucsZ: 'Otočí USS kolem osy Z.',
-      ucsZAxis: 'Definuje USS zadáním osy Z.',
-      ucsView: 'Zarovná USS s aktuálním pohledem.',
-      ucsObject: 'Zarovná USS s vybraným objektem.',
       restoreView: 'Obnoví pojmenovaný pohled uložený ve výkresu.',
+      toolbar: 'Zobrazí nebo skryje panely nástrojů.',
+      commandLine: 'Zobrazí nebo skryje příkazový řádek.',
+      layoutTabs:
+        'Zobrazí nebo skryje karty Model a rozvržení (LAYOUTTAB).',
       propertyColor: 'Nastaví barvu nových nebo vybraných objektů.',
       propertyLineType: 'Nastaví typ čáry nových nebo vybraných objektů.',
       propertyLineWeight:
@@ -641,17 +639,13 @@ export default {
       zoomSmart: 'Chytrý',
       newView: 'Nový\npohled',
       viewManager: 'Správce\npohledů',
+      ucsIcon: 'Ikona\nUSS',
       ucs: 'USS',
       namedUcs: 'Pojmenované\nUSS',
-      ucsWorld: 'Globální',
-      ucsOrigin: 'Počátek',
-      ucsX: 'X',
-      ucsY: 'Y',
-      ucsZ: 'Z',
-      ucsZAxis: 'Osa Z',
-      ucsView: 'Pohled',
-      ucsObject: 'Objekt',
-      restoreView: 'Obnovit\npohled'
+      restoreView: 'Obnovit\npohled',
+      toolbar: 'Panel\nnástrojů',
+      commandLine: 'Příkazový\nřádek',
+      layoutTabs: 'Karty\nrozvržení'
     }
   },
   verticalToolbar: {

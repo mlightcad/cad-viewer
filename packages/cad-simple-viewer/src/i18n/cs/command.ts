@@ -232,6 +232,10 @@ export default {
     layer: {
       description: 'Otevře nebo zavře dokovací panel správce hladin'
     },
+    layouttab: {
+      description:
+        'Řídí, zda se zobrazují karty Model a rozvržení'
+    },
     loginname: {
       description: 'Zobrazí přihlašovací jméno uživatele (pouze pro čtení)'
     },
@@ -811,12 +815,59 @@ export default {
     viewrestore: {
       description: 'Obnoví pojmenovaný pohled podle názvu'
     },
+    ucsaxisang: {
+      description:
+        'Ukládá výchozí úhel při otáčení USS kolem jedné z jeho os pomocí voleb X, Y nebo Z příkazu UCS'
+    },
+    ucsbase: {
+      description:
+        'Ukládá název USS, který definuje počátek a orientaci ortogonálních nastavení USS'
+    },
+    ucsfollow: {
+      description:
+        'Při změně z jednoho USS na jiné vygeneruje půdorysný pohled'
+    },
+    ucsname: {
+      description:
+        'Ukládá název aktuálního souřadnicového systému pro aktuální výřez (pouze pro čtení)'
+    },
+    ucsorg: {
+      description:
+        'Ukládá počátek aktuálního USS pro aktuální výřez (pouze pro čtení)'
+    },
+    ucsselectmode: {
+      description:
+        'Řídí, zda lze ikonu USS vybrat a ovládat pomocí úchopů'
+    },
+    ucsview: {
+      description:
+        'Určuje, zda se aktuální USS uloží spolu s pojmenovaným pohledem'
+    },
+    ucsvp: {
+      description:
+        'Určuje, zda USS v aktivních výřezech zůstane uzamčen, nebo se přizpůsobí USS aktuálně aktivního výřezu'
+    },
+    ucsxdir: {
+      description:
+        'Ukládá směr osy X aktuálního USS pro aktuální výřez (pouze pro čtení)'
+    },
+    ucsydir: {
+      description:
+        'Ukládá směr osy Y aktuálního USS pro aktuální výřez (pouze pro čtení)'
+    },
+    worlducs: {
+      description:
+        'Udává, zda je aktuální USS stejný jako světový souřadnicový systém (WCS) (pouze pro čtení)'
+    },
     ucs: {
       description:
         'Nastaví počátek a orientaci aktuálního uživatelského souřadnicového systému'
     },
     ucsman: {
       description: 'Spravuje pojmenované definice USS a nastavení ikony USS'
+    },
+    ucsicon: {
+      description: 'Ovládá viditelnost, umístění, vzhled a vybíratelnost ikony USS'
     }
   },
   USER: {}

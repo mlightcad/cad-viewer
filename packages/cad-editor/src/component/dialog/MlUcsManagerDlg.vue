@@ -99,9 +99,6 @@
         <el-button @click="handleCancel">{{
           t('dialog.baseDialog.cancel')
         }}</el-button>
-        <el-button @click="openHelp">{{
-          t('dialog.ucsManagerDlg.help')
-        }}</el-button>
       </div>
     </template>
 
@@ -155,9 +152,6 @@ import MlBaseDialog from '../common/MlBaseDialog.vue'
 import MlFieldsetGroup from '../common/MlFieldsetGroup.vue'
 import MlUcsDetailsDlg from './MlUcsDetailsDlg.vue'
 
-const HELP_URL =
-  'https://help.autodesk.com/view/ACD/2026/ENU/?guid=GUID-51CC776E-5ED6-46FC-A850-E3690B0275AF'
-
 const { t } = useI18n()
 
 const props = defineProps<{ modelValue: boolean }>()
@@ -184,7 +178,7 @@ const iconForm = reactive<AcApUcsIconSettings>({
   on: true,
   atOrigin: true,
   applyToAllActiveViewports: false,
-  allowSelectingIcon: false
+  allowSelectingIcon: true
 })
 const viewportForm = reactive<AcApUcsViewportSettings>({
   saveUcsWithViewport: true,
@@ -316,10 +310,6 @@ function handleOk() {
 
 function handleCancel() {
   visible.value = false
-}
-
-function openHelp() {
-  window.open(HELP_URL, '_blank', 'noopener,noreferrer')
 }
 
 function onContextMenu(e: MouseEvent) {

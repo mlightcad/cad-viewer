@@ -6,6 +6,8 @@ import {
   acdbHostApplicationServices,
   AcDbLine,
   AcDbPolyline,
+  AcDbSystemVariables,
+  AcDbSysVarManager,
   AcDbUcsTableRecord,
   AcDbViewportTableRecord,
   AcGePoint3d,
@@ -61,14 +63,56 @@ export interface AcApUcsListItem {
 }
 
 export interface AcApUcsIconSettings {
+  /** **UCSICON** on — show the UCS icon. */
   on: boolean
+  /** **UCSICON** origin bit — place icon at the UCS origin when possible. */
   atOrigin: boolean
+  /**
+   * Dialog-only: when applying icon settings, write every active VPORT
+   * (not a persistent system variable).
+   */
   applyToAllActiveViewports: boolean
+  /** **UCSSELECTMODE** — whether the UCS icon is grip-selectable. */
   allowSelectingIcon: boolean
 }
 
+/**
+ * UCS icon appearance (AutoCAD stores these in the Registry, not the drawing).
+ * Session-scoped for the viewer process.
+ */
+export interface AcApUcsIconAppearance {
+  /**
+   * UCS icon size control (5–95), matching AutoCAD’s UCS Icon dialog.
+   *
+   * Autodesk documents this as a “percentage of viewport size”, but a literal
+   * `viewportEdge * percent / 100` is far larger than AutoCAD’s on-screen icon.
+   * Empirically AutoCAD’s default 50 draws axes at roughly **5% of the shorter
+   * viewport edge** (≈50 px on a 1000 px viewport) — see
+   * {@link AcApUcsIconOverlay} size mapping (`edge * percent / 1000` = axis
+   * length in CSS pixels).
+   */
+  sizePercent: number
+  /** Stroke width in CSS pixels (AutoCAD: 1, 2, or 3). */
+  lineWidth: 1 | 2 | 3
+  /** ACI index for model-space icon color (1–255). */
+  modelColorIndex: number
+  /** ACI index for layout / paper-space icon color (1–255). */
+  layoutColorIndex: number
+  /**
+   * When true, both axes use the space color. When false, keep the default
+   * red X / green Y triad (2D AutoCAD “Apply Single Color” off).
+   */
+  applySingleColor: boolean
+}
+
 export interface AcApUcsViewportSettings {
+  /**
+   * AutoCAD UCS Manager “Save UCS with viewport” (**UCSVP** /
+   * ObjectARX `ucsSavedWithViewport` on VPORT `*Active`).
+   * Do not confuse with **UCSVIEW** (save UCS with named views).
+   */
   saveUcsWithViewport: boolean
+  /** AutoCAD **UCSFOLLOW** — plan view when the UCS changes. */
   updateViewToPlan: boolean
 }
 
@@ -83,9 +127,39 @@ const previousStacks = new WeakMap<
   Map<SpaceKey, AcApUcsFrame[]>
 >()
 const sessionFrames = new WeakMap<AcDbDatabase, Map<SpaceKey, AcApUcsFrame>>()
-const allowSelectIconByDb = new WeakMap<AcDbDatabase, boolean>()
+/** Dialog-only: apply UCSICON changes to every active VPORT (not a sysvar). */
 const applyIconToAllByDb = new WeakMap<AcDbDatabase, boolean>()
-const saveUcsWithViewportByDb = new WeakMap<AcDbDatabase, boolean>()
+
+const DEFAULT_ICON_APPEARANCE: AcApUcsIconAppearance = {
+  sizePercent: 50,
+  lineWidth: 1,
+  modelColorIndex: 7,
+  layoutColorIndex: 7,
+  applySingleColor: false
+}
+
+let iconAppearance: AcApUcsIconAppearance = { ...DEFAULT_ICON_APPEARANCE }
+/**
+ * Live UCS frame while grip-dragging the icon (not yet committed).
+ * Scoped per database so a preview in one drawing cannot affect another.
+ */
+const displayPreviewFrames = new WeakMap<AcDbDatabase, AcApUcsFrame>()
+
+function clampIconSizePercent(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_ICON_APPEARANCE.sizePercent
+  return Math.max(5, Math.min(95, Math.round(value)))
+}
+
+function clampAciIndex(value: number): number {
+  if (!Number.isFinite(value)) return 7
+  return Math.max(1, Math.min(255, Math.round(value)))
+}
+
+function clampLineWidth(value: number): 1 | 2 | 3 {
+  if (value >= 3) return 3
+  if (value >= 2) return 2
+  return 1
+}
 
 function cloneFrame(frame: AcApUcsFrame): AcApUcsFrame {
   return {
@@ -140,6 +214,16 @@ function tryWorkingDatabase(): AcDbDatabase | null {
   }
 }
 
+/** **UCSSELECTMODE** — `1` selectable (AutoCAD default), `0` not. */
+function readUcsSelectMode(db: AcDbDatabase | null | undefined): boolean {
+  if (!db) return true
+  const raw = AcDbSysVarManager.instance().getVar(
+    AcDbSystemVariables.UCSSELECTMODE,
+    db
+  )
+  return Number(raw) !== 0
+}
+
 function getPreviousStack(db: AcDbDatabase): AcApUcsFrame[] {
   let bySpace = previousStacks.get(db)
   if (!bySpace) {
@@ -157,7 +241,12 @@ function getPreviousStack(db: AcDbDatabase): AcApUcsFrame[] {
 
 /**
  * Active UCS helpers: resolve/apply frames, named UCS CRUD, icon/UCSVP flags,
- * and UCS↔WCS transforms used by input and the UCS / UCSMAN commands.
+ * and the canonical UCS↔WCS transforms.
+ *
+ * Geometry, picks, OSNAP, and entity storage stay in WCS. User-facing numbers
+ * (status bar, Dynamic Input X/Y, typed coordinates, ortho/polar constraints)
+ * go through {@link ucsToWcs} / {@link wcsToUcs} — do not invent a second
+ * conversion path in views or UI composables.
  */
 export class AcApUcsService {
   static readonly events = {
@@ -183,15 +272,52 @@ export class AcApUcsService {
     return framesEqual(frame, worldFrame())
   }
 
+  /**
+   * Frame shown by the UCS icon overlay. Honors an in-progress grip-drag
+   * preview so the triad updates without writing undo records every move.
+   */
+  static getDisplayFrame(database?: AcDbDatabase): AcApUcsFrame {
+    const db = database ?? tryWorkingDatabase()
+    if (db) {
+      const preview = displayPreviewFrames.get(db)
+      if (preview) return cloneFrame(preview)
+    }
+    return this.getActiveFrame(database)
+  }
+
+  /**
+   * Sets or clears the live grip-drag preview frame for the UCS icon.
+   * Requires a database (argument or working DB); no-ops without one.
+   */
+  static setDisplayPreviewFrame(
+    frame: AcApUcsFrame | null,
+    database?: AcDbDatabase
+  ): void {
+    const db = database ?? tryWorkingDatabase()
+    if (!db) return
+    if (frame) {
+      displayPreviewFrames.set(db, cloneFrame(frame))
+    } else {
+      displayPreviewFrames.delete(db)
+    }
+    this.events.ucsChanged.dispatch({ database: db })
+  }
+
+  /** True while a UCS icon grip drag is previewing a frame for `database`. */
+  static isDisplayPreviewActive(database?: AcDbDatabase): boolean {
+    const db = database ?? tryWorkingDatabase()
+    return db != null && displayPreviewFrames.has(db)
+  }
+
   static getActiveFrame(database?: AcDbDatabase): AcApUcsFrame {
     const db = database ?? tryWorkingDatabase()
     if (!db) return worldFrame()
-    // Called every frame by the UCS icon, also mid-read: every space lookup
-    // below would lazily create *Model_Space (see acedHasModelSpaceRecord).
-    if (!acedHasModelSpaceRecord(db)) return worldFrame()
 
     // Prefer persisted VPORT/layout so undo/redo of UCS edits stays coherent.
-    // Session cache is only a fallback when the drawing has no *ACTIVE VPORT.
+    // Session cache is only a fallback when the drawing has no *Active VPORT.
+    // Reading an existing *Active is safe mid-open; layoutManager lookups are
+    // not — they can lazily create a *Model_Space placeholder (see
+    // acedHasModelSpaceRecord).
     if (isModelSpaceDatabase(db)) {
       const vport = db.tables.viewportTable.getActiveVport()
       if (vport) {
@@ -201,6 +327,12 @@ export class AcApUcsService {
           yAxis: normalizeAxis(vport.ucsYAxis)
         }
       }
+    }
+
+    if (!acedHasModelSpaceRecord(db)) {
+      const session = sessionFrames.get(db)?.get(spaceKey(db))
+      if (session) return cloneFrame(session)
+      return worldFrame()
     }
 
     const layout =
@@ -315,11 +447,19 @@ export class AcApUcsService {
 
   /**
    * Applies a UCS frame as current, pushing the prior frame onto Previous.
+   *
+   * When VPORT `*Active` **UCSFOLLOW** (`ucsFollowMode`) is on, writes a PLAN
+   * twist so the view follows the new UCS (AutoCAD). UCS icon grip edits and
+   * the UCS command share this path — neither forces a plan view when follow
+   * is off.
    */
   static applyFrame(
     db: AcDbDatabase,
     frame: AcApUcsFrame,
-    options?: { pushPrevious?: boolean; skipFollow?: boolean }
+    options?: {
+      pushPrevious?: boolean
+      skipFollow?: boolean
+    }
   ): void {
     const pushPrevious = options?.pushPrevious !== false
     const next = {
@@ -338,15 +478,17 @@ export class AcApUcsService {
 
       this.writeFrameToActive(db, next)
 
-      if (
-        !options?.skipFollow &&
-        this.getViewportSettings(db).updateViewToPlan
-      ) {
+      if (!options?.skipFollow && this.isUcsFollowEnabled(db)) {
         this.applyPlanViewTwist(db, next)
       }
     })
 
     this.events.ucsChanged.dispatch({ database: db })
+  }
+
+  /** PLAN twist (radians) that aligns screen +X with the frame's X axis. */
+  static planTwistAngleFromFrame(frame: AcApUcsFrame): number {
+    return Math.atan2(frame.xAxis.y, frame.xAxis.x)
   }
 
   static setCurrent(name: string, database?: AcDbDatabase): boolean {
@@ -685,9 +827,12 @@ export class AcApUcsService {
   }
 
   static getIconSettings(database?: AcDbDatabase): AcApUcsIconSettings {
-    const db = database ?? acdbHostApplicationServices().workingDatabase
+    // View construction runs before DocManager sets workingDatabase; the
+    // host getter throws when unset, so never read it unguarded here.
+    const db = database ?? tryWorkingDatabase()
     const applyToAll = db ? (applyIconToAllByDb.get(db) ?? false) : false
-    const allowSelecting = db ? (allowSelectIconByDb.get(db) ?? false) : false
+    // AutoCAD UCSSELECTMODE (registry); default 1 = selectable.
+    const allowSelecting = readUcsSelectMode(db)
 
     if (!db) {
       return {
@@ -700,23 +845,15 @@ export class AcApUcsService {
 
     const vport = db.tables.viewportTable.getActiveVport()
     if (vport) {
-      const setting = vport.ucsIconSetting
+      // ObjectARX: UCSICON lives on VPORT as iconEnabled / iconAtOrigin.
+      // Many R14-era drawings leave group 74 at 0 while other status bits are
+      // set — treat that as AutoCAD's default (on at origin), not off.
+      const packed =
+        typeof vport.getUcsIconSysVar === 'function'
+          ? vport.getUcsIconSysVar()
+          : vport.ucsIconSetting
       const flags = vport.standardFlag
-      const on =
-        (setting & UCS_ICON_SETTING_ON) !== 0 ||
-        (flags & UCS_ICON_VISIBLE_FLAG) !== 0 ||
-        setting === 1 ||
-        setting === 3
-      const atOrigin =
-        (setting & UCS_ICON_SETTING_ORIGIN) !== 0 ||
-        (flags & UCS_ICON_ORIGIN_FLAG) !== 0 ||
-        setting === 2 ||
-        setting === 3
-      // Default AutoCAD: icon on + at origin when unset (0 often means default on).
-      if (
-        setting === 0 &&
-        (flags & (UCS_ICON_VISIBLE_FLAG | UCS_ICON_ORIGIN_FLAG)) === 0
-      ) {
+      if (packed === 0 && (flags & UCS_ICON_VISIBLE_FLAG) === 0) {
         return {
           on: true,
           atOrigin: true,
@@ -725,8 +862,8 @@ export class AcApUcsService {
         }
       }
       return {
-        on,
-        atOrigin,
+        on: vport.iconEnabled || (flags & UCS_ICON_VISIBLE_FLAG) !== 0,
+        atOrigin: vport.iconAtOrigin || (flags & UCS_ICON_ORIGIN_FLAG) !== 0,
         applyToAllActiveViewports: applyToAll,
         allowSelectingIcon: allowSelecting
       }
@@ -744,32 +881,29 @@ export class AcApUcsService {
     settings: AcApUcsIconSettings,
     database?: AcDbDatabase
   ): void {
-    const db = database ?? acdbHostApplicationServices().workingDatabase
+    const db = database ?? tryWorkingDatabase()
     if (!db) return
 
     applyIconToAllByDb.set(db, settings.applyToAllActiveViewports)
-    allowSelectIconByDb.set(db, settings.allowSelectingIcon)
-
-    const iconSetting =
-      (settings.on ? UCS_ICON_SETTING_ON : 0) |
-      (settings.atOrigin ? UCS_ICON_SETTING_ORIGIN : 0)
+    // Registry-backed; keep SETVAR UCSSELECTMODE and the dialog in sync.
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.UCSSELECTMODE,
+      settings.allowSelectingIcon ? 1 : 0,
+      db
+    )
 
     acapRunServiceEdit(db, UCS_EDIT_LABEL, () => {
       const applyToVport = (vport: AcDbViewportTableRecord) => {
         const opened =
           db.openObjectForWrite<AcDbViewportTableRecord>(vport.objectId) ??
           vport
-        opened.ucsIconSetting = iconSetting
-        let flags = opened.standardFlag
-        if (settings.on) flags |= UCS_ICON_VISIBLE_FLAG
-        else flags &= ~UCS_ICON_VISIBLE_FLAG
-        if (settings.atOrigin) flags |= UCS_ICON_ORIGIN_FLAG
-        else flags &= ~UCS_ICON_ORIGIN_FLAG
-        opened.standardFlag = flags
+        // ObjectARX setters keep DXF group 74 and status-flag bits in sync.
+        // Same storage SETVAR UCSICON reads/writes on VPORT *Active.
+        opened.iconEnabled = settings.on
+        opened.iconAtOrigin = settings.atOrigin
       }
 
-      const active = db.tables.viewportTable.getActiveVport()
-      if (active) applyToVport(active)
+      applyToVport(db.ensureActiveVport())
 
       if (settings.applyToAllActiveViewports) {
         for (const record of db.tables.viewportTable.newIterator()) {
@@ -781,16 +915,33 @@ export class AcApUcsService {
     this.events.ucsChanged.dispatch({ database: db })
   }
 
+  /** Session UCS icon appearance (size / colors). */
+  static getIconAppearance(): AcApUcsIconAppearance {
+    return { ...iconAppearance }
+  }
+
+  static setIconAppearance(appearance: AcApUcsIconAppearance): void {
+    iconAppearance = {
+      sizePercent: clampIconSizePercent(appearance.sizePercent),
+      lineWidth: clampLineWidth(appearance.lineWidth),
+      modelColorIndex: clampAciIndex(appearance.modelColorIndex),
+      layoutColorIndex: clampAciIndex(appearance.layoutColorIndex),
+      applySingleColor: !!appearance.applySingleColor
+    }
+    const db = tryWorkingDatabase()
+    if (db) {
+      this.events.ucsChanged.dispatch({ database: db })
+    }
+  }
+
   static getViewportSettings(database?: AcDbDatabase): AcApUcsViewportSettings {
-    const db = database ?? acdbHostApplicationServices().workingDatabase
+    const db = database ?? tryWorkingDatabase()
     if (!db) {
       return { saveUcsWithViewport: true, updateViewToPlan: false }
     }
-    const vport = db.tables.viewportTable.getActiveVport()
-    const follow = vport ? !!(vport.standardFlag & UCS_FOLLOW_FLAG) : false
     return {
-      saveUcsWithViewport: saveUcsWithViewportByDb.get(db) ?? true,
-      updateViewToPlan: follow
+      saveUcsWithViewport: this.isUcsSavedWithViewport(db),
+      updateViewToPlan: this.isUcsFollowEnabled(db)
     }
   }
 
@@ -798,23 +949,42 @@ export class AcApUcsService {
     settings: AcApUcsViewportSettings,
     database?: AcDbDatabase
   ): void {
-    const db = database ?? acdbHostApplicationServices().workingDatabase
+    const db = database ?? tryWorkingDatabase()
     if (!db) return
 
-    saveUcsWithViewportByDb.set(db, settings.saveUcsWithViewport)
-
     acapRunServiceEdit(db, UCS_EDIT_LABEL, () => {
-      const vport = db.tables.viewportTable.getActiveVport()
-      if (!vport) return
       const opened =
-        db.openObjectForWrite<AcDbViewportTableRecord>(vport.objectId) ?? vport
-      let flags = opened.standardFlag
-      if (settings.updateViewToPlan) flags |= UCS_FOLLOW_FLAG
-      else flags &= ~UCS_FOLLOW_FLAG
-      opened.standardFlag = flags
+        db.openObjectForWrite<AcDbViewportTableRecord>(
+          db.ensureActiveVport().objectId
+        ) ?? db.ensureActiveVport()
+      // Same storage SETVAR UCSVP / UCSFOLLOW read and write on *Active.
+      opened.ucsSavedWithViewport = settings.saveUcsWithViewport
+      opened.ucsFollowMode = settings.updateViewToPlan
     })
 
     this.events.ucsChanged.dispatch({ database: db })
+  }
+
+  /**
+   * True when VPORT `*Active` **UCSVP** is on (ObjectARX
+   * `ucsSavedWithViewport`). AutoCAD default is `true`.
+   */
+  static isUcsSavedWithViewport(database?: AcDbDatabase): boolean {
+    const db = database ?? tryWorkingDatabase()
+    if (!db) return true
+    const vport = db.tables.viewportTable.getActiveVport()
+    // Missing VPORT → AutoCAD UCSVP default 1.
+    return vport?.ucsSavedWithViewport !== false
+  }
+
+  /**
+   * True when VPORT `*Active` **UCSFOLLOW** is on (ObjectARX `ucsFollowMode`).
+   */
+  static isUcsFollowEnabled(database?: AcDbDatabase): boolean {
+    const db = database ?? tryWorkingDatabase()
+    if (!db) return false
+    const vport = db.tables.viewportTable.getActiveVport()
+    return vport?.ucsFollowMode === true
   }
 
   static applyCurrentToAllViewports(database?: AcDbDatabase): void {
@@ -846,16 +1016,14 @@ export class AcApUcsService {
     bySpace.set(spaceKey(db), cloneFrame(frame))
 
     if (isModelSpaceDatabase(db)) {
-      const vport = db.tables.viewportTable.getActiveVport()
-      if (vport) {
-        const opened =
-          db.openObjectForWrite<AcDbViewportTableRecord>(vport.objectId) ??
-          vport
-        opened.ucsOrigin = frame.origin.clone()
-        opened.ucsXAxis = frame.xAxis.clone()
-        opened.ucsYAxis = frame.yAxis.clone()
-        return
-      }
+      // ObjectARX keeps the current model UCS on VPORT *Active.
+      const vport = db.ensureActiveVport()
+      const opened =
+        db.openObjectForWrite<AcDbViewportTableRecord>(vport.objectId) ?? vport
+      opened.ucsOrigin = frame.origin.clone()
+      opened.ucsXAxis = frame.xAxis.clone()
+      opened.ucsYAxis = frame.yAxis.clone()
+      return
     }
 
     const layout =
@@ -868,16 +1036,15 @@ export class AcApUcsService {
   }
 
   /**
-   * Stores Plan twist on the active VPORT (UCS X angle in WCS).
-   * Visual camera twist for model space may be applied by the view layer.
+   * Stores Plan twist on VPORT `*Active` (UCS X angle in WCS).
+   * The view layer applies this to the model-space camera on `ucsChanged`.
    */
   private static applyPlanViewTwist(
     db: AcDbDatabase,
     frame: AcApUcsFrame
   ): void {
-    const angle = Math.atan2(frame.xAxis.y, frame.xAxis.x)
-    const vport = db.tables.viewportTable.getActiveVport()
-    if (!vport) return
+    const angle = this.planTwistAngleFromFrame(frame)
+    const vport = db.ensureActiveVport()
     const opened =
       db.openObjectForWrite<AcDbViewportTableRecord>(vport.objectId) ?? vport
     opened.viewTwistAngle = angle

@@ -681,7 +681,6 @@ export default {
     renamePrompt: '输入新的 UCS 名称：',
     renameFailed: '无法重命名 UCS。',
     deleteFailed: '无法删除 UCS。',
-    help: '帮助',
     iconSettings: 'UCS 图标设置',
     iconOn: '开',
     iconAtOrigin: '显示于 UCS 原点',

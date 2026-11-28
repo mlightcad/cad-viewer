@@ -133,6 +133,25 @@ export default {
     copyright: '© {year} mlightcad. All rights reserved.',
     ok: 'OK'
   },
+  ucsIconDlg: {
+    title: 'UCS Icon',
+    close: 'Close',
+    ok: 'OK',
+    cancel: 'Cancel',
+    lineWidth: 'Line width',
+    size: 'UCS icon size',
+    sizeHint: 'Size control (5–95); default 50 ≈ 5% of the shorter viewport edge',
+    modelColor: 'Model space icon color',
+    layoutColor: 'Layout tab icon color',
+    applySingleColor: 'Apply single color',
+    on: 'On',
+    off: 'Off',
+    colorTitle: 'Select Color',
+    colorIndex: 'Color Index: ',
+    colorRgb: 'RGB: ',
+    colorInput: 'Color',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: 'Color',
     fontSize: 'Text height'

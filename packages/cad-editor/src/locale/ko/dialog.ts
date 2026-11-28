@@ -683,7 +683,6 @@ export default {
     renamePrompt: '새 UCS 이름 입력:',
     renameFailed: 'UCS 이름을 바꿀 수 없습니다.',
     deleteFailed: 'UCS를 삭제할 수 없습니다.',
-    help: '도움말',
     iconSettings: 'UCS 아이콘 설정',
     iconOn: '켜기',
     iconAtOrigin: 'UCS 원점에 표시',

@@ -230,6 +230,9 @@ export default {
     layer: {
       description: '画層マネージャのドッキング パネルを開くか閉じます'
     },
+    layouttab: {
+      description: 'モデル タブとレイアウト タブの表示をコントロールします'
+    },
     loginname: {
       description: 'ユーザのログイン名を表示します (読み込み専用)'
     },
@@ -809,11 +812,58 @@ export default {
     viewrestore: {
       description: '名前を指定して名前の付いたビューを復元します'
     },
+    ucsaxisang: {
+      description:
+        'UCS コマンドの X、Y、Z オプションで UCS を軸回りに回転するときの既定の角度を格納します'
+    },
+    ucsbase: {
+      description:
+        '直交 UCS 設定の原点と方向を定義する UCS の名前を格納します'
+    },
+    ucsfollow: {
+      description:
+        'ある UCS から別の UCS に変更するときに平面図を生成するかどうかをコントロールします'
+    },
+    ucsname: {
+      description:
+        '現在のビューポートの現在の座標系の名前を格納します (読み込み専用)'
+    },
+    ucsorg: {
+      description:
+        '現在のビューポートの現在の UCS の原点を格納します (読み込み専用)'
+    },
+    ucsselectmode: {
+      description:
+        'UCS アイコンを選択してグリップで操作できるかどうかをコントロールします'
+    },
+    ucsview: {
+      description:
+        '現在の UCS を名前の付いたビューとともに保存するかどうかを決定します'
+    },
+    ucsvp: {
+      description:
+        'アクティブなビューポートの UCS を固定するか、現在アクティブなビューポートの UCS に従うかを決定します'
+    },
+    ucsxdir: {
+      description:
+        '現在のビューポートの現在の UCS の X 方向を格納します (読み込み専用)'
+    },
+    ucsydir: {
+      description:
+        '現在のビューポートの現在の UCS の Y 方向を格納します (読み込み専用)'
+    },
+    worlducs: {
+      description:
+        '現在の UCS が WCS と同じかどうかを示します (読み込み専用)'
+    },
     ucs: {
       description: '現在のユーザ座標系の原点と方向を設定します'
     },
     ucsman: {
       description: '名前の付いた UCS 定義と UCS アイコンの設定を管理します'
+    },
+    ucsicon: {
+      description: 'UCS アイコンの表示、配置、外観、選択可否をコントロールします'
     }
   },
   USER: {}

@@ -30,6 +30,8 @@ import {
   acapScreenPxToWcs,
   acapSetMeasurementDrawColor,
   acapSetMeasurementTextHeight,
+  AcApSettingManager,
+  AcApUcsService,
   type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
@@ -101,9 +103,11 @@ import {
   LAYER_FILTER_ALL,
   useDataSources,
   useDocument,
+  useIsMobile,
   useLayerFilters,
   useLayers,
   useSettings,
+  useSystemVars,
   useUndoRedo
 } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
@@ -134,6 +138,7 @@ import {
   circleTanTanTan,
   circleThreePoints,
   circleTwoPoints,
+  commandLine,
   copyBase,
   countlist,
   defineAttribute,
@@ -169,6 +174,7 @@ import {
   layerUnfreeze,
   layerUnisolate,
   layerUnlock,
+  layoutTabs,
   line,
   mirror,
   mleader,
@@ -197,16 +203,10 @@ import {
   splineFitPoints,
   stretch,
   textStyle,
+  toolbar,
   trim,
   ucs,
-  ucsObject,
-  ucsOrigin,
-  ucsView,
-  ucsWorld,
-  ucsX,
-  ucsY,
-  ucsZ,
-  ucsZAxis,
+  ucsIcon,
   ungroup,
   viewManager,
   xline
@@ -275,6 +275,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const features = useSettings()
+const systemVars = useSystemVars(AcApDocManager.instance)
+const { isSmallViewport } = useIsMobile()
 const ribbonContainerRef = ref<HTMLElement>()
 const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const { canUndo, canRedo } = useUndoRedo()
@@ -282,6 +284,9 @@ const { menuItems: dataSourceMenuItems, isSingleLocalOpen } = useDataSources()
 const { t, locale } = useI18n()
 const isMarkupOverlayVisible = ref(true)
 const isMeasurementOverlayVisible = ref(true)
+/** View → Coordinates UCS Icon toggle (mirrors {@link AcApUcsService} icon.on). */
+const isUcsIconVisible = ref(AcApUcsService.getIconSettings().on)
+const isLayoutTabVisible = computed(() => systemVars.layouttab !== 0)
 const markupDrawColor = shallowRef(defaultMarkupColor())
 const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
 const markupTextHeightMode = ref<OverlayTextHeightMode>(
@@ -503,6 +508,12 @@ const syncMarkupVisibility = () => {
 const syncMeasurementVisibility = () => {
   isMeasurementOverlayVisible.value = isMeasurementVisible()
 }
+
+const syncUcsIconVisibility = () => {
+  isUcsIconVisible.value = AcApUcsService.getIconSettings().on
+}
+
+AcApUcsService.events.ucsChanged.addEventListener(syncUcsIconVisibility)
 
 const handleAnnotationLayerChange = () => {
   syncRibbonProperties(observedDatabase)
@@ -882,6 +893,7 @@ onUnmounted(() => {
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
   )
+  AcApUcsService.events.ucsChanged.removeEventListener(syncUcsIconVisibility)
   bindSelectionEvents(undefined)
   bindAnnotationVisibilityEvents(undefined)
 })
@@ -1338,6 +1350,10 @@ const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
   measurementVisible: boolean,
+  ucsIconVisible: boolean,
+  toolbarVisible: boolean,
+  commandLineVisible: boolean,
+  layoutTabVisible: boolean,
   namedViewNames: string[] = []
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
@@ -1423,17 +1439,13 @@ const buildBaseTabs = (
     zoomSmart: t('main.ribbon.tooltip.zoomSmart'),
     newView: t('main.ribbon.tooltip.newView'),
     viewManager: t('main.ribbon.tooltip.viewManager'),
+    ucsIcon: t('main.ribbon.tooltip.ucsIcon'),
     ucs: t('main.ribbon.tooltip.ucs'),
     namedUcs: t('main.ribbon.tooltip.namedUcs'),
-    ucsWorld: t('main.ribbon.tooltip.ucsWorld'),
-    ucsOrigin: t('main.ribbon.tooltip.ucsOrigin'),
-    ucsX: t('main.ribbon.tooltip.ucsX'),
-    ucsY: t('main.ribbon.tooltip.ucsY'),
-    ucsZ: t('main.ribbon.tooltip.ucsZ'),
-    ucsZAxis: t('main.ribbon.tooltip.ucsZAxis'),
-    ucsView: t('main.ribbon.tooltip.ucsView'),
-    ucsObject: t('main.ribbon.tooltip.ucsObject'),
     restoreView: t('main.ribbon.tooltip.restoreView'),
+    toolbar: t('main.ribbon.tooltip.toolbar'),
+    commandLine: t('main.ribbon.tooltip.commandLine'),
+    layoutTabs: t('main.ribbon.tooltip.layoutTabs'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
     propertyLineWeight: t('main.ribbon.tooltip.propertyLineWeight')
@@ -3236,6 +3248,24 @@ const buildBaseTabs = (
             layout: 'row',
             items: [
               {
+                id: 'cmd-ucsicon',
+                type: 'toggle',
+                label: t('main.ribbon.command.ucsIcon'),
+                tooltip: ribbonTooltips.ucsIcon,
+                size: 'large',
+                props: {
+                  modelValue: ucsIconVisible,
+                  activeIcon: ucsIcon,
+                  inactiveIcon: ucsIcon,
+                  activeLabel: t('main.ribbon.command.ucsIcon'),
+                  inactiveLabel: t('main.ribbon.command.ucsIcon'),
+                  activeValue: 'cmd-ucsicon',
+                  inactiveValue: 'cmd-ucsicon',
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
                 id: 'cmd-ucs',
                 type: 'button',
                 label: t('main.ribbon.command.ucs'),
@@ -3255,102 +3285,6 @@ const buildBaseTabs = (
                 size: 'large',
                 props: {
                   icon: namedUcs,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-world',
-                type: 'button',
-                label: t('main.ribbon.command.ucsWorld'),
-                tooltip: ribbonTooltips.ucsWorld,
-                size: 'large',
-                props: {
-                  icon: ucsWorld,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-origin',
-                type: 'button',
-                label: t('main.ribbon.command.ucsOrigin'),
-                tooltip: ribbonTooltips.ucsOrigin,
-                size: 'large',
-                props: {
-                  icon: ucsOrigin,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-x',
-                type: 'button',
-                label: t('main.ribbon.command.ucsX'),
-                tooltip: ribbonTooltips.ucsX,
-                size: 'large',
-                props: {
-                  icon: ucsX,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-y',
-                type: 'button',
-                label: t('main.ribbon.command.ucsY'),
-                tooltip: ribbonTooltips.ucsY,
-                size: 'large',
-                props: {
-                  icon: ucsY,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-z',
-                type: 'button',
-                label: t('main.ribbon.command.ucsZ'),
-                tooltip: ribbonTooltips.ucsZ,
-                size: 'large',
-                props: {
-                  icon: ucsZ,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-zaxis',
-                type: 'button',
-                label: t('main.ribbon.command.ucsZAxis'),
-                tooltip: ribbonTooltips.ucsZAxis,
-                size: 'large',
-                props: {
-                  icon: ucsZAxis,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-view',
-                type: 'button',
-                label: t('main.ribbon.command.ucsView'),
-                tooltip: ribbonTooltips.ucsView,
-                size: 'large',
-                props: {
-                  icon: ucsView,
-                  labelWrapLines: 2,
-                  labelWrapWidth: 'max-content'
-                }
-              },
-              {
-                id: 'cmd-ucs-object',
-                type: 'button',
-                label: t('main.ribbon.command.ucsObject'),
-                tooltip: ribbonTooltips.ucsObject,
-                size: 'large',
-                props: {
-                  icon: ucsObject,
                   labelWrapLines: 2,
                   labelWrapWidth: 'max-content'
                 }
@@ -3409,6 +3343,74 @@ const buildBaseTabs = (
             ]
           }
         ]
+      },
+      {
+        id: 'view-interface',
+        title: t('main.ribbon.group.interface'),
+        orientation: 'row',
+        collections: [
+          {
+            id: 'view-interface-main',
+            layout: 'row',
+            items: [
+              {
+                id: 'cmd-toggle-toolbar',
+                type: 'toggle',
+                label: t('main.ribbon.command.toolbar'),
+                tooltip: ribbonTooltips.toolbar,
+                size: 'large',
+                props: {
+                  modelValue: toolbarVisible,
+                  activeIcon: toolbar,
+                  inactiveIcon: toolbar,
+                  activeLabel: t('main.ribbon.command.toolbar'),
+                  inactiveLabel: t('main.ribbon.command.toolbar'),
+                  activeValue: 'cmd-toggle-toolbar',
+                  inactiveValue: 'cmd-toggle-toolbar',
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-toggle-command-line',
+                type: 'toggle',
+                label: t('main.ribbon.command.commandLine'),
+                tooltip: ribbonTooltips.commandLine,
+                size: 'large',
+                disabled: isSmallViewport.value,
+                props: {
+                  modelValue: commandLineVisible,
+                  activeIcon: commandLine,
+                  inactiveIcon: commandLine,
+                  activeLabel: t('main.ribbon.command.commandLine'),
+                  inactiveLabel: t('main.ribbon.command.commandLine'),
+                  activeValue: 'cmd-toggle-command-line',
+                  inactiveValue: 'cmd-toggle-command-line',
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-toggle-layout-tabs',
+                type: 'toggle',
+                label: t('main.ribbon.command.layoutTabs'),
+                tooltip: ribbonTooltips.layoutTabs,
+                size: 'large',
+                props: {
+                  modelValue: layoutTabVisible,
+                  activeIcon: layoutTabs,
+                  inactiveIcon: layoutTabs,
+                  activeLabel: t('main.ribbon.command.layoutTabs'),
+                  inactiveLabel: t('main.ribbon.command.layoutTabs'),
+                  activeValue: 'cmd-toggle-layout-tabs',
+                  inactiveValue: 'cmd-toggle-layout-tabs',
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   })
@@ -3436,6 +3438,12 @@ const ribbonData = computed(() => {
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
+  const ucsIconVisible = isUcsIconVisible.value
+  const toolbarVisible = features.isShowToolbar
+  const commandLineVisible = features.isShowCommandLine
+  const layoutTabVisible = isLayoutTabVisible.value
+  // Rebuild when compact viewport disables the command-line toggle.
+  isSmallViewport.value
   // Track markup draw style so Review ribbon color / text-height controls refresh.
   markupDrawColor.value
   markupDrawColorDisplay.value
@@ -3602,16 +3610,9 @@ const ribbonData = computed(() => {
   commandByItemId.set('zoom-smart', 'zoom\\nsmart')
   commandByItemId.set('cmd-newview', 'newview')
   commandByItemId.set('cmd-view', 'view')
+  // cmd-ucsicon is a visibility toggle handled in handleRibbonItemClick.
   commandByItemId.set('cmd-ucs', 'ucs')
   commandByItemId.set('cmd-ucsman', 'ucsman')
-  commandByItemId.set('cmd-ucs-world', 'ucs\\nWorld')
-  commandByItemId.set('cmd-ucs-origin', 'ucs')
-  commandByItemId.set('cmd-ucs-x', 'ucs\\nX')
-  commandByItemId.set('cmd-ucs-y', 'ucs\\nY')
-  commandByItemId.set('cmd-ucs-z', 'ucs\\nZ')
-  commandByItemId.set('cmd-ucs-zaxis', 'ucs\\nZAxis')
-  commandByItemId.set('cmd-ucs-view', 'ucs\\nView')
-  commandByItemId.set('cmd-ucs-object', 'ucs\\nObject')
 
   namedViewsRevision.value
   let namedViewNames: string[] = []
@@ -3629,6 +3630,10 @@ const ribbonData = computed(() => {
     openMode,
     markupVisible,
     measurementVisible,
+    ucsIconVisible,
+    toolbarVisible,
+    commandLineVisible,
+    layoutTabVisible,
     namedViewNames
   )
   const pluginRibbon = mlApplyPluginRibbon(tabs)
@@ -3744,6 +3749,33 @@ const handleRibbonItemClick = (payload: {
   }
   if (payload.itemId === 'cmd-group-select') {
     togglePickstyleGroupSelection()
+    return
+  }
+  if (payload.itemId === 'cmd-ucsicon') {
+    const db = AcApDocManager.instance.curDocument?.database
+    const settings = AcApUcsService.getIconSettings(db)
+    AcApUcsService.setIconSettings({ ...settings, on: !settings.on }, db)
+    syncUcsIconVisibility()
+    return
+  }
+  if (payload.itemId === 'cmd-toggle-toolbar') {
+    const next = !features.isShowToolbar
+    features.isShowToolbar = next
+    AcApSettingManager.instance.isShowToolbar = next
+    return
+  }
+  if (payload.itemId === 'cmd-toggle-command-line') {
+    if (isSmallViewport.value) return
+    const next = !features.isShowCommandLine
+    features.isShowCommandLine = next
+    AcApSettingManager.instance.isShowCommandLine = next
+    return
+  }
+  if (payload.itemId === 'cmd-toggle-layout-tabs') {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+    const next = isLayoutTabVisible.value ? 0 : 1
+    AcDbSysVarManager.instance().setVar(AcDbSystemVariables.LAYOUTTAB, next, db)
     return
   }
   if (

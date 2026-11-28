@@ -246,6 +246,7 @@ export default {
       navigate: 'Gezinme',
       namedViews: 'Adlı Görünümler',
       coordinates: 'Koordinatlar',
+      interface: 'Arayüz',
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',
@@ -416,17 +417,14 @@ export default {
         'Geçerli görüntüden veya bir pencereden yeni bir adlı görünüm oluşturur.',
       viewManager:
         'Adlı görünümleri oluşturmak, geri yüklemek ve silmek için Görünüm Yöneticisi\'ni açar.',
+      ucsIcon: 'UCS simgesinin görünürlüğünü, konumunu, görünümünü ve seçilebilirliğini denetler.',
       ucs: 'Geçerli kullanıcı koordinat sisteminin orijinini ve yönünü ayarlar.',
       namedUcs: 'Adlı UCS tanımlarını ve UCS simgesi ayarlarını yönetir.',
-      ucsWorld: 'UCS\'yi dünya koordinat sistemine ayarlar.',
-      ucsOrigin: 'Yeni bir UCS orijini tanımlar.',
-      ucsX: 'UCS\'yi X ekseni etrafında döndürür.',
-      ucsY: 'UCS\'yi Y ekseni etrafında döndürür.',
-      ucsZ: 'UCS\'yi Z ekseni etrafında döndürür.',
-      ucsZAxis: 'Z eksenini belirterek bir UCS tanımlar.',
-      ucsView: 'UCS\'yi geçerli görünümle hizalar.',
-      ucsObject: 'UCS\'yi seçilen bir nesneye hizalar.',
       restoreView: 'Çizimde kayıtlı adlı bir görünümü geri yükler.',
+      toolbar: 'Araç çubuklarını gösterir veya gizler.',
+      commandLine: 'Komut satırını gösterir veya gizler.',
+      layoutTabs:
+        'Model ve yerleşim sekmelerini gösterir veya gizler (LAYOUTTAB).',
       propertyColor:
         'Yeni oluşturulan nesneler veya seçili varlıklar için rengi ayarlayın.',
       propertyLineType:
@@ -578,17 +576,13 @@ export default {
       zoomSmart: 'Akıllı',
       newView: 'Yeni\nGörünüm',
       viewManager: 'Görünüm\nYöneticisi',
+      ucsIcon: 'UCS\nSimgesi',
       ucs: 'UCS',
       namedUcs: 'Adlı\nUCS',
-      ucsWorld: 'Dünya',
-      ucsOrigin: 'Orijin',
-      ucsX: 'X',
-      ucsY: 'Y',
-      ucsZ: 'Z',
-      ucsZAxis: 'Z Ekseni',
-      ucsView: 'Görünüm',
-      ucsObject: 'Nesne',
-      restoreView: 'Görünümü\nGeri Yükle'
+      restoreView: 'Görünümü\nGeri Yükle',
+      toolbar: 'Araç\nÇubuğu',
+      commandLine: 'Komut\nSatırı',
+      layoutTabs: 'Yerleşim\nSekmeleri'
     }
   },
   bsearch: {

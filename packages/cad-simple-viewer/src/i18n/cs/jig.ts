@@ -2282,6 +2282,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: 'Zadejte možnost',
+    selectableOption: 'Zadejte možnost výběru ikony USS',
+    keywords: {
+      on: {
+        display: 'ZAP(ON)',
+        local: 'ZAP',
+        global: 'ON'
+      },
+      off: {
+        display: 'VYP(OFF)',
+        local: 'VYP',
+        global: 'OFF'
+      },
+      all: {
+        display: 'Vše(A)',
+        local: 'Vše',
+        global: 'All'
+      },
+      noorigin: {
+        display: 'Bezpočátku(N)',
+        local: 'Bezpočátku',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: 'POčátek(OR)',
+        local: 'POčátek',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: 'Volitelná(S)',
+        local: 'Volitelná',
+        global: 'Selectable'
+      },
+      properties: {
+        display: 'Vlastnosti(P)',
+        local: 'Vlastnosti',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: 'Vyberte objekty nebo',
     createOrOption: 'Vytvořit skupinu nebo',

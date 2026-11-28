@@ -7,6 +7,7 @@
     <!-- Left Slot Content -->
     <template #left>
       <ml-layout-tabs
+        v-if="isLayoutTabVisible"
         :disabled="isStatusBarDisabled"
         :reserved-width="layoutTabsReservedWidth"
       />
@@ -76,7 +77,13 @@ import { ElButton, ElButtonGroup } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCurrentPos, useDocument, useIsMobile, useSettings } from '../../composable'
+import {
+  useCurrentPos,
+  useDocument,
+  useIsMobile,
+  useSettings,
+  useSystemVars
+} from '../../composable'
 import { dynamicInput, lineWidth, orthoMode } from '../../svg'
 import { MlSysVarToggleButton } from '../common'
 import MlAnnoAllVisibleButton from './MlAnnoAllVisibleButton.vue'
@@ -102,10 +109,12 @@ const props = defineProps<{
 
 const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const features = useSettings()
+const systemVars = useSystemVars(AcApDocManager.instance)
 const { isDocumentOpening } = useDocument()
 const { isMobile, isMobileOrPad } = useIsMobile()
 const { t } = useI18n()
 const isStatusBarDisabled = computed(() => isDocumentOpening.value)
+const isLayoutTabVisible = computed(() => systemVars.layouttab !== 0)
 
 const layoutTabsReservedWidth = computed(() =>
   features.isShowCoordinate && !isMobile.value ? COORDINATE_RESERVED_WIDTH : 0

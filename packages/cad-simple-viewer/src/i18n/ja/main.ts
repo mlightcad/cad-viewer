@@ -134,6 +134,25 @@ export default {
     copyright: '© {year} mlightcad. 無断転載を禁じます。',
     ok: 'OK'
   },
+  ucsIconDlg: {
+    title: 'UCS アイコン',
+    close: '閉じる',
+    ok: 'OK',
+    cancel: 'キャンセル',
+    lineWidth: '線の太さ',
+    size: 'UCS アイコンのサイズ',
+    sizeHint: 'ビューポートに対する割合（5～95）',
+    modelColor: 'モデル空間のアイコンの色',
+    layoutColor: 'レイアウト タブのアイコンの色',
+    applySingleColor: '単色を適用',
+    on: 'オン',
+    off: 'オフ',
+    colorTitle: '色を選択',
+    colorIndex: '色番号: ',
+    colorRgb: 'RGB: ',
+    colorInput: '色',
+    colorInputPlaceholder: '1～255'
+  },
   drawStyle: {
     color: '色',
     fontSize: '文字の高さ'

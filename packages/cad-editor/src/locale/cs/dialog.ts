@@ -684,7 +684,6 @@ export default {
     renamePrompt: 'Zadejte nový název USS:',
     renameFailed: 'USS nelze přejmenovat.',
     deleteFailed: 'USS nelze odstranit.',
-    help: 'Nápověda',
     iconSettings: 'Nastavení ikony USS',
     iconOn: 'Zapnuto',
     iconAtOrigin: 'Zobrazit v počátku USS',

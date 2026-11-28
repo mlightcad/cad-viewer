@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AutoCAD-style 3D UCS triad for the UCS Icon ribbon button (theme-aware) -->
+  <path d="M4.5 16.5 L12 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M12 13.5 L19.5 16.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M12 13.5 L12 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- Origin square (WCS / above XY) -->
+  <path d="M10.4 14.2 L12 13.5 L13.6 14.2 L12 14.9 Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" opacity="0.45"/>
+  <!-- X cone -->
+  <path d="M19.5 16.5 L17.2 15.2 L17.6 17.4 Z" fill="currentColor"/>
+  <!-- Y cone -->
+  <path d="M4.5 16.5 L6.8 15.2 L6.4 17.4 Z" fill="currentColor"/>
+  <!-- Z cone -->
+  <path d="M12 4.5 L10.7 6.8 L13.3 6.8 Z" fill="currentColor"/>
+  <text x="20.5" y="18.2" font-size="4.5" fill="currentColor" font-family="sans-serif" font-weight="700">X</text>
+  <text x="2.2" y="18.2" font-size="4.5" fill="currentColor" font-family="sans-serif" font-weight="700">Y</text>
+  <text x="13.2" y="5.2" font-size="4.5" fill="currentColor" font-family="sans-serif" font-weight="700">Z</text>
+</svg>

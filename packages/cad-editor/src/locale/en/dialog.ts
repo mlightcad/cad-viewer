@@ -685,7 +685,6 @@ export default {
     renamePrompt: 'Enter a new UCS name:',
     renameFailed: 'Could not rename the UCS.',
     deleteFailed: 'Could not delete the UCS.',
-    help: 'Help',
     iconSettings: 'UCS icon settings',
     iconOn: 'On',
     iconAtOrigin: 'Display at UCS origin point',

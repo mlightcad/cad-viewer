@@ -2390,6 +2390,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: 'Bir seçenek girin',
+    selectableOption: 'UCS simgesi seçilebilirliği için bir seçenek girin',
+    keywords: {
+      on: {
+        display: 'AÇIK(ON)',
+        local: 'AÇIK',
+        global: 'ON'
+      },
+      off: {
+        display: 'KAPALI(OFF)',
+        local: 'KAPALI',
+        global: 'OFF'
+      },
+      all: {
+        display: 'Tümü(A)',
+        local: 'Tümü',
+        global: 'All'
+      },
+      noorigin: {
+        display: 'OrjinDeğil(N)',
+        local: 'OrjinDeğil',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: 'ORjin(OR)',
+        local: 'ORjin',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: 'Seçilebilir(S)',
+        local: 'Seçilebilir',
+        global: 'Selectable'
+      },
+      properties: {
+        display: 'Özellikler(P)',
+        local: 'Özellikler',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: 'Nesneleri seçin veya',
     createOrOption: 'Grup oluştur veya',

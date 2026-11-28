@@ -128,6 +128,25 @@ export default {
     copyright: '© {year} mlightcad。保留所有权利。',
     ok: '确定'
   },
+  ucsIconDlg: {
+    title: 'UCS 图标',
+    close: '关闭',
+    ok: '确定',
+    cancel: '取消',
+    lineWidth: '线宽',
+    size: 'UCS 图标大小',
+    sizeHint: '视口百分比（5–95）',
+    modelColor: '模型空间图标颜色',
+    layoutColor: '布局选项卡图标颜色',
+    applySingleColor: '应用单一颜色',
+    on: '开',
+    off: '关',
+    colorTitle: '选择颜色',
+    colorIndex: '颜色索引：',
+    colorRgb: 'RGB：',
+    colorInput: '颜色',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: '颜色',
     fontSize: '字高'

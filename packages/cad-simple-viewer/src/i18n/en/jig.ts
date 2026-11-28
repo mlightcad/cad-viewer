@@ -2292,6 +2292,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: 'Enter an option',
+    selectableOption: 'Enter an option for UCS icon selectability',
+    keywords: {
+      on: {
+        display: 'ON',
+        local: 'ON',
+        global: 'ON'
+      },
+      off: {
+        display: 'OFF',
+        local: 'OFF',
+        global: 'OFF'
+      },
+      all: {
+        display: 'All',
+        local: 'All',
+        global: 'All'
+      },
+      noorigin: {
+        display: 'Noorigin',
+        local: 'Noorigin',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: 'ORigin',
+        local: 'ORigin',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: 'Selectable',
+        local: 'Selectable',
+        global: 'Selectable'
+      },
+      properties: {
+        display: 'Properties',
+        local: 'Properties',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: 'Select objects or',
     createOrOption: 'Create group or',

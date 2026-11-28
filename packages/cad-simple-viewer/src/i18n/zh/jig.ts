@@ -2190,6 +2190,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: '输入选项',
+    selectableOption: '输入 UCS 图标可选择性选项',
+    keywords: {
+      on: {
+        display: '开(ON)',
+        local: '开',
+        global: 'ON'
+      },
+      off: {
+        display: '关(OFF)',
+        local: '关',
+        global: 'OFF'
+      },
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      noorigin: {
+        display: '非原点(N)',
+        local: '非原点',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: '原点(OR)',
+        local: '原点',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: '可选中(S)',
+        local: '可选中',
+        global: 'Selectable'
+      },
+      properties: {
+        display: '特性(P)',
+        local: '特性',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: '选择对象或',
     createOrOption: '创建编组或',

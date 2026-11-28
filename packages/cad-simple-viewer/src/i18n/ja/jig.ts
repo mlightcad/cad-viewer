@@ -2277,6 +2277,47 @@ export default {
       }
     }
   },
+  ucsicon: {
+    enterOption: 'オプションを入力',
+    selectableOption: 'UCS アイコンの選択可否オプションを入力',
+    keywords: {
+      on: {
+        display: 'オン(ON)',
+        local: 'オン',
+        global: 'ON'
+      },
+      off: {
+        display: 'オフ(OFF)',
+        local: 'オフ',
+        global: 'OFF'
+      },
+      all: {
+        display: 'すべて(A)',
+        local: 'すべて',
+        global: 'All'
+      },
+      noorigin: {
+        display: '非原点(N)',
+        local: '非原点',
+        global: 'Noorigin'
+      },
+      origin: {
+        display: '原点(OR)',
+        local: '原点',
+        global: 'ORigin'
+      },
+      selectable: {
+        display: '選択可能(S)',
+        local: '選択可能',
+        global: 'Selectable'
+      },
+      properties: {
+        display: 'プロパティ(P)',
+        local: 'プロパティ',
+        global: 'Properties'
+      }
+    }
+  },
   group: {
     selectOrOption: 'オブジェクトを選択または',
     createOrOption: 'グループを作成または',

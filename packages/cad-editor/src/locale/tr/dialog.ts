@@ -684,7 +684,6 @@ export default {
     renamePrompt: 'Yeni bir UCS adı girin:',
     renameFailed: 'UCS yeniden adlandırılamadı.',
     deleteFailed: 'UCS silinemedi.',
-    help: 'Yardım',
     iconSettings: 'UCS simgesi ayarları',
     iconOn: 'Açık',
     iconAtOrigin: 'UCS orijin noktasında göster',

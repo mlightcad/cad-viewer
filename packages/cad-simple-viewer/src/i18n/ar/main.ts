@@ -131,6 +131,25 @@ export default {
     copyright: '© {year} mlightcad. جميع الحقوق محفوظة.',
     ok: 'موافق'
   },
+  ucsIconDlg: {
+    title: 'أيقونة UCS',
+    close: 'إغلاق',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    lineWidth: 'عرض الخط',
+    size: 'حجم أيقونة UCS',
+    sizeHint: 'نسبة من منفذ العرض (5–95)',
+    modelColor: 'لون أيقونة مساحة النموذج',
+    layoutColor: 'لون أيقونة علامة تبويب التخطيط',
+    applySingleColor: 'تطبيق لون واحد',
+    on: 'تشغيل',
+    off: 'إيقاف',
+    colorTitle: 'تحديد اللون',
+    colorIndex: 'فهرس اللون: ',
+    colorRgb: 'RGB: ',
+    colorInput: 'اللون',
+    colorInputPlaceholder: '1–255'
+  },
   drawStyle: {
     color: 'اللون',
     fontSize: 'ارتفاع النص'

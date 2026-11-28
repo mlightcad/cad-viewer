@@ -1,6 +1,7 @@
 import type { AcCmColor, AcDbDatabase, AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
+import { AcApUcsService } from '../../service/AcApUcsService.js'
 import {
   type AcApMeasurementValue,
   formatMeasurementValue
@@ -193,7 +194,20 @@ export function getMeasurementValueText(
 ): string {
   const extras = extrasById.get(id)
   if (!extras?.value || !db) return ''
-  return formatMeasurementValue(db, extras.value)
+  const value = extras.value
+  if (value.kind === 'coordinate') {
+    const u = AcApUcsService.wcsToUcs(
+      { x: value.x, y: value.y, z: 0 },
+      undefined,
+      db
+    )
+    return formatMeasurementValue(db, {
+      kind: 'coordinate',
+      x: u.x,
+      y: u.y
+    })
+  }
+  return formatMeasurementValue(db, value)
 }
 
 /**
@@ -433,7 +447,7 @@ export function refreshMeasurementValueLabels(
   for (const group of view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)) {
     const extras = extrasById.get(group.id)
     if (!extras?.value) continue
-    const text = formatMeasurementValue(db, extras.value)
+    const text = getMeasurementValueText(group.id, db)
     for (const child of group.children) {
       const badge = child as { setText?: (next: string) => void }
       badge.setText?.(text)
