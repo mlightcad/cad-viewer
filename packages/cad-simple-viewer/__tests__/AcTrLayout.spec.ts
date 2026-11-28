@@ -84,6 +84,7 @@ const mockCollectPointObjectWorldBoxes = jest.fn(
 
 jest.mock('@mlightcad/three-renderer', () => {
   const THREE = require('three')
+  const MAX_ABS_DEPTH_Z = 1e8
   return {
     AcTrBatchedGroup: jest.fn().mockImplementation(() => {
       const group = new THREE.Group()
@@ -103,6 +104,11 @@ jest.mock('@mlightcad/three-renderer', () => {
       group.collectPointObjectWorldBoxes = mockCollectPointObjectWorldBoxes
       return group
     }),
+    AcTrCamera: {
+      MAX_ABS_DEPTH_Z,
+      isUsableDepthZ: (z: number) =>
+        Number.isFinite(z) && Math.abs(z) <= MAX_ABS_DEPTH_Z
+    },
     AcTrGroup: class AcTrGroup {}
   }
 })
@@ -946,5 +952,16 @@ describe('AcTrLayout depth range', () => {
     layout.addEntity(entityAtZ('contour', 1105, 1243))
     layout.clear()
     expect(layout.depthRange.isEmpty).toBe(true)
+  })
+
+  it('ignores absurd finite Z boxes that would poison depth fitting', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('corrupt', -16, 1.2141680576410807e83))
+    expect(layout.depthRange.isEmpty).toBe(true)
+
+    layout.addEntity(entityAtZ('contour', 1105, 1243))
+    expect(layout.depthRange.min).toBe(1105)
+    expect(layout.depthRange.max).toBe(1243)
   })
 })
